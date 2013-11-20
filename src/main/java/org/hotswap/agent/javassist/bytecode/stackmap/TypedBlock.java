@@ -1,0 +1,225 @@
+/*
+ * Javassist, a Java-bytecode translator toolkit.
+ * Copyright (C) 1999- Shigeru Chiba. All Rights Reserved.
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License.  Alternatively, the contents of this file may be used under
+ * the terms of the GNU Lesser General Public License Version 2.1 or later,
+ * or the Apache License Version 2.0.
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ */
+
+package org.hotswap.agent.javassist.bytecode.stackmap;
+
+public class TypedBlock extends BasicBlock {
+    public int stackTop, numLocals;
+    // localsTypes is set to non-null when this block is first visited by a MapMaker.
+    // see alreadySet().
+    public TypeData[] localsTypes;
+    public TypeData[] stackTypes;
+
+    /**
+     * Divides the method body into basic blocks.
+     * The type information of the first block is initialized.
+     *
+     * @param optmize if it is true and the method does not include
+     *                branches, this method returns null.
+     */
+    public static TypedBlock[] makeBlocks(org.hotswap.agent.javassist.bytecode.MethodInfo minfo, org.hotswap.agent.javassist.bytecode.CodeAttribute ca,
+                                          boolean optimize)
+            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        TypedBlock[] blocks = (TypedBlock[]) new Maker().make(minfo);
+        if (optimize && blocks.length < 2)
+            if (blocks.length == 0 || blocks[0].incoming == 0)
+                return null;
+
+        org.hotswap.agent.javassist.bytecode.ConstPool pool = minfo.getConstPool();
+        boolean isStatic = (minfo.getAccessFlags() & org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC) != 0;
+        blocks[0].initFirstBlock(ca.getMaxStack(), ca.getMaxLocals(),
+                pool.getClassName(), minfo.getDescriptor(),
+                isStatic, minfo.isConstructor());
+        return blocks;
+    }
+
+    protected TypedBlock(int pos) {
+        super(pos);
+        localsTypes = null;
+    }
+
+    protected void toString2(StringBuffer sbuf) {
+        super.toString2(sbuf);
+        sbuf.append(",\n stack={");
+        printTypes(sbuf, stackTop, stackTypes);
+        sbuf.append("}, locals={");
+        printTypes(sbuf, numLocals, localsTypes);
+        sbuf.append('}');
+    }
+
+    private void printTypes(StringBuffer sbuf, int size,
+                            TypeData[] types) {
+        if (types == null)
+            return;
+
+        for (int i = 0; i < size; i++) {
+            if (i > 0)
+                sbuf.append(", ");
+
+            TypeData td = types[i];
+            sbuf.append(td == null ? "<>" : td.toString());
+        }
+    }
+
+    public boolean alreadySet() {
+        return localsTypes != null;
+    }
+
+    public void setStackMap(int st, TypeData[] stack, int nl, TypeData[] locals)
+            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        stackTop = st;
+        stackTypes = stack;
+        numLocals = nl;
+        localsTypes = locals;
+    }
+
+    /*
+     * Computes the correct value of numLocals.
+     */
+    public void resetNumLocals() {
+        if (localsTypes != null) {
+            int nl = localsTypes.length;
+            while (nl > 0 && localsTypes[nl - 1].isBasicType() == org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.TOP) {
+                if (nl > 1) {
+                    if (localsTypes[nl - 2].is2WordType())
+                        break;
+                }
+
+                --nl;
+            }
+
+            numLocals = nl;
+        }
+    }
+
+    public static class Maker extends BasicBlock.Maker {
+        protected BasicBlock makeBlock(int pos) {
+            return new TypedBlock(pos);
+        }
+
+        protected BasicBlock[] makeArray(int size) {
+            return new TypedBlock[size];
+        }
+    }
+
+    /**
+     * Initializes the first block by the given method descriptor.
+     *
+     * @param block         the first basic block that this method initializes.
+     * @param className     a dot-separated fully qualified class name.
+     *                      For example, <code>BasicBlock</code>.
+     * @param methodDesc    method descriptor.
+     * @param isStatic      true if the method is a static method.
+     * @param isConstructor true if the method is a constructor.
+     */
+    void initFirstBlock(int maxStack, int maxLocals, String className,
+                        String methodDesc, boolean isStatic, boolean isConstructor)
+            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        if (methodDesc.charAt(0) != '(')
+            throw new org.hotswap.agent.javassist.bytecode.BadBytecode("no method descriptor: " + methodDesc);
+
+        stackTop = 0;
+        stackTypes = TypeData.make(maxStack);
+        TypeData[] locals = TypeData.make(maxLocals);
+        if (isConstructor)
+            locals[0] = new TypeData.UninitThis(className);
+        else if (!isStatic)
+            locals[0] = new TypeData.ClassName(className);
+
+        int n = isStatic ? -1 : 0;
+        int i = 1;
+        try {
+            while ((i = descToTag(methodDesc, i, ++n, locals)) > 0)
+                if (locals[n].is2WordType())
+                    locals[++n] = org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.TOP;
+        } catch (StringIndexOutOfBoundsException e) {
+            throw new org.hotswap.agent.javassist.bytecode.BadBytecode("bad method descriptor: "
+                    + methodDesc);
+        }
+
+        numLocals = n;
+        localsTypes = locals;
+    }
+
+    private static int descToTag(String desc, int i,
+                                 int n, TypeData[] types)
+            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        int i0 = i;
+        int arrayDim = 0;
+        char c = desc.charAt(i);
+        if (c == ')')
+            return 0;
+
+        while (c == '[') {
+            ++arrayDim;
+            c = desc.charAt(++i);
+        }
+
+        if (c == 'L') {
+            int i2 = desc.indexOf(';', ++i);
+            if (arrayDim > 0)
+                types[n] = new TypeData.ClassName(desc.substring(i0, ++i2));
+            else
+                types[n] = new TypeData.ClassName(desc.substring(i0 + 1, ++i2 - 1)
+                        .replace('/', '.'));
+            return i2;
+        } else if (arrayDim > 0) {
+            types[n] = new TypeData.ClassName(desc.substring(i0, ++i));
+            return i;
+        } else {
+            TypeData t = toPrimitiveTag(c);
+            if (t == null)
+                throw new org.hotswap.agent.javassist.bytecode.BadBytecode("bad method descriptor: " + desc);
+
+            types[n] = t;
+            return i + 1;
+        }
+    }
+
+    private static TypeData toPrimitiveTag(char c) {
+        switch (c) {
+            case 'Z':
+            case 'C':
+            case 'B':
+            case 'S':
+            case 'I':
+                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.INTEGER;
+            case 'J':
+                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.LONG;
+            case 'F':
+                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.FLOAT;
+            case 'D':
+                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.DOUBLE;
+            case 'V':
+            default:
+                return null;
+        }
+    }
+
+    public static String getRetType(String desc) {
+        int i = desc.indexOf(')');
+        if (i < 0)
+            return "java.lang.Object";
+
+        char c = desc.charAt(i + 1);
+        if (c == '[')
+            return desc.substring(i + 1);
+        else if (c == 'L')
+            return desc.substring(i + 2, desc.length() - 1).replace('/', '.');
+        else
+            return "java.lang.Object";
+    }
+}
