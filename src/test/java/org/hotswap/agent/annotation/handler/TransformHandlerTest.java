@@ -29,8 +29,8 @@ public class TransformHandlerTest {
     @Test
     public void testInitMethod() throws Exception {
         context.checking(new Expectations() {{
-            allowing(pluginManager).getHotswapTransformer();
-            will(returnValue(hotswapTransformer));
+            allowing(pluginManager).getHotswapTransformer(); will(returnValue(hotswapTransformer));
+
             oneOf(hotswapTransformer).registerTransformer(with("org.hotswap.example.type"), with(any(ClassFileTransformer.class)));
         }});
 

@@ -1,5 +1,6 @@
-package org.hotswap.agent;
+package org.hotswap.agent.config;
 
+import org.hotswap.agent.config.PluginConfiguration;
 import org.junit.Test;
 
 import java.io.File;

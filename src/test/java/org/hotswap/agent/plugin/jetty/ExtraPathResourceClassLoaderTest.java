@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.jetty;
 
+import org.hotswap.agent.util.classloader.ExtraPathResourceClassLoader;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.nio.WatcherNIO2;
 import org.junit.Test;

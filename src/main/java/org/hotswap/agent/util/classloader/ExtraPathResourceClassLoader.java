@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.jetty;
+package org.hotswap.agent.util.classloader;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchEvent;

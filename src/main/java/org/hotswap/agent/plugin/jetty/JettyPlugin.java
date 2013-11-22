@@ -1,12 +1,13 @@
 package org.hotswap.agent.plugin.jetty;
 
-import org.hotswap.agent.PluginConfiguration;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.classloader.ExtraPathResourceClassLoader;
 import org.hotswap.agent.watch.Watcher;
 
 import java.lang.reflect.Field;
@@ -107,40 +108,6 @@ public class JettyPlugin {
         }
 
         extraPathResourceClassLoader.init(pluginConfiguration.getWatchResources(), watcher);
-
-        // create URL array which will contain first extra classpath and than orig classpath
-        URL[] extraClassPath = pluginConfiguration.getExtraClasspath();
-
-        URL[] origClassPath = ((URLClassLoader) appClassLoader).getURLs();
-        URL[] modifiedClassPath = new URL[origClassPath.length + extraClassPath.length];
-        System.arraycopy(extraClassPath, 0, modifiedClassPath, 0, extraClassPath.length);
-        System.arraycopy(origClassPath, 0, modifiedClassPath, extraClassPath.length, origClassPath.length);
-
-        // set new URLClassPath to the classloader via reflection
-        try {
-            Field ucpField = URLClassLoader.class.getDeclaredField("ucp");
-            ucpField.setAccessible(true);
-//            Object ucp = ucpField.get(appClassLoader);
-//
-//            Field pathField = sun.misc.URLClassPath.class.getDeclaredField("path");
-//            pathField.setAccessible(true);
-//            // noinspection unchecked
-//            ArrayList<URL> path = (ArrayList<URL>) pathField.get(ucp);
-//
-//            Field urlField = sun.misc.URLClassPath.class.getDeclaredField("urls");
-//            urlField.setAccessible(true);
-//            // noinspection unchecked
-//            Stack<URL> urls = (Stack<URL>) urlField.get(ucp);
-//
-//            for (URL url : extraClassPath) {
-//                urls.add(url);
-//                path.add(0, url);
-//            }
-
-            ucpField.set(appClassLoader, new sun.misc.URLClassPath(modifiedClassPath));
-        } catch (Exception e) {
-            LOGGER.error("Unable to add extraClassPath URLs {} to classLoader {}", e, extraClassPath, appClassLoader);
-        }
     }
 
     /**

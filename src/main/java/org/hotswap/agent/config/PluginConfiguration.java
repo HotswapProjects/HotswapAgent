@@ -1,11 +1,13 @@
-package org.hotswap.agent;
+package org.hotswap.agent.config;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 
 /**
@@ -30,8 +32,10 @@ public class PluginConfiguration {
         configurationURL = classLoader.getResource(PLUGIN_CONFIGURATION);
 
         try {
-            if (configurationURL != null)
+            if (configurationURL != null) {
                 properties.load(configurationURL.openStream());
+                init();
+            }
         } catch (Exception e) {
             LOGGER.error("Error while loading 'hotswap-agent.properties' from base URL " + configurationURL, e);
         }
@@ -73,8 +77,28 @@ public class PluginConfiguration {
 
         try {
             properties.load(configurationURL.openStream());
+            init();
         } catch (Exception e) {
             LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
+        }
+    }
+
+    /**
+     * Initialize the configuration.
+     */
+    protected void init() {
+        // LOG
+        LogConfigurationHelper.configureLog(properties);
+
+        // Extra class path
+        URL[] extraClassPath = getExtraClasspath();
+        if (extraClassPath.length > 0) {
+            if (classLoader instanceof URLClassLoader) {
+                URLClassLoaderHelper.prependClassPath((URLClassLoader)classLoader, extraClassPath);
+            } else {
+                LOGGER.warning("Unable to set extraClasspath to {} on classLoader {}. " +
+                        "Only URLClassLoader is supported.", Arrays.toString(extraClassPath), classLoader);
+            }
         }
     }
 
