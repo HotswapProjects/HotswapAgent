@@ -5,279 +5,51 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hotswap.agent</groupId>
-    <artifactId>HotswapAgent</artifactId>
+    <artifactId>HotswapAgentParent</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-    <properties>
-        <org.springframework.version>3.2.3.RELEASE</org.springframework.version>
-        <org.hibernateframework.version>4.2.0.Final</org.hibernateframework.version>
-        <skip.integration.tests>true</skip.integration.tests>
-        <skip.unit.tests>false</skip.unit.tests>
-    </properties>
+    <name>Hotswap Agent Parent POM</name>
+    <description>Parent for Hotswap Agent projects</description>
+    <url>https://github.com/HotswapProjects/HotswapAgent</url>
 
-    <profiles>
-        <profile>
-            <!--http://www.petrikainulainen.net/programming/maven/integration-testing-with-maven/-->
-            <id>integration-test</id>
-            <properties>
-                <!-- Used to locate the profile specific configuration file. -->
-                <build.profile.id>integration-test</build.profile.id>
-                <!-- Only integration tests are run. -->
-                <skip.integration.tests>false</skip.integration.tests>
-                <skip.unit.tests>true</skip.unit.tests>
-                <testReplace>Maven replaced value</testReplace>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>1.7</version>
-                        <executions>
-                            <!-- States that the plugin's add-test-source goal is executed at generate-test-sources phase. -->
-                            <execution>
-                                <id>add-integration-test-sources</id>
-                                <phase>generate-test-sources</phase>
-                                <goals>
-                                    <goal>add-test-source</goal>
-                                </goals>
-                                <configuration>
-                                    <!-- Configures the source directory of integration tests. -->
-                                    <sources>
-                                        <source>src/integration-test/java</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
+    <modules>
+        <module>HotswapAgent</module>
+        <module>HibernatePlugin</module>
+        <module>SpringPlugin</module>
+        <module>distribution</module>
+    </modules>
 
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>2.12</version>
-                        <executions>
-                            <!-- States that both integration-test and verify goals of the Failsafe Maven plugin are executed. -->
-                            <execution>
-                                <id>integration-tests</id>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL)</name>
+            <url>http://www.gnu.org/licenses/gpl.txt</url>
+        </license>
+    </licenses>
 
-                    <plugin>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>maven-jetty-plugin</artifactId>
-                        <version>6.1.26</version>
-                        <executions>
-                            <execution>
-                                <id>jetty-run</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                            </execution>
-                        </executions>
+    <issueManagement>
+        <system>git</system>
+        <url>https://github.com/HotswapProjects/HotswapAgent/issues</url>
+    </issueManagement>
 
-                        <configuration>
-                            <webAppConfig>
-                                <extraClasspath>${basedir}/target/test-classes</extraClasspath>
-                            </webAppConfig>
-                            <webAppSourceDirectory>${basedir}/src/integration-test/webapp</webAppSourceDirectory>
-                            <!--                    <jettyConfig>target/classes/jetty.xml</jettyConfig>-->
-                            <connectors>
-                                <connector implementation="org.mortbay.jetty.bio.SocketConnector">
-                                    <port>9091</port>
-                                </connector>
-                            </connectors>
-                            <systemProperties>
-                                <systemProperty>
-                                    <name>org.mortbay.jetty.webapp.parentLoaderPriority</name>
-                                    <!--Agent classes are on webapp classpath as well,-->
-                                    <!--we need to use agent classes (e.g. PluginManager.instance())-->
-                                    <value>true</value>
-                                </systemProperty>
-                            </systemProperties>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+    <scm>
+        <connection>scm:git:http://github.com/HotswapProjects/HotswapAgent.git</connection>
+        <developerConnection>scm:git:git@github.com/HotswapProjects/HotswapAgent.git</developerConnection>
+        <url>https://github.com/HotswapProjects/HotswapAgent</url>
+    </scm>
 
-        </profile>
-
-        <profile>
-            <id>default-tools</id>
-            <activation>
-                <os>
-                    <family>!mac</family>
-                </os>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <version>${java.version}</version>
-                    <scope>system</scope>
-                    <optional>true</optional>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>mac-tools</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                </os>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <version>${java.version}</version>
-                    <scope>system</scope>
-                    <optional>true</optional>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${org.springframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>${org.springframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>${org.springframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>1.6.11</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjweaver</artifactId>
-            <version>1.6.11</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>${org.springframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${org.springframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>${org.springframework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-orm</artifactId>
-            <version>${org.springframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-entitymanager</artifactId>
-            <version>${org.hibernateframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <version>2.2.8</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-junit4</artifactId>
-            <version>2.6.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-legacy</artifactId>
-            <version>2.6.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>maven-jetty-plugin</artifactId>
-            <version>6.1.26</version>
-            <scope>runtime</scope>
-        </dependency>
-
-
-
-    </dependencies>
+    <developers>
+        <developer>
+            <id>bubnik</id>
+            <name>Jiri Bubnik</name>
+            <roles><role>Admin</role></roles>
+            <organizationUrl>http://jiribubnik.cz</organizationUrl>
+        </developer>
+    </developers>
 
     <build>
-        <testResources>
-            <testResource>
-                <filtering>true</filtering>
-                <directory>src/integration-test/resources</directory>
-            </testResource>
-        </testResources>
-
         <plugins>
-            <!-- executes test with -javaagent option -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.15</version>
-                <configuration>
-                    <argLine>-javaagent:target/${project.build.finalName}.jar</argLine>
-                </configuration>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <archive>
-                        <manifestEntries>
-                            <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
-                            <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                            <Can-Retransform-Classes>true</Can-Retransform-Classes>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>2.2.1</version>
@@ -295,4 +67,38 @@
 
         </plugins>
     </build>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jmock</groupId>
+            <artifactId>jmock-junit4</artifactId>
+            <version>2.6.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jmock</groupId>
+            <artifactId>jmock-legacy</artifactId>
+            <version>2.6.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun</groupId>
+            <artifactId>tools</artifactId>
+            <version>${java.version}</version>
+            <scope>system</scope>
+            <optional>true</optional>
+            <systemPath>${java.home}/../lib/tools.jar</systemPath>
+        </dependency>
+
+    </dependencies>
 </project>
