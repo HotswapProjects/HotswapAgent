@@ -61,6 +61,8 @@ public class HibernatePlugin {
      */
     @Transform(classNameRegexp = "org.hibernate.ejb.HibernatePersistence")
     public static void proxyHibernatePersistence(ClassLoader classLoader, CtClass clazz) throws Exception {
+        LOGGER.debug("Override org.hibernate.ejb.HibernatePersistence#createContainerEntityManagerFactory and createEntityManagerFactory to create a EntityManagerFactoryWrapper proxy.");
+
         CtMethod oldMethod = clazz.getDeclaredMethod("createContainerEntityManagerFactory");
         oldMethod.setName("_createContainerEntityManagerFactory");
         CtMethod newMethod = CtNewMethod.make(
@@ -97,6 +99,8 @@ public class HibernatePlugin {
         // proceed only if EJB not available by the classloader
         if (checkHibernateEjb(classLoader))
             return;
+
+        LOGGER.debug("Override org.hibernate.cfg.Configuration#buildSessionFactory to create a SessionFactoryWrapper proxy.");
 
         CtClass serviceRegistryClass = classPool.makeClass("org.hibernate.service.ServiceRegistry");
         CtMethod oldMethod = clazz.getDeclaredMethod("buildSessionFactory", new CtClass[]{serviceRegistryClass});
@@ -136,6 +140,7 @@ public class HibernatePlugin {
     }
 
     private void refresh() {
+        LOGGER.debug("Refreshing hibernate configuration.");
         if (hibernateEjb)
             scheduler.scheduleCommand(reloadEntityManagerFactoryCommand);
         else

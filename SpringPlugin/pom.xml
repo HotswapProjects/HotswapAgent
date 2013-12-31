@@ -15,7 +15,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-
+        <org.springframework.version>3.2.3.RELEASE</org.springframework.version>
     </properties>
 
 
@@ -26,7 +26,11 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
-
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>${org.springframework.version}</version>
+        </dependency>
 
     </dependencies>
 
@@ -38,12 +42,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.15</version>
                 <configuration>
-                    <argLine>-javaagent:../HotswapAgent/target/$HotswapAgent-{project.version}.jar</argLine>
+                    <argLine>-javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
                 </configuration>
             </plugin>
-
-
-
         </plugins>
     </build>
 </project>

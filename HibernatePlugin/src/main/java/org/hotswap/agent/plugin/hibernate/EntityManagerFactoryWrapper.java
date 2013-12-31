@@ -111,10 +111,8 @@ public class EntityManagerFactoryWrapper {
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        // if reload in progress, wait for it
-                        synchronized (reloadLock) {
-                        }
-                        ;
+                        // if reload in progress, waitForResult for it
+                        synchronized (reloadLock) {};
 
                         return method.invoke(currentInstance, args);
                     }

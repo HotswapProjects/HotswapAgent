@@ -3,6 +3,7 @@ package org.hotswap.agent.command.impl;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.CommandExecutionListener;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +38,7 @@ public class SchedulerImplTest {
 
     @Test
     public void testScheduleCommand() throws Exception {
-        final ResultHolder resultHolder = new ResultHolder();
+        final WaitHelper.ResultHolder resultHolder = new WaitHelper.ResultHolder();
         command.setCommandExecutionListener(new CommandExecutionListener() {
             @Override
             public void commandExecuted(Object result) {
@@ -49,25 +50,10 @@ public class SchedulerImplTest {
 
         scheduler.scheduleCommand(command);
 
-        assertTrue("Event listener not called", waitForResult(resultHolder));
+        assertTrue("Event listener not called", WaitHelper.waitForResult(resultHolder));
     }
 
-    // each 10 ms check if result is true, max 1000 ms
-    private boolean waitForResult(ResultHolder resultHolder) {
-        for (int i = 0; i < 100; i++) {
-            if (resultHolder.result)
-                return true;
 
-            // wait for command to execute
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-            }
-        }
-        return false;
-    }
 
-    private static class ResultHolder {
-        boolean result = false;
-    }
+
 }

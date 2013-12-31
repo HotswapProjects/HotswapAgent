@@ -180,7 +180,7 @@ public class WatchEventCommand implements Command {
                 inputStream = uri.toURL().openStream();
             } catch (FileNotFoundException e) {
                 // some IDEs remove and recreate whole package multiple times while recompiling -
-                // we may need to wait for the file.
+                // we may need to waitForResult for the file.
                 if (tryCount > WAIT_FOR_FILE_MAX_SECONDS * 10) {
                     throw e;
                 } else {

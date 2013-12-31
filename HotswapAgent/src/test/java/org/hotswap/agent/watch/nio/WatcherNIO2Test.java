@@ -85,7 +85,7 @@ public class WatcherNIO2Test {
             if (resultHolder.result)
                 return true;
 
-            // wait for NIO thread
+            // waitForResult for NIO thread
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {

@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.hibernate;
 
 import org.hibernate.Version;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 import javax.persistence.EntityManagerFactory;
@@ -15,6 +16,8 @@ import java.util.Map;
  * @author Jiri Bubnik
  */
 public class HibernatePersistenceHelper {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(HibernatePersistenceHelper.class);
+
     /**
      * @param info       persistent unit definition
      * @param properties properties to create entity manager factory
@@ -27,6 +30,8 @@ public class HibernatePersistenceHelper {
         EntityManagerFactory proxy = wrapper.proxy(original, info.getPersistenceUnitName(), info, properties);
 
         initPlugin(original);
+
+        LOGGER.debug("Returning container EntityManager proxy {} instead of EntityManager {}", proxy, original);
         return proxy;
     }
 
@@ -42,6 +47,8 @@ public class HibernatePersistenceHelper {
         EntityManagerFactory proxy = wrapper.proxy(original, persistenceUnitName, null, properties);
 
         initPlugin(original);
+
+        LOGGER.debug("Returning EntityManager proxy {} instead of EntityManager {}", proxy, original);
         return proxy;
     }
 
