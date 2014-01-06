@@ -10,7 +10,6 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.hotswap.agent</groupId>
     <artifactId>SpringPlugin</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -32,6 +31,34 @@
             <version>${org.springframework.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>${org.springframework.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${org.springframework.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.6.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.6.11</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -42,7 +69,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.15</version>
                 <configuration>
-                    <argLine>-javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
+                    <argLine>-XXaltjvm=dcevm -javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
                 </configuration>
             </plugin>
         </plugins>
