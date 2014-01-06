@@ -16,9 +16,9 @@ public interface Scanner {
      * and call visitor for each found file.
      *
      * @param classLoader classloader to resolve path
-     * @param path    a '/'-separated path name that identifies the resource directory.
-     *                Semantics same as {@link java.lang.ClassLoader#getResources}.
-     * @param visitor visit each file on the path
+     * @param path        a '/'-separated path name that identifies the resource directory.
+     *                    Semantics same as {@link java.lang.ClassLoader#getResources}.
+     * @param visitor     visit each file on the path
      * @throws IOException any IO exception while scanning
      */
     public void scan(ClassLoader classLoader, String path, ScannerVisitor visitor) throws IOException;

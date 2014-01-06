@@ -7,6 +7,7 @@ public interface ClassLoaderInitListener {
 
     /**
      * ClassLoader is initialized.
+     *
      * @param classLoader new classloader
      */
     public void onInit(ClassLoader classLoader);

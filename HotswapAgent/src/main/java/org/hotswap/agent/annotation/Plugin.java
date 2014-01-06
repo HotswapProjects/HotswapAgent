@@ -14,7 +14,8 @@ public @interface Plugin {
 
     /**
      * A name of the plugin. This name is used to reference the plugin in code and configuration. It should not
-     * contain any spaces and wired characters.
+     * contain any spaces and weird characters.
+     *
      * @return A name of the plugin
      */
     String name() default "";
@@ -35,4 +36,10 @@ public @interface Plugin {
      * for all subversions of a major version. Indicate with this property expected versions.
      */
     String[] expectedVersions() default {};
+
+    /**
+     * Split plugin definition into multiple class files. Annotations @Transform and @Watch will be scanned on
+     * supporting class in addition to pluginClass itself.
+     */
+    Class[] supportClass() default {};
 }

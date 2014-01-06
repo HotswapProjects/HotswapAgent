@@ -1,9 +1,9 @@
 package org.hotswap.agent.plugin.jetty;
 
-import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -11,7 +11,6 @@ import org.hotswap.agent.util.classloader.ExtraPathResourceClassLoader;
 import org.hotswap.agent.watch.Watcher;
 
 import java.lang.reflect.Field;
-import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
@@ -77,7 +76,7 @@ public class JettyPlugin {
      * </ul>
      */
     @Transform(classNameRegexp = "org.mortbay.jetty.handler.ContextHandler")
-    public static void patchContextHandler(ClassLoader classLoader, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+    public static void patchContextHandler(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
 
         // after application context initialized, but before processing started
         CtMethod doStart = ctClass.getDeclaredMethod("doStart");

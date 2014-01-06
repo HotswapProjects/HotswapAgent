@@ -1,6 +1,7 @@
 package org.hotswap.agent.command.impl;
 
 import org.hotswap.agent.command.Command;
+import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -14,19 +15,37 @@ import java.util.*;
 public class SchedulerImpl implements Scheduler {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SchedulerImpl.class);
 
-    long DEFAULT_SCHEDULING_TIME = 100;
+    int DEFAULT_SCHEDULING_TIMEOUT = 100;
 
-    Map<Command, Long> scheduledCommands = Collections.synchronizedMap(new HashMap<Command, Long>());
-    Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<Command>());
+    final Map<Command, Long> scheduledCommands = Collections.synchronizedMap(new HashMap<Command, Long>());
+    final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<Command>());
 
     Thread runner;
     boolean stopped;
 
     @Override
     public void scheduleCommand(Command command) {
-        // map may already contain the command, in that case time is just updated
-        scheduledCommands.put(command, System.currentTimeMillis() + DEFAULT_SCHEDULING_TIME);
-        LOGGER.trace("{} scheduled for execution in {}ms", command, DEFAULT_SCHEDULING_TIME);
+        scheduleCommand(command, DEFAULT_SCHEDULING_TIMEOUT);
+    }
+
+    @Override
+    public void scheduleCommand(Command command, int timeout) {
+        synchronized (scheduledCommands) {
+            Command targetCommand = command;
+            if (scheduledCommands.containsKey(command) && (command instanceof MergeableCommand)) {
+                // get existing equals command and merge it
+                for (Command scheduledCommand : scheduledCommands.keySet()) {
+                    if (command.equals(scheduledCommand)) {
+                        targetCommand = ((MergeableCommand) command).merge(scheduledCommand);
+                        break;
+                    }
+                }
+            }
+
+            // map may already contain equals command, put will replace it and reset timer
+            scheduledCommands.put(targetCommand, System.currentTimeMillis() + timeout);
+            LOGGER.trace("{} scheduled for execution in {}ms", targetCommand, timeout);
+        }
     }
 
     /**

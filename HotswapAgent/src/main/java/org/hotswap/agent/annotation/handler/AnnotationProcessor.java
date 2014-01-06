@@ -2,6 +2,7 @@ package org.hotswap.agent.annotation.handler;
 
 import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.annotation.Watch;
 import org.hotswap.agent.logging.AgentLogger;
@@ -62,6 +63,15 @@ public class AnnotationProcessor {
                     return false;
         }
 
+        // process annotations on all supporting classes in addition to the plugin itself
+        for (Annotation annotation : pluginClass.getDeclaredAnnotations()) {
+            if (annotation instanceof Plugin) {
+                for (Class supportClass : ((Plugin) annotation).supportClass()) {
+                    processAnnotations(supportClass);
+                }
+            }
+        }
+
         return true;
     }
 
@@ -75,9 +85,6 @@ public class AnnotationProcessor {
         LOGGER.debug("Processing annotations for plugin '" + plugin + "'.");
 
         Class pluginClass = plugin.getClass();
-        for (Annotation annotation : pluginClass.getDeclaredAnnotations()) {
-            // TODO PluginSupport annotation
-        }
 
         for (Field field : pluginClass.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers()))
@@ -96,6 +103,7 @@ public class AnnotationProcessor {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     private boolean processFieldAnnotations(Object plugin, Field field) {
         // for all fields and all handlers
         for (Annotation annotation : field.getDeclaredAnnotations()) {
@@ -112,6 +120,7 @@ public class AnnotationProcessor {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     private boolean processMethodAnnotations(Object plugin, Method method) {
         // for all methods and all handlers
         for (Annotation annotation : method.getDeclaredAnnotations()) {

@@ -14,7 +14,7 @@ public class LogConfigurationHelper {
 
     /**
      * Search properties for prefix LOGGER and set level for package in format:
-     *    LOGGER.my.package=LEVEL
+     * LOGGER.my.package=LEVEL
      *
      * @param properties properties
      */
@@ -49,7 +49,7 @@ public class LogConfigurationHelper {
         if (property.equals(LOGGER_PREFIX)) {
             return null;
         } else {
-            return property.substring(LOGGER_PREFIX.length()+1);
+            return property.substring(LOGGER_PREFIX.length() + 1);
         }
     }
 }

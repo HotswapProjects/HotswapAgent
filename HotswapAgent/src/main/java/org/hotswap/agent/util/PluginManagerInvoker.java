@@ -57,7 +57,7 @@ public class PluginManagerInvoker {
             Method m = pluginInstance.getClass().getDeclaredMethod(method, paramTypes);
             return m.invoke(pluginInstance, params);
         } catch (Exception e) {
-            throw new Error(String.format("Exception calling method {} on plugin class {}", method, pluginClass), e);
+            throw new Error(String.format("Exception calling method %s on plugin class %s", method, pluginClass), e);
         }
     }
 
@@ -95,7 +95,7 @@ public class PluginManagerInvoker {
         b.append(managerClass);
         b.append(".class.getClassLoader();");
 
-        // Object __pluginInstance = org.hotswap.agent.PluginManager.getInstance(org.hotswap.agent.plugin.TestPlugin.class.getName(), __pluginClassLoader);
+        // Object __pluginInstance = org.hotswap.agent.PluginManager.getInstance().getPlugin(org.hotswap.agent.plugin.TestPlugin.class.getName(), __pluginClassLoader);
         b.append("Object __pluginInstance = ");
         b.append(managerClass);
         b.append(".getInstance().getPlugin(");

@@ -1,7 +1,7 @@
 package org.hotswap.agent.annotation.handler;
 
 import org.hotswap.agent.annotation.Watch;
-import org.hotswap.agent.command.Command;
+import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
@@ -22,11 +22,11 @@ import java.util.List;
 
 /**
  * Command to schedule after resource change.
- *
+ * <p/>
  * Equals is declared on all command params to group same change events to a single onWatchEvent. For event
  * only the URI is compared to group multiple event types.
  */
-public class WatchEventCommand implements Command {
+public class WatchEventCommand extends MergeableCommand {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WatchEventCommand.class);
 
@@ -188,7 +188,8 @@ public class WatchEventCommand implements Command {
                     LOGGER.trace("File not found, waiting...", e);
                     try {
                         Thread.sleep(100);
-                    } catch (InterruptedException e1) {}
+                    } catch (InterruptedException e1) {
+                    }
                 }
             }
         }

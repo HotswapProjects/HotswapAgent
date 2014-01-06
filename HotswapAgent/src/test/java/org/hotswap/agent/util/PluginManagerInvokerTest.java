@@ -5,7 +5,6 @@ import org.hotswap.agent.PluginRegistry;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin;
 import org.hotswap.agent.testData.SimplePlugin;
 import org.junit.Test;
 
@@ -15,7 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Created by bubnik on 4.11.13.
+ * @author Jiri Bubnik
  */
 public class PluginManagerInvokerTest {
 
@@ -34,7 +33,7 @@ public class PluginManagerInvokerTest {
 
         CtClass clazz = classPool.makeClass("Test");
         clazz.addMethod(CtNewMethod.make("public void test() {" + s + "}", clazz));
-        Class testClass = clazz.toClass();
+        Class<?> testClass = clazz.toClass();
 
 
         Method testMethod = testClass.getDeclaredMethod("test");

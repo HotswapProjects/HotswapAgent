@@ -1,6 +1,7 @@
 package org.hotswap.agent.util;
 
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute;
 
 import java.lang.annotation.Annotation;
 
@@ -16,12 +17,13 @@ public class AnnotationHelper {
     }
 
     public static boolean hasAnnotation(CtClass clazz, String annotationClass) {
-        try {
-            for (Object annot : clazz.getAnnotations())
-                if (((Annotation) annot).annotationType().getName().equals(annotationClass))
+        AnnotationsAttribute ainfo = (AnnotationsAttribute) clazz.getClassFile2().
+                getAttribute(AnnotationsAttribute.visibleTag);
+        if (ainfo != null) {
+            for (org.hotswap.agent.javassist.bytecode.annotation.Annotation annot : ainfo.getAnnotations()) {
+                if (annot.getTypeName().equals(annotationClass))
                     return true;
-        } catch (ClassNotFoundException e) {
-            throw new Error(e);
+            }
         }
         return false;
     }

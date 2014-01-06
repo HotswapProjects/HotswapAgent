@@ -20,11 +20,11 @@ public class WaitHelper {
      * Wait for result set to true by another thread in resultHolder.
      *
      * @param resultHolder holder of a boolean result - wait for value "true"
-     * @param timeout how long to wait
+     * @param timeout      how long to wait
      * @return true if value was set during timeout
      */
     public static boolean waitForResult(WaitHelper.ResultHolder resultHolder, int timeout) {
-        for (int i = 0; i < timeout/10; i++) {
+        for (int i = 0; i < timeout / 10; i++) {
             if (resultHolder.result)
                 return true;
 
@@ -63,7 +63,7 @@ public class WaitHelper {
      * @return true if command returned true during command
      */
     public static boolean waitForCommand(Command command, int timeout) {
-        for (int i = 0; i < timeout/10; i++) {
+        for (int i = 0; i < timeout / 10; i++) {
             try {
                 if (command.result())
                     return true;
@@ -86,6 +86,7 @@ public class WaitHelper {
     public static abstract class Command {
         /**
          * Invoke method to resolve current result - wait for true.
+         *
          * @return true if the event we wait for occurred.
          * @throws java.lang.Exception any exception is considered as false result
          */

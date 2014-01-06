@@ -26,6 +26,9 @@ import com.sun.jdi.event.*;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 import com.sun.jdi.request.MethodEntryRequest;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.LoaderClassPath;
 
 import java.io.IOException;
 import java.util.*;
@@ -39,7 +42,7 @@ class Trigger {
  * Example HotSwapper class from javaassist is copied to the plugin, becuse it needs to reside
  * in the application classloader to avoid NoClassDefFound error on tools.jar classes. Otherwise
  * it is the same code as in javassist.
- *
+ * <p/>
  * A utility class for dynamically reloading a class by
  * the Java Platform Debugger Architecture (JPDA), or <it>HotSwap</code>.
  * It works only with JDK 1.4 and later.
@@ -257,5 +260,25 @@ public class HotSwapper {
         Map map = newClassFiles;
         jvm.redefineClasses(map);
         newClassFiles = null;
+    }
+
+    /**
+     * Swap class definition from another class file.
+     * <p/>
+     * This is mainly useful for unit testing - declare multiple version of a class and then
+     * hotswap definition and do the tests.
+     *
+     * @param original original class currently in use
+     * @param swap     fully qualified class name of class to swap
+     * @throws Exception swap exception
+     */
+    public void swapClasses(Class original, String swap) throws Exception {
+        // need to recreate classpool on each swap to avoid stale class definition
+        ClassPool classPool = new ClassPool();
+        classPool.appendClassPath(new LoaderClassPath(original.getClassLoader()));
+
+        CtClass ctClass = classPool.getAndRename(swap, original.getName());
+
+        reload(original.getName(), ctClass.toBytecode());
     }
 }

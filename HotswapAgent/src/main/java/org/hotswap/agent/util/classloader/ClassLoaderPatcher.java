@@ -26,8 +26,8 @@ public interface ClassLoaderPatcher {
      * Patch the classloader.
      *
      * @param classLoaderFrom  classloader to load classes from
-     * @param path path to copy
-     * @param classLoaderTo   classloader to copy classes to
+     * @param path             path to copy
+     * @param classLoaderTo    classloader to copy classes to
      * @param protectionDomain required protection in target classloader
      */
     void patch(ClassLoader classLoaderFrom, String path, ClassLoader classLoaderTo, ProtectionDomain protectionDomain);

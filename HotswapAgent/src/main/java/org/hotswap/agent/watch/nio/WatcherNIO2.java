@@ -7,6 +7,8 @@ import org.hotswap.agent.watch.Watcher;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -54,6 +56,15 @@ public class WatcherNIO2 implements Watcher {
             listeners.put(Paths.get(pathPrefix), list);
         }
         list.add(listener);
+    }
+
+    @Override
+    public void addEventListener(URL pathPrefix, WatchEventListener listener) {
+        try {
+            addEventListener(pathPrefix.toURI(), listener);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Unable to convert URL to URI " + pathPrefix, e);
+        }
     }
 
     /**

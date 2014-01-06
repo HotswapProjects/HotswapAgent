@@ -1,6 +1,5 @@
 package org.hotswap.agent.config;
 
-import org.hotswap.agent.config.PluginConfiguration;
 import org.junit.Test;
 
 import java.io.File;
@@ -8,7 +7,9 @@ import java.io.File;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by bubnik on 12.11.13.
+ * Basic tests for configuration.
+ *
+ * @author Jiri Bubnik
  */
 public class PluginConfigurationTest {
 

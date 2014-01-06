@@ -1,6 +1,5 @@
 package org.hotswap.agent.util.classloader;
 
-import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;

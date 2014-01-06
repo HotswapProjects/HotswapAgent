@@ -147,8 +147,7 @@ public class ReflectionCommand implements Command {
     }
 
     protected Object doExecuteReflectionCommand(ClassLoader targetClassLoader, String className, String method, List<Object> params) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
-        Class classInAppClassLoader = Class.forName(className, true, targetClassLoader);
-        Object instance = classInAppClassLoader.newInstance();
+        Class<?> classInAppClassLoader = Class.forName(className, true, targetClassLoader);
 
         LOGGER.debug("Executing command: requestedClassLoader={}, resolvedClassLoader={}, class={}, method={}, params={}",
                 targetClassLoader, classInAppClassLoader.getClassLoader(), classInAppClassLoader, method, params);
@@ -163,9 +162,8 @@ public class ReflectionCommand implements Command {
             }
         }
 
+        Method m = classInAppClassLoader.getDeclaredMethod(method, paramTypes);
 
-        Method m = instance.getClass().getDeclaredMethod(method, paramTypes);
-
-        return m.invoke(instance, params.toArray());
+        return m.invoke(null, params.toArray());
     }
 }

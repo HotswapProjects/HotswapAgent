@@ -1,7 +1,6 @@
 package org.hotswap.agent.command.impl;
 
 import org.hotswap.agent.command.Command;
-import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
@@ -22,6 +21,7 @@ public class CommandExecutor extends Thread {
     @Override
     public void run() {
         try {
+            LOGGER.trace("Executing command {}", command);
             command.executeCommand();
         } finally {
             finished();

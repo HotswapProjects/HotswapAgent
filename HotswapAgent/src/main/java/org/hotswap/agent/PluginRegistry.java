@@ -1,8 +1,8 @@
 package org.hotswap.agent;
 
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.annotation.handler.AnnotationProcessor;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.classloader.ClassLoaderPatcher;
 import org.hotswap.agent.util.scanner.ClassPathAnnotationScanner;
 import org.hotswap.agent.util.scanner.ClassPathScanner;
@@ -23,6 +23,7 @@ public class PluginRegistry {
 
     /**
      * Returns map of all registered plugins.
+     *
      * @return map plugin class -> Map (ClassLoader -> Plugin instance)
      */
     public Map<Class, Map<ClassLoader, Object>> getRegisteredPlugins() {
@@ -55,7 +56,6 @@ public class PluginRegistry {
 
     /**
      * Create an instanec of plugin registry and initialize scanner and processor.
-     * @param pluginManager
      */
     public PluginRegistry(PluginManager pluginManager, ClassLoaderPatcher classLoaderPatcher) {
         this.pluginManager = pluginManager;
@@ -67,7 +67,7 @@ public class PluginRegistry {
     /**
      * Scan for plugins by @Plugin annotation on PLUGIN_PATH and process plugin annotations.
      *
-     * @param classLoader classloader to resolve plugin package. This will be used by annotation scanner.
+     * @param classLoader   classloader to resolve plugin package. This will be used by annotation scanner.
      * @param pluginPackage the package to be searched (e.g. org.agent.hotswap.plugin)
      */
     public void scanPlugins(ClassLoader classLoader, String pluginPackage) {
@@ -80,7 +80,7 @@ public class PluginRegistry {
 
             // Plugin class must be always defined directly in the agent classloader, otherwise it will not be available
             // to the instrumentation process. Copy the definition using patcher
-            if (agentClassLoader != classLoader) {
+            if (discoveredPlugins.size() > 0 && agentClassLoader != classLoader) {
                 classLoaderPatcher.patch(classLoader, pluginPath, agentClassLoader, null);
             }
 
@@ -111,7 +111,7 @@ public class PluginRegistry {
      * Init a plugin (create new plugin instance) in a application classloader.
      * Each classloader may contain only one instance of a plugin.
      *
-     * @param pluginClass class of plugin to instantiate
+     * @param pluginClass    class of plugin to instantiate
      * @param appClassLoader target application classloader
      * @return the new plugin instance
      */
@@ -119,19 +119,19 @@ public class PluginRegistry {
         // ensure classloader initialized
         pluginManager.initClassLoader(appClassLoader);
 
-        Class clazz = getPluginClass(pluginClass);
+        Class<Object> clazz = getPluginClass(pluginClass);
 
-        Object pluginInstance = getPlugin(clazz, appClassLoader);
         // already initialized in this or parent classloader
-        if (pluginInstance != null)
-            return pluginInstance;
+        if (hasPlugin(clazz, appClassLoader))
+            return getPlugin(clazz, appClassLoader);
 
-        pluginInstance = instantiate(clazz);
+        Object pluginInstance = instantiate(clazz);
         registeredPlugins.get(clazz).put(appClassLoader, pluginInstance);
 
         if (annotationProcessor.processAnnotations(pluginInstance)) {
             LOGGER.info("Plugin '{}' initialized in ClassLoader '{}'.", pluginClass, appClassLoader);
         } else {
+            LOGGER.error("Plugin '{}' NOT initialized in ClassLoader '{}', error while processing annotations.", pluginClass, appClassLoader);
             registeredPlugins.get(clazz).remove(appClassLoader);
         }
 
@@ -144,7 +144,8 @@ public class PluginRegistry {
      * @param pluginClass type of the plugin
      * @param classLoader classloader of the plugin
      * @param <T>         type of the plugin to return correct instance.
-     * @return the plugin or null if not found.
+     * @return the plugin
+     * @throws IllegalArgumentException if classLoader not initialized or plugin not found
      */
     public <T> T getPlugin(Class<T> pluginClass, ClassLoader classLoader) {
         if (registeredPlugins.isEmpty()) {
@@ -164,7 +165,26 @@ public class PluginRegistry {
         }
 
         // not found
-        return null;
+        throw new IllegalArgumentException(String.format("Plugin %s is not initialized in classloader %s.", pluginClass, classLoader));
+    }
+
+    /**
+     * Check if plugin is initialized in classLoader.
+     *
+     * @param pluginClass type of the plugin
+     * @param classLoader classloader of the plugin
+     * @return true/false
+     */
+    public boolean hasPlugin(Class<?> pluginClass, ClassLoader classLoader) {
+        if (!registeredPlugins.containsKey(pluginClass))
+            return false;
+
+        for (Map.Entry<ClassLoader, Object> registeredClassLoaderEntry : registeredPlugins.get(pluginClass).entrySet()) {
+            if (isParentClassLoader(registeredClassLoaderEntry.getKey(), classLoader)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -188,9 +208,10 @@ public class PluginRegistry {
 
     // resolve class in this classloader - plugin class should be always only in the same classloader
     // as the plugin manager.
-    private Class getPluginClass(String pluginClass) {
+    private Class<Object> getPluginClass(String pluginClass) {
         try {
-            return getClass().getClassLoader().loadClass(pluginClass);
+            // noinspection unchecked
+            return (Class<Object>) getClass().getClassLoader().loadClass(pluginClass);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Plugin class not found " + pluginClass, e);
         }

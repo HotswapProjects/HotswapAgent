@@ -1,7 +1,7 @@
 package org.hotswap.agent.command.impl;
 
-import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.CommandExecutionListener;
+import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.After;
@@ -14,7 +14,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Created by bubnik on 2.11.13.
+ * @author Jiri Bubnik
  */
 public class SchedulerImplTest {
     Scheduler scheduler;
@@ -32,7 +32,8 @@ public class SchedulerImplTest {
     }
 
     // method called by command - return classNameRegexp should be checked in callback listener
-    public boolean commandMethod() {
+    @SuppressWarnings("UnusedDeclaration")
+    public static boolean commandMethod() {
         return true;
     }
 
@@ -52,8 +53,6 @@ public class SchedulerImplTest {
 
         assertTrue("Event listener not called", WaitHelper.waitForResult(resultHolder));
     }
-
-
 
 
 }

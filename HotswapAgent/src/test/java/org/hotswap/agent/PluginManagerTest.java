@@ -1,7 +1,7 @@
 package org.hotswap.agent;
 
-import org.hotswap.agent.testData.SimplePlugin;
 import org.hotswap.agent.annotation.handler.AnnotationProcessor;
+import org.hotswap.agent.testData.SimplePlugin;
 import org.hotswap.agent.util.scanner.ClassPathAnnotationScanner;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -16,7 +16,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
 /**
- * Created by bubnik on 11.10.13.
+ * @author Jiri Bubnik
  */
 public class PluginManagerTest {
 

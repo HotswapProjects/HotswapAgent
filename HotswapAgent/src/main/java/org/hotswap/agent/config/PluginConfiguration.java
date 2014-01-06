@@ -82,14 +82,15 @@ public class PluginConfiguration {
             LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
         }
 
-        if (configurationURL == null) {
+        if (configurationURL == null && parent != null) {
             configurationURL = parent.configurationURL;
         } else {
             containsPropertyFileDirectly = true;
         }
 
         try {
-            properties.load(configurationURL.openStream());
+            if (configurationURL != null)
+                properties.load(configurationURL.openStream());
             init();
         } catch (Exception e) {
             LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
@@ -132,6 +133,7 @@ public class PluginConfiguration {
 
     /**
      * Get configuration property value
+     *
      * @param property property name
      * @return the property value or null if not defined
      */
@@ -146,6 +148,7 @@ public class PluginConfiguration {
 
     /**
      * Convenience method to get property as a boolean value using Boolean.valueOf().
+     *
      * @param property property name
      * @return the property value or null if not defined
      */
@@ -160,6 +163,7 @@ public class PluginConfiguration {
 
     /**
      * Get extraClasspath property as URL[].
+     *
      * @return extraClasspath or empty array (never null)
      */
     public URL[] getExtraClasspath() {

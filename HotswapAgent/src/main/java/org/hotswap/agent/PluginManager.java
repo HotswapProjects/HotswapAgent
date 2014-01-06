@@ -10,7 +10,6 @@ import org.hotswap.agent.util.classloader.ClassLoaderPatcher;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
-import sun.management.resources.agent;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;

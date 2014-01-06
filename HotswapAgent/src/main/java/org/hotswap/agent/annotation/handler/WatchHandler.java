@@ -3,7 +3,6 @@ package org.hotswap.agent.annotation.handler;
 import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.annotation.Watch;
 import org.hotswap.agent.command.Command;
-import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchEvent;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -80,7 +79,6 @@ public class WatchHandler implements PluginHandler<Watch> {
                 registerResourceListener(pluginAnnotation, classLoader, uri);
             } catch (URISyntaxException e) {
                 LOGGER.error("Unable convert root resource path URL to URI", e);
-                continue;
             }
         }
 
@@ -92,7 +90,6 @@ public class WatchHandler implements PluginHandler<Watch> {
                 registerResourceListener(pluginAnnotation, classLoader, pathInWatchResource.toUri());
             } catch (URISyntaxException e) {
                 LOGGER.error("Unable convert watch resource path URL {} to URI", e, url);
-                continue;
             }
         }
     }

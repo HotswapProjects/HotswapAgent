@@ -18,7 +18,7 @@ public class URLClassLoaderHelper {
      * This implementation will replace ucp field (URLClassPath) with new definition. Any existing Loader
      * is discarded and recreated.
      *
-     * @param classLoader URL classloader
+     * @param classLoader    URL classloader
      * @param extraClassPath path to prepend
      */
     public static void prependClassPath(URLClassLoader classLoader, URL[] extraClassPath) {

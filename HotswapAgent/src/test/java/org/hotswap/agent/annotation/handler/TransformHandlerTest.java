@@ -15,7 +15,7 @@ import java.lang.reflect.Method;
 import static junit.framework.Assert.assertTrue;
 
 /**
- * Created by bubnik on 12.10.13.
+ * @author Jiri Bubnik
  */
 public class TransformHandlerTest {
 
@@ -29,7 +29,8 @@ public class TransformHandlerTest {
     @Test
     public void testInitMethod() throws Exception {
         context.checking(new Expectations() {{
-            allowing(pluginManager).getHotswapTransformer(); will(returnValue(hotswapTransformer));
+            allowing(pluginManager).getHotswapTransformer();
+            will(returnValue(hotswapTransformer));
 
             oneOf(hotswapTransformer).registerTransformer(with("org.hotswap.example.type"), with(any(ClassFileTransformer.class)));
         }});

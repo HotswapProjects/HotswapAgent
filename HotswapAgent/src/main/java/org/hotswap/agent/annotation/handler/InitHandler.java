@@ -1,10 +1,10 @@
 package org.hotswap.agent.annotation.handler;
 
 import org.hotswap.agent.ClassLoaderInitListener;
-import org.hotswap.agent.command.Scheduler;
-import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.watch.Watcher;
@@ -17,8 +17,8 @@ import java.util.List;
 
 /**
  * Annotation handler - handle @Init annotation on fields/methods.
- *
- * The {@Init} annotation can be set on field or method and static or non static.
+ * <p/>
+ * The {org.hotswap.agent.annotation.Init} annotation can be set on field or method and static or non static.
  * See the annotation description for usage info.
  *
  * @author Jiri Bubnik
@@ -39,7 +39,7 @@ public class InitHandler implements PluginHandler<Init> {
 
         // if plugin not set, it is static method on plugin registration, use agent classloader
         ClassLoader appClassLoader = pluginAnnotation.getPlugin() == null ? getClass().getClassLoader() :
-                    pluginManager.getPluginRegistry().getAppClassLoader(pluginAnnotation.getPlugin());
+                pluginManager.getPluginRegistry().getAppClassLoader(pluginAnnotation.getPlugin());
 
         Object value = resolveType(appClassLoader, pluginAnnotation.getPluginClass(), field.getType());
         field.setAccessible(true);
@@ -95,6 +95,7 @@ public class InitHandler implements PluginHandler<Init> {
 
     /**
      * Register on classloader init event - call the @Init static method.
+     *
      * @param pluginAnnotation description of plugin method to call
      * @return true if ok
      */
@@ -116,7 +117,7 @@ public class InitHandler implements PluginHandler<Init> {
      *
      * @param classLoader application classloader
      * @param pluginClass used only for debugging messages
-     * @param type requested type
+     * @param type        requested type
      * @return resolved instance or null (error is logged)
      */
     @SuppressWarnings("unchecked")

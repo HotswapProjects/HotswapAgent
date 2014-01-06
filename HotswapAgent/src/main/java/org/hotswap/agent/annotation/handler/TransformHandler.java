@@ -61,7 +61,7 @@ public class TransformHandler implements PluginHandler<Transform> {
         hotswapTransformer.registerTransformer(annot.classNameRegexp(), new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-                if (!annot.onReload() && classBeingRedefined != null) {
+                if ((classBeingRedefined == null) ? !annot.onDefine() : !annot.onReload()) {
                     // Hotswap reload which is the client not interested of
                     return classfileBuffer;
                 }
@@ -152,17 +152,11 @@ public class TransformHandler implements PluginHandler<Transform> {
             } else if (resultObject instanceof byte[]) {
                 result = (byte[]) resultObject;
             } else if (resultObject instanceof CtClass) {
-                try {
-                    result = ((CtClass) resultObject).toBytecode();
+                result = ((CtClass) resultObject).toBytecode();
 
-                    // detach on behalfe of the clinet - only if this is another instance than we created (it is closed elsewhere)
-                    if (resultObject != ctClass) {
-                        ((CtClass) resultObject).detach();
-                    }
-                } catch (IOException e) {
-
-                } catch (CannotCompileException e) {
-                    e.printStackTrace();
+                // detach on behalf of the clinet - only if this is another instance than we created (it is closed elsewhere)
+                if (resultObject != ctClass) {
+                    ((CtClass) resultObject).detach();
                 }
             } else {
                 LOGGER.error("Unknown result of @Transform method '" + result.getClass().getName() + "'.");

@@ -23,7 +23,6 @@ import java.lang.annotation.*;
  * If registered on static method, transformation is invoked even before the plugin is initialized.
  * You need at least one static transformation method for a plugin to trigger plugin initialization.
  *
- *
  * @author Jiri Bubnik
  */
 @Target({ElementType.METHOD})
@@ -33,8 +32,6 @@ public @interface Transform {
 
     /**
      * Regexp of class name.
-     *
-     * @return
      */
     String classNameRegexp();
 

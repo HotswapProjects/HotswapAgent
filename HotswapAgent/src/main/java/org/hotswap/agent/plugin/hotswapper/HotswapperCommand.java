@@ -20,10 +20,11 @@ public class HotswapperCommand {
     // in the application classloader to avoid NoClassDefFound error on tools.jar classes.
     private static HotSwapper hotSwapper = null;
 
-    public void hotswap(String port, HashMap<String, byte[]> reloadMap) {
+    public static synchronized void hotswap(String port, final HashMap<String, byte[]> reloadMap) {
+        // synchronize on the reloadMap object - do not allow addition while in process
         synchronized (reloadMap) {
             if (hotSwapper == null) {
-                LOGGER.debug("Starting HotSwapper agent on JPDA transport socket - port {}, classloader {}", port, getClass().getClassLoader());
+                LOGGER.debug("Starting HotSwapper agent on JPDA transport socket - port {}, classloader {}", port, HotswapperCommand.class.getClassLoader());
                 try {
                     hotSwapper = new HotSwapper(port);
                 } catch (IOException e) {
