@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.hibernate;
+package org.hotswap.agent.plugin.hibernate.proxy;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -18,27 +18,27 @@ import java.util.Map;
 /**
  * For Hibernate without EJB (EntityManager).
  * <p/>
- * FIXME - Not tested, some additional Configuration cleanup may be necessary
+ * TODO - Not tested, some additional Configuration cleanup may be necessary
  *
  * @author Jiri Bubnik
  */
-public class SessionFactoryWrapper {
-    private static Map<Configuration, SessionFactoryWrapper> proxiedFactories = new HashMap<Configuration, SessionFactoryWrapper>();
+public class SessionFactoryProxy {
+    private static Map<Configuration, SessionFactoryProxy> proxiedFactories = new HashMap<Configuration, SessionFactoryProxy>();
 
-    private SessionFactoryWrapper(Configuration configuration) {
+    private SessionFactoryProxy(Configuration configuration) {
         this.configuration = configuration;
     }
 
-    public static SessionFactoryWrapper getWrapper(Configuration configuration) {
+    public static SessionFactoryProxy getWrapper(Configuration configuration) {
         if (!proxiedFactories.containsKey(configuration)) {
-            proxiedFactories.put(configuration, new SessionFactoryWrapper(configuration));
+            proxiedFactories.put(configuration, new SessionFactoryProxy(configuration));
         }
 
         return proxiedFactories.get(configuration);
     }
 
     public static void refreshProxiedFactories() {
-        for (SessionFactoryWrapper wrapper : proxiedFactories.values())
+        for (SessionFactoryProxy wrapper : proxiedFactories.values())
             try {
                 wrapper.refreshProxiedFactory();
             } catch (Exception e) {
@@ -47,8 +47,6 @@ public class SessionFactoryWrapper {
     }
 
     public void refreshProxiedFactory() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        // FIXME selective configuration reset
-
         Method m = Configuration.class.getDeclaredMethod("_buildSessionFactory", ServiceRegistry.class);
         currentInstance = (SessionFactory) m.invoke(configuration, serviceRegistry);
     }
@@ -74,10 +72,10 @@ public class SessionFactoryWrapper {
         };
 
 
-        Object instance = null;
+        Object instance;
         try {
             Constructor constructor = ReflectionFactory.getReflectionFactory().newConstructorForSerialization(factory.createClass(), Object.class.getDeclaredConstructor(new Class[0]));
-            instance = constructor.newInstance(new Object[0]);
+            instance = constructor.newInstance();
             ((Proxy) instance).setHandler(handler);
         } catch (Exception e) {
             throw new Error("Unable instantiate SessionFactory proxy", e);

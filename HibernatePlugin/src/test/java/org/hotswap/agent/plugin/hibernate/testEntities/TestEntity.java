@@ -1,29 +1,26 @@
-package org.hotswap.agent.plugin.hibernate;
+package org.hotswap.agent.plugin.hibernate.testEntities;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 
 /**
  * Test entity
  */
 @Entity
-public class TestEntity2 {
+public class TestEntity {
     @Id
     @GeneratedValue
     private Long id;
 
     private String name;
 
-    // Make description transient to check that reload was successful
-    @Transient
     private String description;
 
-    public TestEntity2() {
+    public TestEntity() {
     }
 
-    public TestEntity2(String name, String description) {
+    public TestEntity(String name, String description) {
         this.name = name;
         this.description = description;
     }

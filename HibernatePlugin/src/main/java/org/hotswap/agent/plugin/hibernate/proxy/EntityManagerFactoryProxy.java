@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.hibernate;
+package org.hotswap.agent.plugin.hibernate.proxy;
 
 import org.hibernate.ejb.Ejb3Configuration;
 import org.hibernate.ejb.internal.EntityManagerFactoryRegistry;
@@ -14,15 +14,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Create a proxy for EntityManagerFactory and register all created proxies.
+ * Provide static method to reload a proxied factory.
+ * <p/>
  * This class must run in App classloader.
  *
  * @author Jiri Bubnik
  */
-public class EntityManagerFactoryWrapper {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(EntityManagerFactoryWrapper.class);
-
+public class EntityManagerFactoryProxy {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(EntityManagerFactoryProxy.class);
     // Map persistenceUnitName -> Wrapper instance
-    private static Map<String, EntityManagerFactoryWrapper> proxiedFactories = new HashMap<String, EntityManagerFactoryWrapper>();
+    private static Map<String, EntityManagerFactoryProxy> proxiedFactories = new HashMap<String, EntityManagerFactoryProxy>();
+    // hold lock during refresh. The lock is checked on each factory method call.
+    final Object reloadLock = new Object();
+    // current entity manager factory instance - this is the target this proxy delegates to
+    EntityManagerFactory currentInstance;
+    // info and properties to use to build fresh instance of factory
+    String persistenceUnitName;
+    PersistenceUnitInfo info;
+    Map properties;
 
     /**
      * Create new wrapper for persistenceUnitName and hold it's instance for future use.
@@ -30,9 +40,9 @@ public class EntityManagerFactoryWrapper {
      * @param persistenceUnitName key to the wrapper
      * @return existing wrapper or new instance (never null)
      */
-    public static EntityManagerFactoryWrapper getWrapper(String persistenceUnitName) {
+    public static EntityManagerFactoryProxy getWrapper(String persistenceUnitName) {
         if (!proxiedFactories.containsKey(persistenceUnitName)) {
-            proxiedFactories.put(persistenceUnitName, new EntityManagerFactoryWrapper());
+            proxiedFactories.put(persistenceUnitName, new EntityManagerFactoryProxy());
         }
         return proxiedFactories.get(persistenceUnitName);
     }
@@ -41,7 +51,7 @@ public class EntityManagerFactoryWrapper {
      * Refresh all known wrapped factories.
      */
     public static void refreshProxiedFactories() {
-        for (EntityManagerFactoryWrapper wrapper : proxiedFactories.values())
+        for (EntityManagerFactoryProxy wrapper : proxiedFactories.values())
             try {
                 // lock proxy execution during reload
                 synchronized (wrapper.reloadLock) {
@@ -63,7 +73,6 @@ public class EntityManagerFactoryWrapper {
         buildFreshEntityManagerFactory();
     }
 
-
     // create factory from cached configuration
     private void buildFreshEntityManagerFactory() {
         LOGGER.trace("new Ejb3Configuration()");
@@ -79,17 +88,6 @@ public class EntityManagerFactoryWrapper {
         LOGGER.trace("configured.buildEntityManagerFactory()");
         currentInstance = configured != null ? configured.buildEntityManagerFactory() : null;
     }
-
-    // hold lock during refresh. The lock is checked on each factory method call.
-    Object reloadLock = new Object();
-
-    // current entity manager factory instance - this is the target this proxy delegates to
-    EntityManagerFactory currentInstance;
-
-    // info and properties to use to build fresh instance of factory
-    String persistenceUnitName;
-    PersistenceUnitInfo info;
-    Map properties;
 
     /**
      * Create a proxy for EntityManagerFactory.
@@ -112,7 +110,7 @@ public class EntityManagerFactoryWrapper {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                         // if reload in progress, waitForResult for it
-                        synchronized (reloadLock) {};
+                        synchronized (reloadLock) {}
 
                         return method.invoke(currentInstance, args);
                     }

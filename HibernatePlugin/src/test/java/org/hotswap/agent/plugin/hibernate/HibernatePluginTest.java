@@ -1,8 +1,7 @@
 package org.hotswap.agent.plugin.hibernate;
 
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.plugin.hibernate.testEntities.TestEntity;
+import org.hotswap.agent.plugin.hibernate.testEntitiesHotswap.TestEntity2;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.BeforeClass;
@@ -13,16 +12,13 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.Transient;
 
-import java.io.IOException;
-import java.lang.reflect.Proxy;
-
 import static junit.framework.Assert.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
- * Created by bubnik on 11.10.13.
+ * Basic test
+ *
+ * @author Jiri Bubnik
  */
 public class HibernatePluginTest {
 
@@ -70,21 +66,17 @@ public class HibernatePluginTest {
         // no annotation on description field
         assertTrue(TestEntity.class.getDeclaredField("description").getAnnotations().length == 0);
 
-        String className = TestEntity.class.getName();
-        CtClass ctClass = ClassPool.getDefault().getAndRename(className + "2", className);
-        hotSwapper.reload(className, ctClass.toBytecode());
+        HibernateRefreshCommands.reloadFlag = true;
+        hotSwapper.swapClasses(TestEntity.class, TestEntity2.class.getName());
+        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return !HibernateRefreshCommands.reloadFlag;
+            }
+        }));
 
         // @Transient annotation (new instance is loaded)
         assertTrue(TestEntity.class.getDeclaredField("description").getAnnotation(Transient.class) != null);
-
-        // TODO instead of sleep find a property to wait for
-        Thread.sleep(1000);
-//        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-//            @Override
-//            public boolean result() throws Exception {
-//            }
-//        }));
-
     }
 
 

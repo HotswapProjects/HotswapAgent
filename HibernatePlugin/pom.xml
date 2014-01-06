@@ -10,7 +10,6 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.hotswap.agent</groupId>
     <artifactId>HibernatePlugin</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -39,26 +38,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-junit4</artifactId>
-            <version>2.6.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-legacy</artifactId>
-            <version>2.6.0</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -69,7 +48,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.15</version>
                 <configuration>
-                    <argLine>-javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
+                    <argLine>-XXaltjvm=dcevm -javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
                 </configuration>
             </plugin>
         </plugins>

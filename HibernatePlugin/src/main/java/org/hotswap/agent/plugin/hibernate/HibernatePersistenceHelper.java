@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.hibernate;
 
 import org.hibernate.Version;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.hibernate.proxy.EntityManagerFactoryProxy;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 import javax.persistence.EntityManagerFactory;
@@ -10,7 +11,7 @@ import java.util.Map;
 
 /**
  * Helper to create a proxy for entity manager factory.
- *
+ * <p/>
  * This class must run in App classloader.
  *
  * @author Jiri Bubnik
@@ -22,11 +23,11 @@ public class HibernatePersistenceHelper {
      * @param info       persistent unit definition
      * @param properties properties to create entity manager factory
      * @param original   entity manager factory
-     * @return
+     * @return proxy of entity manager
      */
     public static EntityManagerFactory createContainerEntityManagerFactoryProxy(PersistenceUnitInfo info, Map properties,
                                                                                 EntityManagerFactory original) {
-        EntityManagerFactoryWrapper wrapper = EntityManagerFactoryWrapper.getWrapper(info.getPersistenceUnitName());
+        EntityManagerFactoryProxy wrapper = EntityManagerFactoryProxy.getWrapper(info.getPersistenceUnitName());
         EntityManagerFactory proxy = wrapper.proxy(original, info.getPersistenceUnitName(), info, properties);
 
         initPlugin(original);
@@ -36,14 +37,14 @@ public class HibernatePersistenceHelper {
     }
 
     /**
-     * @param persistenceUnitName       persistent unit name
-     * @param properties properties to create entity manager factory
-     * @param original   entity manager factory
-     * @return
+     * @param persistenceUnitName persistent unit name
+     * @param properties          properties to create entity manager factory
+     * @param original            entity manager factory
+     * @return proxy of entity manager
      */
     public static EntityManagerFactory createEntityManagerFactoryProxy(String persistenceUnitName, Map properties,
-                                                                                EntityManagerFactory original) {
-        EntityManagerFactoryWrapper wrapper = EntityManagerFactoryWrapper.getWrapper(persistenceUnitName);
+                                                                       EntityManagerFactory original) {
+        EntityManagerFactoryProxy wrapper = EntityManagerFactoryProxy.getWrapper(persistenceUnitName);
         EntityManagerFactory proxy = wrapper.proxy(original, persistenceUnitName, null, properties);
 
         initPlugin(original);
@@ -60,7 +61,7 @@ public class HibernatePersistenceHelper {
 
         PluginManagerInvoker.callInitializePlugin(HibernatePlugin.class, appClassLoader);
         PluginManagerInvoker.callPluginMethod(HibernatePlugin.class, appClassLoader,
-                "hibernateInitialized",
+                "init",
                 new Class[]{String.class, Boolean.class},
                 new Object[]{version, true});
 

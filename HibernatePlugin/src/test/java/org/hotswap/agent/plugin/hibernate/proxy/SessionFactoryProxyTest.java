@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.hibernate;
+package org.hotswap.agent.plugin.hibernate.proxy;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -8,9 +8,9 @@ import org.jmock.Mockery;
 import org.jmock.lib.legacy.ClassImposteriser;
 
 /**
- * Created by bubnik on 4.11.13.
+ * @author Jiri Bubnik
  */
-public class SessionFactoryWrapperTest {
+public class SessionFactoryProxyTest {
 
     Mockery context = new Mockery() {{
         setImposteriser(ClassImposteriser.INSTANCE);
@@ -27,7 +27,7 @@ public class SessionFactoryWrapperTest {
             oneOf(sessionFactory).getCurrentSession();
         }});
 
-        SessionFactoryWrapper wrapper = SessionFactoryWrapper.getWrapper(configuration);
+        SessionFactoryProxy wrapper = SessionFactoryProxy.getWrapper(configuration);
         SessionFactory proxy = wrapper.proxy(sessionFactory, serviceRegistry);
         proxy.getCurrentSession();
 
