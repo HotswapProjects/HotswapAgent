@@ -17,11 +17,18 @@ public class TestEntityService {
     @PersistenceContext
     EntityManager entityManager;
 
+    //@Autowired
+    TestRepository testRepository;
+
     public void addTestEntity(TestEntity entity) {
         entityManager.persist(entity);
     }
 
     public List<TestEntity> loadTestEntities() {
         return entityManager.createQuery("select e from TestEntity e").getResultList();
+    }
+
+    public String helloWorld() {
+        return testRepository.helloWorld() + "A";
     }
 }

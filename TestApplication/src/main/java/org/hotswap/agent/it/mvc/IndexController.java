@@ -1,10 +1,9 @@
 package org.hotswap.agent.it.mvc;
 
-import com.sun.jdi.connect.IllegalConnectorArgumentsException;
-import javassist.util.HotSwapper;
 import org.hotswap.agent.it.model.TestEntity;
 import org.hotswap.agent.it.service.TestEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +22,9 @@ public class IndexController {
     @Autowired
     TestEntityService testEntityService;
 
+    @Autowired
+    ApplicationContext applicationContext;
+
     @RequestMapping("/test")
     public String printHello(ModelMap model) {
         TestEntity a = new TestEntity("Ahojda");
@@ -37,5 +39,10 @@ public class IndexController {
         InputStream is = getClass().getResourceAsStream("/test.resource");
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         writer.write(s.next());
+    }
+
+    @RequestMapping("/hello")
+    public void printYaaa(Writer writer) throws IOException {
+        writer.write(applicationContext.getBean(TestEntityService.class).helloWorld());
     }
 }
