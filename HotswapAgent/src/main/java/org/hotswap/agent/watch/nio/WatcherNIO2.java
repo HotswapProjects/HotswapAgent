@@ -215,7 +215,11 @@ public class WatcherNIO2 implements Watcher {
                         }
                     };
 
-                    listener.onEvent(agentEvent);
+                    try {
+                        listener.onEvent(agentEvent);
+                    } catch (Throwable e) {
+                        LOGGER.error("Error in watch event '{}' listener '{}'", e, agentEvent, listener);
+                    }
                 }
             }
         }

@@ -20,9 +20,9 @@ public class HotswapAgent {
 
     public static void premain(String args, Instrumentation inst) {
 
-        LOGGER.info("Starting Hotswap agent ...");
+        LOGGER.info("Loading Hotswap agent - unlimited runtime class redefinition.");
         PluginManager.getInstance().init(inst);
-        LOGGER.info("Hotswap agent inicialized.");
+        LOGGER.debug("Hotswap agent inicialized.");
 
     }
 

@@ -7,11 +7,11 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.watch.WatchEvent;
 
-import java.io.FileNotFoundException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -29,10 +29,6 @@ import java.util.List;
 public class WatchEventCommand extends MergeableCommand {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WatchEventCommand.class);
-
-    // some IDEs remove and recreate whole package multiple times while recompiling -
-    // we may need to wait for a file to be available on a filesystem
-    private static int WAIT_FOR_FILE_MAX_SECONDS = 5;
 
     PluginAnnotation<Watch> pluginAnnotation;
     WatchEvent event;
@@ -173,27 +169,6 @@ public class WatchEventCommand extends MergeableCommand {
         ClassPool cp = new ClassPool();
         cp.appendClassPath(new LoaderClassPath(classLoader));
 
-        InputStream inputStream = null;
-        int tryCount = 0;
-        while (inputStream == null) {
-            try {
-                inputStream = uri.toURL().openStream();
-            } catch (FileNotFoundException e) {
-                // some IDEs remove and recreate whole package multiple times while recompiling -
-                // we may need to waitForResult for the file.
-                if (tryCount > WAIT_FOR_FILE_MAX_SECONDS * 10) {
-                    throw e;
-                } else {
-                    tryCount++;
-                    LOGGER.trace("File not found, waiting...", e);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e1) {
-                    }
-                }
-            }
-        }
-
-        return cp.makeClass(inputStream);
+        return cp.makeClass(new ByteArrayInputStream(IOUtils.toByteArray(uri)));
     }
 }

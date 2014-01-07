@@ -12,6 +12,7 @@ import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.*;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
@@ -149,7 +150,8 @@ public class ClassPathBeanDefinitionScannerAgent {
             BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
             definitionHolder = applyScopedProxyMode(scopeMetadata, definitionHolder, registry);
 
-            LOGGER.debug("Registering bean definition '{}' for definition '{}'", beanName, candidate);
+            LOGGER.reload("Registering Spring bean '{}'", beanName);
+            LOGGER.debug("Bean definition '{}'", beanName, candidate);
             registerBeanDefinition(definitionHolder, registry);
         }
     }
@@ -165,7 +167,9 @@ public class ClassPathBeanDefinitionScannerAgent {
 
             ResetSpringStaticCaches.reset();
 
-            if (registry instanceof GenericApplicationContext) {
+            if (registry instanceof DefaultListableBeanFactory) {
+                ResetBeanPostProcessorCaches.reset(((DefaultListableBeanFactory)registry));
+            } else if (registry instanceof GenericApplicationContext) {
                 ResetBeanPostProcessorCaches.reset(((GenericApplicationContext) registry).getDefaultListableBeanFactory());
             }
         }

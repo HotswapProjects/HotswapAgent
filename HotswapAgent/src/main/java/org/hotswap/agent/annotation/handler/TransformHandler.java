@@ -124,7 +124,7 @@ public class TransformHandler implements PluginHandler<Transform> {
             } else if (type.isAssignableFrom(ClassPool.class)) {
                 ClassPool classPool = new ClassPool();
                 classPool.appendSystemPath();
-                LOGGER.debug("Adding loader classpath " + classLoader);
+                LOGGER.trace("Adding loader classpath " + classLoader);
                 classPool.appendClassPath(new LoaderClassPath(classLoader));
                 args.add(classPool);
             } else if (type.isAssignableFrom(CtClass.class)) {

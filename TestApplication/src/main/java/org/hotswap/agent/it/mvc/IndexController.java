@@ -27,8 +27,7 @@ public class IndexController {
 
     @RequestMapping("/test")
     public String printHello(ModelMap model) {
-        TestEntity a = new TestEntity("Ahojda");
-        a.setName("povedlo sexa");
+        TestEntity a = new TestEntity("Hello world");
         testEntityService.addTestEntity(a);
         model.addAttribute("entities", testEntityService.loadTestEntities());
         return "test";

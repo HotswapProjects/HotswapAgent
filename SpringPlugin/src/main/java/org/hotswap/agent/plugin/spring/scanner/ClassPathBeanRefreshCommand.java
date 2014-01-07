@@ -1,19 +1,22 @@
 package org.hotswap.agent.plugin.spring.scanner;
 
 import org.hotswap.agent.command.Command;
+import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.IOUtils;
+import org.hotswap.agent.watch.WatchEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Do refresh Spring class (scanned by classpath scanner) based on URI or byte[] definition.
  *
  * This commands merges events of watcher.event(CREATE) and transformer hotswap reload to a single refresh command.
  */
-public class ClassPathBeanRefreshCommand implements Command {
+public class ClassPathBeanRefreshCommand extends MergeableCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassPathBeanRefreshCommand.class);
 
     ClassLoader appClassLoader;
@@ -22,6 +25,8 @@ public class ClassPathBeanRefreshCommand implements Command {
 
     String className;
 
+    // either event or classDefinition is set by constructor (watcher or transformer)
+    WatchEvent event;
     byte[] classDefinition;
 
     public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className, byte[] classDefinition) {
@@ -31,20 +36,34 @@ public class ClassPathBeanRefreshCommand implements Command {
         this.classDefinition = classDefinition;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, URI uri) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, WatchEvent event) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
+        this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
-        this.className = uri.getPath().replaceAll("^.*" + basePackage + ".", "").replaceAll(".class$", "");
-
-        this.classDefinition = IOUtils.toByteArray(uri);
+        String path = event.getURI().getPath();
+        path = path.substring(path.indexOf(basePackage.replace(".", "/")));
+        path = path.substring(0, path.indexOf(".class"));
+        this.className = path;
     }
 
     @Override
     public void executeCommand() {
+        if (isDeleteEvent()) {
+            LOGGER.debug("Skip Spring reload for delete event on class '{}'", className);
+            return;
+        }
+
         try {
-            Method method  = ClassPathBeanDefinitionScannerAgent.class.getDeclaredMethod(
+            if (classDefinition == null) {
+                this.classDefinition = IOUtils.toByteArray(event.getURI());
+            }
+
+            LOGGER.debug("Executing ClassPathBeanDefinitionScannerAgent.refreshClass('{}')", className);
+
+            Class<?> clazz = appClassLoader.loadClass(ClassPathBeanDefinitionScannerAgent.class.getName());
+            Method method  = clazz.getDeclaredMethod(
                     "refreshClass", new Class[] {String.class, byte[].class});
             method.invoke(null, basePackage, classDefinition);
         } catch (NoSuchMethodException e) {
@@ -53,8 +72,37 @@ public class ClassPathBeanRefreshCommand implements Command {
             LOGGER.error("Error refreshing class {} in classLoader {}", e, className, appClassLoader);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Plugin error, illegal access", e);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
         }
 
+    }
+
+    /**
+     * Check all merged events for delete and create events. If delete without create is found, than assume
+     * file was deleted.
+     */
+    private boolean isDeleteEvent() {
+        // for all merged commands including this command
+        List<ClassPathBeanRefreshCommand> mergedCommands = new ArrayList<ClassPathBeanRefreshCommand>();
+        for (Command command : getMergedCommands()) {
+            mergedCommands.add((ClassPathBeanRefreshCommand) command);
+        }
+        mergedCommands.add(this);
+
+        boolean createFound = false;
+        boolean deleteFound = false;
+        for (ClassPathBeanRefreshCommand command : mergedCommands) {
+            if (command.event != null) {
+                if (command.event.getEventType().equals(WatchEvent.WatchEventType.DELETE))
+                    deleteFound = true;
+                if (command.event.getEventType().equals(WatchEvent.WatchEventType.CREATE))
+                    createFound = true;
+            }
+        }
+
+        LOGGER.trace("isDeleteEvent result {}: createFound={}, deleteFound={}", createFound, deleteFound);
+        return !createFound && deleteFound;
     }
 
     @Override
@@ -75,5 +123,14 @@ public class ClassPathBeanRefreshCommand implements Command {
         int result = appClassLoader.hashCode();
         result = 31 * result + className.hashCode();
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "ClassPathBeanRefreshCommand{" +
+                "appClassLoader=" + appClassLoader +
+                ", basePackage='" + basePackage + '\'' +
+                ", className='" + className + '\'' +
+                '}';
     }
 }

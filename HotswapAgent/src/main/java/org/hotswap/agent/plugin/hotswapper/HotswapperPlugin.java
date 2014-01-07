@@ -26,10 +26,8 @@ import java.util.Map;
  * @author Jiri Bubnik
  * @see org.hotswap.agent.plugin.hotswapper.HotSwapper
  */
-@Plugin(name = "HotswapperPlugin", description = "Listen to class change and reload (hotswap) it on the fly via " +
-        "Java Platform Debugger Architecture (JPDA) directly. " +
-        "Although it is usually more convenient to use your IDE debugger for hotswap during development, this " +
-        "can be utilized to reload classes even on production server! Be careful and test it thoroughly at first :-)",
+@Plugin(name = "Hotswapper", description = "Watch for any class file change and reload (hotswap) it on the fly " +
+        "via Java Platform Debugger Architecture (JPDA).",
         testedVersions = {"JDK 1.7.0_45"}, expectedVersions = {"JDK 1.5+"})
 public class HotswapperPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapperPlugin.class);
@@ -81,7 +79,7 @@ public class HotswapperPlugin {
 
         // and autoHotswap enabled
         if (!pluginConfiguration.getPropertyBoolean("autoHotswap")) {
-            LOGGER.debug("ClassLoader {} does hotswap-agent.properties autoHotswap=false, hotswapper skipped.", appClassLoader);
+            LOGGER.debug("ClassLoader {} has hotswap-agent.properties autoHotswap=false, hotswapper skipped.", appClassLoader);
             return;
         }
 

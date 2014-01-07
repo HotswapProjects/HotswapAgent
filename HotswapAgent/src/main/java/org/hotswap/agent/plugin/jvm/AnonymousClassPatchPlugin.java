@@ -74,6 +74,9 @@ public class AnonymousClassPatchPlugin {
         String javaClass = className.replaceAll("/", ".");
         String mainClass = javaClass.replaceAll("\\$\\d+$", "");
 
+        // skip synthetic classes
+        if (classPool.find(className) == null)
+            return null;
 
         AnonymousClassInfos info = getStateInfo(classLoader, classPool, mainClass);
 

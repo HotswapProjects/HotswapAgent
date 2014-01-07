@@ -23,7 +23,8 @@ import java.security.ProtectionDomain;
  *
  * @author Jiri Bubnik
  */
-@Plugin(name = "Spring", testedVersions = {"3.1"},
+@Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
+        testedVersions = {"3.1"}, expectedVersions = {"3x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class})
 public class SpringPlugin {
     /**
@@ -56,6 +57,13 @@ public class SpringPlugin {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
     }
 
+    /**
+     * Register both hotswap transformer AND watcher - in case of new file the file is not known
+     * to JVM and hence no hotswap is called. The file may even exist, but until is loaded by Spring
+     * it will not be known by the JVM. Hotswap command has priority (watcher will try to wait for hotswap
+     * up to 500 ms).
+     * @param basePackage only files in a basePackage
+     */
     public void registerComponentScanBasePackage(final String basePackage) {
         LOGGER.info("Registering basePackage {}", basePackage);
 
@@ -73,9 +81,9 @@ public class SpringPlugin {
         watcher.addEventListener(appClassLoader.getResource(basePackage.replace(".", "/")), new WatchEventListener() {
             @Override
             public void onEvent(WatchEvent event) {
-                if (event.getEventType().equals(WatchEvent.WatchEventType.CREATE)) {
+                if (event.isFile() && event.getURI().toString().endsWith(".class")) {
                     scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                            basePackage, event.getURI()), WAIT_FOR_HOTSWAP_ON_CREATE);
+                            basePackage, event), WAIT_FOR_HOTSWAP_ON_CREATE);
                 }
             }
         });

@@ -1,0 +1,42 @@
+Hotswapper
+===========
+Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA).
+
+Although it is usually more convenient to use your IDE debugger for hotswap during development, this
+can be utilized to reload classes even on production server! Be careful and test it thoroughly before use :-)
+
+This plugin is also extensively used for agent plugins integration testing (hotswap during the test).
+
+Plugin configuration
+--------------------
+You need to start java with JPDA enabled. For example:
+
+    java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000 --XXaltjvm=dcevm -javaagent:HotswapAgent.jar MainClass
+
+will start the application with a debugger api enabled at localhost:8000. The other parameters are related to
+Hotswap agent setup itself. With this setup, you can use your IDE to attach debugger to localhost:8000. Btw. this
+is the way how your IDE attaches normally to the debugging process.
+
+To configure the plugin to attach to the process, you need to enable it in hotswap-agent.properties:
+
+     # Create Java Platform Debugger Architecture (JPDA) connection on autoHotswap.port, watch for changed class files
+     # and do the hotswap (reload) in background.
+     #
+     # Normally you will launch debugging session from your IDE of use hotswap feature.
+     # This property is useful if you do not want to use debugging session for some reason or
+     # to enable hotswap at runtime environment.
+     #
+     # You need to specify JPDA port at startup
+     # <pre>java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</pre>
+     autoHotswap=true
+
+     # Port on which you started JPDA session (address parameter - see autoHotswap property description)
+     # port 8000 is the default
+     autoHotswap.port=8000
+
+If you enable the `autoHotswap=true` in your application, all class files that are on the classpath of the application
+(same classloader as hotswap-agent.properties) will be watched for changes and reloaded in the JVM by hotswap command.
+
+Note that you can have multiple applications and hotswap-agent.properties for an application server and you need
+to enable autoHotswap for each application (classloader) separately.
+

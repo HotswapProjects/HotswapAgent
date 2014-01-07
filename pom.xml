@@ -17,6 +17,9 @@
         <module>HotswapAgent</module>
         <module>HibernatePlugin</module>
         <module>SpringPlugin</module>
+        <module>JettyPlugin</module>
+        <module>ZkPlugin</module>
+        <module>LogbackPlugin</module>
         <module>distribution</module>
     </modules>
 

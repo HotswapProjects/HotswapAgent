@@ -12,16 +12,75 @@
   
   <artifactId>distribution</artifactId>
 
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
   <name>Distribution</name>
   
-  <!-- Sort multi module build ? -->
+
   <dependencies>
+      <dependency>
+          <groupId>org.hotswap.agent</groupId>
+          <artifactId>HotswapAgent</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+
+      <dependency>
+          <groupId>org.hotswap.agent</groupId>
+          <artifactId>HibernatePlugin</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.hotswap.agent</groupId>
+          <artifactId>SpringPlugin</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.hotswap.agent</groupId>
+          <artifactId>JettyPlugin</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.hotswap.agent</groupId>
+          <artifactId>ZkPlugin</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.hotswap.agent</groupId>
+          <artifactId>LogbackPlugin</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.pegdown</groupId>
+          <artifactId>pegdown</artifactId>
+          <version>1.4.1</version>
+      </dependency>
   </dependencies>
 
   <build>
     <plugins>
+      <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.2.1</version>
+          <executions>
+              <execution>
+                  <phase>package</phase>
+                  <goals>
+                      <goal>java</goal>
+                  </goals>
+                  <configuration>
+                      <mainClass>org.hotswap.agent.distribution.PluginDocs</mainClass>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>
+
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <version>2.4</version>

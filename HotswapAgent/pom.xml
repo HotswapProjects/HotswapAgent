@@ -10,9 +10,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.hotswap.agent</groupId>
     <artifactId>HotswapAgent</artifactId>
-    <version>1.0-SNAPSHOT</version>
 
     <profiles>
         <profile>
@@ -54,6 +52,18 @@
     </profiles>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <!--README.md are processed by automatic plugin documentation generator-->
+                    <include>**/*.md</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
 
         <plugins>
 

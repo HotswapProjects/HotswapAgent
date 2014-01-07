@@ -92,7 +92,7 @@ public class SpringPluginTest {
             }
         }));
 
-        // TODO do not know why sleep is needed, maybe separate thread in Spring refresh?
+        // TODO do not know why sleep is needed, maybe a separate thread in Spring refresh?
         Thread.sleep(100);
     }
 }
