@@ -86,6 +86,12 @@ public class TransformHandler implements PluginHandler<Transform> {
         if (isSynthaticClass(className) || (redefiningClass != null && redefiningClass.isSynthetic()))
             return bytes;
 
+        // skip anonymous class
+        if (pluginAnnotation.getAnnotation().skipAnonymous()) {
+            if (className.matches("\\$\\d+$"))
+                return bytes;
+        }
+
         // check reload only
         if (!pluginAnnotation.getAnnotation().onDefine()) {
             if (redefiningClass == null)

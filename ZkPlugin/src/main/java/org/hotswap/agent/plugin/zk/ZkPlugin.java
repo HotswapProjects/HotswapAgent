@@ -52,6 +52,7 @@ public class ZkPlugin {
     public static void layoutServletCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("init");
         init.insertAfter(PluginManagerInvoker.buildInitializePlugin(ZkPlugin.class));
+        LOGGER.debug("org.zkoss.zk.ui.http.DHtmlLayoutServlet enahnced with plugin initialization.");
     }
 
     /**
@@ -60,7 +61,8 @@ public class ZkPlugin {
      * Note, that this is a little bit aggressive, but the user may override this by providing explicit value in zk.xml
      */
     @Transform(classNameRegexp = "org.zkoss.lang.Library")
-    public void defaultDisableCaches(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void defaultDisableCaches(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        LOGGER.debug("org.zkoss.lang.Library enhanced to replace property '*.cache' default value to 'false'.");
         CtMethod m = ctClass.getDeclaredMethod("getProperty", new CtClass[]{classPool.get("java.lang.String")});
 
         // see http://books.zkoss.org/wiki/ZK%20Configuration%20Reference/zk.xml/The%20Library%20Properties
@@ -72,7 +74,7 @@ public class ZkPlugin {
         defaultLibraryPropertyFalse(m, "zk-dl.annotation.cache");
     }
 
-    private void defaultLibraryPropertyFalse(CtMethod m, String setPropertyFalse) throws CannotCompileException {
+    private static void defaultLibraryPropertyFalse(CtMethod m, String setPropertyFalse) throws CannotCompileException {
         m.insertAfter("if (_props.get(key) == null && \"" + setPropertyFalse + "\".equals(key)) return \"false\";");
     }
 
@@ -97,6 +99,8 @@ public class ZkPlugin {
         ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
                 "   this.cache = new org.zkoss.zel.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
                 "}", ctClass));
+
+        LOGGER.debug("org.zkoss.zel.BeanELResolver - added method __resetCache().");
     }
 
     Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
@@ -121,6 +125,8 @@ public class ZkPlugin {
                 "   this._commandMethodCache = new org.zkoss.util.CacheMap(600,org.zkoss.util.CacheMap.DEFAULT_LIFETIME); " +
                 "   this._globalCommandMethodCache = new org.zkoss.util.CacheMap(600,org.zkoss.util.CacheMap.DEFAULT_LIFETIME); " +
                 "}", ctClass));
+
+        LOGGER.debug("org.zkoss.bind.impl.BinderImpl - added method __resetCache().");
     }
 
     Set<Object> registerBinderImpls = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());

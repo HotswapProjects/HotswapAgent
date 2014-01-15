@@ -49,4 +49,12 @@ public @interface Transform {
      */
     boolean onReload() default true;
 
+    /**
+     * Anonymous classes (e.g. MyClass$1, MyClass$2, ...) are usually reloaded with main class MyClass,
+     * but the transformation should be done only on the main class.
+     *
+     * @return false to include anonymous classes.
+     */
+    boolean skipAnonymous() default true;
+
 }

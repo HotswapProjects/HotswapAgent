@@ -130,10 +130,13 @@ public class ClassPathBeanDefinitionScannerAgent {
 
 
     /**
-     * Resolve candidate to a bean definition and (re)load in Spring
+     * Resolve candidate to a bean definition and (re)load in Spring.
+     * Synchronize to avoid parallel bean definition - usually on reload the beans are interrelated
+     * and parallel load will cause concurrent modification exception.
+     *
      * @param candidate the candidate to reload
      */
-    public void defineBean(BeanDefinition candidate) {
+    public synchronized void defineBean(BeanDefinition candidate) {
         ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
         candidate.setScope(scopeMetadata.getScopeName());
         String beanName = this.beanNameGenerator.generateBeanName(candidate, registry);
