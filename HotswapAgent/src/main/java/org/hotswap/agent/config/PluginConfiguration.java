@@ -1,6 +1,7 @@
 package org.hotswap.agent.config;
 
 import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
 
@@ -147,6 +148,18 @@ public class PluginConfiguration {
     }
 
     /**
+     * Get configuration property value
+     *
+     * @param property property name
+     * @param defaultValue value to return if property not defined
+     * @return the property value or null if not defined
+     */
+    public String getProperty(String property, String defaultValue) {
+        String value = getProperty(property);
+        return value != null ? value : defaultValue;
+    }
+
+    /**
      * Convenience method to get property as a boolean value using Boolean.valueOf().
      *
      * @param property property name
@@ -176,6 +189,34 @@ public class PluginConfiguration {
     public URL[] getWatchResources() {
         return convertToURL(getProperty("watchResources"));
     }
+
+    /**
+     * List of disabled plugin names
+     */
+    public List<String> getDisabledPlugins() {
+        List<String> ret = new ArrayList<String>();
+        for (String disabledPlugin : getProperty("disabledPlugins", "").split(",")) {
+            ret.add(disabledPlugin.trim());
+        }
+        return ret;
+    }
+
+    /**
+     * Check if the plugin is disabled (in this classloader)
+     */
+    public boolean isDisabledPlugin(String pluginName) {
+        return getDisabledPlugins().contains(pluginName);
+    }
+
+    /**
+     * Check if the plugin is disabled (in this classloader)
+     */
+    public boolean isDisabledPlugin(Class<Object> pluginClass) {
+        Plugin pluginAnnotation = pluginClass.getAnnotation(Plugin.class);
+        return isDisabledPlugin(pluginAnnotation.name());
+    }
+
+
 
     private URL[] convertToURL(String resources) {
         List<URL> ret = new ArrayList<URL>();

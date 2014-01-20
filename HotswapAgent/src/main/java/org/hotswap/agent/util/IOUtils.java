@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 
 /**
  * IO utils (similar to apache commons).
@@ -17,6 +18,12 @@ public class IOUtils {
     // some IDEs remove and recreate whole package multiple times while recompiling -
     // we may need to wait for a file to be available on a filesystem
     private static int WAIT_FOR_FILE_MAX_SECONDS = 5;
+
+    /** URL protocol for a file in the file system: "file" */
+    public static final String URL_PROTOCOL_FILE = "file";
+
+    /** URL protocol for a JBoss VFS resource: "vfs" */
+    public static final String URL_PROTOCOL_VFS = "vfs";
 
     /**
      * Download URI to byte array.
@@ -79,5 +86,18 @@ public class IOUtils {
     public static String streamToString(InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
+    }
+
+
+    /**
+     * Determine whether the given URL points to a resource in the file system,
+     * that is, has protocol "file" or "vfs".
+     * @param url the URL to check
+     * @return whether the URL has been identified as a file system URL
+     * @author Juergen Hoeller (org.springframework.util.ResourceUtils)
+     */
+    public static boolean isFileURL(URL url) {
+        String protocol = url.getProtocol();
+        return (URL_PROTOCOL_FILE.equals(protocol) || protocol.startsWith(URL_PROTOCOL_VFS));
     }
 }

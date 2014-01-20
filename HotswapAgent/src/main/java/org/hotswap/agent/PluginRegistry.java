@@ -94,7 +94,7 @@ public class PluginRegistry {
 
                 registeredPlugins.put(pluginClass, Collections.synchronizedMap(new HashMap<ClassLoader, Object>()));
 
-                if (annotationProcessor.processAnnotations(pluginClass)) {
+                if (annotationProcessor.processAnnotations(pluginClass, pluginClass)) {
                     LOGGER.debug("Plugin registered {}.", pluginClass);
                 } else {
                     LOGGER.error("Error processing annotations for plugin {}. Plugin was unregistered.", pluginClass);
@@ -113,13 +113,20 @@ public class PluginRegistry {
      *
      * @param pluginClass    class of plugin to instantiate
      * @param appClassLoader target application classloader
-     * @return the new plugin instance
+     * @return the new plugin instance or null if plugin is disabled.
      */
     public Object initializePlugin(String pluginClass, ClassLoader appClassLoader) {
+        if (appClassLoader == null)
+            throw new IllegalArgumentException("Cannot initialize plugin '" + pluginClass + "', appClassLoader is null.");
+
         // ensure classloader initialized
         pluginManager.initClassLoader(appClassLoader);
 
         Class<Object> clazz = getPluginClass(pluginClass);
+
+        // skip if the plugin is disabled
+        if (pluginManager.getPluginConfiguration(appClassLoader).isDisabledPlugin(clazz))
+            return null;
 
         // already initialized in this or parent classloader
         if (hasPlugin(clazz, appClassLoader))
@@ -243,5 +250,15 @@ public class PluginRegistry {
                     + " does not contain public no param constructor", e);
         }
         return null;
+    }
+
+    /**
+     * Remove all registered plugins for a classloader.
+     * @param classLoader classloader to cleanup
+     */
+    public void closeClassLoader(ClassLoader classLoader) {
+        for (Map<ClassLoader, Object> plugins : registeredPlugins.values()) {
+            plugins.remove(classLoader);
+        }
     }
 }

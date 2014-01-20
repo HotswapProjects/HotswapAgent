@@ -45,29 +45,30 @@ public class AnnotationProcessor {
     /**
      * Process annotations on the plugin class - only static methods, methods to hook plugin initialization.
      *
-     * @param pluginClass plugin class
+     * @param processClass class to process annotation
+     * @param pluginClass main plugin class (annotated with @Plugin)
      * @return true if success
      */
-    public boolean processAnnotations(Class pluginClass) {
+    public boolean processAnnotations(Class processClass, Class pluginClass) {
 
-        for (Field field : pluginClass.getDeclaredFields()) {
+        for (Field field : processClass.getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers()))
-                if (!processFieldAnnotations(null, field))
+                if (!processFieldAnnotations(null, field, pluginClass))
                     return false;
 
         }
 
-        for (Method method : pluginClass.getDeclaredMethods()) {
+        for (Method method : processClass.getDeclaredMethods()) {
             if (Modifier.isStatic(method.getModifiers()))
-                if (!processMethodAnnotations(null, method))
+                if (!processMethodAnnotations(null, method, pluginClass))
                     return false;
         }
 
         // process annotations on all supporting classes in addition to the plugin itself
-        for (Annotation annotation : pluginClass.getDeclaredAnnotations()) {
+        for (Annotation annotation : processClass.getDeclaredAnnotations()) {
             if (annotation instanceof Plugin) {
                 for (Class supportClass : ((Plugin) annotation).supportClass()) {
-                    processAnnotations(supportClass);
+                    processAnnotations(supportClass, pluginClass);
                 }
             }
         }
@@ -88,14 +89,14 @@ public class AnnotationProcessor {
 
         for (Field field : pluginClass.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers()))
-                if (!processFieldAnnotations(plugin, field))
+                if (!processFieldAnnotations(plugin, field, pluginClass))
                     return false;
 
         }
 
         for (Method method : pluginClass.getDeclaredMethods()) {
             if (!Modifier.isStatic(method.getModifiers()))
-                if (!processMethodAnnotations(plugin, method))
+                if (!processMethodAnnotations(plugin, method, pluginClass))
                     return false;
 
         }
@@ -104,13 +105,13 @@ public class AnnotationProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean processFieldAnnotations(Object plugin, Field field) {
+    private boolean processFieldAnnotations(Object plugin, Field field, Class pluginClass) {
         // for all fields and all handlers
         for (Annotation annotation : field.getDeclaredAnnotations()) {
             for (Class<? extends Annotation> handlerAnnotation : handlers.keySet()) {
                 if (annotation.annotationType().equals(handlerAnnotation)) {
                     // initialize
-                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation(plugin, annotation, field);
+                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation(pluginClass, plugin, annotation, field);
                     if (!handlers.get(handlerAnnotation).initField(pluginAnnotation)) {
                         return false;
                     }
@@ -121,13 +122,13 @@ public class AnnotationProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean processMethodAnnotations(Object plugin, Method method) {
+    private boolean processMethodAnnotations(Object plugin, Method method, Class pluginClass) {
         // for all methods and all handlers
         for (Annotation annotation : method.getDeclaredAnnotations()) {
             for (Class<? extends Annotation> handlerAnnotation : handlers.keySet()) {
                 if (annotation.annotationType().equals(handlerAnnotation)) {
                     // initialize
-                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation(plugin, annotation, method);
+                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation(pluginClass, plugin, annotation, method);
                     if (!handlers.get(handlerAnnotation).initMethod(pluginAnnotation)) {
                         return false;
                     }

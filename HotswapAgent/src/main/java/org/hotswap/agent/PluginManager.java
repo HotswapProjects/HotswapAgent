@@ -7,13 +7,11 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.classloader.ClassLoaderDefineClassPatcher;
 import org.hotswap.agent.util.classloader.ClassLoaderPatcher;
-import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.net.URI;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -154,10 +152,18 @@ public class PluginManager {
             classLoaderInitListener.onInit(classLoader);
     }
 
-    public void registerResourceListener(URI uri, WatchEventListener watchEventListener) throws IOException {
-        watcher.addDirectory(uri);
-        watcher.addEventListener(uri, watchEventListener);
+    /**
+     * Remove any classloader reference and close all plugin instances associated with classloader.
+     * This method is called typically after webapp undeploy.
+     *
+     * @param classLoader the classloader to cleanup
+     */
+    public void closeClassLoader(ClassLoader classLoader) {
+        pluginRegistry.closeClassLoader(classLoader);
+        classLoaderConfigurations.remove(classLoader);
+        hotswapTransformer.closeClassLoader(classLoader);
     }
+
 
     public PluginConfiguration getPluginConfiguration(ClassLoader classLoader) {
         // if needed, iterate to first parent loader with a known configuration

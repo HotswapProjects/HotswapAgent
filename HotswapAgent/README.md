@@ -1,8 +1,8 @@
 Hotswap Agent Implementation
 ============================
 
-Hotswap agent is a plugin framework to register plugins to . It helps with common tasks and
-classloading issues.
+Hotswap agent is a plugin container with plugin manager, plugin registry, and several services
+(e.g. to watch for class/resource change). It helps with common tasks and classloading issues.
 
 Agent structure
 ---------------
@@ -39,7 +39,8 @@ Hotswap agent solve this issue by copying all plugin classes in BOTH classloader
 be always aware of the classloader currently in use (provided plugins contain javadoc with information
 for which classloader is each class targeted). The main @Plugin class itself always run in the agent classloader.
 Typically you will use commands (e.g. ReflectionCommand) to run a method on a class in application classloader. Than
-it can safely access all framework classes.
+it can safely access all framework classes. Note that the agent classes (e.g. PluginManager) must NOT be in the
+application classloader.
 
 * The framework / your application classloader is in the code referred as "app classloader".
 * The startup / agent / main / container classloader is in the code referred as "main classloader" or "agent classloader".
@@ -52,8 +53,6 @@ There is convenience builder PluginManagerInvoker.buildCallPluginMethod() to ach
 
 Plugin configuration
 ====================
-
-
 PluginRegistry:
 * scanPlugins(ClassLoader classLoader, String pluginPackage) - search for plugin classes (looking for @Plugin annotation) and
     process annotations
@@ -61,4 +60,3 @@ PluginRegistry:
 * getPlugin(Class<T> pluginClass, ClassLoader classLoader) - return plugin instance registered in a classloader
 * getAppClassLoader(Object plugin) - return an application classloader of a plugin instance
 
-Wa

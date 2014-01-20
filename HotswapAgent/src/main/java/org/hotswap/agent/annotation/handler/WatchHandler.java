@@ -101,7 +101,7 @@ public class WatchHandler implements PluginHandler<Watch> {
      * a class multiple time on rebuild). Use command scheduler to group same events into single invocation.
      */
     private void registerResourceListener(final PluginAnnotation<Watch> pluginAnnotation, final ClassLoader classLoader, URI uri) throws IOException {
-        pluginManager.registerResourceListener(uri, new WatchEventListener() {
+        pluginManager.getWatcher().addEventListener(classLoader, uri, new WatchEventListener() {
             @Override
             public void onEvent(WatchEvent event) {
                 if (event.isFile()) {

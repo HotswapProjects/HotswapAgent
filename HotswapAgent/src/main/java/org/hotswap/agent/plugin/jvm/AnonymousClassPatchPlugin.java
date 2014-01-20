@@ -123,7 +123,7 @@ public class AnonymousClassPatchPlugin {
     // new anonymous class, not covered by hotswap (patchAnonymousClass) - register custom transformer and
     // on event swap and unregister.
     private static void registerReplaceOnLoad(final String newName, final CtClass anonymous) {
-        hotswapTransformer.registerTransformer(newName, new ClassFileTransformer() {
+        hotswapTransformer.registerTransformer(null, newName, new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 LOGGER.trace("Anonymous class '{}' - replaced.", newName);

@@ -58,11 +58,15 @@ public class TransformHandler implements PluginHandler<Transform> {
             return false;
         }
 
-        hotswapTransformer.registerTransformer(annot.classNameRegexp(), new ClassFileTransformer() {
+        ClassLoader appClassLoader = null;
+        if (pluginAnnotation.getPlugin() != null)
+            appClassLoader = pluginManager.getPluginRegistry().getAppClassLoader(pluginAnnotation.getPlugin());
+
+        hotswapTransformer.registerTransformer(appClassLoader, annot.classNameRegexp(), new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if ((classBeingRedefined == null) ? !annot.onDefine() : !annot.onReload()) {
-                    // Hotswap reload which is the client not interested of
+                    // Hotswap reload which is the client2 not interested of
                     return classfileBuffer;
                 }
 
@@ -108,6 +112,10 @@ public class TransformHandler implements PluginHandler<Transform> {
         if (classLoader != null)
             pluginManager.initClassLoader(classLoader, protectionDomain);
 
+        // check disabled plugins
+        //noinspection unchecked
+        if (pluginManager.getPluginConfiguration(classLoader).isDisabledPlugin(pluginAnnotation.getPluginClass()))
+            return bytes;
 
         // default result
         byte[] result = bytes;

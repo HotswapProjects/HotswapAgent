@@ -11,10 +11,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardWatchEventKinds.*;
@@ -35,6 +32,10 @@ public class WatcherNIO2 implements Watcher {
     private final Map<WatchKey, Path> keys;
     private final Map<Path, List<WatchEventListener>> listeners = new HashMap<Path, List<WatchEventListener>>();
 
+    // keep track about which classloader requested which event
+    protected Map<WatchEventListener, ClassLoader> classLoaderListeners = new HashMap<WatchEventListener, ClassLoader>();
+
+
     Thread runner;
     boolean stopped;
 
@@ -49,22 +50,50 @@ public class WatcherNIO2 implements Watcher {
     }
 
     @Override
-    public synchronized void addEventListener(URI pathPrefix, WatchEventListener listener) {
+    public synchronized void addEventListener(ClassLoader classLoader, URI pathPrefix, WatchEventListener listener) {
+        try {
+            addDirectory(pathPrefix);
+        } catch (IOException e) {
+            LOGGER.error("Unable to watch path with prefix '{}' for changes.", e, pathPrefix);
+            return;
+        }
+
         List<WatchEventListener> list = listeners.get(Paths.get(pathPrefix));
         if (list == null) {
             list = new ArrayList<WatchEventListener>();
             listeners.put(Paths.get(pathPrefix), list);
         }
         list.add(listener);
+
+        if (classLoader != null)
+            classLoaderListeners.put(listener, classLoader);
     }
 
     @Override
-    public void addEventListener(URL pathPrefix, WatchEventListener listener) {
+    public void addEventListener(ClassLoader classLoader, URL pathPrefix, WatchEventListener listener) {
         try {
-            addEventListener(pathPrefix.toURI(), listener);
+            addEventListener(classLoader, pathPrefix.toURI(), listener);
         } catch (URISyntaxException e) {
             throw new RuntimeException("Unable to convert URL to URI " + pathPrefix, e);
         }
+    }
+
+    /**
+     * Remove all transformers registered with a classloader
+     * @param classLoader
+     */
+    public void closeClassLoader(ClassLoader classLoader) {
+        for (Iterator<Map.Entry<WatchEventListener, ClassLoader>> entryIterator = classLoaderListeners.entrySet().iterator();
+             entryIterator.hasNext(); ) {
+            Map.Entry<WatchEventListener, ClassLoader> entry = entryIterator.next();
+            if (entry.getValue().equals(classLoader)) {
+                entryIterator.remove();
+                for (List<WatchEventListener> transformerList : listeners.values())
+                    transformerList.remove(entry.getKey());
+            }
+        }
+
+        LOGGER.debug("All watch listeners removed for classLoader {}", classLoader);
     }
 
     /**
@@ -73,6 +102,10 @@ public class WatcherNIO2 implements Watcher {
     public void addDirectory(URI path) throws IOException {
         try {
             Path dir = Paths.get(path);
+
+            if (keys.values().contains(dir))
+                return;
+
             registerAll(dir);
         } catch (IllegalArgumentException e) {
             throw new IOException("Invalid URI format " + path, e);

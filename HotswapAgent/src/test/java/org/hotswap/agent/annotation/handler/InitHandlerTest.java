@@ -27,7 +27,7 @@ public class InitHandlerTest {
         InitHandler initHandler = new InitHandler(pluginManager);
 
         Method method = SimplePlugin.class.getMethod("initPlugin", PluginManager.class);
-        PluginAnnotation<Init> pluginAnnotation = new PluginAnnotation<Init>(
+        PluginAnnotation<Init> pluginAnnotation = new PluginAnnotation<Init>(SimplePlugin.class,
                 simplePlugin, method.getAnnotation(Init.class), method);
         assertTrue("Init successful",
                 initHandler.initMethod(pluginAnnotation));

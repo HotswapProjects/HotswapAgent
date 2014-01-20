@@ -30,7 +30,6 @@ public class WatcherNIO2Test {
         watcher = new WatcherFactory().getWatcher();
         temp = Files.createTempDirectory("watcherNIO2Test");
 
-        watcher.addDirectory(temp.toUri());
         watcher.run();
     }
 
@@ -42,7 +41,7 @@ public class WatcherNIO2Test {
     @Test
     public void createFile() throws IOException {
         final ResultHolder resultHolder = new ResultHolder();
-        watcher.addEventListener(temp.toUri(), new WatchEventListener() {
+        watcher.addEventListener(null, temp.toUri(), new WatchEventListener() {
             @Override
             public void onEvent(WatchEvent event) {
                 assertEquals("New file event type", WatchEvent.WatchEventType.CREATE, event.getEventType());
@@ -62,8 +61,7 @@ public class WatcherNIO2Test {
     public void testTargetClasses() throws Exception {
         URI uri = new URI("file:/J:/HotswapAgent/target/classes/");
         final ResultHolder resultHolder = new ResultHolder();
-        watcher.addDirectory(uri);
-        watcher.addEventListener(uri, new WatchEventListener() {
+        watcher.addEventListener(null, uri, new WatchEventListener() {
             @Override
             public void onEvent(WatchEvent event) {
                 assertTrue("File name", event.getURI().toString().endsWith("test.class"));

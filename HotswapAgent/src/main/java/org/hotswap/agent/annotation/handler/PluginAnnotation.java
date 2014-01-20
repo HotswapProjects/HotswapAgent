@@ -12,6 +12,9 @@ import java.lang.reflect.Method;
  * @author Jiri Bubnik
  */
 public class PluginAnnotation<T extends Annotation> {
+    // the main plugin class
+    Class pluginClass;
+
     // target plugin object
     Object plugin;
 
@@ -24,32 +27,25 @@ public class PluginAnnotation<T extends Annotation> {
     // annotation is on a method (and field property is empty)
     Method method;
 
-    public PluginAnnotation(Object plugin, T annotation, Method method) {
+    public PluginAnnotation(Class pluginClass, Object plugin, T annotation, Method method) {
+        this.pluginClass = pluginClass;
         this.plugin = plugin;
         this.annotation = annotation;
         this.method = method;
     }
 
-    public PluginAnnotation(Object plugin, T annotation, Field field) {
+    public PluginAnnotation(Class pluginClass, Object plugin, T annotation, Field field) {
+        this.pluginClass = pluginClass;
         this.plugin = plugin;
         this.annotation = annotation;
         this.field = field;
     }
 
     /**
-     * Resolve the plugin class (either from the plugin object or declaring class of field/method).
-     *
-     * @return plugin class
+     * Return plugin class (the plugin to which this annotation belongs - not necessarily declaring class.
      */
     public Class getPluginClass() {
-        if (plugin != null)
-            return plugin.getClass();
-        else if (field != null)
-            return field.getDeclaringClass();
-        else if (method != null)
-            return method.getDeclaringClass();
-        else
-            throw new IllegalStateException("PluginAnnotation not correctly initialized.");
+        return pluginClass;
     }
 
     public Object getPlugin() {

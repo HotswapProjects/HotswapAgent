@@ -42,9 +42,8 @@ public class ExtraPathResourceClassLoader extends ClassLoader {
         for (URL resource : watchResources) {
             try {
                 URI uri = resource.toURI();
-                watcher.addDirectory(uri);
                 LOGGER.debug("Watching directory '{}' for changes.", uri);
-                watcher.addEventListener(uri, new WatchEventListener() {
+                watcher.addEventListener(this, uri, new WatchEventListener() {
                     @Override
                     public void onEvent(WatchEvent event) {
                         try {
@@ -57,8 +56,6 @@ public class ExtraPathResourceClassLoader extends ClassLoader {
                         }
                     }
                 });
-            } catch (IOException e) {
-                LOGGER.error("Unable to add URL {} to the watcher. URL is skipped.", e, resource);
             } catch (URISyntaxException e) {
                 LOGGER.warning("Unable to convert watchResources URL '{}' to URI. URL is skipped.", e, resource);
             }

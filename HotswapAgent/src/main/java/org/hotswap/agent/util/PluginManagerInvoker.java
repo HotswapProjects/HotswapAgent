@@ -39,6 +39,21 @@ public class PluginManagerInvoker {
                 ");";
     }
 
+
+    /**
+     * Free all classloader references and close any associated plugin instance.
+     * Typical use is after webapp undeploy.
+     *
+     * @param appClassLoader clasloade to free
+     */
+    public static void callCloseClassLoader(ClassLoader appClassLoader) {
+        PluginManager.getInstance().closeClassLoader(appClassLoader);
+    }
+
+    public static String buildCallCloseClassLoader(String classLoaderVar) {
+        return "org.hotswap.agent.PluginManager.getInstance().closeClassLoader(" + classLoaderVar + ");";
+    }
+
     /**
      * Methods on plugin should be called via reflection, because the real plugin object is in parent classloader,
      * but plugin class may be defined in app classloader as well introducing ClassCastException on same class name.
