@@ -18,6 +18,7 @@
         <module>HibernatePlugin</module>
         <module>SpringPlugin</module>
         <module>JettyPlugin</module>
+        <module>TomcatPlugin</module>
         <module>ZkPlugin</module>
         <module>LogbackPlugin</module>
         <module>distribution</module>
