@@ -30,6 +30,9 @@ public class LogbackPlugin {
     @Init
     Watcher watcher;
 
+    @Init
+    ClassLoader appClassLoader;
+
     // ensure uri registered only once
     Set<URI> registeredURIs = new HashSet<URI>();
 
@@ -49,7 +52,7 @@ public class LogbackPlugin {
 
             LOGGER.debug("Watching '{}' URL for Logback configuration changes.", url);
             registeredURIs.add(uri);
-            watcher.addEventListener(uri, new WatchEventListener() {
+            watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                 @Override
                 public void onEvent(WatchEvent event) {
                     reload(configurator, url);
