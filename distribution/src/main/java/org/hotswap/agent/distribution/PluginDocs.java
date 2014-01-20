@@ -3,6 +3,7 @@ package org.hotswap.agent.distribution;
 import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.distribution.markdown.MarkdownProcessor;
+import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.scanner.ClassPathAnnotationScanner;
 import org.hotswap.agent.util.scanner.ClassPathScanner;
 
@@ -71,6 +72,12 @@ public class PluginDocs {
 
         addHtmlFooter(html);
         writeHtml(new URL(getBaseURL(getClass()) + "/target/html/plugins.html"), html.toString());
+
+
+        String mainReadme = markdownProcessor.markdownToHtml(IOUtils.streamToString(new URL(
+                getBaseURL(getClass()) + "/../README.md"
+        ).openStream()));
+        writeHtml(new URL(getBaseURL(getClass()) + "/target/html/README.html"), mainReadme);
     }
 
 

@@ -2,23 +2,23 @@ Hotswap Agent
 =============
 Java unlimited runtime class and resource redefinition.
 
-The main purpose of this project is to avoid infamous change->*restart + wait*->check development lifecycle.
+The main purpose of this project is to avoid infamous change->restart + *wait*->check development lifecycle.
 Save&Reload during development should be standard and many other languages (including C#) contain this feature.
 
 This project is still in a beta version.
 
-## Easy to start
+### Easy to start
 Download and install DCEVM Java patch + agent jar and launch your application server with options
 `-XXaltjvm=dcevm -javaagent:HotswapAgent.jar` to get working setup. Optionally add hotswap-agent.properties
 to your application to configure plugins and agent behaviour.
 
-## Plugins
+### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs special reloading mechanism to keep
 up-to-date after class redefinition (e.g. Hibernate configuration reload after new entity class is introduced).
 Hotswap agent works as a plugin system and ships preconfigured with all major framework plugins. It is easy
 to write your custom plugin even as part of your application.
 
-## IDE support
+### IDE support
 None needed :) Really, all changes are transparent and all you need to do is to download patch+agent and
 setup your application / application server. Because we use standard java hotswap behaviour, your IDE will
 work as expected. However, we work on IDE plugins to help with download & configuration.
@@ -26,7 +26,7 @@ work as expected. However, we work on IDE plugins to help with download & config
 
 Quick start:
 ===========
-## Install
+### Install
 1. download [latest release](//TODO) and unpack it's contents. You will need `jvm.dll` and `HotswapAgent.jar` files.
 1. check that you have installed *JDK 1.7.0_45 Windows 64bit*, otherwise download and install [from here]
 (http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)
@@ -35,7 +35,7 @@ and put `jvm.dll` into it. For example: `C:\Program Files\Java\jdk1.7.0_45\jre\b
 other platform/version, currently you need to compile the file yourself from the [source](https://github.com/Guidewire/DCEVM).
 1. unpack `HotswapAgent.jar` and put it anywhere on your disc. For example: `C:\java\HotswapAgent.jar`
 
-## Run your application
+### Run your application
 1. use your favorite IDE of choice
 1. add following command line java attributes:
   <pre>-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\HotswapAgent.jar</pre> You need to replace PATH_TO_AGENT with an actual
@@ -44,7 +44,7 @@ other platform/version, currently you need to compile the file yourself from the
 1. start the application in debug mode.
 1. save a resource and/or use the HotSwap feature of your IDE to reload changes
 
-## What is available?
+### What is available?
 * Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
   is hierarchy change (change the superclass or remove an interface).
 * Reload resource - resources from webapp directory are usually reloaded by application server. But what about
@@ -71,23 +71,20 @@ Detail documentation of available properties and default values can be found in 
 How does it work?
 =================
 
-DCEVM
------
+### DCEVM
 Hotswap agent does the work of reloading resources and framework configuration (Spring, Hibernate, ...),
 but it depends on standard Java hotswap mechanism to actually reload classes. Standard Java hotswap allows
 only method body change , which makes it practically unusable. DCEVM is a JRE patch witch allows almost any
 structural class change on hotswap (with an exception of a hierarchy change). Although hotswap agent works
 even with standard java, we recommend to use DCEVM (and all tutorials use DCEVM as target JVM).
 
-Hotswap agent
--------------
+### Hotswap agent
 Hotswap agent is a plugin container with plugin manager, plugin registry, and several agent services
 (e.g. to watch for class/resource change). It helps with common tasks and classloading issues. It scans classpath
 for class annotated with @Plugin annotation, injects agent services and registers reloading hooks. Runtime bytecode
 modification is provided by javaasist library.
 
-Plugins
--------
+### Plugins
 Plugins administered by Hotswap agent are usually targeted towards a specific framework. For example Spring plugin
 uses agent services to:
 * Modify root Spring classes to get Spring contexts and registered scan path
@@ -108,8 +105,7 @@ bean resolver cache.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
 
-Runtime overhead
-----------------
+### Runtime overhead
 It really depends on how many frameworks you use and which caches are disabled. Example measurements
 for a large, real world enterprise application based on Spring + Hibernate, run on Jetty.
 
