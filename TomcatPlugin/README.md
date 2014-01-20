@@ -1,5 +1,5 @@
 [Apache Tomcat](http://tomcat.apache.org)
-====================================
+========================================
 Configure Apache Tomcat with extraClasspath property.
 
 Configuration
@@ -26,3 +26,7 @@ StandardContext (parsed web.xml configuration):
 ApplicationContext:
 * getResource(String path) - override webapp directory location
 * ClassLoader getClassLoader()  -> ClassLoader result = context.getLoader().getClassLoader();
+
+TODO
+----
+* add webappPath property

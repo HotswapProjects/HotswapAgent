@@ -23,7 +23,7 @@ import java.net.URLClassLoader;
  *
  * @author Jiri Bubnik
  */
-@Plugin(name = "Apache Tomcat", description = "Catalina based servlet containers.",
+@Plugin(name = "Tomcat", description = "Catalina based servlet containers.",
         testedVersions = {"7.0.50"},
         expectedVersions = {""}
 )
