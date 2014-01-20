@@ -9,14 +9,18 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
 import org.hotswap.agent.util.HotswapTransformer;
+import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.watch.WatchEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.Enumeration;
 
 /**
  * Spring plugin.
@@ -67,7 +71,7 @@ public class SpringPlugin {
     public void registerComponentScanBasePackage(final String basePackage) {
         LOGGER.info("Registering basePackage {}", basePackage);
 
-        hotswapTransformer.registerTransformer(basePackage + ".*", new ClassFileTransformer() {
+        hotswapTransformer.registerTransformer(appClassLoader, basePackage + ".*", new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if (classBeingRedefined != null) {
@@ -78,15 +82,33 @@ public class SpringPlugin {
             }
         });
 
-        watcher.addEventListener(appClassLoader.getResource(basePackage.replace(".", "/")), new WatchEventListener() {
-            @Override
-            public void onEvent(WatchEvent event) {
-                if (event.isFile() && event.getURI().toString().endsWith(".class")) {
-                    scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                            basePackage, event), WAIT_FOR_HOTSWAP_ON_CREATE);
-                }
+        Enumeration<URL> resourceUrls = null;
+        try {
+            resourceUrls = appClassLoader.getResources(basePackage.replace(".", "/"));
+        } catch (IOException e) {
+            LOGGER.error("Unable to resolve base package {} in classloader {}.", basePackage, appClassLoader);
+            return;
+        }
+
+        while (resourceUrls.hasMoreElements()) {
+            URL basePackageURL = resourceUrls.nextElement();
+
+            if (!IOUtils.isFileURL(basePackageURL)) {
+                LOGGER.debug("Spring basePackage '{}' - unable to watch files on URL '{}' for changes (JAR file?), limited hotswap reload support. " +
+                        "Use extraClassPath configuration to locate class file on filesystem.", basePackage, basePackageURL);
+                continue;
+            } else {
+                watcher.addEventListener(appClassLoader, basePackageURL, new WatchEventListener() {
+                    @Override
+                    public void onEvent(WatchEvent event) {
+                        if (event.isFile() && event.getURI().toString().endsWith(".class")) {
+                            scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
+                                    basePackage, event), WAIT_FOR_HOTSWAP_ON_CREATE);
+                        }
+                    }
+                });
             }
-        });
+        }
     }
 
     /**
@@ -108,8 +130,12 @@ public class SpringPlugin {
             constructor.insertBeforeBody(src.toString());
         }
 
+        // freezeConfiguration cannot be disabled because of performance degradation
+        // instead call freezeConfiguration after each bean (re)definition and clear all caches.
         CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
-        method.setBody("{}");
+        method.insertBefore(
+                "allBeanNamesByType.clear(); " +
+                        "singletonBeanNamesByType.clear();");
     }
 
     @Transform(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")

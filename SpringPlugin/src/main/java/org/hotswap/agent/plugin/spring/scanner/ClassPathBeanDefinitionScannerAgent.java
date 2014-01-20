@@ -156,6 +156,8 @@ public class ClassPathBeanDefinitionScannerAgent {
             LOGGER.reload("Registering Spring bean '{}'", beanName);
             LOGGER.debug("Bean definition '{}'", beanName, candidate);
             registerBeanDefinition(definitionHolder, registry);
+
+            freezeConfiguration();
         }
     }
 
@@ -178,6 +180,14 @@ public class ClassPathBeanDefinitionScannerAgent {
         }
     }
 
+    // rerun freez configuration - this method is enhanced with cache reset
+    private void freezeConfiguration() {
+        if (registry instanceof DefaultListableBeanFactory) {
+            ((DefaultListableBeanFactory)registry).freezeConfiguration();
+        } else if (registry instanceof GenericApplicationContext) {
+            (((GenericApplicationContext) registry).getDefaultListableBeanFactory()).freezeConfiguration();
+        }
+    }
 
     /**
      * Resolve bean definition from class definition if applicable.

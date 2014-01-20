@@ -35,7 +35,7 @@ public class ResetSpringStaticCaches {
             // noinspection unchecked
             Map<Class, Map> typeVariableCache = (Map<Class, Map>) field.get(null);
             typeVariableCache.clear();
-            LOGGER.debug("Cache cleared: GenericTypeResolver.typeVariableCache");
+            LOGGER.trace("Cache cleared: GenericTypeResolver.typeVariableCache");
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clear GenericTypeResolver.typeVariableCache", e);
         }
@@ -48,7 +48,7 @@ public class ResetSpringStaticCaches {
             // noinspection unchecked
             Map<Class, Boolean> annotatedInterfaceCache = (Map<Class, Boolean>) field.get(null);
             annotatedInterfaceCache.clear();
-            LOGGER.debug("Cache cleared: AnnotationUtils.annotatedInterfaceCache");
+            LOGGER.trace("Cache cleared: AnnotationUtils.annotatedInterfaceCache");
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clear AnnotationUtils.annotatedInterfaceCache", e);
         }
@@ -61,7 +61,7 @@ public class ResetSpringStaticCaches {
             // noinspection unchecked
             Map<Class, Boolean> annotationCache = (Map<Class, Boolean>) field.get(null);
             annotationCache.clear();
-            LOGGER.debug("Cache cleared: Property.annotationCache");
+            LOGGER.trace("Cache cleared: Property.annotationCache");
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clear Property.annotationCache", e);
         }

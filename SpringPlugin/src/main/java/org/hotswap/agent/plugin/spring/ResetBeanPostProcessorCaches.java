@@ -40,7 +40,7 @@ public class ResetBeanPostProcessorCaches {
             field.setAccessible(true);
             Map lifecycleMetadataCache = (Map) field.get(bpp);
             lifecycleMetadataCache.clear();
-            LOGGER.debug("Cache cleared: InitDestroyAnnotationBeanPostProcessor.lifecycleMetadataCache");
+            LOGGER.trace("Cache cleared: InitDestroyAnnotationBeanPostProcessor.lifecycleMetadataCache");
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clear InitDestroyAnnotationBeanPostProcessor.lifecycleMetadataCache", e);
         }

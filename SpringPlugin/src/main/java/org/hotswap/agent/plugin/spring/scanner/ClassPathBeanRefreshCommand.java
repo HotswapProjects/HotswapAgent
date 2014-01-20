@@ -51,13 +51,18 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     @Override
     public void executeCommand() {
         if (isDeleteEvent()) {
-            LOGGER.debug("Skip Spring reload for delete event on class '{}'", className);
+            LOGGER.trace("Skip Spring reload for delete event on class '{}'", className);
             return;
         }
 
         try {
             if (classDefinition == null) {
-                this.classDefinition = IOUtils.toByteArray(event.getURI());
+                try {
+                    this.classDefinition = IOUtils.toByteArray(event.getURI());
+                } catch (IllegalArgumentException e) {
+                    LOGGER.warning("File {} not found on filesystem (deleted?). Unable to refresh associated Spring bean.", event.getURI());
+                    return;
+                }
             }
 
             LOGGER.debug("Executing ClassPathBeanDefinitionScannerAgent.refreshClass('{}')", className);
