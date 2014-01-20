@@ -45,6 +45,12 @@
 
       <dependency>
           <groupId>org.hotswap.agent</groupId>
+          <artifactId>TomcatPlugin</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.hotswap.agent</groupId>
           <artifactId>ZkPlugin</artifactId>
           <version>${project.version}</version>
       </dependency>
@@ -86,7 +92,7 @@
         <version>2.4</version>
         <executions>
           <execution>
-            <id>distro-assembly</id>
+            <id>HotswapAgent</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
