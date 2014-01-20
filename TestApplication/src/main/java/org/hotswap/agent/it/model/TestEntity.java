@@ -3,7 +3,6 @@ package org.hotswap.agent.it.model;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 
 /**
  * Test entity
@@ -13,7 +12,7 @@ public class TestEntity {
     @Id
     @GeneratedValue
     private Long id;
-    @Transient
+
     private String name;
 
     //@Transient

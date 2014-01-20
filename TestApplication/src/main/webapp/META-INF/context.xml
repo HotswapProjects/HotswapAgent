@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tomcat configuration -->
+<Context antiJARLocking="true" path="/TestApplication">
+	<Resource auth="Container" driverClassName="org.hsqldb.jdbcDriver" name="jdbc/ToDoDB"
+              type="javax.sql.DataSource" url="jdbc:hsqldb:file:runtime/data/agent-test.hsqldb"
+              username="SA" password="test"/>
+</Context>
