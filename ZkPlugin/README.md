@@ -9,6 +9,9 @@ setting explicitly in zk.xml.
 * Reload [ZK Labels](http://books.zkoss.org/wiki/ZK_Developer's_Reference/Internationalization/Labels) -
     Clear Labels cache after any .properties file change.
 * ZUL properties resolver - clear org.zkoss.zel.BeanELResolver caches after any class change
+* Method caches for Binding:
+    * BindComposer - clear afterCompose method cache after any class change
+    * BinderImpl - clear initMethodCache, commanMethodCache, globalCommandMethodCache after any class change
 
 
 #### Implementation notes:

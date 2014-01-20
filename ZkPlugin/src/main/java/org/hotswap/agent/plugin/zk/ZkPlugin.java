@@ -10,8 +10,10 @@ import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -147,6 +149,9 @@ public class ZkPlugin {
         Method binderImplMethod = classLoader.loadClass("org.zkoss.bind.impl.BinderImpl").getDeclaredMethod("__resetCache");
         for (Object registerBinderImpl : registerBinderImpls)
             binderImplMethod.invoke(registerBinderImpl);
+
+        Field afterComposeMethodCache = classLoader.loadClass("org.zkoss.bind.BindComposer").getDeclaredField("_afterComposeMethodCache");
+        ((Map)afterComposeMethodCache.get(null)).clear();
     }
 
 }
