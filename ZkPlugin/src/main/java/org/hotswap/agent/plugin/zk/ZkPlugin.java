@@ -151,6 +151,7 @@ public class ZkPlugin {
             binderImplMethod.invoke(registerBinderImpl);
 
         Field afterComposeMethodCache = classLoader.loadClass("org.zkoss.bind.BindComposer").getDeclaredField("_afterComposeMethodCache");
+        afterComposeMethodCache.setAccessible(true);
         ((Map)afterComposeMethodCache.get(null)).clear();
     }
 
