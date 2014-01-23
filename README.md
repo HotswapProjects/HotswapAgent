@@ -23,7 +23,6 @@ None needed :) Really, all changes are transparent and all you need to do is to 
 setup your application / application server. Because we use standard java hotswap behaviour, your IDE will
 work as expected. However, we work on IDE plugins to help with download & configuration.
 
-
 Quick start:
 ===========
 ### Install
@@ -41,7 +40,10 @@ other platform/version, currently you need to compile the file yourself from the
 1. add following command line java attributes:
   <pre>-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\HotswapAgent.jar</pre> You need to replace PATH_TO_AGENT with an actual
   directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\HotswapAgent.jar YourApp`.
-1. (optional) create a file named "hotswap-agent.properties" inside your resources direcotry, available properties: <https://github.com/HotswapProjects/HotswapAgent/HotswapAgent/blob/master/src/main/resources/hotswap-agent.properties/>
+  See [IntelliJ IDEA](https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss)
+  and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides.
+1. (optional) create a file named "hotswap-agent.properties" inside your resources direcotry, see available properties and
+  default values: <https://github.com/HotswapProjects/HotswapAgent/blob/master/HotswapAgent/src/main/resources/hotswap-agent.properties>
 1. start the application in debug mode.
 1. save a resource and/or use the HotSwap feature of your IDE to reload changes
 
