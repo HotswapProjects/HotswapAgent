@@ -4,6 +4,7 @@ import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.annotation.Watch;
+import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.*;
@@ -45,6 +46,9 @@ public class ZkPlugin {
 
     @Init
     Scheduler scheduler;
+
+    @Init
+    ClassLoader appClassLoader;
 
 
     /**
@@ -139,20 +143,36 @@ public class ZkPlugin {
 
     // invalidate BeanELResolver caches after any class reload (it is cheap to rebuild from reflection)
     @Transform(classNameRegexp = ".*", onDefine = false)
-    public void invalidateClassCache(ClassLoader classLoader) throws Exception {
-        LOGGER.debug("Refreshing ZK BeanELResolver and BinderImpl caches.");
+    public void invalidateClassCache() throws Exception {
+        scheduler.scheduleCommand(invalidateClassCache);
+    }
 
-        Method beanElResolverMethod = classLoader.loadClass("org.zkoss.zel.BeanELResolver").getDeclaredMethod("__resetCache");
-        for (Object registeredBeanELResolver : registeredBeanELResolvers)
-            beanElResolverMethod.invoke(registeredBeanELResolver);
+    // schedule refresh in case of multiple class redefinition to merge command executions
+    private Command invalidateClassCache = new Command() {
+        @Override
+        public void executeCommand() {
+            LOGGER.debug("Refreshing ZK BeanELResolver and BinderImpl caches.");
 
-        Method binderImplMethod = classLoader.loadClass("org.zkoss.bind.impl.BinderImpl").getDeclaredMethod("__resetCache");
-        for (Object registerBinderImpl : registerBinderImpls)
-            binderImplMethod.invoke(registerBinderImpl);
+            try {
+                Method beanElResolverMethod = resolveClass("org.zkoss.zel.BeanELResolver").getDeclaredMethod("__resetCache");
+                for (Object registeredBeanELResolver : registeredBeanELResolvers)
+                    beanElResolverMethod.invoke(registeredBeanELResolver);
 
-        Field afterComposeMethodCache = classLoader.loadClass("org.zkoss.bind.BindComposer").getDeclaredField("_afterComposeMethodCache");
-        afterComposeMethodCache.setAccessible(true);
-        ((Map)afterComposeMethodCache.get(null)).clear();
+                Method binderImplMethod = resolveClass("org.zkoss.bind.impl.BinderImpl").getDeclaredMethod("__resetCache");
+                for (Object registerBinderImpl : registerBinderImpls)
+                    binderImplMethod.invoke(registerBinderImpl);
+
+                Field afterComposeMethodCache = resolveClass("org.zkoss.bind.BindComposer").getDeclaredField("_afterComposeMethodCache");
+                afterComposeMethodCache.setAccessible(true);
+                ((Map)afterComposeMethodCache.get(null)).clear();
+            } catch (Exception e) {
+                LOGGER.error("Error refreshing ZK BeanELResolver and BinderImpl caches.", e);
+            }
+        }
+    };
+
+    private Class<?> resolveClass(String name) throws ClassNotFoundException {
+        return Class.forName(name, true, appClassLoader);
     }
 
 }
