@@ -23,12 +23,14 @@ public class HibernateRefreshCommands {
     public static boolean reloadFlag = false;
 
     public static void reloadEntityManagerFactory() {
+        LOGGER.debug("Refreshing hibernate configuration.");
         EntityManagerFactoryProxy.refreshProxiedFactories();
         LOGGER.reload("Hibernate EntityMangerFactory configuration refreshed.");
         reloadFlag = false;
     }
 
     public static void reloadSessionFactory() {
+        LOGGER.debug("Refreshing SessionFactory configuration.");
         SessionFactoryProxy.refreshProxiedFactories();
         LOGGER.reload("Hibernate SessionFactory configuration refreshed.");
         reloadFlag = false;

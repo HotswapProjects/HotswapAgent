@@ -75,12 +75,11 @@ public class HibernatePlugin {
 
     // reload the configuration - schedule a command to run in the application classloader and merge
     // duplicate commands.
-    private void refresh(long timeout) {
-        LOGGER.debug("Refreshing hibernate configuration.");
+    private void refresh(int timeout) {
         if (hibernateEjb)
-            scheduler.scheduleCommand(reloadEntityManagerFactoryCommand);
+            scheduler.scheduleCommand(reloadEntityManagerFactoryCommand, timeout);
         else
-            scheduler.scheduleCommand(reloadSessionFactoryCommand);
+            scheduler.scheduleCommand(reloadSessionFactoryCommand, timeout);
     }
 
 
