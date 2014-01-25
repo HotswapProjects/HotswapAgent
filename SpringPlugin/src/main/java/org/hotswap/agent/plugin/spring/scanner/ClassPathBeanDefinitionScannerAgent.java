@@ -136,29 +136,32 @@ public class ClassPathBeanDefinitionScannerAgent {
      *
      * @param candidate the candidate to reload
      */
-    public synchronized void defineBean(BeanDefinition candidate) {
-        ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
-        candidate.setScope(scopeMetadata.getScopeName());
-        String beanName = this.beanNameGenerator.generateBeanName(candidate, registry);
-        if (candidate instanceof AbstractBeanDefinition) {
-            postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
+    public void defineBean(BeanDefinition candidate) {
+        synchronized (getClass()) { // TODO sychronize on DefaultListableFactory.beanDefinitionMap?
+            ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
+            candidate.setScope(scopeMetadata.getScopeName());
+            String beanName = this.beanNameGenerator.generateBeanName(candidate, registry);
+            if (candidate instanceof AbstractBeanDefinition) {
+                postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
+            }
+            if (candidate instanceof AnnotatedBeanDefinition) {
+                processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
+            }
+
+            removeIfExists(beanName);
+
+            if (checkCandidate(beanName, candidate)) {
+                BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+                definitionHolder = applyScopedProxyMode(scopeMetadata, definitionHolder, registry);
+
+                LOGGER.reload("Registering Spring bean '{}'", beanName);
+                LOGGER.debug("Bean definition '{}'", beanName, candidate);
+                registerBeanDefinition(definitionHolder, registry);
+
+                freezeConfiguration();
+            }
         }
-        if (candidate instanceof AnnotatedBeanDefinition) {
-            processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
-        }
 
-        removeIfExists(beanName);
-
-        if (checkCandidate(beanName, candidate)) {
-            BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
-            definitionHolder = applyScopedProxyMode(scopeMetadata, definitionHolder, registry);
-
-            LOGGER.reload("Registering Spring bean '{}'", beanName);
-            LOGGER.debug("Bean definition '{}'", beanName, candidate);
-            registerBeanDefinition(definitionHolder, registry);
-
-            freezeConfiguration();
-        }
     }
 
     /**

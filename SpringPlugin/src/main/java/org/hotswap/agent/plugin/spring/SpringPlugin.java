@@ -132,10 +132,20 @@ public class SpringPlugin {
 
         // freezeConfiguration cannot be disabled because of performance degradation
         // instead call freezeConfiguration after each bean (re)definition and clear all caches.
+
+        // WARNING - allowRawInjectionDespiteWrapping is not safe, however without this
+        //   spring was not able to resolve circular references correctly.
+        //   However, the code in AbstractAutowireCapableBeanFactory.doCreateBean() in debugger always
+        //   showed that exposedObject == earlySingletonReference and hence everything is Ok.
+        // 				if (exposedObject == bean) {
+        //                  exposedObject = earlySingletonReference;
+        //   The waring is because I am not sure what is going on here.
+
         CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
         method.insertBefore(
                 "allBeanNamesByType.clear(); " +
-                        "singletonBeanNamesByType.clear();");
+                        "singletonBeanNamesByType.clear(); " +
+                        "setAllowRawInjectionDespiteWrapping(true); ");
     }
 
     @Transform(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")

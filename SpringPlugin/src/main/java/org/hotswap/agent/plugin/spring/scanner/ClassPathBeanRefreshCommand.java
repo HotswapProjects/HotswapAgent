@@ -60,7 +60,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
                 try {
                     this.classDefinition = IOUtils.toByteArray(event.getURI());
                 } catch (IllegalArgumentException e) {
-                    LOGGER.warning("File {} not found on filesystem (deleted?). Unable to refresh associated Spring bean.", event.getURI());
+                    LOGGER.debug("File {} not found on filesystem (deleted?). Unable to refresh associated Spring bean.", event.getURI());
                     return;
                 }
             }
