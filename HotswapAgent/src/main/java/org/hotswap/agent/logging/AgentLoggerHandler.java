@@ -14,7 +14,7 @@ import java.util.Date;
 public class AgentLoggerHandler {
 
     // stream to receive the log
-    PrintStream outputStream = System.out;
+    PrintStream outputStream;
 
     SimpleDateFormat sdf = new SimpleDateFormat("H:m:s.SSS");
 
@@ -27,9 +27,12 @@ public class AgentLoggerHandler {
         this.outputStream = outputStream;
     }
 
-    // print a message to custom stream
+    // print a message to System.out and optionally to custom stream
     protected void printMessage(String message) {
-        outputStream.println("HOTSWAP AGENT: " + sdf.format(new Date()) +  " " + message);
+        String log = "HOTSWAP AGENT: " + sdf.format(new Date()) +  " " + message;
+        System.out.println(log);
+        if (outputStream != null)
+            outputStream.println(log);
     }
 
     public void print(Class clazz, AgentLogger.Level level, String message, Throwable throwable, Object... args) {

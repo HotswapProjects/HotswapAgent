@@ -2,15 +2,19 @@ package org.hotswap.agent.config;
 
 import org.hotswap.agent.logging.AgentLogger;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.Properties;
 
 /**
- * Configure LOG level according to properties.
+ * Configure LOG level and handler according to properties.
  */
 public class LogConfigurationHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(LogConfigurationHelper.class);
 
     public static final String LOGGER_PREFIX = "LOGGER";
+    private static final String LOGFILE = "LOGFILE";
 
     /**
      * Search properties for prefix LOGGER and set level for package in format:
@@ -29,6 +33,14 @@ public class LogConfigurationHelper {
                         AgentLogger.setLevel(level);
                     else
                         AgentLogger.setLevel(classPrefix, level);
+                }
+            } else if (property.equals(LOGFILE)) {
+                String logfile = properties.getProperty(LOGFILE);
+                try {
+                    AgentLogger.getHandler().setPrintStream(new PrintStream(new File(logfile)));
+                } catch (FileNotFoundException e) {
+                    LOGGER.error("Invalid configuration property {} value '{}'. Unable to create/open the file.",
+                            e, LOGFILE, logfile);
                 }
             }
         }

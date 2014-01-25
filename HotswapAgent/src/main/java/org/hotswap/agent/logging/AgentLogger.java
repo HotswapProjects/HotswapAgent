@@ -40,6 +40,10 @@ public class AgentLogger {
         AgentLogger.handler = handler;
     }
 
+    public static AgentLoggerHandler getHandler() {
+        return handler;
+    }
+
     /**
      * Standard logging levels.
      */

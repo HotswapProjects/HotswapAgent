@@ -220,10 +220,10 @@ public class TransformHandler implements PluginHandler<Transform> {
 
 
     /**
-     * Skip javassist synthetic classes.
+     * Skip proxy and javassist synthetic classes.
      */
     protected boolean isSynthaticClass(String className) {
-        return className.contains("$$_javassist");
+        return className.contains("$$_javassist") || className.startsWith("com/sun/proxy");
     }
 
 }
