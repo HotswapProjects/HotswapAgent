@@ -5,12 +5,12 @@ import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.watch.WatchEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.util.HashSet;
@@ -55,7 +55,8 @@ public class LogbackPlugin {
             watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                 @Override
                 public void onEvent(WatchEvent event) {
-                    reload(configurator, url);
+                    if (event.getEventType() != WatchEvent.WatchEventType.DELETE)
+                        reload(configurator, url);
                 }
             });
         } catch (Exception e) {
@@ -70,11 +71,32 @@ public class LogbackPlugin {
      * @param url          URL with configuration file
      */
     protected void reload(Object configurator, URL url) {
+
         try {
-            Class c = configurator.getClass().getClassLoader().loadClass("ch.qos.logback.core.joran.GenericConfigurator");
-            Method m = c.getDeclaredMethod("doConfigure", URL.class);
-            m.invoke(configurator, url);
-            LOGGER.reload("Logback configuration reloaded from url '{}'.", url);
+            IOUtils.toByteArray(url.toURI());
+        } catch (Exception e) {
+            LOGGER.warning("Unable to open logback configuration file {}, is it deleted?", url);
+            return;
+        }
+
+        try {
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (configurator) {
+                ClassLoader classLoader = configurator.getClass().getClassLoader();
+
+                Class<?> configuratorClass = classLoader.loadClass("ch.qos.logback.core.joran.GenericConfigurator");
+                Class<?> contextAwareBaseClass = classLoader.loadClass("ch.qos.logback.core.spi.ContextAwareBase");
+                Class<?> contextClass = classLoader.loadClass("ch.qos.logback.classic.LoggerContext");
+
+                // reset current context
+                Object context = contextAwareBaseClass.getDeclaredMethod("getContext").invoke(configurator);
+                contextClass.getDeclaredMethod("reset").invoke(context);
+
+                // configure the URL
+                configuratorClass.getDeclaredMethod("doConfigure", URL.class).invoke(configurator, url);
+
+                LOGGER.reload("Logback configuration reloaded from url '{}'.", url);
+            }
         } catch (Exception e) {
             LOGGER.error("Unable to reload {} with logback configurator {}", e, url, configurator);
         }
