@@ -13,7 +13,9 @@ import java.io.InputStream;
 import java.io.Writer;
 
 /**
- * Created by bubnik on 10.10.13.
+ * Simple Spring MVC controller.
+ *
+ * Note, that Spring MVC is not fully supported for reload (e.g. endpoint mapping).
  */
 @Controller
 @RequestMapping
@@ -25,6 +27,9 @@ public class IndexController {
     @Autowired
     ApplicationContext applicationContext;
 
+    /**
+     * Experiment with entities and Hibernate.
+     */
     @RequestMapping("/test")
     public String printHello(ModelMap model) {
         TestEntity a = new TestEntity("Hello world");
@@ -33,6 +38,9 @@ public class IndexController {
         return "test";
     }
 
+    /**
+     * Check reload resource behaviour - before and after change,
+     */
     @RequestMapping("/reloadResource")
     public void printHello(Writer writer) throws IOException {
         InputStream is = getClass().getResourceAsStream("/test.resource");
@@ -41,7 +49,9 @@ public class IndexController {
     }
 
     @RequestMapping("/hello")
-    public void printYaaa(Writer writer) throws IOException {
+    public void helloWorld(Writer writer) throws IOException {
+        // applicationContext.getBean instead of autowired service, because Spring MVC bean is sometimes
+        // not reloaded - will be part of Spring MVC plugin
         writer.write(applicationContext.getBean(TestEntityService.class).helloWorld());
     }
 }
