@@ -26,8 +26,8 @@ work as expected. However, we work on IDE plugins to help with download & config
 Quick start:
 ===========
 ### Install
-1. download [latest release](https://github.com/HotswapProjects/HotswapAgent/releases/download/0.1-beta1/HotswapAgent-0.1-beta1.zip)
- and unpack it's contents. You will need `jvm.dll` and `HotswapAgent.jar` files.
+1. download [latest release](https://github.com/HotswapProjects/HotswapAgent/releases/download/0.1-beta2/HotswapAgent-0.1-beta2.zip)
+ and unpack it's contents. You will need platform specific `jvm.dll` and `HotswapAgent.jar` files.
 1. check that you have installed *JDK 1.7.0_45 Windows 64bit*, otherwise download and install [from here]
 (http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)
 1. install patched Java Hotspot(r) file: inside the JDK 1.7.0_45 installation directory create new directory "jre\bin\dcevm"
@@ -45,6 +45,7 @@ other platform/version, currently you need to compile the file yourself from the
 1. (optional) create a file named "hotswap-agent.properties" inside your resources direcotry, see available properties and
   default values: <https://github.com/HotswapProjects/HotswapAgent/blob/master/HotswapAgent/src/main/resources/hotswap-agent.properties>
 1. start the application in debug mode, check that the agent and plugins are initialized correctly:
+
         HOTSWAP AGENT: 9:49:29.548 INFO (org.hotswap.agent.HotswapAgent) - Loading Hotswap agent - unlimited runtime class redefinition.
         HOTSWAP AGENT: 9:49:29.725 INFO (org.hotswap.agent.PluginRegistry) - Discovered plugins: [org.hotswap.agent.plugin.hotswapper.HotswapperPlugin, org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin, org.hotswap.agent.plugin.hibernate.HibernatePlugin, org.hotswap.agent.plugin.spring.SpringPlugin, org.hotswap.agent.plugin.jetty.JettyPlugin, org.hotswap.agent.plugin.tomcat.TomcatPlugin, org.hotswap.agent.plugin.zk.ZkPlugin, org.hotswap.agent.plugin.logback.LogbackPlugin]
         ...
@@ -127,8 +128,22 @@ for a large, real world enterprise application based on Spring + Hibernate, run 
 
 How to write a plugin
 =====================
-(check exiting plugins)
-TODO documentation
+You can write plugin directly as a part of your application. Set `pluginPackages=your.plugin.package` inside
+your `hotswap-agent.properties` configuration to discover `@Plugin` annotated classes. You will also need
+agent JAR dependency to compile, but be careful NOT to add the JAR to your application, it must be loaded only
+as a javaagent. Maven dependency:
+
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>HotswapAgent</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+(Note that the JAR is not yet in central maven repository - you need to build it from source first).
+
+See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgent/blob/master/TestApplication/src/main/java/org/hotswap/agent/it/plugin/ExamplePlugin.java)
+(part of TestApplication) to go through a commented simple plugin. Read [agent readme](https://github.com/HotswapProjects/HotswapAgent/tree/master/HotswapAgent)
+ to understand agent concepts. Check existing plugins source code for more examples.
 
 Credits
 =======
