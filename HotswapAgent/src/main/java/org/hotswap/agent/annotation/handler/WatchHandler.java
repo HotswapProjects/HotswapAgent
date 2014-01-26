@@ -86,8 +86,10 @@ public class WatchHandler implements PluginHandler<Watch> {
             try {
                 Path watchResourcePath = Paths.get(url.toURI());
                 Path pathInWatchResource = watchResourcePath.resolve(path);
-                LOGGER.debug("Registering resource listener on watchResources URI {}", pathInWatchResource.toUri());
-                registerResourceListener(pluginAnnotation, classLoader, pathInWatchResource.toUri());
+                if (pathInWatchResource.toFile().exists()) {
+                    LOGGER.debug("Registering resource listener on watchResources URI {}", pathInWatchResource.toUri());
+                    registerResourceListener(pluginAnnotation, classLoader, pathInWatchResource.toUri());
+                }
             } catch (URISyntaxException e) {
                 LOGGER.error("Unable convert watch resource path URL {} to URI", e, url);
             }

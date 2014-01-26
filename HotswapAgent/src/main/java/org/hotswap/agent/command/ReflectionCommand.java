@@ -18,6 +18,11 @@ public class ReflectionCommand implements Command {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ReflectionCommand.class);
 
     /**
+     * Run the method on target object.
+     */
+    private Object target;
+
+    /**
      * Run a method in the class - if null, run a method on this object, otherwise create new instance of className.
      */
     private String className;
@@ -69,16 +74,28 @@ public class ReflectionCommand implements Command {
         this.methodName = methodName;
     }
 
+    /**
+     * Define a command on target object.
+     */
+    public ReflectionCommand(Object target, String methodName, Object... params) {
+        this.target = target;
+        this.methodName = methodName;
+        this.params = Arrays.asList(params);
+    }
+
 
     @Override
     public String toString() {
         return "Command{" +
-                "class='" + (className == null ? plugin : className) + '\'' +
-                ", methodName='" + methodName + '\'' +
+                "class='" + getClassName() + '\'' +
+                ", methodName='" + getMethodName() + '\'' +
                 '}';
     }
 
     public String getClassName() {
+        if (className == null && target != null)
+            className = target.getClass().getName();
+
         return className;
     }
 
@@ -91,8 +108,12 @@ public class ReflectionCommand implements Command {
     }
 
     public ClassLoader getTargetClassLoader() {
-        if (targetClassLoader == null)
-            targetClassLoader = PluginManager.getInstance().getPluginRegistry().getAppClassLoader(plugin);
+        if (targetClassLoader == null) {
+            if (target != null)
+                targetClassLoader = target.getClass().getClassLoader();
+            else
+                targetClassLoader = PluginManager.getInstance().getPluginRegistry().getAppClassLoader(plugin);
+        }
 
         return targetClassLoader;
     }
@@ -125,7 +146,7 @@ public class ReflectionCommand implements Command {
 
         Object result = null;
         try {
-            result = doExecuteReflectionCommand(targetClassLoader, className, method, params);
+            result = doExecuteReflectionCommand(targetClassLoader, className, target, method, params);
         } catch (ClassNotFoundException e) {
             LOGGER.error("Class {} not found in classloader {}", e, className, targetClassLoader);
         } catch (NoClassDefFoundError e) {
@@ -146,7 +167,7 @@ public class ReflectionCommand implements Command {
             listener.commandExecuted(result);
     }
 
-    protected Object doExecuteReflectionCommand(ClassLoader targetClassLoader, String className, String method, List<Object> params) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+    protected Object doExecuteReflectionCommand(ClassLoader targetClassLoader, String className, Object target, String method, List<Object> params) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         Class<?> classInAppClassLoader = Class.forName(className, true, targetClassLoader);
 
         LOGGER.debug("Executing command: requestedClassLoader={}, resolvedClassLoader={}, class={}, method={}, params={}",
@@ -164,6 +185,6 @@ public class ReflectionCommand implements Command {
 
         Method m = classInAppClassLoader.getDeclaredMethod(method, paramTypes);
 
-        return m.invoke(null, params.toArray());
+        return m.invoke(target, params.toArray());
     }
 }
