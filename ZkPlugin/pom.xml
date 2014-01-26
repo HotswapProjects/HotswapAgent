@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.hotswap.agent</groupId>
         <artifactId>HotswapAgentParent</artifactId>
-        <version>0.1-beta1</version>
+        <version>0.1-beta2</version>
     </parent>
 
     <artifactId>ZkPlugin</artifactId>
