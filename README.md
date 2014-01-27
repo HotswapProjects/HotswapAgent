@@ -27,11 +27,11 @@ Quick start:
 ===========
 ### Install
 1. download [latest release](https://github.com/HotswapProjects/HotswapAgent/releases/download/0.1-beta2/HotswapAgent-0.1-beta2.zip)
- and unpack it's contents. You will need platform specific `jvm.dll` and `HotswapAgent.jar` files.
-1. check that you have installed *JDK 1.7.0_45 Windows 64bit*, otherwise download and install [from here]
+ and unpack it's contents. You will need platform specific `jvm.dll`(windows) or `lib*.so`(linux) and `HotswapAgent.jar` files.
+1. check that you have installed *JDK 1.7.0_45 64bit*, otherwise download and install [from here]
 (http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)
 1. install patched Java Hotspot(r) file: inside the JDK 1.7.0_45 installation directory create new directory "jre\bin\dcevm"
-and put `jvm.dll` into it. For example: `C:\Program Files\Java\jdk1.7.0_45\jre\bin\dcevm\jvm.dll`. (Should you need
+and put `jvm.dll`/`lib*.so` into it. For example: `C:\Program Files\Java\jdk1.7.0_45\jre\bin\dcevm\jvm.dll`. (Should you need
 other platform/version, currently you need to compile the file yourself from the [source](https://github.com/Guidewire/DCEVM).
 1. unpack `HotswapAgent.jar` and put it anywhere on your disc. For example: `C:\java\HotswapAgent.jar`
 
