@@ -19,7 +19,7 @@ import java.util.List;
 public class TestEntityService {
 
     @Autowired
-    TestRepository testRepository2;
+    TestRepository testRepository;
 
     @PersistenceContext
     EntityManager entityManager;
@@ -36,16 +36,16 @@ public class TestEntityService {
 
     // return text from repository and ExamplePlugin values.
     public String helloWorld() {
-        String hello = testRepository2.helloWorld();
+        String hello = testRepository.helloWorld();
 
         if (examplePluginResourceText != null)
             hello += "\n" + examplePluginResourceText;
 
         if (loadedClasses > 0)
-            hello += "\n xLoaded classes since plugin initialization: " + loadedClasses;
+            hello += "\nLoaded classes since plugin initialization: " + loadedClasses;
 
         if (reloadedClasses > 0)
-            hello += "\n xReloaded classes since plugin initialization: " + reloadedClasses;
+            hello += "\nReloaded classes since plugin initialization: " + reloadedClasses;
 
         return hello;
     }

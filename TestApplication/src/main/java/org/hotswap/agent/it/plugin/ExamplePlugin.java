@@ -130,8 +130,8 @@ public class ExamplePlugin {
     /**
      * Count how many classes were reloaded via hotswap after the plugin is initialized.
      *
-     * (Note - if you test the behaviour, do not hotswap the TestEntityService itself - it will call itself
-     *  and hang. If you change TestRepository, the TestEntityService will be recreated as well - try it).
+     * (Note - if you test the behaviour and reload TestEntityService or TestRepository - the spring bean
+     *  gets reloaded and new instance is created, try the behaviour).
      */
     @Transform(classNameRegexp = ".*", onDefine = false)
     public void reloadClass(String className) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {

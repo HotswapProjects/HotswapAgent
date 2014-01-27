@@ -9,7 +9,7 @@ You need to specify java startup properties:
 It is preconfigured with maven jetty plugin, run:
 * mvn clean package
 * mvn jetty:run
-* launch web browser on http://localhost:9091/TestApplication/mvc/test
+* launch web browser on http://localhost:9091/TestApplication
 
 The application is preconfigured for automatic hotswap deployment (see autoHotswap property in hotswap-agent.properties).
 If you specify java startup parameters, all changes to class file will be automatically reloaded:

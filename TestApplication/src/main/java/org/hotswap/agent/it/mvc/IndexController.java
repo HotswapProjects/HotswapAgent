@@ -27,10 +27,17 @@ public class IndexController {
     @Autowired
     ApplicationContext applicationContext;
 
+    @RequestMapping("/hello")
+    public void helloWorld(Writer writer) throws IOException {
+        // applicationContext.getBean instead of autowired service, because Spring MVC bean is sometimes
+        // not reloaded - will be part of Spring MVC plugin
+        writer.write(applicationContext.getBean(TestEntityService.class).helloWorld());
+    }
+
     /**
      * Experiment with entities and Hibernate.
      */
-    @RequestMapping("/test")
+    @RequestMapping("/hibernate")
     public String printHello(ModelMap model) {
         TestEntity a = new TestEntity("Hello world");
         testEntityService.addTestEntity(a);
@@ -48,10 +55,4 @@ public class IndexController {
         writer.write(s.next());
     }
 
-    @RequestMapping("/hello")
-    public void helloWorld(Writer writer) throws IOException {
-        // applicationContext.getBean instead of autowired service, because Spring MVC bean is sometimes
-        // not reloaded - will be part of Spring MVC plugin
-        writer.write(applicationContext.getBean(TestEntityService.class).helloWorld());
-    }
 }
