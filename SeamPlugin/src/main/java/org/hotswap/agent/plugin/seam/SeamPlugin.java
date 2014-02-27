@@ -27,8 +27,6 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 public class SeamPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SeamPlugin.class);
 
-    ReflectionCommand refreshLabels = new ReflectionCommand(this, "org.jboss.seam.core.SeamResourceBundle", "clearCache");
-
     ReflectionCommand flushBeanIntrospectors = new ReflectionCommand(this, "java.beans.Introspector", "flushCaches");
 
     @Init
@@ -46,7 +44,7 @@ public class SeamPlugin {
         LOGGER.debug("org.jboss.seam.init.Initialization enahnced with plugin initialization.");
     }
 
-    @Watch(path = "/", filter = ".*.properites")
+    @Watch(path = "/", filter = ".*messages_.*.properties")
     public void refreshSeamProperties() {
         scheduler.scheduleCommand(refreshLabels);
     }
@@ -83,6 +81,20 @@ public class SeamPlugin {
                 for (Object referenceCache : registeredJbossReferenceCaches) {
                     clearCacheMethod.invoke(referenceCache);
                 }
+            } catch (Exception e) {
+                LOGGER.error("Error clear in jboss ReferenceCache .", e);
+            }
+        }
+    };
+
+    private Command refreshLabels = new Command() {
+        public void executeCommand() {
+            LOGGER.debug("Refreshing Jboss resource bundles.");
+            try {
+                Class<?> clazz = resolveClass("java.util.ResourceBundle");
+                System.out.println(clazz.getClassLoader());
+                Method clearCacheMethod = clazz.getDeclaredMethod("clearCache", ClassLoader.class);
+                clearCacheMethod.invoke(null, appClassLoader);
             } catch (Exception e) {
                 LOGGER.error("Error clear in jboss ReferenceCache .", e);
             }
