@@ -1,10 +1,11 @@
 package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.CachedIntrospectionResults;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.core.convert.Property;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -17,6 +18,44 @@ import java.util.Map;
  */
 public class ResetSpringStaticCaches {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ResetSpringStaticCaches.class);
+
+    /**
+     * Spring bean by type cache.
+     *
+     * Cache names change between versions, call via reflection and ignore errors.
+     */
+    public static void resetBeanNamesByType() {
+        try {
+            Field field = DefaultListableBeanFactory.class.getDeclaredField("singletonBeanNamesByType");
+            field.setAccessible(true);
+            // noinspection unchecked
+            Map allBeanNamesByType = (Map) field.get(null);
+            allBeanNamesByType.clear();
+        } catch (Exception e) {
+            LOGGER.error("Unable to clear DefaultListableBeanFactory.singletonBeanNamesByType cache");
+        }
+
+        try {
+            Field field = DefaultListableBeanFactory.class.getDeclaredField("allBeanNamesByType");
+            field.setAccessible(true);
+            // noinspection unchecked
+            Map allBeanNamesByType = (Map) field.get(null);
+            allBeanNamesByType.clear();
+        } catch (Exception e) {
+            LOGGER.trace("Unable to clear allBeanNamesByType cache (is Ok for pre 3.2 Spring version)");
+        }
+
+        try {
+            Field field = DefaultListableBeanFactory.class.getDeclaredField("nonSingletonBeanNamesByType");
+            field.setAccessible(true);
+            // noinspection unchecked
+            Map allBeanNamesByType = (Map) field.get(null);
+            allBeanNamesByType.clear();
+        } catch (Exception e) {
+            LOGGER.debug("Unable to clear allBeanNamesByType cache (is Ok for pre 3.2 Spring version)");
+        }
+
+    }
 
     /**
      * Reset all caches.
@@ -42,28 +81,25 @@ public class ResetSpringStaticCaches {
     }
 
     private static void resetAnnotationUtilsCache() {
-        try {
-            Field field = AnnotationUtils.class.getDeclaredField("annotatedInterfaceCache");
-            field.setAccessible(true);
-            // noinspection unchecked
-            Map<Class, Boolean> annotatedInterfaceCache = (Map<Class, Boolean>) field.get(null);
+        Map annotatedInterfaceCache = (Map) ReflectionHelper.getNoException(null, AnnotationUtils.class, "annotatedInterfaceCache");
+        if (annotatedInterfaceCache != null) {
             annotatedInterfaceCache.clear();
             LOGGER.trace("Cache cleared: AnnotationUtils.annotatedInterfaceCache");
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to clear AnnotationUtils.annotatedInterfaceCache", e);
+        } else {
+            LOGGER.trace("Cache NOT cleared: AnnotationUtils.annotatedInterfaceCache not exists in target Spring verion (pre 3.1.x)");
         }
+
     }
 
     private static void resetPropetyCache() {
         try {
-            Field field = Property.class.getDeclaredField("annotationCache");
-            field.setAccessible(true);
-            // noinspection unchecked
-            Map<Class, Boolean> annotationCache = (Map<Class, Boolean>) field.get(null);
+            ClassLoader classLoader = ResetSpringStaticCaches.class.getClassLoader();
+            Map annotationCache = (Map) ReflectionHelper.get(null,
+                    classLoader.loadClass("org.springframework.core.convert.Property"), "annotationCache");
             annotationCache.clear();
             LOGGER.trace("Cache cleared: Property.annotationCache");
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to clear Property.annotationCache", e);
+            LOGGER.trace("Unable to clear Property.annotationCache (ok before Spring 3.2.x)", e);
         }
     }
 }

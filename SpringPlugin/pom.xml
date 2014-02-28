@@ -13,7 +13,7 @@
     <artifactId>SpringPlugin</artifactId>
 
     <properties>
-        <org.springframework.version>3.2.3.RELEASE</org.springframework.version>
+        <org.springframework.version>4.0.2.RELEASE</org.springframework.version>
     </properties>
 
 

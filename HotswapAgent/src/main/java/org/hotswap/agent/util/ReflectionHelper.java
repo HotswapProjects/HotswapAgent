@@ -1,5 +1,7 @@
 package org.hotswap.agent.util;
 
+import org.hotswap.agent.logging.AgentLogger;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,6 +13,8 @@ import java.util.WeakHashMap;
  * Convenience methods on java reflection API.
  */
 public class ReflectionHelper {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ReflectionHelper.class);
+
     private static Map<String, Field> fieldCache = new WeakHashMap<String, Field>();
     private static Map<String, Method> methodCache = new WeakHashMap<String, Method>();
 
@@ -77,6 +81,24 @@ public class ReflectionHelper {
             throw new IllegalArgumentException(String.format("No such field %s.%s on %s", clazz.getName(), fieldName, target), e);
         } catch (IllegalAccessException e) {
             throw new IllegalArgumentException(String.format("Illegal access field %s.%s on %s", clazz.getName(), fieldName, target), e);
+        }
+    }
+
+    /**
+     * Convenience wrapper to reflection method invoke API. Get field value and swallow exceptions.
+     * Use this method if you have multiple framework support and the field may not exist in current version.
+     *
+     * @param target    object to get field value (or null for static methods)
+     * @param clazz     class name
+     * @param fieldName field name
+     * @return field value or null if an exception
+     */
+    public static Object getNoException(Object target, Class<?> clazz, String fieldName) {
+        try {
+            return get(target, clazz, fieldName);
+        } catch (Exception e) {
+            LOGGER.trace("Error getting field {}.{} on object {}", e, clazz, fieldName, target);
+            return null;
         }
     }
 }

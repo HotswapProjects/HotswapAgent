@@ -14,7 +14,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
-      <library name="Maven: com.sun:tools:1.7.0_40">
+      <library name="Maven: com.sun:tools:1.7.0_45">
         <CLASSES>
           <root url="jar://C:/Program Files/Java/jdk1.7.0_45/lib/tools.jar!/" />
         </CLASSES>

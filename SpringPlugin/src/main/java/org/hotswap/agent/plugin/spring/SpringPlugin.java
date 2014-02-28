@@ -28,7 +28,7 @@ import java.util.Enumeration;
  * @author Jiri Bubnik
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
-        testedVersions = {"3.1"}, expectedVersions = {"3x"},
+        testedVersions = {"3.0.0", "3.1.4", "3.2.1", "4.0.2"}, expectedVersions = {"3x", "4x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class})
 public class SpringPlugin {
     /**
@@ -143,9 +143,8 @@ public class SpringPlugin {
 
         CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
         method.insertBefore(
-                "allBeanNamesByType.clear(); " +
-                        "singletonBeanNamesByType.clear(); " +
-                        "setAllowRawInjectionDespiteWrapping(true); ");
+                "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(); " +
+                "setAllowRawInjectionDespiteWrapping(true); ");
     }
 
     @Transform(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")

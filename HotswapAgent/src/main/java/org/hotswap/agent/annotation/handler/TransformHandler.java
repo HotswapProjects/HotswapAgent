@@ -66,7 +66,7 @@ public class TransformHandler implements PluginHandler<Transform> {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if ((classBeingRedefined == null) ? !annot.onDefine() : !annot.onReload()) {
-                    // Hotswap reload which is the client2 not interested of
+                    // Hotswap reload which is the client not interested of
                     return classfileBuffer;
                 }
 

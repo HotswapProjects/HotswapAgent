@@ -19,6 +19,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
+import org.springframework.core.type.classreading.MetadataReaderFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -202,7 +203,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     public BeanDefinition resolveBeanDefinition(byte[] bytes) throws IOException {
         Resource resource = new ByteArrayResource(bytes);
         resetCachingMetadataReaderFactoryCache();
-        MetadataReader metadataReader = scanner.getMetadataReaderFactory().getMetadataReader(resource);
+        MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
         if (isCandidateComponent(metadataReader)) {
             ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
             sbd.setResource(resource);
@@ -220,11 +221,28 @@ public class ClassPathBeanDefinitionScannerAgent {
         }
     }
 
+    private MetadataReaderFactory getMetadataReaderFactory() {
+        return (MetadataReaderFactory) ReflectionHelper.get(scanner, ClassPathScanningCandidateComponentProvider.class, "metadataReaderFactory");
+    }
+
     // metadataReader contains cache of loaded classes, reset this cache before BeanDefinition is resolved
     private void resetCachingMetadataReaderFactoryCache() {
-        if (scanner.getMetadataReaderFactory() instanceof CachingMetadataReaderFactory) {
-            ((CachingMetadataReaderFactory)scanner.getMetadataReaderFactory()).clearCache();
-            LOGGER.debug("Cache cleared: CachingMetadataReaderFactory.clearCache()");
+        if (getMetadataReaderFactory() instanceof CachingMetadataReaderFactory) {
+            Map metadataReaderCache = (Map) ReflectionHelper.getNoException(getMetadataReaderFactory(),
+                        CachingMetadataReaderFactory.class, "metadataReaderCache");
+
+            if (metadataReaderCache == null)
+                metadataReaderCache = (Map) ReflectionHelper.getNoException(getMetadataReaderFactory(),
+                        CachingMetadataReaderFactory.class, "classReaderCache");
+
+            if (metadataReaderCache != null) {
+                metadataReaderCache.clear();
+                LOGGER.debug("Cache cleared: CachingMetadataReaderFactory.clearCache()");
+            } else {
+                LOGGER.warning("Cache NOT cleared: neither CachingMetadataReaderFactory.metadataReaderCache nor clearCache does not exist.");
+            }
+
+
         }
     }
 
