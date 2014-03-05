@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.hotswap.agent</groupId>
+        <artifactId>HotswapAgentParent</artifactId>
+        <version>0.1-beta2</version>
+    </parent>
+
+    <artifactId>SeamPlugin</artifactId>
+
+    <properties>
+    </properties>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>HotswapAgent</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- executes test with -javaagent option -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.15</version>
+                <configuration>
+                    <argLine>-XXaltjvm=java -server -javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
