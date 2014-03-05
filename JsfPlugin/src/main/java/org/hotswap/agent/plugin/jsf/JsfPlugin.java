@@ -1,23 +1,18 @@
 package org.hotswap.agent.plugin.jsf;
 
-import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.Set;
-import java.util.WeakHashMap;
-
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.Scheduler;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
+
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 @Plugin(name = "JSF",
         description = "JSF Framework maintains Label cache and bean resolver cache.",
@@ -45,7 +40,7 @@ public class JsfPlugin {
     public static void facesServletCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("initialize");
         init.insertAfter(PluginManagerInvoker.buildInitializePlugin(JsfPlugin.class));
-        LOGGER.debug("javax.faces.webapp.FacesServlet enahnced with plugin initialization.");
+        LOGGER.debug("javax.faces.webapp.FacesServlet enhanced with plugin initialization.");
     }
 
     public void registerBeanELResolver(Object beanELResolver) {

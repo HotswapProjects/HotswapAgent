@@ -21,6 +21,8 @@
         <module>TomcatPlugin</module>
         <module>ZkPlugin</module>
         <module>LogbackPlugin</module>
+        <module>JsfPlugin</module>
+        <module>SeamPlugin</module>
         <module>distribution</module>
     </modules>
 

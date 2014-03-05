@@ -5,6 +5,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -51,8 +52,19 @@ public class WatcherNIO2 implements Watcher {
 
     @Override
     public synchronized void addEventListener(ClassLoader classLoader, URI pathPrefix, WatchEventListener listener) {
+        File path;
         try {
-            addDirectory(pathPrefix);
+            // check that it is regular file
+            // toString() is weird and solves HiarchicalUriException for URI like "file:./src/resources/file.txt".
+            path = new File(pathPrefix);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warning("Unable to watch for path {}, not a local regular file or directory.", pathPrefix);
+            LOGGER.trace("Unable to watch for path {} exception", e, pathPrefix);
+            return;
+        }
+
+        try {
+            addDirectory(path.toURI());
         } catch (IOException e) {
             LOGGER.error("Unable to watch path with prefix '{}' for changes.", e, pathPrefix);
             return;

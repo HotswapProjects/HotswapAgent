@@ -143,7 +143,7 @@ public class SpringPlugin {
 
         CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
         method.insertBefore(
-                "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(); " +
+                "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
                 "setAllowRawInjectionDespiteWrapping(true); ");
     }
 

@@ -1,10 +1,5 @@
 package org.hotswap.agent.plugin.seam;
 
-import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.Set;
-import java.util.WeakHashMap;
-
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
@@ -12,13 +7,14 @@ import org.hotswap.agent.annotation.Watch;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
+
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 @Plugin(name = "Seam",
         description = "Seam framework maintains .",
@@ -41,7 +37,7 @@ public class SeamPlugin {
     public static void seamServletCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("init");
         init.insertBefore(PluginManagerInvoker.buildInitializePlugin(SeamPlugin.class));
-        LOGGER.debug("org.jboss.seam.init.Initialization enahnced with plugin initialization.");
+        LOGGER.debug("org.jboss.seam.init.Initialization enhanced with plugin initialization.");
     }
 
     @Watch(path = "/", filter = ".*messages_.*.properties")
@@ -92,7 +88,6 @@ public class SeamPlugin {
             LOGGER.debug("Refreshing Jboss resource bundles.");
             try {
                 Class<?> clazz = resolveClass("java.util.ResourceBundle");
-                System.out.println(clazz.getClassLoader());
                 Method clearCacheMethod = clazz.getDeclaredMethod("clearCache", ClassLoader.class);
                 clearCacheMethod.invoke(null, appClassLoader);
             } catch (Exception e) {

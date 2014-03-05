@@ -24,15 +24,15 @@ public class ResetSpringStaticCaches {
      *
      * Cache names change between versions, call via reflection and ignore errors.
      */
-    public static void resetBeanNamesByType() {
+    public static void resetBeanNamesByType(DefaultListableBeanFactory defaultListableBeanFactory) {
         try {
             Field field = DefaultListableBeanFactory.class.getDeclaredField("singletonBeanNamesByType");
             field.setAccessible(true);
             // noinspection unchecked
-            Map allBeanNamesByType = (Map) field.get(null);
+            Map allBeanNamesByType = (Map) field.get(defaultListableBeanFactory);
             allBeanNamesByType.clear();
         } catch (Exception e) {
-            LOGGER.error("Unable to clear DefaultListableBeanFactory.singletonBeanNamesByType cache");
+            LOGGER.error("Unable to clear DefaultListableBeanFactory.singletonBeanNamesByType cache", e);
         }
 
         try {
