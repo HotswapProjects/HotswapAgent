@@ -10,7 +10,7 @@
         <version>0.1-beta2</version>
     </parent>
 
-    <artifactId>JsfPlugin</artifactId>
+    <artifactId>ELResolverPlugin</artifactId>
 
     <properties>
     </properties>
