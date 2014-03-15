@@ -7,8 +7,11 @@ import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.scanner.ClassPathAnnotationScanner;
 import org.hotswap.agent.util.scanner.ClassPathScanner;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -19,6 +22,7 @@ import java.net.URL;
  */
 public class PluginDocs {
 
+    public static final String TARGET_DIR = "/target/web-sources/";
     MarkdownProcessor markdownProcessor = new MarkdownProcessor();
 
     /**
@@ -62,22 +66,48 @@ public class PluginDocs {
             Plugin pluginAnnotation = (Plugin) pluginClass.getAnnotation(Plugin.class);
 
             String pluginName = pluginAnnotation.name();
-            String pluginDocFile = "plugin/" + pluginName + "/README.html";
+            String pluginDocFile = "plugin/" + pluginName + ".html";
 
-            URL url = new URL(getBaseURL(getClass()) + "/target/html/plugin/" + pluginName + "/README.html");
+            URL url = new URL(getBaseURL(getClass()) + TARGET_DIR + pluginDocFile);
             boolean docExists = markdownProcessor.processPlugin(pluginClass, url);
 
             addHtmlRow(html, pluginAnnotation, docExists ? pluginDocFile : null);
         }
 
         addHtmlFooter(html);
-        writeHtml(new URL(getBaseURL(getClass()) + "/target/html/plugins.html"), html.toString());
+        writeHtml(new URL(getBaseURL(getClass()) + TARGET_DIR + "plugins.html"), html.toString());
 
 
         String mainReadme = markdownProcessor.markdownToHtml(IOUtils.streamToString(new URL(
                 getBaseURL(getClass()) + "/../README.md"
         ).openStream()));
-        writeHtml(new URL(getBaseURL(getClass()) + "/target/html/README.html"), mainReadme);
+
+        writeMainReadme(mainReadme);
+    }
+
+    private void writeMainReadme(String mainReadme) throws MalformedURLException {
+        writeHtml(new URL(getBaseURL(getClass()) + TARGET_DIR + "README.html"), mainReadme);
+
+        // each <h1> section
+        for (String section : mainReadme.split("\\<h1\\>")) {
+            if (section.isEmpty())
+                continue;
+
+            // create label as content between <h1> and </h1>
+            int h1EndIndex = section.indexOf("</h1>");
+            if (h1EndIndex > 0) {
+                String label = section.substring(0, h1EndIndex);
+
+                // make user-friendly valid file name
+                label = label.replaceAll("\\s", "-");
+                label = label.replaceAll("[^A-Za-z0-9-]", "");
+                label = label.toLowerCase();
+
+                // name file after section name
+                writeHtml(new URL(getBaseURL(getClass()) + TARGET_DIR + "section/" + label + ".html"), "<h1>" + section);
+            }
+        }
+
     }
 
 
@@ -106,14 +136,11 @@ public class PluginDocs {
     }
 
     private void addHtmlHeader(StringBuilder html) {
-        html.append("<head></head>");
-        html.append("<body>");
         html.append("<table>");
     }
 
     private void addHtmlFooter(StringBuilder html) {
         html.append("</table>");
-        html.append("</body>");
     }
 
     private void commaSeparated(StringBuilder html, String[] strings) {
@@ -128,11 +155,28 @@ public class PluginDocs {
 
     private void writeHtml(URL url, String html) {
         try {
+            assertDirExists(url);
             PrintWriter out = new PrintWriter(url.getFile());
             out.print(html);
             out.close();
         } catch (FileNotFoundException e) {
             throw new IllegalArgumentException("Unable to open file " + url + " to write HTML content.");
+        }
+    }
+
+    /**
+     * Create all required directories in path for a file
+     */
+    public static void assertDirExists(URL targetFile) {
+        File parent = null;
+        try {
+            parent = new File(targetFile.toURI()).getParentFile();
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
+        }
+
+        if(!parent.exists() && !parent.mkdirs()){
+            throw new IllegalStateException("Couldn't create dir: " + parent);
         }
     }
 }

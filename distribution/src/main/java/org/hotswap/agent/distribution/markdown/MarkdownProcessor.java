@@ -33,7 +33,7 @@ public class MarkdownProcessor {
 
         String html = markdownToHtml(markdown);
 
-        assertDirExists(targetFile);
+        PluginDocs.assertDirExists(targetFile);
 
         try {
             PrintWriter out = new PrintWriter(targetFile.getFile());
@@ -44,20 +44,6 @@ public class MarkdownProcessor {
         }
 
         return true;
-    }
-
-    // create all required directories for a file
-    private void assertDirExists(URL targetFile) {
-        File parent = null;
-        try {
-            parent = new File(targetFile.toURI()).getParentFile();
-        } catch (URISyntaxException e) {
-            throw new IllegalStateException(e);
-        }
-
-        if(!parent.exists() && !parent.mkdirs()){
-            throw new IllegalStateException("Couldn't create dir: " + parent);
-        }
     }
 
     /**
