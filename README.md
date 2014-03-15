@@ -67,6 +67,11 @@ other platform/version, currently you need to compile the file yourself from the
 
 Should you have any problems or questions, ask at [HotswapAgent forum](https://groups.google.com/forum/#!forum/hotswapagent).
 
+This project is similar to [JRebel](http://zeroturnaround.com/software/jrebel/). Main differences are:
+* JRebel is currently more mature and contains more plugins.
+* JRebel is neither open source nor free.
+* JRebel modifies bytecode of all classes on reload. You need special IDE plugin to fix debugging.
+
 Configuration
 =============
 The basic configuration is configured reload classes and resources from classpath known to the running application
