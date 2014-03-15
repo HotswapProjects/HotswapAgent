@@ -34,7 +34,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.15</version>
                 <configuration>
-                    <argLine>-XXaltjvm=java -server -javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
+                    <argLine>-XXaltjvm=dcevm -javaagent:../HotswapAgent/target/HotswapAgent-${project.version}.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</argLine>
                 </configuration>
             </plugin>
         </plugins>

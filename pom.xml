@@ -23,6 +23,7 @@
         <module>LogbackPlugin</module>
         <module>JsfPlugin</module>
         <module>SeamPlugin</module>
+        <module>ELResolverPlugin</module>
         <module>distribution</module>
     </modules>
 
