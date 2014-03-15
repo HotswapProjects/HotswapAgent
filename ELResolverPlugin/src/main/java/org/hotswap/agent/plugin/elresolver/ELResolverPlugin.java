@@ -14,10 +14,15 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+/**
+ * Clear javax.el.BeanELResolver cache after a class is redefined.
+ *
+ * @author Vladimir Dvorak
+ */
 @Plugin(name = "ELResolver",
         description = "Maintains ELResolver bean resolver cache.",
         testedVersions = {""},
-        expectedVersions = {""})
+        expectedVersions = {"all"})
 public class ELResolverPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ELResolverPlugin.class);
 
@@ -28,48 +33,6 @@ public class ELResolverPlugin {
     ClassLoader appClassLoader;
 
     Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
-
-    @Transform(classNameRegexp = "org.apache.catalina.loader.WebappLoader")
-    public static void elCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        CtMethod startInternalMethod = ctClass.getDeclaredMethod("startInternal");
-        startInternalMethod.insertAfter(PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class));
-        LOGGER.debug("org.apache.catalina.loader.WebappLoader enahanced with plugin initialization.");
-    }
-
-    public void registerBeanELResolver(Object beanELResolver) {
-        registeredBeanELResolvers.add(beanELResolver);
-        LOGGER.debug("ELResolverPlugin - BeanELResolver registred : " + beanELResolver.getClass().getName());
-    }
-
-    @Transform(classNameRegexp = "javax.el.BeanELResolver")
-    public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
-
-        String registerThis = PluginManagerInvoker.buildCallPluginMethod("org.hotswap.agent.plugin.elresolver.ELResolverPlugin.class.getClassLoader()", ELResolverPlugin.class, "registerBeanELResolver",
-                "this", "java.lang.Object");
-        for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
-            constructor.insertAfter(registerThis);
-        }
-
-        try {
-            // JUEL, JSF BeanELResolver[s]
-            CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
-            purgeMeth.setModifiers(org.hotswap.agent.javassist.Modifier.PUBLIC);
-        }
-        catch (NotFoundException e) {
-            // Apache (Tomcat's) BeanELResolver
-            ctClass.addMethod(CtNewMethod.make("public void purgeBeanClasses(java.lang.ClassLoader classLoader) {" +
-                    "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-                    "}", ctClass));
-        }
-
-        LOGGER.debug("javax.el.BeanELResolver - added method __resetCache().");
-    }
-
-    @Transform(classNameRegexp = ".*", onDefine = false)
-    public void invalidateClassCache() throws Exception {
-        scheduler.scheduleCommand(invalidateClassCache);
-    }
-
     private Command invalidateClassCache = new Command() {
         public void executeCommand() {
             LOGGER.debug("Refreshing BeanELResolver caches.");
@@ -83,6 +46,47 @@ public class ELResolverPlugin {
             }
         }
     };
+
+    /**
+     * Hook on BeanELResolver class and for each instance:
+     * - ensure this plugin is initialized
+     * - register the instance using registerBeanELResolver() method
+     */
+    @Transform(classNameRegexp = "javax.el.BeanELResolver")
+    public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
+
+        String initPlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class);
+        String registerThis = PluginManagerInvoker.buildCallPluginMethod("org.hotswap.agent.plugin.elresolver.ELResolverPlugin.class.getClassLoader()", ELResolverPlugin.class, "registerBeanELResolver",
+                "this", "java.lang.Object");
+
+        for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
+            constructor.insertAfter(initPlugin);
+            constructor.insertAfter(registerThis);
+        }
+
+        try {
+            // JUEL, JSF BeanELResolver[s]
+            CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
+            purgeMeth.setModifiers(org.hotswap.agent.javassist.Modifier.PUBLIC);
+        } catch (NotFoundException e) {
+            // Apache (Tomcat's) BeanELResolver
+            ctClass.addMethod(CtNewMethod.make("public void purgeBeanClasses(java.lang.ClassLoader classLoader) {" +
+                    "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                    "}", ctClass));
+        }
+
+        LOGGER.debug("javax.el.BeanELResolver - added method __resetCache().");
+    }
+
+    public void registerBeanELResolver(Object beanELResolver) {
+        registeredBeanELResolvers.add(beanELResolver);
+        LOGGER.debug("ELResolverPlugin - BeanELResolver registred : " + beanELResolver.getClass().getName());
+    }
+
+    @Transform(classNameRegexp = ".*", onDefine = false)
+    public void invalidateClassCache() throws Exception {
+        scheduler.scheduleCommand(invalidateClassCache);
+    }
 
     private Class<?> resolveClass(String name) throws ClassNotFoundException {
         return Class.forName(name, true, appClassLoader);
