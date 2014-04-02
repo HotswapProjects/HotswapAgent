@@ -26,7 +26,7 @@ work as expected. However, we work on IDE plugins to help with download & config
 Quick start:
 ===========
 ### Install
-1. download [latest release](https://github.com/HotswapProjects/HotswapAgent/releases/download/0.1-beta2/HotswapAgent-0.1-beta2.zip)
+1. download [latest release](https://github.com/HotswapProjects/HotswapAgent/releases/download/0.1-beta3/HotswapAgent-0.1-beta3.zip)
  and unpack it's contents. You will need platform specific `jvm.dll`(windows) or `lib*.so`(linux) and `HotswapAgent.jar` files.
 1. check that you have installed *JDK 1.7.0_45 64bit*, otherwise download and install [from here]
 (http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)
