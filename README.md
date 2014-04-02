@@ -68,9 +68,21 @@ other platform/version, currently you need to compile the file yourself from the
 Should you have any problems or questions, ask at [HotswapAgent forum](https://groups.google.com/forum/#!forum/hotswapagent).
 
 This project is similar to [JRebel](http://zeroturnaround.com/software/jrebel/). Main differences are:
+
 * JRebel is currently more mature and contains more plugins.
 * JRebel is neither open source nor free.
 * JRebel modifies bytecode of all classes on reload. You need special IDE plugin to fix debugging.
+
+### Examples
+See [HotswapAgentExamples](https://github.com/HotswapProjects/HotswapAgentExamples) GitHub project.
+The purpose of an example application is:
+
+* to check "real world" plugin usage during plugin development
+* to provide working solution for typical application setups
+* sandbox to simulate issues for existing or new setups
+
+Feel free to fork/branch and create an application for your setup (functional, but as simple as possible).
+General setups will be merged into the master.
 
 Configuration
 =============
@@ -100,6 +112,7 @@ modification is provided by javaasist library.
 ### Plugins
 Plugins administered by Hotswap agent are usually targeted towards a specific framework. For example Spring plugin
 uses agent services to:
+
 * Modify root Spring classes to get Spring contexts and registered scan path
 * Watch for any resource change on a scan path
 * Watch for a hotswap of a class file within a scan path package
@@ -107,6 +120,7 @@ uses agent services to:
 * ... and many other
 
 Packaged plugins:
+
 * Hibernate (4x) - Reload Hibernate configuration after entity create/change.
 * Spring (3x) - Reload Spring configuration after class definition/change.
 * Jetty - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
@@ -153,10 +167,12 @@ See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgent/blob/master/
 Credits
 =======
 Hotswap agent:
+
 * Jiri Bubnik - project coordinator, initial implementation
 * Jan Tecl - web design (work in progress)
 
 DCEVM:
+
 * Thomas Würthinger - project coordinator, initial implementation.
 * Kerstin Breitender – contributor.
 * Christoph Wimberger – contributor.
