@@ -1,131 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.hotswap.agent</groupId>
-        <artifactId>HotswapAgentParent</artifactId>
+        <artifactId>hotswap-agent-parent</artifactId>
         <version>0.1-beta4-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
-  
-  <artifactId>distribution</artifactId>
 
-  <packaging>jar</packaging>
+    <artifactId>hotswap-agent</artifactId>
 
-  <name>Distribution</name>
-  
+    <packaging>jar</packaging>
 
-  <dependencies>
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>HotswapAgent</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-hibernate-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>HibernatePlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-spring-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>SpringPlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-jetty-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>JettyPlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-tomcat-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>TomcatPlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-zk-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>ZkPlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-logback-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>LogbackPlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-jsf-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>JsfPlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-seam-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.hotswap.agent</groupId>
-          <artifactId>SeamPlugin</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.pegdown</groupId>
+            <artifactId>pegdown</artifactId>
+            <version>1.4.1</version>
+        </dependency>
+    </dependencies>
 
-      <dependency>
-          <groupId>org.pegdown</groupId>
-          <artifactId>pegdown</artifactId>
-          <version>1.4.1</version>
-      </dependency>
-  </dependencies>
+    <build>
+        <plugins>
+            <!--TODO - run manually from IDE. If run from maven, unable to access JAR content-->
+            <!--<plugin>-->
+            <!--<groupId>org.codehaus.mojo</groupId>-->
+            <!--<artifactId>exec-maven-plugin</artifactId>-->
+            <!--<version>1.2.1</version>-->
+            <!--<executions>-->
+            <!--<execution>-->
+            <!--<phase>package</phase>-->
+            <!--<goals>-->
+            <!--<goal>java</goal>-->
+            <!--</goals>-->
+            <!--<configuration>-->
+            <!--<mainClass>org.hotswap.agent.distribution.PluginDocs</mainClass>-->
+            <!--</configuration>-->
+            <!--</execution>-->
+            <!--</executions>-->
+            <!--</plugin>-->
 
-  <build>
-    <plugins>
-      <!--TODO - run manually from IDE. If run from maven, unable to access JAR content-->
-      <!--<plugin>-->
-          <!--<groupId>org.codehaus.mojo</groupId>-->
-          <!--<artifactId>exec-maven-plugin</artifactId>-->
-          <!--<version>1.2.1</version>-->
-          <!--<executions>-->
-              <!--<execution>-->
-                  <!--<phase>package</phase>-->
-                  <!--<goals>-->
-                      <!--<goal>java</goal>-->
-                  <!--</goals>-->
-                  <!--<configuration>-->
-                      <!--<mainClass>org.hotswap.agent.distribution.PluginDocs</mainClass>-->
-                  <!--</configuration>-->
-              <!--</execution>-->
-          <!--</executions>-->
-      <!--</plugin>-->
-
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.4</version>
-        <executions>
-          <execution>
-            <id>HotswapAgent</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>assembly/agent/jar.xml</descriptor>
-              </descriptors>
-                <finalName>HotswapAgent</finalName>
-                <appendAssemblyId>false</appendAssemblyId>
-                <archive>
-                    <manifestEntries>
-                        <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
-                        <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                        <Can-Retransform-Classes>true</Can-Retransform-Classes>
-                    </manifestEntries>
-                </archive>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/agent/jar.xml</descriptor>
+                            </descriptors>
+                            <finalName>distribution</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <archive>
+                                <manifestEntries>
+                                    <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
+                                    <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                                    <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

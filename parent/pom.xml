@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.hotswap.agent</groupId>
-    <artifactId>HotswapAgentParent</artifactId>
+    <artifactId>hotswap-agent-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.1-beta4-SNAPSHOT</version>
     <issueManagement>
@@ -49,7 +49,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswap.agent:HotswapAgent:jar}
+                    <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswap.agent:hotswap-agent-core:jar}
                         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debug.port}
                     </argLine>
                 </configuration>
