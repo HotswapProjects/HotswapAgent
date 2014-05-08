@@ -56,7 +56,7 @@ public class ELResolverPlugin {
     public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
 
         String initPlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class);
-        String registerThis = PluginManagerInvoker.buildCallPluginMethod("org.hotswap.agent.plugin.elresolver.ELResolverPlugin.class.getClassLoader()", ELResolverPlugin.class, "registerBeanELResolver",
+        String registerThis = PluginManagerInvoker.buildCallPluginMethod(ELResolverPlugin.class, "registerBeanELResolver",
                 "this", "java.lang.Object");
 
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
