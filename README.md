@@ -178,3 +178,16 @@ DCEVM:
 * Christoph Wimberger – contributor.
 * Ivana Dubrov - update to Java7, patches, build system (Gradle)
 
+
+Creating Release
+================
+
+Got to directory representing repository root. In case DCEVM is named `dcevm`
+
+    mvn release:prepare
+    mvn release:perform
+
+In case your DCEVM is named differently i.e. `server`
+
+    mvn release:prepare -Darguments="-Ddcevm=server"
+    mvn release:perform -Darguments="-Ddcevm=server"
