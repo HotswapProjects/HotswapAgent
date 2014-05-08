@@ -4,12 +4,12 @@
 
     <parent>
         <groupId>org.hotswap.agent</groupId>
-        <artifactId>HotswapAgentParent</artifactId>
+        <artifactId>hotswap-agent-parent</artifactId>
         <version>0.1-beta4-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>SpringPlugin</artifactId>
+    <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
         <org.springframework.version>4.0.2.RELEASE</org.springframework.version>
@@ -19,7 +19,7 @@
     <dependencies>
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-            <artifactId>HotswapAgent</artifactId>
+            <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -5,12 +5,12 @@
 
     <parent>
         <groupId>org.hotswap.agent</groupId>
-        <artifactId>HotswapAgentParent</artifactId>
+        <artifactId>hotswap-agent-parent</artifactId>
         <version>0.1-beta4-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>HibernatePlugin</artifactId>
+    <artifactId>hotswap-agent-hibernate-plugin</artifactId>
 
     <properties>
         <org.hibernateframework.version>4.2.0.Final</org.hibernateframework.version>
@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-            <artifactId>HotswapAgent</artifactId>
+            <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 

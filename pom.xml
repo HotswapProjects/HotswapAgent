@@ -4,17 +4,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hotswap.agent</groupId>
-    <artifactId>HotswapAgentAgregator</artifactId>
+    <artifactId>hotswap-agent-aggregator</artifactId>
     <version>0.1-beta4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Hotswap Agent Parent POM</name>
-    <description>Parent for Hotswap Agent projects</description>
+    <name>Hotswap Agent Aggregator</name>
+    <description>Agregator for Hotswap Agent projects</description>
     <url>https://github.com/HotswapProjects/HotswapAgent</url>
 
     <modules>
         <module>parent</module>
-        <module>HotswapAgent</module>
+        <module>core</module>
         <module>HibernatePlugin</module>
         <module>SpringPlugin</module>
         <module>JettyPlugin</module>

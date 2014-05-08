@@ -5,12 +5,12 @@
 
     <parent>
         <groupId>org.hotswap.agent</groupId>
-        <artifactId>HotswapAgentParent</artifactId>
+        <artifactId>hotswap-agent-parent</artifactId>
         <version>0.1-beta4-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>HotswapAgent</artifactId>
+    <artifactId>hotswap-agent-core</artifactId>
 
     <profiles>
         <profile>

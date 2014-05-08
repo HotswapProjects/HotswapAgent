@@ -5,17 +5,17 @@
 
     <parent>
         <groupId>org.hotswap.agent</groupId>
-        <artifactId>HotswapAgentParent</artifactId>
+        <artifactId>hotswap-agent-parent</artifactId>
         <version>0.1-beta4-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>JettyPlugin</artifactId>
+    <artifactId>hotswap-agent-jetty-plugin</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-            <artifactId>HotswapAgent</artifactId>
+            <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
