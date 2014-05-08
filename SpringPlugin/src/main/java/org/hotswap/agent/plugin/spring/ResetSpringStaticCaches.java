@@ -29,17 +29,17 @@ public class ResetSpringStaticCaches {
             Field field = DefaultListableBeanFactory.class.getDeclaredField("singletonBeanNamesByType");
             field.setAccessible(true);
             // noinspection unchecked
-            Map allBeanNamesByType = (Map) field.get(defaultListableBeanFactory);
-            allBeanNamesByType.clear();
+            Map singletonBeanNamesByType = (Map) field.get(defaultListableBeanFactory);
+            singletonBeanNamesByType.clear();
         } catch (Exception e) {
-            LOGGER.error("Unable to clear DefaultListableBeanFactory.singletonBeanNamesByType cache", e);
+            LOGGER.trace("Unable to clear DefaultListableBeanFactory.singletonBeanNamesByType cache (is Ok for pre 3.1.2 Spring version)", e);
         }
 
         try {
             Field field = DefaultListableBeanFactory.class.getDeclaredField("allBeanNamesByType");
             field.setAccessible(true);
             // noinspection unchecked
-            Map allBeanNamesByType = (Map) field.get(null);
+            Map allBeanNamesByType = (Map) field.get(defaultListableBeanFactory);
             allBeanNamesByType.clear();
         } catch (Exception e) {
             LOGGER.trace("Unable to clear allBeanNamesByType cache (is Ok for pre 3.2 Spring version)");
@@ -49,10 +49,10 @@ public class ResetSpringStaticCaches {
             Field field = DefaultListableBeanFactory.class.getDeclaredField("nonSingletonBeanNamesByType");
             field.setAccessible(true);
             // noinspection unchecked
-            Map allBeanNamesByType = (Map) field.get(null);
-            allBeanNamesByType.clear();
+            Map nonSingletonBeanNamesByType = (Map) field.get(defaultListableBeanFactory);
+            nonSingletonBeanNamesByType.clear();
         } catch (Exception e) {
-            LOGGER.debug("Unable to clear allBeanNamesByType cache (is Ok for pre 3.2 Spring version)");
+            LOGGER.debug("Unable to clear nonSingletonBeanNamesByType cache (is Ok for pre 3.2 Spring version)");
         }
 
     }
