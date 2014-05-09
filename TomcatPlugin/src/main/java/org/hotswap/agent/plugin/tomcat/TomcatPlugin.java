@@ -80,7 +80,7 @@ public class TomcatPlugin {
         // force disable caching
         ctClass.getDeclaredMethod("isCachingAllowed").setBody("return false;");
 
-        ctClass.getDeclaredMethod("stopInternal").setBody(
+        ctClass.getDeclaredMethod("stopInternal").insertBefore(
                 PluginManagerInvoker.buildCallCloseClassLoader("getLoader().getClassLoader()")
         );
     }
