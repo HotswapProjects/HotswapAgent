@@ -1,5 +1,5 @@
 Hibernate plugin
-=============
+================
 Reload Hibernate EntityManagerFactory / SessionFactory after entity class definition/change.
 
 The plugin hooks for initialization into `org.hibernate.ejb.HibernatePersistence` (for EJB 3.0) or

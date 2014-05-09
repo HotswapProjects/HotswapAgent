@@ -164,20 +164,6 @@ See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgent/blob/master/
 (part of TestApplication) to go through a commented simple plugin. Read [agent readme](https://github.com/HotswapProjects/HotswapAgent/tree/master/HotswapAgent)
  to understand agent concepts. Check existing plugins source code for more examples.
 
-Credits
-=======
-Hotswap agent:
-
-* Jiri Bubnik - project coordinator, initial implementation
-* Jan Tecl - web design (work in progress)
-
-DCEVM:
-
-* Thomas Würthinger - project coordinator, initial implementation.
-* Kerstin Breitender – contributor.
-* Christoph Wimberger – contributor.
-* Ivana Dubrov - update to Java7, patches, build system (Gradle)
-
 
 Creating Release
 ================
@@ -191,3 +177,17 @@ In case your DCEVM is named differently i.e. `server`
 
     mvn release:prepare -Darguments="-Ddcevm=server"
     mvn release:perform -Darguments="-Ddcevm=server"
+
+Credits
+=======
+Hotswap agent:
+
+* Jiri Bubnik - project coordinator, initial implementation
+* Jan Tecl - web design
+
+DCEVM:
+
+* Ivan Dubrov - current project coordinator, update to Java7+Java8, patches, build system (Gradle)
+* Thomas Würthinger - initial implementation.
+* Kerstin Breitender – contributor.
+* Christoph Wimberger – contributor.

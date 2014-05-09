@@ -33,6 +33,14 @@ public class MarkdownProcessor {
 
         String html = markdownToHtml(markdown);
 
+        // first caption is always name of plugin - strip it off to not duplicate on web page
+        if (html.startsWith("<h1>")) {
+            int h1EndIndex = html.indexOf("</h1>");
+            if (h1EndIndex > 0) {
+                html = html.substring(h1EndIndex + 5);
+            }
+        }
+
         PluginDocs.assertDirExists(targetFile);
 
         try {

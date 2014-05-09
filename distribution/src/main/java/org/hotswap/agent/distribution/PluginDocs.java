@@ -67,11 +67,12 @@ public class PluginDocs {
 
             String pluginName = pluginAnnotation.name();
             String pluginDocFile = "plugin/" + pluginName + ".html";
+            String pluginLink = "ha-plugins/" + pluginName.toLowerCase() + "-plugin";
 
             URL url = new URL(getBaseURL(getClass()) + TARGET_DIR + pluginDocFile);
             boolean docExists = markdownProcessor.processPlugin(pluginClass, url);
 
-            addHtmlRow(html, pluginAnnotation, docExists ? pluginDocFile : null);
+            addHtmlRow(html, pluginAnnotation, docExists ? pluginLink : null);
         }
 
         addHtmlFooter(html);
@@ -97,6 +98,8 @@ public class PluginDocs {
             int h1EndIndex = section.indexOf("</h1>");
             if (h1EndIndex > 0) {
                 String label = section.substring(0, h1EndIndex);
+                // strip off header, the web page already contains it
+                String content = section.substring(h1EndIndex+5);
 
                 // make user-friendly valid file name
                 label = label.replaceAll("\\s", "-");
@@ -104,7 +107,7 @@ public class PluginDocs {
                 label = label.toLowerCase();
 
                 // name file after section name
-                writeHtml(new URL(getBaseURL(getClass()) + TARGET_DIR + "section/" + label + ".html"), "<h1>" + section);
+                writeHtml(new URL(getBaseURL(getClass()) + TARGET_DIR + "section/" + label + ".html"), content);
             }
         }
 
