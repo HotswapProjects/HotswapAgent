@@ -13,18 +13,18 @@
     <url>https://github.com/HotswapProjects/HotswapAgent</url>
 
     <modules>
-        <module>parent</module>
-        <module>core</module>
-        <module>HibernatePlugin</module>
-        <module>SpringPlugin</module>
-        <module>JettyPlugin</module>
-        <module>TomcatPlugin</module>
-        <module>ZkPlugin</module>
-        <module>LogbackPlugin</module>
-        <module>JsfPlugin</module>
-        <module>SeamPlugin</module>
-        <module>ELResolverPlugin</module>
-        <module>distribution</module>
+        <module>hotswap-agent-parent</module>
+        <module>hotswap-agent-core</module>
+        <module>plugin/hotswap-agent-hibernate-plugin</module>
+        <module>plugin/hotswap-agent-spring-plugin</module>
+        <module>plugin/hotswap-agent-jetty-plugin</module>
+        <module>plugin/hotswap-agent-tomcat-plugin</module>
+        <module>plugin/hotswap-agent-zk-plugin</module>
+        <module>plugin/hotswap-agent-logback-plugin</module>
+        <module>plugin/hotswap-agent-jsf-plugin</module>
+        <module>plugin/hotswap-agent-seam-plugin</module>
+        <module>plugin/hotswap-agent-el-resolver-plugin</module>
+        <module>hotswap-agent</module>
     </modules>
 
     <licenses>
