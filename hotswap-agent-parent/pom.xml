@@ -78,34 +78,42 @@
             </build>
         </profile>
     </profiles>
-    <dependencies>
-        <dependency>
-            <groupId>com.sun</groupId>
-            <artifactId>tools</artifactId>
-            <version>${java.version}</version>
-            <scope>system</scope>
-            <systemPath>${java.home}/../lib/tools.jar</systemPath>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-junit4</artifactId>
-            <version>2.6.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-legacy</artifactId>
-            <version>2.6.0</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Tools jar is needed at runtime to allow JPDA hotswap -->
+            <dependency>
+                <groupId>com.sun</groupId>
+                <artifactId>tools</artifactId>
+                <version>${java.version}</version>
+                <scope>system</scope>
+                <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                <optional>true</optional>
+            </dependency>
+
+            <!-- Test dependencies -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jmock</groupId>
+                <artifactId>jmock-junit4</artifactId>
+                <version>2.6.0</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jmock</groupId>
+                <artifactId>jmock-legacy</artifactId>
+                <version>2.6.0</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
     <properties>
         <dcevm>dcevm</dcevm>
         <debug.port>8000</debug.port>
