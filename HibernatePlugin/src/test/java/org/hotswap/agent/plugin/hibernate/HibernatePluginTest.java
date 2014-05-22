@@ -23,12 +23,10 @@ import static org.junit.Assert.*;
 public class HibernatePluginTest {
 
     static EntityManagerFactory entityManagerFactory;
-    static HotSwapper hotSwapper;
 
     @BeforeClass
     public static void setup() throws Exception {
         entityManagerFactory = Persistence.createEntityManagerFactory("TestPU");
-        hotSwapper = new HotSwapper("8000");
     }
 
     @Test
@@ -67,7 +65,7 @@ public class HibernatePluginTest {
         assertTrue(TestEntity.class.getDeclaredField("description").getAnnotations().length == 0);
 
         HibernateRefreshCommands.reloadFlag = true;
-        hotSwapper.swapClasses(TestEntity.class, TestEntity2.class.getName());
+        HotSwapper.swapClasses(TestEntity.class, TestEntity2.class.getName());
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {

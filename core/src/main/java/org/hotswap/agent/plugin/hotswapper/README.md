@@ -1,14 +1,23 @@
 Hotswapper
 ===========
-Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA).
-
+Watch for any class file change and reload (hotswap) it on the fly.
+ 
 Although it is usually more convenient to use your IDE debugger for hotswap during development, this
 can be utilized to reload classes even on production server! Be careful and test it thoroughly before use :-)
 
-This plugin is also extensively used for agent plugins integration testing (hotswap during the test).
-
 Plugin configuration
 --------------------
+Just specify 
+    # Watch for changed class files on watchResources path and reload class definition in the running application.
+    #
+    # Usually you will launch debugging session from your IDE and use standard hotswap feature.
+    # This property is useful if you do not want to use debugging session for some reason or
+    # if you want to enable hotswap at runtime environment.
+    #
+    # Internally this uses java Instrumentation API to reload class bytecode. If you need to use JPDA API instead,
+    # specify autoHotswap.port with JPDA port.
+    autoHotswap=false
+
 You need to start java with JPDA enabled. For example:
 
     java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000 --XXaltjvm=dcevm -javaagent:HotswapAgent.jar MainClass

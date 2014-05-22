@@ -11,6 +11,7 @@ import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
 
 import java.io.IOException;
+import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
@@ -49,6 +50,9 @@ public class PluginManager {
         ClassLoader classLoader = getClass().getClassLoader();
         classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
     }
+
+    // the instrumentation API
+    private Instrumentation instrumentation;
 
     //////////////////////////   PLUGINS /////////////////////////////////////
 
@@ -92,6 +96,7 @@ public class PluginManager {
      * @param instrumentation javaagent instrumentation.
      */
     public void init(Instrumentation instrumentation) {
+        this.instrumentation = instrumentation;
         if (watcher == null) {
             try {
                 watcher = new WatcherFactory().getWatcher();
@@ -217,5 +222,33 @@ public class PluginManager {
      */
     public Scheduler getScheduler() {
         return scheduler;
+    }
+
+    /**
+     * Redefine the supplied set of classes using the supplied bytecode.
+     *
+     * This method operates on a set in order to allow interdependent changes to more than one class at the same time
+     * (a redefinition of class A can require a redefinition of class B).
+     *
+     * @param reloadMap class -> new bytecode
+     * @see java.lang.instrument.Instrumentation#redefineClasses(java.lang.instrument.ClassDefinition...)
+     */
+    public void hotswap(Map<Class<?>, byte[]> reloadMap) {
+        if (instrumentation == null) {
+            throw new IllegalStateException("Plugin manager is not correctly initialized - no instrumentation available.");
+        }
+
+        synchronized (reloadMap) {
+            ClassDefinition[] definitions = new ClassDefinition[reloadMap.size()];
+            int i = 0;
+            for (Map.Entry<Class<?>, byte[]> entry : reloadMap.entrySet()) {
+                definitions[i++] = new ClassDefinition(entry.getKey(), entry.getValue());
+            }
+            try {
+                instrumentation.redefineClasses(definitions);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to redefine classes", e);
+            }
+        }
     }
 }

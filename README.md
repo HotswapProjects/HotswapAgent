@@ -42,8 +42,8 @@ other platform/version, currently you need to compile the file yourself from the
   directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\HotswapAgent.jar YourApp`.
   See [IntelliJ IDEA](https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss)
   and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides.
-1. (optional) create a file named "hotswap-agent.properties" inside your resources direcotry, see available properties and
-  default values: <https://github.com/HotswapProjects/HotswapAgent/blob/master/HotswapAgent/src/main/resources/hotswap-agent.properties>
+1. (optional) create a file named "hotswap-agent.properties" inside your resources directory, see available properties and
+  default values: <https://github.com/HotswapProjects/HotswapAgent/blob/master/core/src/main/resources/hotswap-agent.properties>
 1. start the application in debug mode, check that the agent and plugins are initialized correctly:
 
         HOTSWAP AGENT: 9:49:29.548 INFO (org.hotswap.agent.HotswapAgent) - Loading Hotswap agent - unlimited runtime class redefinition.
@@ -59,7 +59,7 @@ other platform/version, currently you need to compile the file yourself from the
   other resources like src/main/resources? Use watchResources property to add any directory to watch for a resource change.
 * Extra classpath - Need change of a class inside dependent jar? Use extraClasspath property to add any directory as
   a classpath to watch for class files
-* Framework support - through plugin system, many fra
+* Framework support - through plugin system, many frameworks are supported. New plugins can be easily added.
 * Reload without IDE - you can configure the agent to automatically reload changed class file automatically (without IDE).
   This may be used to upload changed classes even on a production system without restart (note, that the agent is not stable
   enough yet, use at your own risk).

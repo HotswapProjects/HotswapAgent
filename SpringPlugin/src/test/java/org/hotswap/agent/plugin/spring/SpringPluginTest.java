@@ -9,7 +9,6 @@ import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanService2;
 import org.hotswap.agent.util.test.WaitHelper;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,15 +25,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 public class SpringPluginTest {
-    static HotSwapper hotSwapper;
 
     @Autowired
     AutowireCapableBeanFactory factory;
-
-    @BeforeClass
-    public static void setup() throws Exception {
-        hotSwapper = new HotSwapper("8000");
-    }
 
     @Test
     public void basicTest() {
@@ -84,7 +77,7 @@ public class SpringPluginTest {
 
     private void swapClasses(Class original, String swap) throws Exception {
         ClassPathBeanDefinitionScannerAgent.reloadFlag = true;
-        hotSwapper.swapClasses(original, swap);
+        HotSwapper.swapClasses(original, swap);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {

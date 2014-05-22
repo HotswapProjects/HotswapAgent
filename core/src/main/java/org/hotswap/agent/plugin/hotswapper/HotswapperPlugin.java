@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.hotswapper;
 
+import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Watch;
@@ -24,10 +25,9 @@ import java.util.Map;
  * for .class file change and executes hotswap via JPDA API.
  *
  * @author Jiri Bubnik
- * @see org.hotswap.agent.plugin.hotswapper.HotSwapper
+ * @see HotSwapperJpda
  */
-@Plugin(name = "Hotswapper", description = "Watch for any class file change and reload (hotswap) it on the fly " +
-        "via Java Platform Debugger Architecture (JPDA).",
+@Plugin(name = "Hotswapper", description = "Watch for any class file change and reload (hotswap) it on the fly.",
         testedVersions = {"JDK 1.7.0_45"}, expectedVersions = {"JDK 1.5+"})
 public class HotswapperPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapperPlugin.class);
@@ -35,19 +35,22 @@ public class HotswapperPlugin {
     @Init
     Scheduler scheduler;
 
+    @Init
+    PluginManager pluginManager;
+
     // synchronize on this map to wait for previous processing
-    final Map<String, byte[]> reloadMap = new HashMap<String, byte[]>();
+    final Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
 
     Command hotswapCommand;
 
     /**
      * For each changed class create a reload command.
      */
-    @Watch(path = ".", filter = ".*.class", watchEvents = {WatchEvent.WatchEventType.CREATE, WatchEvent.WatchEventType.MODIFY})
-    public void watchReload(CtClass ctClass) throws IOException, CannotCompileException {
+    @Watch(path = ".", filter = ".*.class", watchEvents = {WatchEvent.WatchEventType.MODIFY})
+    public void watchReload(CtClass ctClass, ClassLoader appClassLoader) throws IOException, CannotCompileException {
         LOGGER.debug("Reload class {}", ctClass.getName());
         synchronized (reloadMap) {
-            reloadMap.put(ctClass.getName(), ctClass.toBytecode());
+            reloadMap.put(ctClass.toClass(appClassLoader, null), ctClass.toBytecode());
             scheduler.scheduleCommand(hotswapCommand);
         }
     }
@@ -60,8 +63,17 @@ public class HotswapperPlugin {
      * @param port           attach the hotswapper
      */
     public void initHotswapCommand(ClassLoader appClassLoader, String port) {
-        hotswapCommand = new ReflectionCommand(this, HotswapperCommand.class.getName(), "hotswap", appClassLoader,
-                port, reloadMap);
+        if (port != null) {
+            hotswapCommand = new ReflectionCommand(this, HotswapperCommand.class.getName(), "hotswap", appClassLoader,
+                    port, reloadMap);
+        } else {
+            hotswapCommand = new Command() {
+                @Override
+                public void executeCommand() {
+                    pluginManager.hotswap(reloadMap);
+                }
+            };
+        }
     }
 
     /**
