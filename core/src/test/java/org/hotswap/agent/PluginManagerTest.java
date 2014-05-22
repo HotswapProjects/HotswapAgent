@@ -36,7 +36,7 @@ public class PluginManagerTest {
             allowing(instrumentation).addTransformer(with(any(ClassFileTransformer.class)));
             allowing(annotationScanner).scanPlugins(with(any(ClassLoader.class)), with(any(String.class)));
             will(returnValue(Collections.singletonList(SimplePlugin.class.getName())));
-            allowing(annotationProcessor).processAnnotations(with(any(Class.class)));
+            allowing(annotationProcessor).processAnnotations(with(any(Class.class)), with(any(Class.class)));
             will(returnValue(true));
         }});
 
