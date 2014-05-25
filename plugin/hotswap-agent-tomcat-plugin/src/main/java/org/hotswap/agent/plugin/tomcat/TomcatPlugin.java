@@ -126,7 +126,7 @@ public class TomcatPlugin {
             f.setAccessible(true);
             f.set(webAppClassLoader, extraPathResourceClassLoader);
         } catch (Exception e) {
-            LOGGER.error("Unable to register changed resource class loader on WebAppClassLoader {}", e, webAppClassLoader);
+            LOGGER.error("Unable to register changed resource class loader on WebAppClassLoader {} class {} ", e, webAppClassLoader, webAppClassLoader.getClass());
         }
     }
 

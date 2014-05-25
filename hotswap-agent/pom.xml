@@ -111,10 +111,12 @@
                             <descriptors>
                                 <descriptor>assembly/agent/jar.xml</descriptor>
                             </descriptors>
-                            <finalName>distribution</finalName>
+                            <finalName>hotswap-agent</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <archive>
                                 <manifestEntries>
+                                    <Implementation-Title>${project.build.finalName}</Implementation-Title>
+                                    <Implementation-Version>${project.version}</Implementation-Version>
                                     <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
                                     <Can-Redefine-Classes>true</Can-Redefine-Classes>
                                     <Can-Retransform-Classes>true</Can-Retransform-Classes>
