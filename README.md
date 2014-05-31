@@ -8,9 +8,10 @@ Save&Reload during development should be standard and many other languages (incl
 This project is still in a beta version.
 
 ### Easy to start
-Download and install DCEVM Java patch + agent jar and launch your application server with options
-`-XXaltjvm=dcevm -javaagent:HotswapAgent.jar` to get working setup. Optionally add hotswap-agent.properties
-to your application to configure plugins and agent behaviour.
+Download and install latest [DCEVM Java patch](https://github.com/dcevm/dcevm/releases) + 
+[agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) and launch your application server 
+with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup. 
+Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.
 
 ### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs special reloading mechanism to keep
@@ -26,20 +27,16 @@ work as expected. However, we work on IDE plugins to help with download & config
 Quick start:
 ===========
 ### Install
-1. download [latest release](https://github.com/HotswapProjects/HotswapAgent/releases/download/0.1-beta3/HotswapAgent-0.1-beta3.zip)
- and unpack it's contents. You will need platform specific `jvm.dll`(windows) or `lib*.so`(linux) and `HotswapAgent.jar` files.
-1. check that you have installed *JDK 1.7.0_45 64bit*, otherwise download and install [from here]
-(http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)
-1. install patched Java Hotspot(r) file: inside the JDK 1.7.0_45 installation directory create new directory "jre\bin\dcevm"
-and put `jvm.dll`/`lib*.so` into it. For example: `C:\Program Files\Java\jdk1.7.0_45\jre\bin\dcevm\jvm.dll`. (Should you need
-other platform/version, currently you need to compile the file yourself from the [source](https://github.com/Guidewire/DCEVM).
-1. unpack `HotswapAgent.jar` and put it anywhere on your disc. For example: `C:\java\HotswapAgent.jar`
+1. download [latest release of DCEVM Java patch](https://github.com/dcevm/dcevm/releases) and launch the installer 
+(e.g. `java -jar installer-light.jar`)
+1. select java installation directory on your disc and press "Install DCEVM as altjvm" button. Java 1.6+ versions are supported.
+1. download [latest release of Hotswap agent jar](https://github.com/HotswapProjects/HotswapAgent/releases), 
+unpack `hotswap-agent.jar` and put it anywhere on your disc. For example: `C:\java\hotswap-agent.jar`
 
 ### Run your application
-1. use your favorite IDE of choice
 1. add following command line java attributes:
-  <pre>-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\HotswapAgent.jar</pre> You need to replace PATH_TO_AGENT with an actual
-  directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\HotswapAgent.jar YourApp`.
+  <pre>-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar</pre> You need to replace PATH_TO_AGENT with an actual
+  directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\hotswap-agent.jar YourApp`.
   See [IntelliJ IDEA](https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss)
   and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides.
 1. (optional) create a file named "hotswap-agent.properties" inside your resources directory, see available properties and
@@ -91,6 +88,16 @@ The basic configuration is configured reload classes and resources from classpat
 (e.g. `src/main/resources/hotswap-agent.properties`).
 
 Detail documentation of available properties and default values can be found in the [agent properties file](https://github.com/HotswapProjects/HotswapAgent/HotswapAgent/blob/master/src/main/resources/hotswap-agent.properties)
+
+### Hotswap agent command line options
+Full syntax of command line options is:
+
+    -javaagent:[yourpath/]hotswap-agent.jar=[option1]=[value1],[option2]=[value2]
+
+Hotswap agent accepts following options:
+* disablePlugin - plugin name to disable. Not that this will compleatly forbid the plugin to load (opposite to disablePlugin
+    option in hotswap-agent.properties, which will only disable the plugin for a classloader. You can repeat this
+    option for every plugin to disable.
 
 
 How does it work?
