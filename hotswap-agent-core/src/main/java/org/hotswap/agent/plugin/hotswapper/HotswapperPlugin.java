@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.hotswapper;
 
+import org.hotswap.agent.HotswapAgent;
 import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
@@ -12,9 +13,12 @@ import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.classloader.*;
 import org.hotswap.agent.watch.WatchEvent;
 
 import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,7 +32,7 @@ import java.util.Map;
  * @see HotSwapperJpda
  */
 @Plugin(name = "Hotswapper", description = "Watch for any class file change and reload (hotswap) it on the fly.",
-        testedVersions = {"JDK 1.7.0_45"}, expectedVersions = {"JDK 1.5+"})
+        testedVersions = {"JDK 1.7.0_45"}, expectedVersions = {"JDK 1.6+"})
 public class HotswapperPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapperPlugin.class);
 
@@ -41,18 +45,33 @@ public class HotswapperPlugin {
     // synchronize on this map to wait for previous processing
     final Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
 
+    // command to do actual hotswap. Single command to merge possible multiple reload actions.
     Command hotswapCommand;
 
     /**
      * For each changed class create a reload command.
      */
     @Watch(path = ".", filter = ".*.class", watchEvents = {WatchEvent.WatchEventType.MODIFY})
-    public void watchReload(CtClass ctClass, ClassLoader appClassLoader) throws IOException, CannotCompileException {
-        LOGGER.debug("Reload class {}", ctClass.getName());
-        synchronized (reloadMap) {
-            reloadMap.put(ctClass.toClass(appClassLoader, null), ctClass.toBytecode());
-            scheduler.scheduleCommand(hotswapCommand);
+    public void watchReload(CtClass ctClass, ClassLoader appClassLoader, URL url) throws IOException, CannotCompileException {
+        if (!ClassLoaderHelper.isClassLoaded(appClassLoader, ctClass.getName())) {
+            LOGGER.trace("Class {} not loaded yet, no need for autoHotswap, skipped URL {}", ctClass.getName(), url);
+            return;
         }
+
+        LOGGER.debug("Class {} will be reloaded from URL {}", ctClass.getName(), url);
+
+        // search for a class to reload
+        Class clazz;
+        try {
+            clazz  = appClassLoader.loadClass(ctClass.getName());
+        } catch (ClassNotFoundException e) {
+            LOGGER.warning("Hotswapper tries to reload class {}, which is not known to application classLoader {}.",
+                    ctClass.getName(), appClassLoader);
+            return;
+        }
+
+        reloadMap.put(clazz, ctClass.toBytecode());
+        scheduler.scheduleCommand(hotswapCommand, 100, Scheduler.DuplicateSheduleBehaviour.SKIP);
     }
 
     /**
@@ -63,7 +82,7 @@ public class HotswapperPlugin {
      * @param port           attach the hotswapper
      */
     public void initHotswapCommand(ClassLoader appClassLoader, String port) {
-        if (port != null) {
+        if (port != null && port.length() > 0) {
             hotswapCommand = new ReflectionCommand(this, HotswapperCommand.class.getName(), "hotswap", appClassLoader,
                     port, reloadMap);
         } else {
@@ -71,6 +90,11 @@ public class HotswapperPlugin {
                 @Override
                 public void executeCommand() {
                     pluginManager.hotswap(reloadMap);
+                }
+
+                @Override
+                public String toString() {
+                    return "pluginManager.hotswap(" + Arrays.toString(reloadMap.keySet().toArray()) + ")";
                 }
             };
         }
@@ -90,8 +114,8 @@ public class HotswapperPlugin {
         }
 
         // and autoHotswap enabled
-        if (!pluginConfiguration.getPropertyBoolean("autoHotswap")) {
-            LOGGER.debug("ClassLoader {} has hotswap-agent.properties autoHotswap=false, hotswapper skipped.", appClassLoader);
+        if (!HotswapAgent.isAutoHotswap() && !pluginConfiguration.getPropertyBoolean("autoHotswap")) {
+            LOGGER.debug("ClassLoader {} has autoHotswap disabled, hotswapper skipped.", appClassLoader);
             return;
         }
 

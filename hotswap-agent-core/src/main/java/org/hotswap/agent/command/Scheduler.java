@@ -7,6 +7,12 @@ package org.hotswap.agent.command;
  */
 public interface Scheduler {
 
+    public static enum DuplicateSheduleBehaviour {
+        SKIP,
+        WAIT_AND_RUN_AFTER,
+        RUN_DUPLICATE
+    }
+
     /**
      * Schedule new command for execution.
      * <p/>
@@ -30,6 +36,16 @@ public interface Scheduler {
      * @param timeout timeout after which the command is executed
      */
     void scheduleCommand(Command command, int timeout);
+
+    /**
+     * Schedule new command for execution.
+     * <p/>
+     *
+     * @param command the command to execute
+     * @param timeout timeout after which the command is executed
+     * @param behaviour if another instance of this commands runs on schedule or within timeout, should we skip it?
+     */
+    void scheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour);
 
     /**
      * Run the scheduler agent thread.

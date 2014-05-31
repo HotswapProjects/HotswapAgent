@@ -14,31 +14,57 @@ import java.util.Vector;
 
 /**
  * Special URL classloader to get only changed resources from URL.
- * This classloader delegates getResource() and getResources() calls to
+ *
+ * Use this classloader to support watchResources property.
+ *
+ * This classloader checks if the resource was modified after application startup and in that case
+ * delegates getResource()/getResources() to custom URL classloader. Otherwise returns null or resource
+ * from paren classloader (depending on searchParent property).
  *
  * @author Jiri Bubnik
  */
-public class ExtraPathResourceClassLoader extends ClassLoader {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ExtraPathResourceClassLoader.class);
+public class WatchResourcesClassLoader extends ClassLoader {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(WatchResourcesClassLoader.class);
 
     /**
-     * Set of all changed URLs.
+     * URLs of changed resources. Use this set to check if the resource was changed and hence should
+     * be returned by this classloader.
      */
     Set<URL> changedUrls = new HashSet<URL>();
 
+    /**
+     * Watch for requested resource in parent classloader in case it is not found by this classloader?
+     * Note that there is child first precedence anyway.
+     */
+    boolean searchParent = true;
 
-    ClassLoader watchResourcesClassLoader;
+    public void setSearchParent(boolean searchParent) {
+        this.searchParent = searchParent;
+    }
 
     /**
-     * New instance with urls and watcher service.
+     * URL classloader configured to get resources only from exact set of URL's (no parent delegation)
+     */
+    ClassLoader watchResourcesClassLoader;
+
+    public WatchResourcesClassLoader() {
+    }
+
+    public WatchResourcesClassLoader(boolean searchParent) {
+        this.searchParent = searchParent;
+    }
+
+    /**
+     * Configure new instance with urls and watcher service.
      *
      * @param watchResources the URLs from which to load resources
      * @param watcher        watcher service to register watch events
      */
     public void init(URL[] watchResources, Watcher watcher) {
+        // create classloader to serve resources only from watchResources URL's
+        this.watchResourcesClassLoader = new WatchResourcesUrlClassLoader(watchResources);
 
-        this.watchResourcesClassLoader = new URLClassLoader(watchResources);
-        // register watch resources - each modified resource will be added to changedUrls.
+        // register watch resources - on change event each modified resource will be added to changedUrls.
         for (URL resource : watchResources) {
             try {
                 URI uri = resource.toURI();
@@ -80,11 +106,12 @@ public class ExtraPathResourceClassLoader extends ClassLoader {
     public URL getResource(String name) {
         URL resource = watchResourcesClassLoader.getResource(name);
         if (resource != null && isResourceChanged(resource)) {
-            LOGGER.trace("watchResource - using changed resource {}", name);
+            LOGGER.trace("watchResources - using changed resource {}", name);
             return resource;
-        } else {
+        } else if (searchParent) {
             return super.getResource(name);
-        }
+        } else
+            return null;
     }
 
     /**
@@ -101,9 +128,29 @@ public class ExtraPathResourceClassLoader extends ClassLoader {
         if (resource != null && isResourceChanged(resource)) {
             Vector<URL> res = new Vector<URL>();
             res.add(resource);
-            LOGGER.trace("watchResource - using changed resource {}", name);
+            LOGGER.trace("watchResources - using changed resource {}", name);
             return res.elements();
-        } else
+        } else if (searchParent) {
             return super.getResources(name);
+        } else {
+            return null;
+        }
+
     }
+
+
+    /**
+     * Helper classloader to get resources from list of urls only.
+     */
+    public static class WatchResourcesUrlClassLoader extends URLClassLoader {
+        public WatchResourcesUrlClassLoader(URL[] urls) {
+            super(urls);
+        }
+
+        // do not use parent resource (may introduce infinite loop)
+        @Override
+        public URL getResource(String name) {
+            return findResource(name);
+        }
+    };
 }

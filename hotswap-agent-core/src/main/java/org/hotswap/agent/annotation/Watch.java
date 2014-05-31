@@ -46,4 +46,9 @@ public @interface Watch {
      * @return true to filter out other types than regular types.
      */
     public boolean onlyRegularFiles() default true;
+
+    /**
+     * Merge multiple same watch events up to this timeout into a single watch event (useful to merge multiple MODIFY events).
+     */
+    public int timeout() default 50;
 }

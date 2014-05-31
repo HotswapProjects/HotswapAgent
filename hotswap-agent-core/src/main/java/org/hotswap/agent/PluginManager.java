@@ -14,10 +14,7 @@ import java.io.IOException;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The main agent plugin manager, well known singleton controller.
@@ -240,12 +237,16 @@ public class PluginManager {
 
         synchronized (reloadMap) {
             ClassDefinition[] definitions = new ClassDefinition[reloadMap.size()];
+            String[] classNames = new String[reloadMap.size()];
             int i = 0;
             for (Map.Entry<Class<?>, byte[]> entry : reloadMap.entrySet()) {
+                classNames[i] = entry.getKey().getName();
                 definitions[i++] = new ClassDefinition(entry.getKey(), entry.getValue());
             }
             try {
+                LOGGER.reload("Reloading classes {} (autoHotswap)", Arrays.toString(classNames));
                 instrumentation.redefineClasses(definitions);
+                LOGGER.debug("... reloaded classes {} (autoHotswap)", Arrays.toString(classNames));
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to redefine classes", e);
             }

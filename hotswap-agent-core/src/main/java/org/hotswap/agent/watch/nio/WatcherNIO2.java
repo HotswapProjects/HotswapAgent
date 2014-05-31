@@ -227,38 +227,10 @@ public class WatcherNIO2 implements Watcher {
 
     // notify listeners about new event
     private void callListeners(final WatchEvent event, final Path path) {
-        LOGGER.trace("Logger event {} on path {}", event.kind().name(), path);
         for (Map.Entry<Path, List<WatchEventListener>> list : listeners.entrySet()) {
             for (WatchEventListener listener : list.getValue()) {
                 if (path.startsWith(list.getKey())) {
-                    org.hotswap.agent.watch.WatchEvent agentEvent = new org.hotswap.agent.watch.WatchEvent() {
-
-                        @Override
-                        public WatchEventType getEventType() {
-                            return toAgentEvent(event.kind());
-                        }
-
-                        @Override
-                        public URI getURI() {
-                            return path.toUri();
-                        }
-
-                        @Override
-                        public boolean isFile() {
-                            //return Files.isRegularFile(path); - did not work in some cases
-                            return !isDirectory();
-                        }
-
-                        @Override
-                        public boolean isDirectory() {
-                            return Files.isDirectory(path);
-                        }
-
-                        @Override
-                        public String toString() {
-                            return "WatchEvent on path " + path + " for event " + event.kind();
-                        }
-                    };
+                    org.hotswap.agent.watch.WatchEvent agentEvent = new HotswapWatchEvent(event, path);
 
                     try {
                         listener.onEvent(agentEvent);
@@ -271,7 +243,7 @@ public class WatcherNIO2 implements Watcher {
     }
 
     // translate constants between NIO event and ageent event
-    private org.hotswap.agent.watch.WatchEvent.WatchEventType toAgentEvent(WatchEvent.Kind kind) {
+    private static org.hotswap.agent.watch.WatchEvent.WatchEventType toAgentEvent(WatchEvent.Kind kind) {
         if (kind == ENTRY_CREATE)
             return org.hotswap.agent.watch.WatchEvent.WatchEventType.CREATE;
         else if (kind == ENTRY_MODIFY)
@@ -301,5 +273,65 @@ public class WatcherNIO2 implements Watcher {
     @Override
     public void stop() {
         stopped = true;
+    }
+
+    /**
+     * Filesystem event.
+     */
+    public static class HotswapWatchEvent implements org.hotswap.agent.watch.WatchEvent {
+
+        private final WatchEvent event;
+        private final Path path;
+
+        public HotswapWatchEvent(WatchEvent event, Path path) {
+            this.event = event;
+            this.path = path;
+        }
+
+        @Override
+        public WatchEventType getEventType() {
+            return toAgentEvent(event.kind());
+        }
+
+        @Override
+        public URI getURI() {
+            return path.toUri();
+        }
+
+        @Override
+        public boolean isFile() {
+            //return Files.isRegularFile(path); - did not work in some cases
+            return !isDirectory();
+        }
+
+        @Override
+        public boolean isDirectory() {
+            return Files.isDirectory(path);
+        }
+
+        @Override
+        public String toString() {
+            return "WatchEvent on path " + path + " for event " + event.kind();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            HotswapWatchEvent that = (HotswapWatchEvent) o;
+
+            if (!event.equals(that.event)) return false;
+            if (!path.equals(that.path)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = event.hashCode();
+            result = 31 * result + path.hashCode();
+            return result;
+        }
     }
 }

@@ -108,7 +108,7 @@ public class WatchHandler implements PluginHandler<Watch> {
             public void onEvent(WatchEvent event) {
                 if (event.isFile()) {
                     Command command = new WatchEventCommand(pluginAnnotation, event, classLoader);
-                    pluginManager.getScheduler().scheduleCommand(command);
+                    pluginManager.getScheduler().scheduleCommand(command, pluginAnnotation.getAnnotation().timeout());
                     LOGGER.trace("Resource changed {}", event);
                 }
             }

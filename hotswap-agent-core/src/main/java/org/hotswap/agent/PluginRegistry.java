@@ -76,7 +76,7 @@ public class PluginRegistry {
 
         try {
             List<String> discoveredPlugins = annotationScanner.scanPlugins(classLoader, pluginPath);
-            LOGGER.info("Discovered plugins: " + Arrays.toString(discoveredPlugins.toArray()));
+            List<String> discoveredPluginNames = new ArrayList<String>();
 
             // Plugin class must be always defined directly in the agent classloader, otherwise it will not be available
             // to the instrumentation process. Copy the definition using patcher
@@ -86,6 +86,17 @@ public class PluginRegistry {
 
             for (String discoveredPlugin : discoveredPlugins) {
                 Class pluginClass = Class.forName(discoveredPlugin, true, agentClassLoader);
+                Plugin pluginAnnotation = (Plugin) pluginClass.getAnnotation(Plugin.class);
+
+                if (pluginAnnotation == null) {
+                    LOGGER.error("Scanner discovered plugin class {} which does not contain @Plugin annotation.", pluginClass);
+                }
+                String pluginName = pluginAnnotation.name();
+
+                if (HotswapAgent.isPluginDisabled(pluginName)) {
+                    LOGGER.debug("Plugin {} is disabled, skipping...", pluginName);
+                    continue;
+                }
 
                 // check for duplicate plugin definition. It may happen if class directory AND the JAR file
                 // are both available.
@@ -100,7 +111,11 @@ public class PluginRegistry {
                     LOGGER.error("Error processing annotations for plugin {}. Plugin was unregistered.", pluginClass);
                     registeredPlugins.remove(pluginClass);
                 }
+
+                discoveredPluginNames.add(pluginName);
             }
+
+            LOGGER.info("Discovered plugins: " + Arrays.toString(discoveredPluginNames.toArray()));
 
         } catch (Exception e) {
             LOGGER.error("Error in plugin initial processing for plugin package '{}'", e, pluginPackage);

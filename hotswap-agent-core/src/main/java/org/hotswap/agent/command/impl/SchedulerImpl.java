@@ -1,5 +1,6 @@
 package org.hotswap.agent.command.impl;
 
+import org.hotswap.agent.annotation.handler.WatchEventCommand;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.command.Scheduler;
@@ -17,7 +18,7 @@ public class SchedulerImpl implements Scheduler {
 
     int DEFAULT_SCHEDULING_TIMEOUT = 100;
 
-    final Map<Command, Long> scheduledCommands = Collections.synchronizedMap(new HashMap<Command, Long>());
+    final Map<Command, DuplicateScheduleConfig> scheduledCommands = Collections.synchronizedMap(new HashMap<Command, DuplicateScheduleConfig>());
     final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<Command>());
 
     Thread runner;
@@ -30,6 +31,11 @@ public class SchedulerImpl implements Scheduler {
 
     @Override
     public void scheduleCommand(Command command, int timeout) {
+        scheduleCommand(command, timeout, DuplicateSheduleBehaviour.WAIT_AND_RUN_AFTER);
+    }
+
+    @Override
+    public void scheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour) {
         synchronized (scheduledCommands) {
             Command targetCommand = command;
             if (scheduledCommands.containsKey(command) && (command instanceof MergeableCommand)) {
@@ -43,7 +49,7 @@ public class SchedulerImpl implements Scheduler {
             }
 
             // map may already contain equals command, put will replace it and reset timer
-            scheduledCommands.put(targetCommand, System.currentTimeMillis() + timeout);
+            scheduledCommands.put(targetCommand, new DuplicateScheduleConfig(System.currentTimeMillis() + timeout, behaviour));
             LOGGER.trace("{} scheduled for execution in {}ms", targetCommand, timeout);
         }
     }
@@ -57,16 +63,26 @@ public class SchedulerImpl implements Scheduler {
     private boolean processCommands() {
         Long currentTime = System.currentTimeMillis();
         synchronized (scheduledCommands) {
-            for (Iterator<Map.Entry<Command, Long>> it = scheduledCommands.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<Command, Long> entry = it.next();
+            for (Iterator<Map.Entry<Command, DuplicateScheduleConfig>> it = scheduledCommands.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<Command, DuplicateScheduleConfig> entry = it.next();
+                DuplicateScheduleConfig config = entry.getValue();
                 Command command = entry.getKey();
 
-                // if timeout and command is not running
-                if (entry.getValue() < currentTime && !runningCommands.contains(command)) {
-                    // execute in separate thread
-                    executeCommand(command);
-                    // remove from scheduled commands
-                    it.remove();
+                // if timeout
+                if (config.getTime() < currentTime) {
+                    // command is currently running
+                    if (runningCommands.contains(command)) {
+                        if (config.getBehaviour().equals(DuplicateSheduleBehaviour.SKIP)) {
+                            LOGGER.debug("Skipping duplicate running command {}", command);
+                            it.remove();
+                        } else if (config.getBehaviour().equals(DuplicateSheduleBehaviour.RUN_DUPLICATE)) {
+                            executeCommand(command);
+                            it.remove();
+                        }
+                    } else {
+                        executeCommand(command);
+                        it.remove();
+                    }
                 }
             }
         }
@@ -80,7 +96,11 @@ public class SchedulerImpl implements Scheduler {
      * @param command the command to execute
      */
     private void executeCommand(Command command) {
-        LOGGER.debug("Executing {}", command);
+        if (command instanceof WatchEventCommand)
+            LOGGER.trace("Executing {}", command); // too much output for debug
+        else
+            LOGGER.debug("Executing {}", command);
+
         runningCommands.add(command);
         new CommandExecutor(command) {
             @Override
@@ -117,5 +137,26 @@ public class SchedulerImpl implements Scheduler {
     @Override
     public void stop() {
         stopped = true;
+    }
+
+    private static class DuplicateScheduleConfig {
+        // time when to run
+        long time;
+
+        // behaviour in case of conflict (running same command in progress)
+        DuplicateSheduleBehaviour behaviour;
+
+        private DuplicateScheduleConfig(long time, DuplicateSheduleBehaviour behaviour) {
+            this.time = time;
+            this.behaviour = behaviour;
+        }
+
+        public long getTime() {
+            return time;
+        }
+
+        public DuplicateSheduleBehaviour getBehaviour() {
+            return behaviour;
+        }
     }
 }

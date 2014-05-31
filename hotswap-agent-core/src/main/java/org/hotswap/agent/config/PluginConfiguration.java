@@ -45,6 +45,7 @@ public class PluginConfiguration {
 
         try {
             if (configurationURL != null) {
+                containsPropertyFileDirectly = true;
                 properties.load(configurationURL.openStream());
                 init();
             }
@@ -85,7 +86,9 @@ public class PluginConfiguration {
 
         if (configurationURL == null && parent != null) {
             configurationURL = parent.configurationURL;
+            LOGGER.debug("Classloader does not contain 'hotswap-agent.properties', using parent file '{}'", parent.configurationURL);
         } else {
+            LOGGER.debug("Classloader contains 'hotswap-agent.properties' at location '{}'", configurationURL);
             containsPropertyFileDirectly = true;
         }
 

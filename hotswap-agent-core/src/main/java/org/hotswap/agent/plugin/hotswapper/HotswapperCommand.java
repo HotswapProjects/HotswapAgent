@@ -21,7 +21,7 @@ public class HotswapperCommand {
     // in the application classloader to avoid NoClassDefFound error on tools.jar classes.
     private static HotSwapperJpda hotSwapper = null;
 
-    public static synchronized void hotswap(String port, final Map<Class<?>, byte[]> reloadMap) {
+    public static synchronized void hotswap(String port, final HashMap<Class<?>, byte[]> reloadMap) {
         // synchronize on the reloadMap object - do not allow addition while in process
         synchronized (reloadMap) {
             if (hotSwapper == null) {

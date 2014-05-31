@@ -1,11 +1,10 @@
 package org.hotswap.agent.util;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 
@@ -99,5 +98,16 @@ public class IOUtils {
     public static boolean isFileURL(URL url) {
         String protocol = url.getProtocol();
         return (URL_PROTOCOL_FILE.equals(protocol) || protocol.startsWith(URL_PROTOCOL_VFS));
+    }
+
+    /**
+     * Return fully qualified class name of class file on a URI.
+     *
+     * @param uri uri of class file
+     * @return name
+     * @throws IOException any exception on class instantiation
+     */
+    public static String urlToClassName(URI uri) throws IOException {
+        return ClassPool.getDefault().makeClass(uri.toURL().openStream()).getName();
     }
 }
