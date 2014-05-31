@@ -1,6 +1,6 @@
 package org.hotswap.agent.plugin.jetty;
 
-import org.hotswap.agent.util.classloader.ExtraPathResourceClassLoader;
+import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.nio.WatcherNIO2;
 import org.junit.Test;
@@ -27,7 +27,7 @@ public class ExtraPathResourceClassLoaderTest {
         final Watcher watcher = new WatcherNIO2();
         watcher.run();
 
-        ExtraPathResourceClassLoader classLoader = new ExtraPathResourceClassLoader();
+        WatchResourcesClassLoader classLoader = new WatchResourcesClassLoader();
         classLoader.init(new URL[]{directory.toUri().toURL()}, watcher);
 
         assertNull("Not returned before modification", classLoader.getResource(tempFile.getName()));

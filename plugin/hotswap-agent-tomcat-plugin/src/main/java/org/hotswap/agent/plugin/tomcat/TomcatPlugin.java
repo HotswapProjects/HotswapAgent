@@ -23,7 +23,7 @@ import java.net.URLClassLoader;
  */
 @Plugin(name = "Tomcat", description = "Catalina based servlet containers.",
         testedVersions = {"7.0.50"},
-        expectedVersions = {""}
+        expectedVersions = {"All versions with WebappLoader.startInternal"}
 )
 public class TomcatPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(TomcatPlugin.class);

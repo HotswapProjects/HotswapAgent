@@ -11,6 +11,7 @@ import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.classloader.*;
 import org.hotswap.agent.watch.WatchEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
@@ -31,16 +32,15 @@ import java.util.Enumeration;
         testedVersions = {"3.0.0", "3.1.4", "3.2.1", "4.0.2"}, expectedVersions = {"3x", "4x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class})
 public class SpringPlugin {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
+
     /**
      * If a class is modified in IDE, sequence of multiple events is generated -
      * class file DELETE, CREATE, MODIFY, than Hotswap transformer is invoked.
      * ClassPathBeanRefreshCommand tries to merge these events into single command.
-     * Wait this this timeout for hotswap command after class file event, it will
-     * never occur if this really is a new class.
+     * Wait this this timeout after class file event.
      */
-    private static final int WAIT_FOR_HOTSWAP_ON_CREATE = 300;
-
-    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
+    private static final int WAIT_ON_CREATE = 600;
 
     @Init
     HotswapTransformer hotswapTransformer;
@@ -55,7 +55,7 @@ public class SpringPlugin {
     ClassLoader appClassLoader;
 
     public void init() {
-        LOGGER.info("Spring plugin initialized - Spring core version");
+        LOGGER.info("Spring plugin initialized");
     }
     public void init(String version) {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
@@ -64,8 +64,9 @@ public class SpringPlugin {
     /**
      * Register both hotswap transformer AND watcher - in case of new file the file is not known
      * to JVM and hence no hotswap is called. The file may even exist, but until is loaded by Spring
-     * it will not be known by the JVM. Hotswap command has priority (watcher will try to wait for hotswap
-     * up to 500 ms).
+     * it will not be known by the JVM. File events are processed only if the class is not known to the
+     * classloader yet.
+     *
      * @param basePackage only files in a basePackage
      */
     public void registerComponentScanBasePackage(final String basePackage) {
@@ -90,6 +91,7 @@ public class SpringPlugin {
             return;
         }
 
+        // for all application resources watch for changes
         while (resourceUrls.hasMoreElements()) {
             URL basePackageURL = resourceUrls.nextElement();
 
@@ -102,8 +104,19 @@ public class SpringPlugin {
                     @Override
                     public void onEvent(WatchEvent event) {
                         if (event.isFile() && event.getURI().toString().endsWith(".class")) {
-                            scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                                    basePackage, event), WAIT_FOR_HOTSWAP_ON_CREATE);
+                            // check the class is not loaded by the classloader yet
+                            String className;
+                            try {
+                                className = IOUtils.urlToClassName(event.getURI());
+                            } catch (IOException e) {
+                                LOGGER.trace("Watch event on resource '{}' skipped, probably Ok because of delete/create event sequence (compilation not finished yet).", e, event.getURI());
+                                return;
+                            }
+                            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
+                                // refresh spring only for new classes
+                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
+                                        basePackage, event), WAIT_ON_CREATE);
+                            }
                         }
                     }
                 });
