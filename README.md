@@ -87,7 +87,7 @@ The basic configuration is configured reload classes and resources from classpat
 (classloader). If you need a different configuration, add hotswap-agent.properties file to the classpath root
 (e.g. `src/main/resources/hotswap-agent.properties`).
 
-Detail documentation of available properties and default values can be found in the [agent properties file](https://github.com/HotswapProjects/HotswapAgent/HotswapAgent/blob/master/src/main/resources/hotswap-agent.properties)
+Detail documentation of available properties and default values can be found in the [agent properties file](https://github.com/HotswapProjects/HotswapAgent/blob/master/hotswap-agent-core/src/main/resources/hotswap-agent.properties)
 
 ### Hotswap agent command line options
 Full syntax of command line options is:
@@ -167,8 +167,8 @@ as a javaagent. Maven dependency:
         </dependency>
 (Note that the JAR is not yet in central maven repository - you need to build it from source first).
 
-See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgent/blob/master/TestApplication/src/main/java/org/hotswap/agent/it/plugin/ExamplePlugin.java)
-(part of TestApplication) to go through a commented simple plugin. Read [agent readme](https://github.com/HotswapProjects/HotswapAgent/tree/master/HotswapAgent)
+See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgentExamples/blob/master/SpringHibernate/src/main/java/org/hotswap/agent/it/plugin/ExamplePlugin.java)
+(part of TestApplication) to go through a commented simple plugin. Read [agent readme](https://github.com/HotswapProjects/HotswapAgent/blob/master/README.md)
  to understand agent concepts. Check existing plugins source code for more examples.
 
 
