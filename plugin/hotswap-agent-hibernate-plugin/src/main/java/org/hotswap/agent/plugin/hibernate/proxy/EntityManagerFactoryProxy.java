@@ -105,7 +105,7 @@ public class EntityManagerFactoryProxy {
         this.properties = properties;
 
         return (EntityManagerFactory) Proxy.newProxyInstance(
-                EntityManagerFactory.class.getClassLoader(), new Class[]{EntityManagerFactory.class},
+                currentInstance.getClass().getClassLoader(), currentInstance.getClass().getInterfaces(),
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

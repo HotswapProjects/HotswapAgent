@@ -1,6 +1,6 @@
 package org.hotswap.agent.util;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.annotation.handler.AnnotationProcessor;

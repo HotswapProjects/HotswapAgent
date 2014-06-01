@@ -1,6 +1,6 @@
 package org.hotswap.agent.annotation.handler;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.testData.SimplePlugin;
 import org.junit.Test;

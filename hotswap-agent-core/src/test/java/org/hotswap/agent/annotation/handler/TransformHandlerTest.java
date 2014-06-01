@@ -1,7 +1,7 @@
 package org.hotswap.agent.annotation.handler;
 
-import org.hotswap.agent.PluginManager;
-import org.hotswap.agent.PluginRegistry;
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.config.PluginRegistry;
 import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.testData.SimplePlugin;
 import org.hotswap.agent.util.HotswapTransformer;

@@ -1,6 +1,5 @@
 package org.hotswap.agent.config;
 
-import org.hotswap.agent.PluginManager;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.classloader.URLClassLoaderHelper;

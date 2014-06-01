@@ -1,6 +1,6 @@
 package org.hotswap.agent.distribution;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.distribution.markdown.MarkdownProcessor;
 import org.hotswap.agent.util.IOUtils;

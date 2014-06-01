@@ -1,6 +1,6 @@
 package org.hotswap.agent.util;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 
 import java.lang.reflect.Method;
 
@@ -34,7 +34,7 @@ public class PluginManagerInvoker {
     }
 
     public static String buildInitializePlugin(Class pluginClass, String classLoaderVar) {
-        return "org.hotswap.agent.PluginManager.getInstance().getPluginRegistry().initializePlugin(" +
+        return "org.hotswap.agent.config.PluginManager.getInstance().getPluginRegistry().initializePlugin(" +
                 "\"" + pluginClass.getName() + "\", " + classLoaderVar +
                 ");";
     }
@@ -51,7 +51,7 @@ public class PluginManagerInvoker {
     }
 
     public static String buildCallCloseClassLoader(String classLoaderVar) {
-        return "org.hotswap.agent.PluginManager.getInstance().closeClassLoader(" + classLoaderVar + ");";
+        return "org.hotswap.agent.config.PluginManager.getInstance().closeClassLoader(" + classLoaderVar + ");";
     }
 
     /**
@@ -110,7 +110,7 @@ public class PluginManagerInvoker {
         b.append(managerClass);
         b.append(".class.getClassLoader();");
 
-        // Object __pluginInstance = org.hotswap.agent.PluginManager.getInstance().getPlugin(org.hotswap.agent.plugin.TestPlugin.class.getName(), __pluginClassLoader);
+        // Object __pluginInstance = org.hotswap.agent.config.PluginManager.getInstance().getPlugin(org.hotswap.agent.plugin.TestPlugin.class.getName(), __pluginClassLoader);
         b.append("Object __pluginInstance = ");
         b.append(managerClass);
         b.append(".getInstance().getPlugin(");

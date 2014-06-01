@@ -1,6 +1,8 @@
 package org.hotswap.agent;
 
 import org.hotswap.agent.annotation.handler.AnnotationProcessor;
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.config.PluginRegistry;
 import org.hotswap.agent.testData.SimplePlugin;
 import org.hotswap.agent.util.scanner.ClassPathAnnotationScanner;
 import org.jmock.Expectations;
