@@ -29,7 +29,7 @@ import java.util.Enumeration;
  * @author Jiri Bubnik
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
-        testedVersions = {"3.0.0", "3.1.4", "3.2.1", "4.0.2"}, expectedVersions = {"3x", "4x"},
+        testedVersions = {"All between 3.0.1 - 4.0.5"}, expectedVersions = {"3x", "4x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class})
 public class SpringPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);

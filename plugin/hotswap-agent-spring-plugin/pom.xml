@@ -12,7 +12,7 @@
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
-        <org.springframework.version>4.0.2.RELEASE</org.springframework.version>
+        <org.springframework.version>4.0.5.RELEASE</org.springframework.version>
     </properties>
 
 
@@ -54,6 +54,14 @@
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
             <version>1.6.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Dependency for Spring 3.0 versions -->
+        <dependency>
+            <groupId>cglib</groupId>
+            <artifactId>cglib</artifactId>
+            <version>2.2</version>
             <scope>test</scope>
         </dependency>
 

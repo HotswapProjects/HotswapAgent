@@ -18,8 +18,8 @@ import org.hotswap.agent.watch.WatchEvent;
  * @author Jiri Bubnik
  */
 @Plugin(name = "Hibernate", description = "Reload Hibernate configuration after entity create/change.",
-        testedVersions = {"4.1.7"},
-        expectedVersions = {"4x"},
+        testedVersions = {"All between 4.0.1 - 4.2.13"},
+        expectedVersions = {"4.0.x", "4.1.x", "4.2.x"},
         supportClass = {HibernateTransformers.class})
 public class HibernatePlugin {
     private static final String ENTITY_ANNOTATION = "javax.persistence.Entity";
