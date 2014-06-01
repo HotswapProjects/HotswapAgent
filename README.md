@@ -174,8 +174,11 @@ See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgentExamples/blob
 
 Creating Release
 ================
+Launch `run-tests.sh` script in the main directory. Currently you have to setup JAVA_HOME location directory manually. 
+At least Java 7 and Java 8 with DCEVM should be checked before a release. All automatic tests are set to fail 
+the whole script in case of any single test failure. 
 
-Got to directory representing repository root. In case DCEVM is named `dcevm`
+Go to directory representing repository root. In case DCEVM is named `dcevm`
 
     mvn release:prepare
     mvn release:perform
