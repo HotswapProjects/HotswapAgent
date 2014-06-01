@@ -1,4 +1,4 @@
-package org.hotswap.agent;
+package org.hotswap.agent.config;
 
 /**
  * Listener after plugin is initialized.

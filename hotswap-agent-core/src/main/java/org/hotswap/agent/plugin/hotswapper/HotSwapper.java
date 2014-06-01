@@ -1,6 +1,6 @@
 package org.hotswap.agent.plugin.hotswapper;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;

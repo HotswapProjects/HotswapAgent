@@ -45,7 +45,7 @@ public class ClassLoaderURLPatcher implements ClassLoaderPatcher {
         }
     }
 
-    private static final String CHECK_RESOURCE = "org/hotswap/agent/PluginManager.class";
+    private static final String CHECK_RESOURCE = "org/hotswap/agent/config/PluginManager.class";
 
     private void doPatchUrlClassLoader(URLClassLoader classLoader) {
 

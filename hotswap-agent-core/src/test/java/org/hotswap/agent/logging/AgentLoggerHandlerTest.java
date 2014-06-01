@@ -1,7 +1,7 @@
 package org.hotswap.agent.logging;
 
 import org.hamcrest.text.StringContains;
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.lib.legacy.ClassImposteriser;
@@ -25,7 +25,7 @@ public class AgentLoggerHandlerTest {
         handler.setPrintStream(printStream);
 
         context.checking(new Expectations() {{
-            oneOf(printStream).println(with(new StringContains("DEBUG (org.hotswap.agent.PluginManager) - A 1 B 2 C 3")));
+            oneOf(printStream).println(with(new StringContains("DEBUG (org.hotswap.agent.config.PluginManager) - A 1 B 2 C 3")));
         }});
 
         handler.print(PluginManager.class, AgentLogger.Level.DEBUG, "A {} B {} C {}", null, "1", 2, 3L);

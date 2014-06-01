@@ -2,14 +2,12 @@ package org.hotswap.agent;
 
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.util.Version;
 
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.net.URL;
-import java.util.*;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Register the agent and initialize plugin manager singleton instance.
@@ -26,7 +24,7 @@ public class HotswapAgent {
 
     /**
      * Force disable plugin, this plugin is skipped during scanning process.
-     *
+     * <p/>
      * Plugin might be disabled in hotswap-agent.properties for application classloaders as well.
      */
     private static Set<String> disabledPlugins = new HashSet<String>();
@@ -40,6 +38,7 @@ public class HotswapAgent {
 
         LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         parseArgs(args);
+        fixJboss7Modules();
         PluginManager.getInstance().init(inst);
         LOGGER.debug("Hotswap agent inicialized.");
 
@@ -61,7 +60,7 @@ public class HotswapAgent {
                 disabledPlugins.add(optionValue);
             } else if ("autoHotswap".equals(option)) {
                 autoHotswap = Boolean.valueOf(optionValue);
-            }else {
+            } else {
                 LOGGER.warning("Invalid javaagent option '{}'. Argument '{}' is ignored.", option, arg);
             }
         }
@@ -70,6 +69,7 @@ public class HotswapAgent {
 
     /**
      * Checks if the plugin is disabled (by name).
+     *
      * @param pluginName plugin name (e.g. Tomcat, Spring, ...)
      * @return true if the plugin is disabled
      */
@@ -79,9 +79,36 @@ public class HotswapAgent {
 
     /**
      * Default autoHotswap property value.
+     *
      * @return true if autoHotswap=true command line option was specified
      */
     public static boolean isAutoHotswap() {
         return autoHotswap;
+    }
+
+    /**
+     * JBoss 7 use OSGI classloading and hence agent core classes are not available from application classloader.
+     *
+     * Wee need to simulate command line attribute -Djboss.modules.system.pkgs=org.hotswap.agent to allow any
+     * classloader to access agent libraries (OSGI default export). This method does it on behalf of the user.
+     *
+     * It is not possible to add whole org.hotswap.agent package, because it includes all subpackages and
+     * examples will fail (org.hotswap.agent.example will become system package).
+     *
+     * See similar problem description https://issues.jboss.org/browse/WFLY-895.
+     */
+    private static void fixJboss7Modules() {
+        String JBOSS_SYSTEM_MODULES_KEY = "jboss.modules.system.pkgs";
+        String HOTSWAP_AGENT_EXPORT_PACKAGES = "org.hotswap.agent.annotation," +
+                "org.hotswap.agent.annotation," +
+                "org.hotswap.agent.command," +
+                "org.hotswap.agent.config," +
+                "org.hotswap.agent.logging," +
+                "org.hotswap.agent.plugin," +
+                "org.hotswap.agent.util," +
+                "org.hotswap.agent.watch";
+
+        String oldValue = System.getProperty(JBOSS_SYSTEM_MODULES_KEY, null);
+        System.setProperty(JBOSS_SYSTEM_MODULES_KEY, oldValue == null ? HOTSWAP_AGENT_EXPORT_PACKAGES : oldValue + "," + HOTSWAP_AGENT_EXPORT_PACKAGES);
     }
 }

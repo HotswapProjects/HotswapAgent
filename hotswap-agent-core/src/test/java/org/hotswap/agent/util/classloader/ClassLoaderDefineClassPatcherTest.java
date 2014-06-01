@@ -1,6 +1,6 @@
 package org.hotswap.agent.util.classloader;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin;
 import org.junit.Test;
 

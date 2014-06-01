@@ -1,6 +1,6 @@
 package org.hotswap.agent.annotation.handler;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Watch;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.logging.AgentLogger;

@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.hotswapper;
 
 import org.hotswap.agent.HotswapAgent;
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Watch;

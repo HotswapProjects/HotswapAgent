@@ -1,6 +1,6 @@
 package org.hotswap.agent.command;
 
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 
 import java.lang.reflect.InvocationTargetException;

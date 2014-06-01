@@ -1,4 +1,4 @@
-package org.hotswap.agent;
+package org.hotswap.agent.config;
 
 /**
  * Register a listener on PluginManager to watch for new ClassLoader instance.

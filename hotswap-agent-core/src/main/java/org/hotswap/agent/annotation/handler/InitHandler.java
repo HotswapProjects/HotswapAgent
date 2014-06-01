@@ -1,7 +1,7 @@
 package org.hotswap.agent.annotation.handler;
 
-import org.hotswap.agent.ClassLoaderInitListener;
-import org.hotswap.agent.PluginManager;
+import org.hotswap.agent.config.ClassLoaderInitListener;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;

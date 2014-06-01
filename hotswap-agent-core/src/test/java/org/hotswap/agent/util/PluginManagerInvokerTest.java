@@ -1,7 +1,7 @@
 package org.hotswap.agent.util;
 
-import org.hotswap.agent.PluginManager;
-import org.hotswap.agent.PluginRegistry;
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.config.PluginRegistry;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtNewMethod;
