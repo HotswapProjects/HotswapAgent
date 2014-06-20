@@ -1,60 +1,175 @@
 package org.hotswap.agent.plugin.jetty;
 
+import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Transform;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.ReflectionHelper;
+
+import java.lang.reflect.Array;
+import java.net.URL;
 
 /**
  * Jetty servlet container support.
+ *
  * <p/>
  * <p>Plugin</p><ul>
+ *     <li>Configure webapp classloader before first servlet is loaded</li>
+ *      <li>webappDir configuration property</li>
+ *     <li>extraClasspath configuration property (handled by WatchResourcesPlugin)</li>
+ *     <li>watchResources configuration property (handled by WatchResourcesPlugin)</li>
  * </ul>
  *
  * @author Jiri Bubnik
  */
 @Plugin(name = "Jetty", description = "Jetty plugin.",
-        testedVersions = {"6.1.26"},
-        expectedVersions = {"All versions supporting WebAppContext.getExtraClasspath"}
+        testedVersions = {"6.1.26", "7.6.14", "8.1.14", "9.1.2"},
+        expectedVersions = {"4x", "5x", "6x", "7x", "8x", "9x"}
 )
 public class JettyPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(JettyPlugin.class);
 
+    @Init
+    PluginConfiguration pluginConfiguration;
 
     /**
-     * Before actual webapp initialization starts in ContextHandler.doStart(), do some enhancements:<ul>
-     * <li>Initialize this plugin on the webapp classloader</li>
-     * <li>Call plugin method initExtraPathResourceClassLoader add urls and to start watching changed resources</li>
-     * <li>Call plugin method registerExtraPathClassLoader to inject enhanced resource loader to the webapp classloader.</li>
-     * </ul>
+     * Plugin initialization step needs to be fine tuned. It can be intialized only AFTER the classloader
+     * already knows about hotswap-agent.properties file (i.e. after webapp basic path is added to the classloader),
+     * but BEFORE first servlet is initialized.
+     *
+     * WebXmlConfiguration seems to be good place which should work in most setups. The plugin is intialized before
+     * web.xml file is processed - basic paths should be known, but nothing is processed yet.
+     *
+     * Application classloader is processed during plugin initialization. It means that other plugins triggered
+     * on plugin init should fire as well - for jetty is important core watchResources plugin, which will handle
+     * extraClassPath and watchResources configuration properties (jetty fortunately depends only on basic
+     * URLClassLoader behaviour which is handled by that plugin).
      */
-    @Transform(classNameRegexp = "org.mortbay.jetty.handler.ContextHandler")
-    public static void patchContextHandler(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+    @Transform(classNameRegexp = "org.eclipse.jetty.webapp.WebXmlConfiguration")
+    public static void patchWebXmlConfiguration(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
 
         try {
             // after application context initialized, but before processing started
-            CtMethod doStart = ctClass.getDeclaredMethod("doStart");
+            CtMethod doStart = ctClass.getDeclaredMethod("configure");
 
             // init the plugin
-            String src = PluginManagerInvoker.buildInitializePlugin(JettyPlugin.class, "getClassLoader()");
+            String src = PluginManagerInvoker.buildInitializePlugin(JettyPlugin.class, "context.getClassLoader()");
+            src += PluginManagerInvoker.buildCallPluginMethod("context.getClassLoader()", JettyPlugin.class,
+                    "init", "context", "java.lang.Object");
 
             doStart.insertBefore(src);
         } catch (NotFoundException e) {
-            LOGGER.warning("org.mortbay.jetty.handler.ContextHandler does not contain doStart method. Jetty plugin will be disabled.\n" +
+            LOGGER.warning("org.eclipse.jetty.webapp.WebAppContext does not contain startContext method. Jetty plugin will be disabled.\n" +
                     "*** This is Ok, Jetty plugin handles only special properties ***");
             return;
         }
+    }
+
+    // same as above for older jetty versions
+    @Transform(classNameRegexp = "org.mortbay.jetty.webapp.WebXmlConfiguration")
+    public static void patchWebXmlConfiguration6x(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+        try {
+            // after application context initialized, but before processing started
+            CtMethod doStart = ctClass.getDeclaredMethod("configureWebApp");
+
+            // init the plugin
+            String src = PluginManagerInvoker.buildInitializePlugin(JettyPlugin.class, "getWebAppContext().getClassLoader()");
+            src += PluginManagerInvoker.buildCallPluginMethod("getWebAppContext().getClassLoader()", JettyPlugin.class,
+                    "init", "getWebAppContext()", "java.lang.Object");
+
+            doStart.insertBefore(src);
+        } catch (NotFoundException e) {
+            LOGGER.warning("org.mortbay.jetty.webapp.WebXmlConfiguration does not contain startContext method. Jetty plugin will be disabled.\n" +
+                    "*** This is Ok, Jetty plugin handles only special properties ***");
+            return;
+        }
+    }
+
+    /**
+     * Before app context is stopped, clean the classloader (and associated plugin instance).
+     */
+    @Transform(classNameRegexp = "(org.mortbay.jetty.webapp.WebAppContext)|(org.eclipse.jetty.webapp.WebAppContext)")
+    public static void patchContextHandler6x(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+
 
         try {
             ctClass.getDeclaredMethod("doStop").insertBefore(
                     PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()")
             );
         } catch (NotFoundException e) {
-            LOGGER.debug("org.mortbay.jetty.handler.ContextHandler does not contain doStop() method. Hotswap agent will not be able to free Jetty plugin resources.");
+            LOGGER.debug("org.eclipse.jetty.webapp.WebAppContext does not contain doStop() method. Hotswap agent will not be able to free Jetty plugin resources.");
         }
+    }
+
+    /**
+     * Actual plugin initialization write plugin info and handle webappDir property.
+     *
+     * If the webappDir property is set, call:
+     * <pre>
+     *      contextHandler.setBaseResource(new ResourceCollection(
+     *          new FileResource(webappDir),
+     *          contextHandler.getBaseResource()
+     *      ));
+     *</pre>
+     * @param contextHandler instance of ContextHandler - main jetty class for webapp.
+     */
+    public void init(Object contextHandler) {
+
+        // resolve jetty classes
+        ClassLoader loader = contextHandler.getClass().getClassLoader();
+        Class contextHandlerClass;
+        Class resourceClass;
+        Class fileResourceClass;
+        Class resourceCollectionClass;
+
+        try {
+            contextHandlerClass = loader.loadClass("org.eclipse.jetty.server.handler.ContextHandler");
+            resourceClass = loader.loadClass("org.eclipse.jetty.util.resource.Resource");
+            fileResourceClass = loader.loadClass("org.eclipse.jetty.util.resource.FileResource");
+            resourceCollectionClass = loader.loadClass("org.eclipse.jetty.util.resource.ResourceCollection");
+        } catch (ClassNotFoundException e) {
+            try {
+                contextHandlerClass = loader.loadClass("org.mortbay.jetty.handler.ContextHandler");
+                resourceClass = loader.loadClass("org.mortbay.resource.Resource");
+                fileResourceClass = loader.loadClass("org.mortbay.resource.FileResource");
+                resourceCollectionClass = loader.loadClass("org.mortbay.resource.ResourceCollection");
+            } catch (ClassNotFoundException e1) {
+                LOGGER.error("Unable to load ContextHandler class from contextHandler {} classloader", contextHandler);
+                return;
+            }
+        }
+
+        // find version in Servlet package (http://docs.codehaus.org/display/JETTY/How+to+find+out+the+version+of+Jetty)
+        Object server = ReflectionHelper.invoke(contextHandler, contextHandlerClass, "getServer", new Class[] {});
+        String version = server.getClass().getPackage().getImplementationVersion();
+
+        // set different resource
+        URL webappDir = pluginConfiguration.getWebappDir();
+        if (webappDir != null) {
+            LOGGER.debug("Setting webappDir to directory '{}' for Jetty webapp {}.", webappDir, contextHandler);
+            try {
+                Object originalBaseResource = ReflectionHelper.invoke(contextHandler, contextHandlerClass, "getBaseResource", new Class[] {});
+                Object fileResource = fileResourceClass.getDeclaredConstructor(URL.class).newInstance(webappDir);
+                Object resourceArray = Array.newInstance(resourceClass, 2);
+                Array.set(resourceArray, 0, fileResource);
+                Array.set(resourceArray, 1, originalBaseResource);
+
+                Object resourceCollection = resourceCollectionClass.getDeclaredConstructor(resourceArray.getClass()).newInstance(resourceArray);
+
+                ReflectionHelper.invoke(contextHandler, contextHandlerClass, "setBaseResource",
+                        new Class[] {resourceClass}, resourceCollection);
+
+            } catch (Exception e) {
+                LOGGER.error("Unable to set webappDir to directory '{}' for Jetty webapp {}. This configuration will not work.", e, webappDir, contextHandler);
+            }
+        }
+
+        LOGGER.info("Jetty plugin initialized - Jetty version '{}', context {}", version, contextHandler);
     }
 }
