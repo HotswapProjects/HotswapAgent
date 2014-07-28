@@ -36,6 +36,12 @@
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-jersey2-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
             <artifactId>hotswap-agent-jetty-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
