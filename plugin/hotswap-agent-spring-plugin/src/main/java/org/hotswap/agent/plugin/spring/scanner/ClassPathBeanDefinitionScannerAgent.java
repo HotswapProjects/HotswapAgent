@@ -1,7 +1,14 @@
 package org.hotswap.agent.plugin.spring.scanner;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
+import org.hotswap.agent.plugin.spring.ResetRequestMappingCaches;
 import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -13,19 +20,18 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.AnnotationConfigUtils;
+import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.context.annotation.ScannedGenericBeanDefinition;
+import org.springframework.context.annotation.ScopeMetadata;
+import org.springframework.context.annotation.ScopeMetadataResolver;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Registers
@@ -158,7 +164,11 @@ public class ClassPathBeanDefinitionScannerAgent {
                 LOGGER.reload("Registering Spring bean '{}'", beanName);
                 LOGGER.debug("Bean definition '{}'", beanName, candidate);
                 registerBeanDefinition(definitionHolder, registry);
-
+                
+                DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
+                if (bf != null)
+                	ResetRequestMappingCaches.reset(bf);
+                
                 freezeConfiguration();
             }
         }
@@ -175,13 +185,20 @@ public class ClassPathBeanDefinitionScannerAgent {
             registry.removeBeanDefinition(beanName);
 
             ResetSpringStaticCaches.reset();
-
-            if (registry instanceof DefaultListableBeanFactory) {
-                ResetBeanPostProcessorCaches.reset(((DefaultListableBeanFactory)registry));
-            } else if (registry instanceof GenericApplicationContext) {
-                ResetBeanPostProcessorCaches.reset(((GenericApplicationContext) registry).getDefaultListableBeanFactory());
+            DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
+            if (bf != null) {
+            	ResetBeanPostProcessorCaches.reset(bf);
             }
         }
+    }
+    
+    private DefaultListableBeanFactory maybeRegistryToBeanFactory() {
+        if (registry instanceof DefaultListableBeanFactory) {
+            return (DefaultListableBeanFactory)registry;
+        } else if (registry instanceof GenericApplicationContext) {
+            return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
+        }
+        return null;
     }
 
     // rerun freez configuration - this method is enhanced with cache reset
