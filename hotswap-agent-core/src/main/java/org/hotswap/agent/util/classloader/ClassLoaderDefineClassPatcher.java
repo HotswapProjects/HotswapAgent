@@ -1,5 +1,6 @@
 package org.hotswap.agent.util.classloader;
 
+import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -46,6 +47,13 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
                 public void visit(InputStream file) throws IOException {
                     try {
                         CtClass patchClass = cp.makeClass(file);
+
+                        // skip plugin classes
+                        if (patchClass.hasAnnotation(Plugin.class)) {
+                            LOGGER.trace("Skipping plugin class: " + patchClass.getName());
+                            return;
+                        }
+
                         try {
                             // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
                             // is parent of classLoaderFrom, after definition in classLoaderTo will classLoaderFrom return
@@ -55,9 +63,7 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
                             patchClass.toClass(classLoaderTo, protectionDomain);
                         } catch (CannotCompileException e) {
                             LOGGER.trace("Skipping class definition in {} in app classloader {} - " +
-                                    "class is probably already defined. This will happen " +
-                                    "typically for the plugin class itself.", e,
-                                    patchClass.getName(), classLoaderTo);
+                                    "class is probably already defined.", patchClass.getName(), classLoaderTo);
                         }
                     } catch (Throwable e) {
                         LOGGER.trace("Skipping class definition app classloader {} - " +

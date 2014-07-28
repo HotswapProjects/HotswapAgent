@@ -1,5 +1,7 @@
 package org.hotswap.agent.util;
 
+import org.hotswap.agent.command.Command;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 
 import java.lang.instrument.ClassFileTransformer;
@@ -20,11 +22,19 @@ public class HotswapTransformer implements ClassFileTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapTransformer.class);
 
+    /**
+     * Exclude these classLoaders from initialization (system classloaders). Note that
+     */
+    private static final Set<String> excludedClassLoaders = new HashSet<String>(Arrays.asList(
+            "sun.reflect.DelegatingClassLoader"
+    ));
+
     protected Map<Pattern, List<ClassFileTransformer>> registeredTransformers = new HashMap<Pattern, List<ClassFileTransformer>>();
 
     // keep track about which classloader requested which transformer
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new HashMap<ClassFileTransformer, ClassLoader>();
 
+    protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<ClassLoader, Object>();
 
     /**
      * Register a transformer for a regexp matching class names.
@@ -100,9 +110,12 @@ public class HotswapTransformer implements ClassFileTransformer {
      * @see ClassFileTransformer#transform(ClassLoader, String, Class, java.security.ProtectionDomain, byte[])
      */
     @Override
-    public byte[] transform(ClassLoader classLoader, String className, Class<?> redefiningClass,
-                            ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+    public byte[] transform(final ClassLoader classLoader, String className, Class<?> redefiningClass,
+                            final ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
         LOGGER.trace("Transform on class '{}' @{} redefiningClass '{}'.", className, classLoader, redefiningClass);
+
+        // ensure classloader initialized
+       ensureClassLoaderInitialized(classLoader, protectionDomain);
 
         byte[] result = bytes;
         try {
@@ -121,7 +134,42 @@ public class HotswapTransformer implements ClassFileTransformer {
             LOGGER.error("Error transforming class '" + className + "'.", t);
         }
 
+
+
         return result;
+    }
+
+    /**
+     * Every classloader should be initialized. Usually if anything interesting happens,
+     * it is initialized during plugin initialization process. However, some plugins (e.g. Hotswapper)
+     * are triggered during classloader initialization process itself (@Init on static method). In this case,
+     * the plugin will be never invoked, until the classloader initialization is invoked from here.
+     *
+     * Schedule with some timeout to allow standard plugin initialization process to precede.
+     *
+     * @param classLoader the classloader to which this transformation is associated
+     * @param protectionDomain associated protection domain (if any)
+     */
+    protected void ensureClassLoaderInitialized(final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
+        if (!seenClassLoaders.containsKey(classLoader)) {
+            seenClassLoaders.put(classLoader, null);
+
+            // ensure the classloader should not be excluded
+            if (!excludedClassLoaders.contains(classLoader.getClass().getName())) {
+                // schedule the excecution
+                PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
+                    @Override
+                    public void executeCommand() {
+                        PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "executeCommand: initClassLoader(" + classLoader + ")";
+                    }
+                }, 1000);
+            }
+        }
     }
 
 

@@ -108,7 +108,7 @@ public class HotswapperPlugin {
         LOGGER.debug("Init plugin at classLoader {}", appClassLoader);
 
         // init only if the classloader contains directly the property file (not in parent classloader)
-        if (!pluginConfiguration.containsPropertyFile()) {
+        if (!HotswapAgent.isAutoHotswap() && !pluginConfiguration.containsPropertyFile()) {
             LOGGER.debug("ClassLoader {} does not contain hotswap-agent.properties file, hotswapper skipped.", appClassLoader);
             return;
         }

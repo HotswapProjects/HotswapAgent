@@ -35,7 +35,11 @@ public class ReflectionHelper {
         try {
             Method method = methodCache.get(key);
             if (method == null) {
-                method = clazz.getDeclaredMethod(methodName, parameterTypes);
+                try {
+                    method = clazz.getMethod(methodName, parameterTypes);
+                } catch (NoSuchMethodException e) {
+                    method = clazz.getDeclaredMethod(methodName, parameterTypes);
+                }
                 method.setAccessible(true);
                 methodCache.put(key, method);
             }
@@ -99,6 +103,33 @@ public class ReflectionHelper {
         } catch (Exception e) {
             LOGGER.trace("Error getting field {}.{} on object {}", e, clazz, fieldName, target);
             return null;
+        }
+    }
+
+    /**
+     * Convenience wrapper to reflection method invoke API. Set field value and hide checked exceptions.
+     *
+     * @param target    object to get field value (or null for static methods)
+     * @param clazz     class name
+     * @param fieldName field name
+     * @param value field value
+     * @throws IllegalArgumentException if field not found
+     */
+    public static void set(Object target, Class<?> clazz, String fieldName, Object value) {
+        String key = clazz.getName() + "." + fieldName;
+        try {
+            Field field = fieldCache.get(key);
+            if (field == null) {
+                field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                fieldCache.put(key, field);
+            }
+
+            field.set(target, value);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalArgumentException(String.format("No such field %s.%s on %s", clazz.getName(), fieldName, target), e);
+        } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException(String.format("Illegal access field %s.%s on %s", clazz.getName(), fieldName, target), e);
         }
     }
 }

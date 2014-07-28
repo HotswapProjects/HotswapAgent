@@ -28,15 +28,14 @@ Quick start:
 ===========
 ### Install
 1. download [latest release of DCEVM Java patch](https://github.com/dcevm/dcevm/releases) and launch the installer 
-(e.g. `java -jar installer-light.jar`)
-1. select java installation directory on your disc and press "Install DCEVM as altjvm" button. Java 1.6+ versions are supported.
+(e.g. `java -jar installer-light.jar`). Currently you need to select correct installer for Java major version (7/8).
+1. select java installation directory on your disc and press "Install DCEVM as altjvm" button. Java 1.7+ versions are supported.
 1. download [latest release of Hotswap agent jar](https://github.com/HotswapProjects/HotswapAgent/releases), 
 unpack `hotswap-agent.jar` and put it anywhere on your disc. For example: `C:\java\hotswap-agent.jar`
 
 ### Run your application
-1. add following command line java attributes:
-  <pre>-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar</pre> You need to replace PATH_TO_AGENT with an actual
-  directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\hotswap-agent.jar YourApp`.
+1. add following command line java attributes: `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar` (you 
+need to replace PATH_TO_AGENT with an actual) directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\hotswap-agent.jar YourApp`.
   See [IntelliJ IDEA](https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss)
   and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides.
 1. (optional) create a file named "hotswap-agent.properties" inside your resources directory, see available properties and
@@ -47,34 +46,41 @@ unpack `hotswap-agent.jar` and put it anywhere on your disc. For example: `C:\ja
         HOTSWAP AGENT: 9:49:29.725 INFO (org.hotswap.agent.config.PluginRegistry) - Discovered plugins: [org.hotswap.agent.plugin.hotswapper.HotswapperPlugin, org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin, org.hotswap.agent.plugin.hibernate.HibernatePlugin, org.hotswap.agent.plugin.spring.SpringPlugin, org.hotswap.agent.plugin.jetty.JettyPlugin, org.hotswap.agent.plugin.tomcat.TomcatPlugin, org.hotswap.agent.plugin.zk.ZkPlugin, org.hotswap.agent.plugin.logback.LogbackPlugin]
         ...
         HOTSWAP AGENT: 9:49:38.700 INFO (org.hotswap.agent.plugin.spring.SpringPlugin) - Spring plugin initialized - Spring core version '3.2.3.RELEASE'
-1. save a resource and/or use the HotSwap feature of your IDE to reload changes
+1. save a changed resource and/or use the HotSwap feature of your IDE to reload changes
 
 ### What is available?
 * Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
   is hierarchy change (change the superclass or remove an interface).
-* Reload resource - resources from webapp directory are usually reloaded by application server. But what about
+    * You can use standard Java Hotswap from IDE in debug mode to reload changed class 
+    * or set autoHotswap property `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar=autoHotswap=true` to reload
+    changed classes after compilation. This setup allows even reload on production system without restart.
+* Automatic configuration - all local classes and resources known to the running Java application are automatically
+  discovered and watched for reload (all files on local filesystem, not inside JAR file).
+* Extra classpath - Need change a runtime class inside dependent JAR? Use extraClasspath property to add any directory 
+as a classpath to watch for class files.
+* Reload resource after a change - resources from webapp directory are usually reloaded by application server. But what about
   other resources like src/main/resources? Use watchResources property to add any directory to watch for a resource change.
-* Extra classpath - Need change of a class inside dependent jar? Use extraClasspath property to add any directory as
-  a classpath to watch for class files
 * Framework support - through plugin system, many frameworks are supported. New plugins can be easily added.
-* Reload without IDE - you can configure the agent to automatically reload changed class file automatically (without IDE).
-  This may be used to upload changed classes even on a production system without restart (note, that the agent is not stable
-  enough yet, use at your own risk).
 * Fast - until the plugin is initialized, it does not consume any resources or slow down the application (see Runtime overhead for more information)
 
 Should you have any problems or questions, ask at [HotswapAgent forum](https://groups.google.com/forum/#!forum/hotswapagent).
 
 This project is similar to [JRebel](http://zeroturnaround.com/software/jrebel/). Main differences are:
 
+* HotswapAgent (DCEVM) supports Java8!
+* HotswapAgent does not need any additional configuration for basic project setup.
 * JRebel is currently more mature and contains more plugins.
 * JRebel is neither open source nor free.
 * JRebel modifies bytecode of all classes on reload. You need special IDE plugin to fix debugging.
+* HotswapAgent extraClasspath is similar to JRebel <classpath> configuration 
+* HotswapAgent adds watchResources configuration
 
 ### Examples
 See [HotswapAgentExamples](https://github.com/HotswapProjects/HotswapAgentExamples) GitHub project.
 The purpose of an example application is:
 
-* to check "real world" plugin usage during plugin development
+* complex automate integration tests (check various configurations before a release, see `run-tests.sh` script) 
+* to check "real world" plugin usage during plugin development (i.e. inside container)
 * to provide working solution for typical application setups
 * sandbox to simulate issues for existing or new setups
 
@@ -83,7 +89,7 @@ General setups will be merged into the master.
 
 Configuration
 =============
-The basic configuration is configured reload classes and resources from classpath known to the running application
+The basic configuration set to reload classes and resources from classpath known to the running application
 (classloader). If you need a different configuration, add hotswap-agent.properties file to the classpath root
 (e.g. `src/main/resources/hotswap-agent.properties`).
 
@@ -95,9 +101,12 @@ Full syntax of command line options is:
     -javaagent:[yourpath/]hotswap-agent.jar=[option1]=[value1],[option2]=[value2]
 
 Hotswap agent accepts following options:
-* disablePlugin - plugin name to disable. Not that this will compleatly forbid the plugin to load (opposite to disablePlugin
-    option in hotswap-agent.properties, which will only disable the plugin for a classloader. You can repeat this
-    option for every plugin to disable.
+
+* autoHotswap=true - watch all .class files for change and automatically Hotswap the class in the running application
+ (instead of running Hotswap from your IDE debugging session) 
+* disablePlugin=[pluginName] - disable a plugin. Note that this will completely forbid the plugin to load 
+    (opposite to disablePlugin option in hotswap-agent.properties, which will only disable the plugin for a classloader. 
+    You can repeat this option for every plugin to disable.
 
 
 How does it work?

@@ -9,7 +9,9 @@ import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
-
+/**
+ * Support for Spring MVC mapping caches.
+ */
 public class ResetRequestMappingCaches {
 	
 	private static AgentLogger LOGGER = AgentLogger.getLogger(ResetRequestMappingCaches.class);
@@ -27,6 +29,9 @@ public class ResetRequestMappingCaches {
 	public static void reset(DefaultListableBeanFactory beanFactory) {
 		
 		Class<?> c = getHandlerMethodMappingClassOrNull();
+        if (c == null)
+            return;
+
 		Map<String, ?> mappings =
 				BeanFactoryUtils.beansOfTypeIncludingAncestors(beanFactory, c, true, false);
 		if (mappings.isEmpty()) {

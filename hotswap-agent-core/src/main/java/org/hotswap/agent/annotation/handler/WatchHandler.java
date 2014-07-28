@@ -7,6 +7,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -75,6 +76,16 @@ public class WatchHandler implements PluginHandler<Watch> {
         while (en.hasMoreElements()) {
             try {
                 URI uri = en.nextElement().toURI();
+
+                // check that this is a local accessible file (not vfs inside JAR etc.)
+                try {
+                    new File(uri);
+                } catch (Exception e) {
+                    LOGGER.trace("Skipping uri {}, not a local file.", uri);
+                    continue;
+                }
+
+
                 LOGGER.debug("Registering resource listener on classpath URI {}", uri);
                 registerResourceListener(pluginAnnotation, classLoader, uri);
             } catch (URISyntaxException e) {

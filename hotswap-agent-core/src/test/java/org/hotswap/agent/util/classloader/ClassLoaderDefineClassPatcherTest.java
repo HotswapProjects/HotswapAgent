@@ -1,7 +1,7 @@
 package org.hotswap.agent.util.classloader;
 
 import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin;
+import org.hotswap.agent.plugin.jvm.AnonymousClassInfo;
 import org.junit.Test;
 
 import java.net.URL;
@@ -18,7 +18,7 @@ public class ClassLoaderDefineClassPatcherTest {
         ClassLoader appClassLoader = new URLClassLoader(new URL[]{}, getClass().getClassLoader());
 
         assertEquals("Class created in parent classloader", getClass().getClassLoader(),
-                appClassLoader.loadClass(AnonymousClassPatchPlugin.class.getName()).getClassLoader());
+                appClassLoader.loadClass(AnonymousClassInfo.class.getName()).getClassLoader());
         ;
     }
 
@@ -27,13 +27,13 @@ public class ClassLoaderDefineClassPatcherTest {
         ClassLoader appClassLoader = new URLClassLoader(new URL[]{}, getClass().getClassLoader());
 
         assertEquals("Class created in parent classloader", getClass().getClassLoader(),
-                appClassLoader.loadClass(AnonymousClassPatchPlugin.class.getName()).getClassLoader());
+                appClassLoader.loadClass(AnonymousClassInfo.class.getName()).getClassLoader());
 
         new ClassLoaderDefineClassPatcher().patch(getClass().getClassLoader(), PluginManager.PLUGIN_PACKAGE.replace(".", "/"),
                 appClassLoader, null);
 
         assertEquals("Class created in app classloader", appClassLoader,
-                appClassLoader.loadClass(AnonymousClassPatchPlugin.class.getName()).getClassLoader());
+                appClassLoader.loadClass(AnonymousClassInfo.class.getName()).getClassLoader());
         ;
     }
 

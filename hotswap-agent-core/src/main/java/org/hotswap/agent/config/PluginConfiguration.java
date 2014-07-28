@@ -129,7 +129,8 @@ public class PluginConfiguration {
                 URLClassLoaderHelper.prependClassPath((URLClassLoader) classLoader, extraClassPath);
             } else {
                 LOGGER.warning("Unable to set extraClasspath to {} on classLoader {}. " +
-                        "Only URLClassLoader is supported.", Arrays.toString(extraClassPath), classLoader);
+                        "Only URLClassLoader is supported.\n" +
+                        "*** extraClasspath configuration property will not be handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
             }
         }
     }
@@ -190,6 +191,23 @@ public class PluginConfiguration {
      */
     public URL[] getWatchResources() {
         return convertToURL(getProperty("watchResources"));
+    }
+
+    /**
+     * Return configuration property webappDir as URL.
+     */
+    public URL getWebappDir() {
+        try {
+            String webappDir = getProperty("webappDir");
+            if (webappDir != null && webappDir.length() > 0) {
+                return resourceNameToURL(webappDir);
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Invalid configuration value for webappDir: '{}' is not a valid URL or path and will be skipped.", getProperty("webappDir"), e);
+            return null;
+        }
     }
 
     /**

@@ -141,12 +141,16 @@ public class PluginRegistry {
         Class<Object> clazz = getPluginClass(pluginClass);
 
         // skip if the plugin is disabled
-        if (pluginManager.getPluginConfiguration(appClassLoader).isDisabledPlugin(clazz))
+        if (pluginManager.getPluginConfiguration(appClassLoader).isDisabledPlugin(clazz)) {
+            LOGGER.debug("Plugin {} disabled in classloader {}.", clazz, appClassLoader );
             return null;
+        }
 
         // already initialized in this or parent classloader
-        if (hasPlugin(clazz, appClassLoader))
+        if (hasPlugin(clazz, appClassLoader, false)) {
+            LOGGER.debug("Plugin {} already initialized in parent classloader of {}.", clazz, appClassLoader );
             return getPlugin(clazz, appClassLoader);
+        }
 
         Object pluginInstance = instantiate(clazz);
         registeredPlugins.get(clazz).put(appClassLoader, pluginInstance);
@@ -196,14 +200,17 @@ public class PluginRegistry {
      *
      * @param pluginClass type of the plugin
      * @param classLoader classloader of the plugin
+     * @param checkParent for parent classloaders as well?
      * @return true/false
      */
-    public boolean hasPlugin(Class<?> pluginClass, ClassLoader classLoader) {
+    public boolean hasPlugin(Class<?> pluginClass, ClassLoader classLoader, boolean checkParent) {
         if (!registeredPlugins.containsKey(pluginClass))
             return false;
 
         for (Map.Entry<ClassLoader, Object> registeredClassLoaderEntry : registeredPlugins.get(pluginClass).entrySet()) {
-            if (isParentClassLoader(registeredClassLoaderEntry.getKey(), classLoader)) {
+            if (checkParent && isParentClassLoader(registeredClassLoaderEntry.getKey(), classLoader)) {
+                return true;
+            } else if (registeredClassLoaderEntry.getKey().equals(classLoader)) {
                 return true;
             }
         }

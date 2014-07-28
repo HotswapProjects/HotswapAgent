@@ -44,7 +44,7 @@ public class WatchResourcesPlugin {
         LOGGER.debug("Init plugin at classLoader {}", appClassLoader);
 
         // synthetic classloader, skip
-        if (appClassLoader instanceof WatchResourcesClassLoader.WatchResourcesUrlClassLoader)
+        if (appClassLoader instanceof WatchResourcesClassLoader.UrlOnlyClassLoader)
             return;
 
         // init only if the classloader contains directly the property file (not in parent classloader)
@@ -84,7 +84,7 @@ public class WatchResourcesPlugin {
      */
     private void init(URL[] watchResources) {
         // configure the classloader to return only changed resources on watchResources path
-        watchResourcesClassLoader.init(watchResources, watcher);
+        watchResourcesClassLoader.initWatchResources(watchResources, watcher);
 
         // modify the application classloader to look for resources first in watchResourcesClassLoader
         URLClassLoaderHelper.setWatchResourceLoader((URLClassLoader)appClassLoader, watchResourcesClassLoader);

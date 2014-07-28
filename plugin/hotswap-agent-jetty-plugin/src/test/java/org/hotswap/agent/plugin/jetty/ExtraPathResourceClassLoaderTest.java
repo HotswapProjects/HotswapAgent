@@ -28,7 +28,7 @@ public class ExtraPathResourceClassLoaderTest {
         watcher.run();
 
         WatchResourcesClassLoader classLoader = new WatchResourcesClassLoader();
-        classLoader.init(new URL[]{directory.toUri().toURL()}, watcher);
+        classLoader.initWatchResources(new URL[]{directory.toUri().toURL()}, watcher);
 
         assertNull("Not returned before modification", classLoader.getResource(tempFile.getName()));
 

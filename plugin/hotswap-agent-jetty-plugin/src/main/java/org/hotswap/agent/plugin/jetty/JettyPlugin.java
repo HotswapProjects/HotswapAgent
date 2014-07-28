@@ -145,9 +145,14 @@ public class JettyPlugin {
             }
         }
 
+        String version;
         // find version in Servlet package (http://docs.codehaus.org/display/JETTY/How+to+find+out+the+version+of+Jetty)
-        Object server = ReflectionHelper.invoke(contextHandler, contextHandlerClass, "getServer", new Class[] {});
-        String version = server.getClass().getPackage().getImplementationVersion();
+        try {
+            Object server = ReflectionHelper.invoke(contextHandler, contextHandlerClass, "getServer", new Class[]{});
+            version = server.getClass().getPackage().getImplementationVersion();
+        } catch (Exception e) {
+            version = "unknown [" + e.getMessage() + "]";
+        }
 
         // set different resource
         URL webappDir = pluginConfiguration.getWebappDir();

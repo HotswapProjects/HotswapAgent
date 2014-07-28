@@ -1,0 +1,194 @@
+package org.hotswap.agent.plugin.tomcat;
+
+import org.hotswap.agent.annotation.Transform;
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.PluginManagerInvoker;
+
+/**
+ * Created by bubnik on 9.6.2014.
+ */
+public class WebappLoaderTransformer {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(WebappLoaderTransformer.class);
+
+    /**
+     * Init the plugin from start method.
+     *
+     * Hook into main init method of the loader. Init method name and resources type changes between
+     * Tomcat versions.
+     */
+    @Transform(classNameRegexp = "org.apache.catalina.loader.WebappLoader")
+    public static void patchWebappLoader(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+
+        // handled by various Tomcat versions
+        boolean startHandled = false;
+        boolean stopHandled = false;
+
+        // tomcat 8x
+        if (!startHandled) {
+            try {
+                // fail for older tomcat version, which does not contain context
+                ctClass.getDeclaredMethod("getContext");
+
+                ctClass.getDeclaredMethod("startInternal").insertAfter(
+                        TomcatPlugin.class.getName() + ".init(getClassLoader(), getContext().getResources());"
+                );
+                startHandled = true;
+            } catch (NotFoundException e) {
+                LOGGER.trace("WebappLoader does not contain getContext() method, trying older Tomcat version.");
+            }
+        }
+
+        // tomcat 7x
+        if (!startHandled) {
+            try {
+                ctClass.getDeclaredMethod("startInternal").insertAfter(
+                        TomcatPlugin.class.getName() + ".init(getClassLoader(), container.getResources());"
+                );
+                startHandled = true;
+            } catch (NotFoundException e) {
+                LOGGER.trace("WebappLoader does not contain startInternal() method, trying older Tomcat version.");
+            }
+        }
+
+        // tomcat 6x
+        if (!startHandled) {
+            try {
+                ctClass.getDeclaredMethod("start").insertAfter(
+                        TomcatPlugin.class.getName() + ".init(getClassLoader(), container.getResources());"
+                );
+            } catch (NotFoundException e) {
+            }
+        }
+
+
+        if (!startHandled) {
+            LOGGER.warning("org.apache.catalina.loader.WebappLoader does not contain neither start nor startInternal method. Tomcat plugin will be disabled.\n" +
+                    "*** Some properties (extraClasspath, watchResources) will NOT be supported on Tomcat level. They might be handled by another plugin though. ***");
+        }
+
+        // tomcat 7x,8x
+        if (!stopHandled) {
+            try {
+                ctClass.getDeclaredMethod("stopInternal").insertBefore(
+                        PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()")
+                );
+            } catch (NotFoundException e) {
+                LOGGER.debug("org.apache.catalina.core.StandardContext does not contain stopInternal() method. Hotswap agent will not be able to free Tomcat plugin resources.");
+            }
+
+        }
+
+        // tomcat 6x
+        if (!stopHandled) {
+            try {
+                ctClass.getDeclaredMethod("stop").insertBefore(
+                        PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()")
+                );
+            } catch (NotFoundException e) {
+                LOGGER.debug("org.apache.catalina.core.StandardContext does not contain stopInternal() method. Hotswap agent will not be able to free Tomcat plugin resources.");
+            }
+
+        }
+
+    }
+
+    /**
+     * Resource lookup for Tomcat 8x.
+     *
+     * Before the resource is handled by Tomcat, try to get extraResource handled by the plugin.
+     */
+    @Transform(classNameRegexp = "org.apache.catalina.webresources.StandardRoot")
+    public static void patchStandardRoot(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+        try {
+            ctClass.getDeclaredMethod("getResourceInternal", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertBefore(
+                    "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, path);" +
+                            "if (file != null) return new org.apache.catalina.webresources.FileResource(this, path, file, false);"
+            );
+        } catch (NotFoundException e) {
+            LOGGER.warning("org.apache.catalina.webresources.StandardRoot does not contain getResourceInternal method. Tomcat plugin will not work properly.");
+            return;
+        }
+
+        // if getResources() should conain extraClasspath, expand the original returned array and prepend extraClasspath result
+        try {
+            ctClass.getDeclaredMethod("getResources", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertAfter(
+                    "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, path);" +
+                    "if (file != null) {" +
+                            "org.apache.catalina.WebResource[] ret = new org.apache.catalina.WebResource[$_.length + 1];" +
+                            "ret[0] = new org.apache.catalina.webresources.FileResource(this, path, file, false);" +
+                            "java.lang.System.arraycopy($_, 0, ret, 1, $_.length);" +
+                            "return ret;" +
+                    "} else {return $_;}"
+            );
+        } catch (NotFoundException e) {
+            LOGGER.warning("org.apache.catalina.webresources.StandardRoot does not contain getResourceInternal method. Tomcat plugin will not work properly.");
+            return;
+        }
+
+    }
+
+    /**
+     * Resource lookup for Tomcat 6x, 7x.
+     *
+     * Before the resource is handled by Tomcat, try to get extraResource handled by the plugin.
+     */
+    @Transform(classNameRegexp = "org.apache.naming.resources.ProxyDirContext")
+    public static void patchProxyDirContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+
+        try {
+            ctClass.getDeclaredMethod("lookup", new CtClass[] {classPool.get(String.class.getName())}).insertBefore(
+                    "java.io.InputStream is = " + TomcatPlugin.class.getName() + ".getExtraResource(this, name);" +
+                            "if (is != null) return new org.apache.naming.resources.Resource(is);"
+            );
+
+            ctClass.getDeclaredMethod("getAttributes", new CtClass[] {classPool.get(String.class.getName())}).insertBefore(
+                    "long length = " + TomcatPlugin.class.getName() + ".getExtraResourceLength(this, name);" +
+                            "if (length > 0) {" +
+                            "  org.apache.naming.resources.ResourceAttributes a = new org.apache.naming.resources.ResourceAttributes();" +
+                            "  a.setContentLength(length); return a;" +
+                            "}"
+
+            );
+
+        } catch (NotFoundException e) {
+            LOGGER.warning("org.apache.naming.resources.ProxyDirContext does not contain lookup method. Tomcat plugin will not work properly.");
+            return;
+        }
+
+    }
+
+    /**
+     * Disable loader caches - Tomact 7x,8x.
+     */
+    @Transform(classNameRegexp = "org.apache.catalina.core.StandardContext")
+    public static void patchStandardContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+        try {
+            // force disable caching
+            ctClass.getDeclaredMethod("isCachingAllowed").setBody("return false;");
+        } catch (NotFoundException e) {
+            LOGGER.debug("org.apache.catalina.core.StandardContext does not contain isCachingAllowed() method (pre 7x version).");
+        }
+
+
+        // Tomcat version
+        // this.getServletContext().getServerInfo()
+    }
+
+    /**
+     * Brute force clear caches before any resource is loaded.
+     */
+    @Transform(classNameRegexp = "org.apache.catalina.loader.WebappClassLoader")
+    public static void patchWebappClassLoader(ClassPool classPool,CtClass ctClass) throws CannotCompileException, NotFoundException {
+
+        // clear classloader cache
+        ctClass.getDeclaredMethod("getResource", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
+                "resourceEntries.clear();"
+        );
+
+        ctClass.getDeclaredMethod("getResourceAsStream", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
+                "resourceEntries.clear();"
+        );
+    }
+
+}

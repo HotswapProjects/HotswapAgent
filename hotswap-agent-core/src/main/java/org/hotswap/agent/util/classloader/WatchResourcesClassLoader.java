@@ -5,12 +5,12 @@ import org.hotswap.agent.watch.WatchEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.*;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * Special URL classloader to get only changed resources from URL.
@@ -23,7 +23,7 @@ import java.util.Vector;
  *
  * @author Jiri Bubnik
  */
-public class WatchResourcesClassLoader extends ClassLoader {
+public class WatchResourcesClassLoader extends URLClassLoader {
     private static AgentLogger LOGGER = AgentLogger.getLogger(WatchResourcesClassLoader.class);
 
     /**
@@ -48,10 +48,27 @@ public class WatchResourcesClassLoader extends ClassLoader {
     ClassLoader watchResourcesClassLoader;
 
     public WatchResourcesClassLoader() {
+        this(false);
     }
 
     public WatchResourcesClassLoader(boolean searchParent) {
+        super(new URL[]{}, searchParent ? WatchResourcesClassLoader.class.getClassLoader() : null);
         this.searchParent = searchParent;
+    }
+
+    public WatchResourcesClassLoader(ClassLoader classLoader) {
+        super(new URL[] {}, classLoader);
+        this.searchParent = false;
+    }
+
+    /**
+     * Configure new instance with urls and watcher service.
+     *
+     * @param extraPath the URLs from which to load resources
+     */
+    public void initExtraPath(URL[] extraPath) {
+        for (URL url : extraPath)
+            addURL(url);
     }
 
     /**
@@ -60,9 +77,9 @@ public class WatchResourcesClassLoader extends ClassLoader {
      * @param watchResources the URLs from which to load resources
      * @param watcher        watcher service to register watch events
      */
-    public void init(URL[] watchResources, Watcher watcher) {
+    public void initWatchResources(URL[] watchResources, Watcher watcher) {
         // create classloader to serve resources only from watchResources URL's
-        this.watchResourcesClassLoader = new WatchResourcesUrlClassLoader(watchResources);
+        this.watchResourcesClassLoader = new UrlOnlyClassLoader(watchResources);
 
         // register watch resources - on change event each modified resource will be added to changedUrls.
         for (URL resource : watchResources) {
@@ -104,14 +121,34 @@ public class WatchResourcesClassLoader extends ClassLoader {
      */
     @Override
     public URL getResource(String name) {
-        URL resource = watchResourcesClassLoader.getResource(name);
-        if (resource != null && isResourceChanged(resource)) {
-            LOGGER.trace("watchResources - using changed resource {}", name);
+        if (watchResourcesClassLoader != null) {
+            URL resource = watchResourcesClassLoader.getResource(name);
+            if (resource != null && isResourceChanged(resource)) {
+                LOGGER.trace("watchResources - using changed resource {}", name);
+                return resource;
+            }
+        }
+
+        // child first (extra classpath)
+        URL resource = findResource(name);
+        if (resource != null)
             return resource;
-        } else if (searchParent) {
+
+        // without parent do not call super (ignore even bootstrapResources)
+        if (searchParent)
             return super.getResource(name);
-        } else
+        else
             return null;
+    }
+
+    @Override
+    public InputStream getResourceAsStream(String name) {
+        URL url = getResource(name);
+        try {
+            return url != null ? url.openStream() : null;
+        } catch (IOException e) {
+        }
+        return null;
     }
 
     /**
@@ -124,26 +161,51 @@ public class WatchResourcesClassLoader extends ClassLoader {
      */
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        URL resource = watchResourcesClassLoader.getResource(name);
-        if (resource != null && isResourceChanged(resource)) {
-            Vector<URL> res = new Vector<URL>();
-            res.add(resource);
-            LOGGER.trace("watchResources - using changed resource {}", name);
-            return res.elements();
-        } else if (searchParent) {
-            return super.getResources(name);
-        } else {
-            return null;
+        if (watchResourcesClassLoader != null) {
+            URL resource = watchResourcesClassLoader.getResource(name);
+            if (resource != null && isResourceChanged(resource)) {
+                LOGGER.trace("watchResources - using changed resource {}", name);
+                Vector<URL> res = new Vector<URL>();
+                res.add(resource);
+                return res.elements();
+            }
         }
 
+        // if extraClasspath contains at least one element, return only extraClasspath
+        if (findResources(name).hasMoreElements())
+            return findResources(name);
+
+        return super.getResources(name);
     }
 
+    /**
+     * Support for classpath builder on Tomcat.
+     */
+    public String getClasspath() {
+        ClassLoader parent = getParent();
+
+        if (parent == null)
+            return null;
+
+        try {
+            Method m = parent.getClass().getMethod("getClasspath", new Class[] {});
+            if( m==null ) return null;
+            Object o = m.invoke( parent, new Object[] {} );
+            if( o instanceof String )
+                return (String)o;
+            return null;
+        } catch( Exception ex ) {
+            LOGGER.debug("getClasspath not supported on parent classloader.");
+        }
+        return null;
+
+    }
 
     /**
      * Helper classloader to get resources from list of urls only.
      */
-    public static class WatchResourcesUrlClassLoader extends URLClassLoader {
-        public WatchResourcesUrlClassLoader(URL[] urls) {
+    public static class UrlOnlyClassLoader extends URLClassLoader {
+        public UrlOnlyClassLoader(URL[] urls) {
             super(urls);
         }
 

@@ -77,6 +77,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-el-resolver-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.pegdown</groupId>
             <artifactId>pegdown</artifactId>
             <version>1.4.1</version>

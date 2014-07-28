@@ -130,11 +130,12 @@ public class PluginManager {
     }
 
     public void initClassLoader(ClassLoader classLoader, ProtectionDomain protectionDomain) {
-        // parent of current classloader (system/bootstrap)
-        if (classLoader.equals(getClass().getClassLoader().getParent()))
-            return;
 
         if (classLoaderConfigurations.containsKey(classLoader))
+            return;
+
+        // parent of current classloader (system/bootstrap)
+        if (classLoader.equals(getClass().getClassLoader().getParent()))
             return;
 
 

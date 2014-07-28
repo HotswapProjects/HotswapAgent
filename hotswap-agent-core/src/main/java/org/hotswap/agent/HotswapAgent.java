@@ -57,7 +57,7 @@ public class HotswapAgent {
             String option = val[0];
             String optionValue = val[1];
             if ("disablePlugin".equals(option)) {
-                disabledPlugins.add(optionValue);
+                disabledPlugins.add(optionValue.toLowerCase());
             } else if ("autoHotswap".equals(option)) {
                 autoHotswap = Boolean.valueOf(optionValue);
             } else {
@@ -74,7 +74,7 @@ public class HotswapAgent {
      * @return true if the plugin is disabled
      */
     public static boolean isPluginDisabled(String pluginName) {
-        return disabledPlugins.contains(pluginName);
+        return disabledPlugins.contains(pluginName.toLowerCase());
     }
 
     /**
@@ -100,16 +100,18 @@ public class HotswapAgent {
      */
     private static void fixJboss7Modules() {
         String JBOSS_SYSTEM_MODULES_KEY = "jboss.modules.system.pkgs";
-        String HOTSWAP_AGENT_EXPORT_PACKAGES = "org.hotswap.agent.annotation," +
-                "org.hotswap.agent.annotation," +
-                "org.hotswap.agent.command," +
-                "org.hotswap.agent.config," +
-                "org.hotswap.agent.logging," +
-                "org.hotswap.agent.plugin," +
-                "org.hotswap.agent.util," +
-                "org.hotswap.agent.watch";
+
 
         String oldValue = System.getProperty(JBOSS_SYSTEM_MODULES_KEY, null);
         System.setProperty(JBOSS_SYSTEM_MODULES_KEY, oldValue == null ? HOTSWAP_AGENT_EXPORT_PACKAGES : oldValue + "," + HOTSWAP_AGENT_EXPORT_PACKAGES);
     }
+
+    public static final String HOTSWAP_AGENT_EXPORT_PACKAGES =
+            "org.hotswap.agent.annotation," +
+                    "org.hotswap.agent.command," +
+                    "org.hotswap.agent.config," +
+                    "org.hotswap.agent.logging," +
+                    "org.hotswap.agent.plugin," +
+                    "org.hotswap.agent.util," +
+                    "org.hotswap.agent.watch";
 }
