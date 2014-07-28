@@ -69,10 +69,14 @@ public class ELResolverPlugin {
             CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
             purgeMeth.setModifiers(org.hotswap.agent.javassist.Modifier.PUBLIC);
         } catch (NotFoundException e) {
-            // Apache (Tomcat's) BeanELResolver
-            ctClass.addMethod(CtNewMethod.make("public void purgeBeanClasses(java.lang.ClassLoader classLoader) {" +
-                    "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-                    "}", ctClass));
+            try {
+                // Apache (Tomcat's) BeanELResolver
+                ctClass.addMethod(CtNewMethod.make("public void purgeBeanClasses(java.lang.ClassLoader classLoader) {" +
+                        "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                        "}", ctClass));
+            } catch (Exception e1) {
+                LOGGER.warning("Unable to add javax.el.BeanELResolver.purgeBeanClasses() method. Purging will not be available.", e);
+            }
         }
 
         LOGGER.debug("javax.el.BeanELResolver - added method __resetCache().");

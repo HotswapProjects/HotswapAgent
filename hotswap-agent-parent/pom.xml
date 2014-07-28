@@ -5,7 +5,7 @@
     <groupId>org.hotswap.agent</groupId>
     <artifactId>hotswap-agent-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.1-beta4-SNAPSHOT</version>
+    <version>0.1-beta5-SNAPSHOT</version>
     <issueManagement>
         <system>git</system>
         <url>https://github.com/HotswapProjects/HotswapAgent/issues</url>

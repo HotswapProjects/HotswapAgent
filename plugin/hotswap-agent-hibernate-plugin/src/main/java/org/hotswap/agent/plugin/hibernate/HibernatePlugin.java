@@ -63,7 +63,7 @@ public class HibernatePlugin {
      * New entity class - not covered by reloading mechanism.
      * <p/>
      * Increase the reload timeout to avoid duplicate reloading in case of recompile with IDE
-     * and delete/create event sequence - than create is cached by this even and hotswap for
+     * and delete/create event sequence - than create is cached by this event and hotswap for
      * the same class by entityReload.
      */
     @Watch(path = ".", filter = ".*.class", watchEvents = {WatchEvent.WatchEventType.CREATE})
