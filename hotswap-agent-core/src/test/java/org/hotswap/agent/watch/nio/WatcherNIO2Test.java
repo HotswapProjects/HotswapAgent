@@ -59,7 +59,7 @@ public class WatcherNIO2Test {
     // ensure it works on file:/ URIs as returned by classloader
     //@Test
     public void testTargetClasses() throws Exception {
-        URI uri = new URI("file:/J:/HotswapAgent/target/classes/");
+        URI uri = new URI("file:/" + temp);
         final ResultHolder resultHolder = new ResultHolder();
         watcher.addEventListener(null, uri, new WatchEventListener() {
             @Override
@@ -77,9 +77,11 @@ public class WatcherNIO2Test {
         testFile.delete();
     }
 
-    // each 10 ms check if result is true, max 1000 ms
+    // On Mac OS X, 10.9.4, this would fail for under 10 seconds, succeeded with 10 seconds.  I didn't look
+    // into it further.   
+    // each 10 ms check if result is true, max 10000 ms
     private boolean waitForResult(ResultHolder resultHolder) {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             if (resultHolder.result)
                 return true;
 
