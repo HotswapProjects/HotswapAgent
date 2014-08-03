@@ -7,6 +7,7 @@ import org.hotswap.agent.watch.Watcher;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -137,7 +138,13 @@ public class WatcherNIO2 implements Watcher {
         if (keys.values().contains(dir))
             return;
 
-        WatchKey key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+        // try to set high sensitivity
+        WatchEvent.Modifier high = get_com_sun_nio_file_SensitivityWatchEventModifier_HIGH();
+        WatchKey key =
+                (high == null) ?
+                        dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY) :
+                        dir.register(watcher, new WatchEvent.Kind<?>[]{ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY}, high);
+
         keys.put(key, dir);
     }
 
@@ -332,6 +339,22 @@ public class WatcherNIO2 implements Watcher {
             int result = event.hashCode();
             result = 31 * result + path.hashCode();
             return result;
+        }
+    }
+
+    /**
+     * Get modifier for high sensitivity on Watch events.
+     *
+     * @see <a href="https://github.com/HotswapProjects/HotswapAgent/issues/41">Issue#41</a>
+     * @see <a href="http://stackoverflow.com/questions/9588737/is-java-7-watchservice-slow-for-anyone-else">Is Java 7 WatchService Slow for Anyone Else?</a>
+     */
+    WatchEvent.Modifier get_com_sun_nio_file_SensitivityWatchEventModifier_HIGH() {
+        try {
+            Class<?> c = Class.forName("com.sun.nio.file.SensitivityWatchEventModifier");
+            Field f = c.getField("HIGH");
+            return (WatchEvent.Modifier) f.get(c);
+        } catch (Exception e) {
+            return null;
         }
     }
 }
