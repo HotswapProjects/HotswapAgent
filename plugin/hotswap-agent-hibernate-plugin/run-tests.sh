@@ -11,7 +11,7 @@ function test {
     mvn -Dorg.hibernateframework.version=$1 clean package
 }
 
-# test this Hibernate versions
+# test following Hibernate versions
 # test 4.0.0.Final
 test 4.0.1.Final
 test 4.1.0.Final
@@ -40,9 +40,9 @@ test 4.2.10.Final
 test 4.2.11.Final
 test 4.2.12.Final
 test 4.2.13.Final
-# test 4.3.1.Final
-# test 4.3.2.Final
-# test 4.3.3.Final
-# test 4.3.4.Final
-# test 4.3.5.Final
+test 4.3.1.Final
+test 4.3.2.Final
+test 4.3.3.Final
+test 4.3.4.Final
+test 4.3.5.Final
 

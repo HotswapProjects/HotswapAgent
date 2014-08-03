@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-hibernate-plugin</artifactId>
 
     <properties>
-        <org.hibernateframework.version>4.2.0.Final</org.hibernateframework.version>
+        <org.hibernateframework.version>4.3.0.Final</org.hibernateframework.version>
     </properties>
 
 

@@ -1,10 +1,12 @@
 package org.hotswap.agent.plugin.hibernate.proxy;
 
-import org.hibernate.ejb.Ejb3Configuration;
-import org.hibernate.ejb.internal.EntityManagerFactoryRegistry;
+import org.hibernate.Version;
+import org.hotswap.agent.javassist.compiler.ast.StringL;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.persistence.spi.PersistenceUnitInfo;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -51,15 +53,47 @@ public class EntityManagerFactoryProxy {
      * Refresh all known wrapped factories.
      */
     public static void refreshProxiedFactories() {
+        String[] version = Version.getVersionString().split("\\.");
+        boolean version43OrGreater = false;
+        try {
+            version43OrGreater = Integer.valueOf(version[0]) >= 4 && Integer.valueOf(version[1]) >= 3;
+        } catch (Exception e) {
+            LOGGER.warning("Unable to resolve hibernate version '{}'", version);
+        }
+
         for (EntityManagerFactoryProxy wrapper : proxiedFactories.values())
             try {
                 // lock proxy execution during reload
                 synchronized (wrapper.reloadLock) {
-                    wrapper.refreshProxiedFactory();
+                    if (version43OrGreater) {
+                        wrapper.refreshProxiedFactoryVersion43OrGreater();
+                    } else {
+                        wrapper.refreshProxiedFactory();
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
+    }
+
+    public void refreshProxiedFactoryVersion43OrGreater() {
+        if (info == null) {
+            currentInstance = Persistence.createEntityManagerFactory(persistenceUnitName, properties);
+        } else {
+            try {
+                Class bootstrapClazz = loadClass("org.hibernate.jpa.boot.spi.Bootstrap");
+                Class builderClazz = loadClass("org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder");
+
+                Object builder = ReflectionHelper.invoke(null, bootstrapClazz, "getEntityManagerFactoryBuilder",
+                        new Class[]{PersistenceUnitInfo.class, Map.class}, info, properties);
+
+                currentInstance = (EntityManagerFactory) ReflectionHelper.invoke(builder, builderClazz, "build",
+                        new Class[]{});
+            } catch (Exception e) {
+                e.printStackTrace();
+                LOGGER.error("Unable to reload persistence unit {}", info, e);
+            }
+        }
     }
 
     /**
@@ -67,26 +101,46 @@ public class EntityManagerFactoryProxy {
      */
     public void refreshProxiedFactory() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException {
         // refresh registry
-        EntityManagerFactoryRegistry.INSTANCE.removeEntityManagerFactory(persistenceUnitName, currentInstance);
+        try {
+            Class entityManagerFactoryRegistryClazz = loadClass("org.hibernate.ejb.internal.EntityManagerFactoryRegistry");
+            Object instance = ReflectionHelper.get(null, entityManagerFactoryRegistryClazz, "INSTANCE");
+            ReflectionHelper.invoke(instance, entityManagerFactoryRegistryClazz, "removeEntityManagerFactory",
+                    new Class[] {String.class, EntityManagerFactory.class}, persistenceUnitName, currentInstance);
+        } catch (Exception e) {
+            LOGGER.error("Unable to clear previous instance of entity manager factory");
+        }
 
-        // from HibernatePersistence.createContainerEntityManagerFactory()
+
         buildFreshEntityManagerFactory();
     }
 
     // create factory from cached configuration
+    // from HibernatePersistence.createContainerEntityManagerFactory()
     private void buildFreshEntityManagerFactory() {
-        LOGGER.trace("new Ejb3Configuration()");
-        Ejb3Configuration cfg = new Ejb3Configuration();
-        LOGGER.trace("cfg.configure( info, properties );");
+        try {
+            Class ejb3ConfigurationClazz = loadClass("org.hibernate.ejb.Ejb3Configuration");
+            LOGGER.trace("new Ejb3Configuration()");
+            Object cfg = ejb3ConfigurationClazz.newInstance();
 
-        Ejb3Configuration configured;
-        if (info != null)
-            configured = cfg.configure(info, properties);
-        else
-            configured = cfg.configure(persistenceUnitName, properties);
+            LOGGER.trace("cfg.configure( info, properties );");
 
-        LOGGER.trace("configured.buildEntityManagerFactory()");
-        currentInstance = configured != null ? configured.buildEntityManagerFactory() : null;
+            if (info != null) {
+                ReflectionHelper.invoke(cfg, ejb3ConfigurationClazz, "configure",
+                        new Class[]{PersistenceUnitInfo.class, Map.class}, info, properties);
+            }
+            else {
+                ReflectionHelper.invoke(cfg, ejb3ConfigurationClazz, "configure",
+                        new Class[]{String.class, Map.class}, persistenceUnitName, properties);
+            }
+
+            LOGGER.trace("configured.buildEntityManagerFactory()");
+            currentInstance = (EntityManagerFactory) ReflectionHelper.invoke(cfg, ejb3ConfigurationClazz, "buildEntityManagerFactory",
+                    new Class[]{});
+
+
+        } catch (Exception e) {
+            LOGGER.error("Unable to build fresh entity manager factory for persistence unit {}", persistenceUnitName);
+        }
     }
 
     /**
@@ -109,11 +163,15 @@ public class EntityManagerFactoryProxy {
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        // if reload in progress, waitForResult for it
+                        // if reload in progress, wait for it
                         synchronized (reloadLock) {}
 
                         return method.invoke(currentInstance, args);
                     }
                 });
+    }
+
+    private Class loadClass(String name) throws ClassNotFoundException {
+        return getClass().getClassLoader().loadClass(name);
     }
 }
