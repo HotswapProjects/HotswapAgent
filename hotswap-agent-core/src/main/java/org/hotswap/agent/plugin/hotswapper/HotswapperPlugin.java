@@ -70,7 +70,9 @@ public class HotswapperPlugin {
             return;
         }
 
-        reloadMap.put(clazz, ctClass.toBytecode());
+        synchronized (reloadMap) {
+            reloadMap.put(clazz, ctClass.toBytecode());
+        }
         scheduler.scheduleCommand(hotswapCommand, 100, Scheduler.DuplicateSheduleBehaviour.SKIP);
     }
 

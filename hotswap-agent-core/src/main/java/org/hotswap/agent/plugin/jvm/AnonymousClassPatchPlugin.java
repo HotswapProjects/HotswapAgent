@@ -6,6 +6,7 @@ import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapTransformer;
+import org.hotswap.agent.util.classloader.*;
 
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
@@ -152,7 +153,7 @@ public class AnonymousClassPatchPlugin {
         String javaClassName = className.replaceAll("/", ".");
 
         // check if has anonymous classes
-        if (!containsClass(javaClassName + "$1", classLoader))
+        if (!ClassLoaderHelper.isClassLoaded(classLoader, javaClassName + "$1"))
             return null;
 
 
@@ -176,7 +177,7 @@ public class AnonymousClassPatchPlugin {
                 CtClass anonymous = classPool.get(newName);
                 anonymous.replaceClassName(newName, compatibleName);
                 anonymous.toClass(classLoader, protectionDomain);
-            } else if (!containsClass(newName, classLoader)) {
+            } else if (!ClassLoaderHelper.isClassLoaded(classLoader, newName)) {
                 CtClass anonymous = classPool.get(compatibleName);
                 anonymous.replaceClassName(compatibleName, newName);
 
@@ -192,19 +193,6 @@ public class AnonymousClassPatchPlugin {
 
         LOGGER.reload("Class '{}' has been enhanced with anonymous classes for hotswap.", className);
         return ctClass.toBytecode();
-    }
-
-    // Check if the classloader knows about this class.
-    // use ClassLoader.findLoadedClass via reflection directly to get only loaded classes.
-    private static boolean containsClass(String className, ClassLoader classLoader) {
-        try {
-            Method m = ClassLoader.class.getDeclaredMethod("findLoadedClass", new Class[]{String.class});
-            m.setAccessible(true);
-            Object clazz = m.invoke(classLoader, className);
-            return clazz != null;
-        } catch (Exception e) {
-            throw new Error("Unexpected exception in findLoadedClass.", e);
-        }
     }
 
     /**

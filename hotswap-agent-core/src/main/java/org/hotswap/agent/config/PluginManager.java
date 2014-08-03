@@ -250,6 +250,7 @@ public class PluginManager {
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to redefine classes", e);
             }
+            reloadMap.clear();
         }
     }
 }

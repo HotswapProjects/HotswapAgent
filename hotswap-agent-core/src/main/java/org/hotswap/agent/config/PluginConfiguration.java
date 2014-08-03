@@ -128,7 +128,7 @@ public class PluginConfiguration {
             if (classLoader instanceof URLClassLoader) {
                 URLClassLoaderHelper.prependClassPath((URLClassLoader) classLoader, extraClassPath);
             } else {
-                LOGGER.warning("Unable to set extraClasspath to {} on classLoader {}. " +
+                LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. " +
                         "Only URLClassLoader is supported.\n" +
                         "*** extraClasspath configuration property will not be handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
             }
