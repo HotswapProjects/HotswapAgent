@@ -104,7 +104,7 @@ public class SpringPlugin {
                     @Override
                     public void onEvent(WatchEvent event) {
                         if (event.isFile() && event.getURI().toString().endsWith(".class")) {
-                            // check the class is not loaded by the classloader yet
+                            // check that the class is not loaded by the classloader yet (avoid duplicate reload)
                             String className;
                             try {
                                 className = IOUtils.urlToClassName(event.getURI());
