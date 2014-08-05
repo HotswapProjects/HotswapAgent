@@ -1,8 +1,8 @@
 package org.hotswap.agent.annotation.handler;
 
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.config.PluginRegistry;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.testData.SimplePlugin;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.jmock.Expectations;
@@ -18,7 +18,7 @@ import static junit.framework.Assert.assertTrue;
 /**
  * @author Jiri Bubnik
  */
-public class TransformHandlerTest {
+public class OnClassLoadEventHandlerTest {
 
     Mockery context = new Mockery() {{
         setImposteriser(ClassImposteriser.INSTANCE);
@@ -43,14 +43,14 @@ public class TransformHandlerTest {
                     with("org.hotswap.example.type"), with(any(ClassFileTransformer.class)));
         }});
 
-        TransformHandler transformHandler = new TransformHandler(pluginManager);
+        OnClassLoadedHandler onClassLoadedHandler = new OnClassLoadedHandler(pluginManager);
 
         SimplePlugin simplePlugin = new SimplePlugin();
         Method method = SimplePlugin.class.getMethod("transform");
-        PluginAnnotation<Transform> pluginAnnotation = new PluginAnnotation<Transform>(SimplePlugin.class,
-                simplePlugin, method.getAnnotation(Transform.class), method);
+        PluginAnnotation<OnClassLoadEvent> pluginAnnotation = new PluginAnnotation<OnClassLoadEvent>(SimplePlugin.class,
+                simplePlugin, method.getAnnotation(OnClassLoadEvent.class), method);
         assertTrue("Init successful",
-                transformHandler.initMethod(pluginAnnotation));
+                onClassLoadedHandler.initMethod(pluginAnnotation));
 
     }
 

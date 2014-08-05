@@ -1,9 +1,6 @@
 package org.hotswap.agent.plugin.seam;
 
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
-import org.hotswap.agent.annotation.Watch;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
@@ -33,19 +30,19 @@ public class SeamPlugin {
 
     Set<Object> registeredJbossReferenceCaches = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
 
-    @Transform(classNameRegexp = "org.jboss.seam.init.Initialization")
+    @OnClassLoadEvent(classNameRegexp = "org.jboss.seam.init.Initialization")
     public static void seamServletCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("init");
         init.insertBefore(PluginManagerInvoker.buildInitializePlugin(SeamPlugin.class));
         LOGGER.debug("org.jboss.seam.init.Initialization enhanced with plugin initialization.");
     }
 
-    @Watch(path = "/", filter = ".*messages_.*.properties")
+    @OnResourceFileEvent(path = "/", filter = ".*messages_.*.properties")
     public void refreshSeamProperties() {
         scheduler.scheduleCommand(refreshLabels);
     }
 
-    @Transform(classNameRegexp = ".*", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void flushBeanIntrospectorsCaches() throws Exception {
         scheduler.scheduleCommand(flushBeanIntrospectors);
     }
@@ -55,7 +52,7 @@ public class SeamPlugin {
         LOGGER.debug("JsfPlugin - registerJbossReferenceCache : " + referenceCache.getClass().getName());
     }
 
-    @Transform(classNameRegexp = "org.jboss.el.util.ReferenceCache")
+    @OnClassLoadEvent(classNameRegexp = "org.jboss.el.util.ReferenceCache")
     public static void referenceCacheRegisterVariable(CtClass ctClass) throws CannotCompileException {
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(SeamPlugin.class, "registerJbossReferenceCache",
                 "this", "java.lang.Object");
@@ -64,7 +61,7 @@ public class SeamPlugin {
         }
     }
 
-    @Transform(classNameRegexp = ".*", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidateClassCache() throws Exception {
         scheduler.scheduleCommand(clearJbossReferenceCache);
     }

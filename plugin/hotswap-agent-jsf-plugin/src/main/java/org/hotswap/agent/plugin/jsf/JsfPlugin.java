@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.jsf;
 
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
@@ -17,7 +17,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 public class JsfPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(JsfPlugin.class);
 
-    @Transform(classNameRegexp = "com.sun.faces.config.ConfigManager")
+    @OnClassLoadEvent(classNameRegexp = "com.sun.faces.config.ConfigManager")
     public static void facesServletCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("initialize");
         init.insertAfter(PluginManagerInvoker.buildInitializePlugin(JsfPlugin.class));

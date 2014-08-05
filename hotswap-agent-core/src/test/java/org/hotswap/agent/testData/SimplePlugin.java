@@ -3,7 +3,7 @@ package org.hotswap.agent.testData;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 
 /**
  * Created by bubnik on 11.10.13.
@@ -20,7 +20,7 @@ public class SimplePlugin {
     }
 
 
-    @Transform(classNameRegexp = "org.hotswap.example.type")
+    @OnClassLoadEvent(classNameRegexp = "org.hotswap.example.type")
     public void transform() {
 
     }

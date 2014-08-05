@@ -1,10 +1,11 @@
 package org.hotswap.agent.plugin.hotswapper;
 
 import org.hotswap.agent.HotswapAgent;
+import org.hotswap.agent.annotation.FileEvent;
+import org.hotswap.agent.annotation.OnClassFileEvent;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Watch;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
@@ -14,7 +15,6 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.classloader.*;
-import org.hotswap.agent.watch.WatchEvent;
 
 import java.io.IOException;
 import java.net.URL;
@@ -51,7 +51,7 @@ public class HotswapperPlugin {
     /**
      * For each changed class create a reload command.
      */
-    @Watch(path = ".", filter = ".*.class", watchEvents = {WatchEvent.WatchEventType.MODIFY})
+    @OnClassFileEvent(classNameRegexp = ".*", events = {FileEvent.MODIFY})
     public void watchReload(CtClass ctClass, ClassLoader appClassLoader, URL url) throws IOException, CannotCompileException {
         if (!ClassLoaderHelper.isClassLoaded(appClassLoader, ctClass.getName())) {
             LOGGER.trace("Class {} not loaded yet, no need for autoHotswap, skipped URL {}", ctClass.getName(), url);

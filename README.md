@@ -19,10 +19,11 @@ up-to-date after class redefinition (e.g. Hibernate configuration reload after n
 Hotswap agent works as a plugin system and ships preconfigured with all major framework plugins. It is easy
 to write your custom plugin even as part of your application.
 
-### IDE support
-None needed :) Really, all changes are transparent and all you need to do is to download patch+agent and
-setup your application / application server. Because we use standard java hotswap behaviour, your IDE will
-work as expected. However, we work on IDE plugins to help with download & configuration.
+### Contribute
+This project is very complex due to lot of supported frameworks and various versions. Community contribution
+is mandatory to keep it alive. You can start by creating a plugin inside your application or by writing an
+example/integration test. There is always need for documentation improvement :-). Thank you for any help!
+
 
 Quick start:
 ===========
@@ -86,6 +87,11 @@ The purpose of an example application is:
 
 Feel free to fork/branch and create an application for your setup (functional, but as simple as possible).
 General setups will be merged into the master.
+
+### IDE support
+None needed :) Really, all changes are transparent and all you need to do is to download patch+agent and
+setup your application / application server. Because we use standard java hotswap behaviour, your IDE will
+work as expected. However, we work on IDE plugins to help with download & configuration.
 
 Configuration
 =============

@@ -21,9 +21,10 @@
         <!--Just to get Tomcat sources into IDE-->
         <dependency>
             <groupId>org.apache.tomcat</groupId>
-            <artifactId>tomcat-catalina</artifactId>
+            <artifactId>catalina</artifactId>
             <!--<version>7.0.47</version>-->
-            <version>8.0.1</version>
+            <!--<version>8.0.1</version>-->
+            <version>6.0.36</version> <!--(change artifcatId to catalina) -->
             <scope>provided</scope>
         </dependency>
     </dependencies>

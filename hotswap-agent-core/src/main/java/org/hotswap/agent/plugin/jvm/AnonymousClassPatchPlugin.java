@@ -1,8 +1,9 @@
 package org.hotswap.agent.plugin.jvm;
 
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapTransformer;
@@ -11,7 +12,6 @@ import org.hotswap.agent.util.classloader.*;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
-import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,7 +68,7 @@ public class AnonymousClassPatchPlugin {
      * Replace an anonymous class with an compatible change (from another class according to state info).
      * If no compatible class exists, replace with compatible empty implementation.
      */
-    @Transform(classNameRegexp = ".*\\$\\d+", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*\\$\\d+", events = LoadEvent.REDEFINE)
     public static CtClass patchAnonymousClass(ClassLoader classLoader, ClassPool classPool, String className, Class original)
             throws IOException, NotFoundException, CannotCompileException {
 
@@ -147,7 +147,7 @@ public class AnonymousClassPatchPlugin {
      * <p/>
      * Define new synthetic classes for not compatible changes.
      */
-    @Transform(classNameRegexp = ".*", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public static byte[] patchMainClass(String className, ClassPool classPool,
                                         ClassLoader classLoader, ProtectionDomain protectionDomain) throws IOException, CannotCompileException, NotFoundException {
         String javaClassName = className.replaceAll("/", ".");

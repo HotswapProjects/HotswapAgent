@@ -1,16 +1,12 @@
 package org.hotswap.agent.plugin.hibernate;
 
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
-import org.hotswap.agent.annotation.Watch;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AnnotationHelper;
-import org.hotswap.agent.watch.WatchEvent;
 
 /**
  * Reload Hibernate configuration after entity create/change.
@@ -48,7 +44,7 @@ public class HibernatePlugin {
     /**
      * Reload after entity class change. It covers also @Entity annotation removal.
      */
-    @Transform(classNameRegexp = ".*", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void entityReload(CtClass clazz, Class original) {
         // TODO list of entity/resource files is known to hibernate, better to check this list
         if (AnnotationHelper.hasAnnotation(original, ENTITY_ANNOTATION)
@@ -66,7 +62,7 @@ public class HibernatePlugin {
      * and delete/create event sequence - than create is cached by this event and hotswap for
      * the same class by entityReload.
      */
-    @Watch(path = ".", filter = ".*.class", watchEvents = {WatchEvent.WatchEventType.CREATE})
+    @OnClassFileEvent(classNameRegexp = ".*", events = {FileEvent.CREATE})
     public void newEntity(CtClass clazz) throws Exception {
         if (AnnotationHelper.hasAnnotation(clazz, ENTITY_ANNOTATION)) {
             refresh(500);

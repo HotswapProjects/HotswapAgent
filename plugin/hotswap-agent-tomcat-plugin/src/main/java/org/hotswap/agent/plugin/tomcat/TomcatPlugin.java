@@ -38,16 +38,13 @@ public class TomcatPlugin {
     // resolved tomcat version (6/7/8).
     int tomcatMajorVersion = 8;
 
-    WatchResourcesClassLoader watchResourcesClassLoader = new WatchResourcesClassLoader();
-
+    // tomcat associated resource object to a web application classloader
     static Map<Object, ClassLoader> registeredResourcesMap = new HashMap<Object, ClassLoader>();
 
-    // enhance plugin and init
-
     /**
-     * Init the plugin during WebappLoader.start lifecycle.
-     * @param appClassLoader
-     * @param resource
+     * Init the plugin during WebappLoader.start lifecycle. This method is invoked before the plugin is initialized.
+     * @param appClassLoader main tomcat classloader for the webapp (in creation process). Only standard WebappClassLoader is supported.
+     * @param resource tomcat resource associated to the classloader.
      */
     public static void init(ClassLoader appClassLoader, Object resource) {
         String version = resolveTomcatVersion(appClassLoader);
@@ -95,12 +92,17 @@ public class TomcatPlugin {
         plugin.init(version);
     }
 
+    /**
+     * Init plugin and resolve major version
+     * @param version tomcat version string
+     */
     private void init(String version) {
         LOGGER.info("Tomcat plugin initialized - Tomcat version '{}'", version);
         tomcatMajorVersion = resolveTomcatMajorVersion(version);
     }
 
 
+    // for each app classloader map of tomcat repository name to associated watch resource classloader
     private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<ClassLoader,  Map<String, ClassLoader>>();
 
     private static void addRepositoriesAtStart(ClassLoader appClassLoader, URL[] newRepositories, boolean watchResources) {
@@ -116,7 +118,7 @@ public class TomcatPlugin {
         ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "repositories", repositories);
 
         File[] files = (File[]) ReflectionHelper.get(appClassLoader, appClassLoader.getClass(), "files");
-        File[] result2 = new File[files.length + 1];
+        File[] result2 = new File[files.length + newRepositories.length];
         for (int i=0; i < newRepositories.length; i++) {
             try {
                 WatchResourcesClassLoader watchResourcesClassLoader = new WatchResourcesClassLoader();

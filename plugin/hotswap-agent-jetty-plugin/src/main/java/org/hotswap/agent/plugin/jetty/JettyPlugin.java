@@ -1,8 +1,8 @@
 package org.hotswap.agent.plugin.jetty;
 
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
@@ -51,7 +51,7 @@ public class JettyPlugin {
      * extraClassPath and watchResources configuration properties (jetty fortunately depends only on basic
      * URLClassLoader behaviour which is handled by that plugin).
      */
-    @Transform(classNameRegexp = "org.eclipse.jetty.webapp.WebXmlConfiguration")
+    @OnClassLoadEvent(classNameRegexp = "org.eclipse.jetty.webapp.WebXmlConfiguration")
     public static void patchWebXmlConfiguration(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
 
         try {
@@ -72,7 +72,7 @@ public class JettyPlugin {
     }
 
     // same as above for older jetty versions
-    @Transform(classNameRegexp = "org.mortbay.jetty.webapp.WebXmlConfiguration")
+    @OnClassLoadEvent(classNameRegexp = "org.mortbay.jetty.webapp.WebXmlConfiguration")
     public static void patchWebXmlConfiguration6x(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
         try {
             // after application context initialized, but before processing started
@@ -94,7 +94,7 @@ public class JettyPlugin {
     /**
      * Before app context is stopped, clean the classloader (and associated plugin instance).
      */
-    @Transform(classNameRegexp = "(org.mortbay.jetty.webapp.WebAppContext)|(org.eclipse.jetty.webapp.WebAppContext)")
+    @OnClassLoadEvent(classNameRegexp = "(org.mortbay.jetty.webapp.WebAppContext)|(org.eclipse.jetty.webapp.WebAppContext)")
     public static void patchContextHandler6x(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
 
 

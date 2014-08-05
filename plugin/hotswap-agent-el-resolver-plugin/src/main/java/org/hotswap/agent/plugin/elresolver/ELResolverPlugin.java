@@ -1,8 +1,9 @@
 package org.hotswap.agent.plugin.elresolver;
 
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.*;
@@ -52,7 +53,7 @@ public class ELResolverPlugin {
      * - ensure this plugin is initialized
      * - register the instance using registerBeanELResolver() method
      */
-    @Transform(classNameRegexp = "javax.el.BeanELResolver")
+    @OnClassLoadEvent(classNameRegexp = "javax.el.BeanELResolver")
     public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
 
         String initPlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class);
@@ -87,7 +88,7 @@ public class ELResolverPlugin {
         LOGGER.debug("ELResolverPlugin - BeanELResolver registred : " + beanELResolver.getClass().getName());
     }
 
-    @Transform(classNameRegexp = ".*", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidateClassCache() throws Exception {
         scheduler.scheduleCommand(invalidateClassCache);
     }

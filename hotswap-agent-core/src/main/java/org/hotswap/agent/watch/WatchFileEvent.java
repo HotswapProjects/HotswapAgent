@@ -1,5 +1,7 @@
 package org.hotswap.agent.watch;
 
+import org.hotswap.agent.annotation.FileEvent;
+
 import java.net.URI;
 
 /**
@@ -7,15 +9,7 @@ import java.net.URI;
  *
  * @author Jiri Bubnik
  */
-public interface WatchEvent {
-    /**
-     * Type of the event.
-     */
-    public enum WatchEventType {
-        CREATE,
-        MODIFY,
-        DELETE
-    }
+public interface WatchFileEvent {
 
     ;
 
@@ -23,7 +17,7 @@ public interface WatchEvent {
     /**
      * @return type of the event
      */
-    public WatchEventType getEventType();
+    public FileEvent getEventType();
 
     /**
      * URI to file or directory with the event

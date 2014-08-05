@@ -1,13 +1,14 @@
 package org.hotswap.agent.plugin.logback;
 
+import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.watch.WatchEvent;
+import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
@@ -54,8 +55,8 @@ public class LogbackPlugin {
             registeredURIs.add(uri);
             watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                 @Override
-                public void onEvent(WatchEvent event) {
-                    if (event.getEventType() != WatchEvent.WatchEventType.DELETE)
+                public void onEvent(WatchFileEvent event) {
+                    if (event.getEventType() != FileEvent.DELETE)
                         reload(configurator, url);
                 }
             });
@@ -105,7 +106,7 @@ public class LogbackPlugin {
     /**
      * Transform configurator class to register logback config URL.
      */
-    @Transform(classNameRegexp = "ch.qos.logback.core.joran.GenericConfigurator")
+    @OnClassLoadEvent(classNameRegexp = "ch.qos.logback.core.joran.GenericConfigurator")
     public static void registerConfigurator(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod m = ctClass.getDeclaredMethod("doConfigure", new CtClass[]{classPool.get("java.net.URL")});
 

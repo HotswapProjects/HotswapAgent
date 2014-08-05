@@ -38,8 +38,8 @@ public class HotswapTransformer implements ClassFileTransformer {
 
     /**
      * Register a transformer for a regexp matching class names.
-     * Used by {@link org.hotswap.agent.annotation.Transform} annotation respective
-     * {@link org.hotswap.agent.annotation.handler.TransformHandler}.
+     * Used by {@link org.hotswap.agent.annotation.OnClassLoadEvent} annotation respective
+     * {@link org.hotswap.agent.annotation.handler.OnClassLoadedHandler}.
      *
      * @param classLoader the classloader to which this transformation is associated
      * @param classNameRegexp regexp to match fully qualified class name.

@@ -2,8 +2,11 @@ package org.hotswap.agent.annotation;
 
 import java.lang.annotation.*;
 
+import static org.hotswap.agent.annotation.LoadEvent.DEFINE;
+import static org.hotswap.agent.annotation.LoadEvent.REDEFINE;
+
 /**
- * Define plugin callback method on hotswap (application class is loaded or reloaded).
+ * Define plugin callback method on class load by classloader (application class is loaded or reloaded by hotswap).
  * <p/>
  * Method attribute types:<ul>
  * <li>byte[] - the input byte buffer in class file format - must not be modified</li>
@@ -18,17 +21,23 @@ import java.lang.annotation.*;
  * <li>CtClass - javassist class created from byte[] source. If the method returns null/void,
  * this class is used as transformation result. You can modify this class directly.</li>
  * <li>AppClassLoaderExecutor - executor to run code in app classloader</li>
+ * <li>LoadEvent - originating load event. If classBeingRedefined is null, this is DEFINE, otherwise REDEFINE.</li>
  * </ul>
  * <p/>
  * If registered on static method, transformation is invoked even before the plugin is initialized.
  * You need at least one static transformation method for a plugin to trigger plugin initialization.
+ * <p/>
+ * This event is triggered only AFTER the class is loaded by a classloader. Many frameworks like Spring or
+ * Hibernate use custom classpath scanning to discover annotated classes. In this case a change cannot be triggered
+ * only by @OnClassLoadEvent method (the class is never loaded) and you need to cover this case using @OnClassFileEvent
+ * handler. See HibernatePlugin#newEntity() method annotated with OnClassFileEvent for an example.
  *
  * @author Jiri Bubnik
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Transform {
+public @interface OnClassLoadEvent {
 
     /**
      * Regexp of class name.
@@ -36,18 +45,12 @@ public @interface Transform {
     String classNameRegexp();
 
     /**
-     * Should the transformation be done for first instantiation?
+     * Specify list of events to watch for (class is loaded by the ClassLoader / redefined by hotswap mechanism).
+     * By default are both DEFINE and REDEFINE events enabled.
      *
-     * @return true to transform new version
+     * @return list of class load events
      */
-    boolean onDefine() default true;
-
-    /**
-     * Should the transformation be done for hotswap reload?
-     *
-     * @return true to transform hotswap reloaded version
-     */
-    boolean onReload() default true;
+    LoadEvent[] events() default {DEFINE, REDEFINE};
 
     /**
      * Anonymous classes (e.g. MyClass$1, MyClass$2, ...) are usually reloaded with main class MyClass,

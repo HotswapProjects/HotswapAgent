@@ -8,8 +8,9 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CannotCompileException;
@@ -43,7 +44,7 @@ public class Jersey2Plugin {
      *  
      *  Also, add the ServletContainer to a list of registeredJerseyContainers so that we can call reload on it later when classes change
      */
-    @Transform(classNameRegexp = "org.glassfish.jersey.servlet.ServletContainer")
+    @OnClassLoadEvent(classNameRegexp = "org.glassfish.jersey.servlet.ServletContainer")
     public static void jerseyServletCallInitialized(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("init", new CtClass[] { classPool.get("org.glassfish.jersey.servlet.WebConfig") });
         init.insertBefore(PluginManagerInvoker.buildInitializePlugin(Jersey2Plugin.class));
@@ -61,7 +62,7 @@ public class Jersey2Plugin {
     /**
      *  Fix a scanning issue with jersey pre-2.4 versions.  https://java.net/jira/browse/JERSEY-1936 
      */
-    @Transform(classNameRegexp = "org.glassfish.jersey.server.internal.scanning.AnnotationAcceptingListener")
+    @OnClassLoadEvent(classNameRegexp = "org.glassfish.jersey.server.internal.scanning.AnnotationAcceptingListener")
     public static void fixAnnoationAcceptingListener(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod process = ctClass.getDeclaredMethod("process");
         process.insertAfter("try { $2.close(); } catch (Exception e) {}");
@@ -113,7 +114,7 @@ public class Jersey2Plugin {
 	 * Call reload on the jersey Application when any class changes that is either involved in configuring
 	 * the Jersey Application, or if was newly annotated and will be involved in configuring the application.
 	 */
-    @Transform(classNameRegexp = ".*", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidate(CtClass ctClass, Class original) throws Exception {
     	if (allRegisteredClasses.contains(original)) {  
     		scheduler.scheduleCommand(reloadJerseyContainers);

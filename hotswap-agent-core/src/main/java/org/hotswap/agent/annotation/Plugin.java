@@ -38,7 +38,7 @@ public @interface Plugin {
     String[] expectedVersions() default {};
 
     /**
-     * Split plugin definition into multiple class files. Annotations @Transform and @Watch will be scanned on
+     * Split plugin definition into multiple class files. Annotations @OnClassLoadEvent and @OnResourceFileEvent will be scanned on
      * supporting class in addition to pluginClass itself.
      */
     Class[] supportClass() default {};

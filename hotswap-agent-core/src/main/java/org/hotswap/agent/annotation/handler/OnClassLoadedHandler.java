@@ -1,7 +1,8 @@
 package org.hotswap.agent.annotation.handler;
 
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AppClassLoaderExecutor;
@@ -14,39 +15,40 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * Transform method handler - handle @Transform annotation on a method.
+ * Transform method handler - handle @OnClassLoadEvent annotation on a method.
  *
  * @author Jiri Bubnik
  */
-public class TransformHandler implements PluginHandler<Transform> {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(TransformHandler.class);
+public class OnClassLoadedHandler implements PluginHandler<OnClassLoadEvent> {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(OnClassLoadedHandler.class);
 
     protected PluginManager pluginManager;
 
     protected HotswapTransformer hotswapTransformer;
 
-    public TransformHandler(PluginManager pluginManager) {
+    public OnClassLoadedHandler(PluginManager pluginManager) {
         this.pluginManager = pluginManager;
         this.hotswapTransformer = pluginManager.getHotswapTransformer();
 
         if (hotswapTransformer == null) {
-            throw new IllegalArgumentException("Error instantiating TransformHandler. Hotswap transformer is missing in PluginManager.");
+            throw new IllegalArgumentException("Error instantiating OnClassLoadedHandler. Hotswap transformer is missing in PluginManager.");
         }
     }
 
     @Override
-    public boolean initField(PluginAnnotation<Transform> pluginAnnotation) {
-        throw new IllegalAccessError("@Transform annotation not allowed on fields.");
+    public boolean initField(PluginAnnotation<OnClassLoadEvent> pluginAnnotation) {
+        throw new IllegalAccessError("@OnClassLoadEvent annotation not allowed on fields.");
     }
 
     @Override
-    public boolean initMethod(final PluginAnnotation<Transform> pluginAnnotation) {
+    public boolean initMethod(final PluginAnnotation<OnClassLoadEvent> pluginAnnotation) {
         LOGGER.debug("Init for method " + pluginAnnotation.getMethod());
 
-        final Transform annot = pluginAnnotation.getAnnotation();
+        final OnClassLoadEvent annot = pluginAnnotation.getAnnotation();
 
         if (hotswapTransformer == null) {
             LOGGER.error("Error in init for method " + pluginAnnotation.getMethod() + ". Hotswap transformer is missing.");
@@ -65,12 +67,13 @@ public class TransformHandler implements PluginHandler<Transform> {
         hotswapTransformer.registerTransformer(appClassLoader, annot.classNameRegexp(), new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-                if ((classBeingRedefined == null) ? !annot.onDefine() : !annot.onReload()) {
+                List<LoadEvent> events = Arrays.asList(annot.events());
+                if ((classBeingRedefined == null) ? !events.contains(LoadEvent.DEFINE) : !events.contains(LoadEvent.REDEFINE)) {
                     // Hotswap reload which is the client not interested of
                     return classfileBuffer;
                 }
 
-                return TransformHandler.this.transform(pluginAnnotation, loader, className,
+                return OnClassLoadedHandler.this.transform(pluginAnnotation, loader, className,
                         classBeingRedefined, protectionDomain, classfileBuffer);
             }
         });
@@ -83,7 +86,7 @@ public class TransformHandler implements PluginHandler<Transform> {
      * Resolve method parameters to actual values, provide convenience parameters of javassist to
      * streamline the transformation.
      */
-    public byte[] transform(PluginAnnotation<Transform> pluginAnnotation,
+    public byte[] transform(PluginAnnotation<OnClassLoadEvent> pluginAnnotation,
                             ClassLoader classLoader, String className,
                             Class<?> redefiningClass, ProtectionDomain protectionDomain, byte[] bytes) {
         // skip synthetic classes
@@ -93,18 +96,6 @@ public class TransformHandler implements PluginHandler<Transform> {
         // skip anonymous class
         if (pluginAnnotation.getAnnotation().skipAnonymous()) {
             if (className.matches("\\$\\d+$"))
-                return bytes;
-        }
-
-        // check reload only
-        if (!pluginAnnotation.getAnnotation().onDefine()) {
-            if (redefiningClass == null)
-                return bytes;
-        }
-
-        // check define only
-        if (!pluginAnnotation.getAnnotation().onReload()) {
-            if (redefiningClass != null)
                 return bytes;
         }
 
@@ -149,6 +140,8 @@ public class TransformHandler implements PluginHandler<Transform> {
                     LOGGER.error("Unable create CtClass for '" + className + "'.", e);
                     return result;
                 }
+            } else if (type.isAssignableFrom(LoadEvent.class)) {
+                args.add(redefiningClass == null ? LoadEvent.DEFINE : LoadEvent.REDEFINE);
             } else if (type.isAssignableFrom(AppClassLoaderExecutor.class)) {
                 args.add(new AppClassLoaderExecutor(classLoader, protectionDomain));
             } else {
@@ -173,7 +166,7 @@ public class TransformHandler implements PluginHandler<Transform> {
                     ((CtClass) resultObject).detach();
                 }
             } else {
-                LOGGER.error("Unknown result of @Transform method '" + result.getClass().getName() + "'.");
+                LOGGER.error("Unknown result of @OnClassLoadEvent method '" + result.getClass().getName() + "'.");
             }
 
             // close CtClass if created from here

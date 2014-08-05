@@ -1,6 +1,6 @@
 package org.hotswap.agent.plugin.spring.scanner;
 
-import org.hotswap.agent.annotation.Transform;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -21,7 +21,7 @@ public class ClassPathBeanDefinitionScannerTransformer {
      * org.springframework.context.annotation.ClassPathBeanDefinitionScanner.scan() directly,
      * however there are issues with javassist and varargs parameters.
      */
-    @Transform(classNameRegexp = "org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider")
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         CtMethod method = clazz.getDeclaredMethod("findCandidateComponents", new CtClass[]{classPool.get("java.lang.String")});

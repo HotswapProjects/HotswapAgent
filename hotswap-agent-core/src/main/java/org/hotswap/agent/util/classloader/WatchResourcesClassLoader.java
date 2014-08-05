@@ -1,11 +1,10 @@
 package org.hotswap.agent.util.classloader;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.watch.WatchEvent;
+import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -88,7 +87,7 @@ public class WatchResourcesClassLoader extends URLClassLoader {
                 LOGGER.debug("Watching directory '{}' for changes.", uri);
                 watcher.addEventListener(this, uri, new WatchEventListener() {
                     @Override
-                    public void onEvent(WatchEvent event) {
+                    public void onEvent(WatchFileEvent event) {
                         try {
                             if (event.isFile() || event.isDirectory()) {
                                 changedUrls.add(event.getURI().toURL());

@@ -1,7 +1,9 @@
 package org.hotswap.agent.watch.nio;
 
 
+import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
@@ -237,7 +239,7 @@ public class WatcherNIO2 implements Watcher {
         for (Map.Entry<Path, List<WatchEventListener>> list : listeners.entrySet()) {
             for (WatchEventListener listener : list.getValue()) {
                 if (path.startsWith(list.getKey())) {
-                    org.hotswap.agent.watch.WatchEvent agentEvent = new HotswapWatchEvent(event, path);
+                    WatchFileEvent agentEvent = new HotswapWatchFileEvent(event, path);
 
                     try {
                         listener.onEvent(agentEvent);
@@ -250,13 +252,13 @@ public class WatcherNIO2 implements Watcher {
     }
 
     // translate constants between NIO event and ageent event
-    private static org.hotswap.agent.watch.WatchEvent.WatchEventType toAgentEvent(WatchEvent.Kind kind) {
+    private static FileEvent toAgentEvent(WatchEvent.Kind kind) {
         if (kind == ENTRY_CREATE)
-            return org.hotswap.agent.watch.WatchEvent.WatchEventType.CREATE;
+            return FileEvent.CREATE;
         else if (kind == ENTRY_MODIFY)
-            return org.hotswap.agent.watch.WatchEvent.WatchEventType.MODIFY;
+            return FileEvent.MODIFY;
         else if (kind == ENTRY_DELETE)
-            return org.hotswap.agent.watch.WatchEvent.WatchEventType.DELETE;
+            return FileEvent.DELETE;
         else
             throw new IllegalArgumentException("Unknown event type " + kind.name());
     }
@@ -285,18 +287,18 @@ public class WatcherNIO2 implements Watcher {
     /**
      * Filesystem event.
      */
-    public static class HotswapWatchEvent implements org.hotswap.agent.watch.WatchEvent {
+    public static class HotswapWatchFileEvent implements WatchFileEvent {
 
         private final WatchEvent event;
         private final Path path;
 
-        public HotswapWatchEvent(WatchEvent event, Path path) {
+        public HotswapWatchFileEvent(WatchEvent event, Path path) {
             this.event = event;
             this.path = path;
         }
 
         @Override
-        public WatchEventType getEventType() {
+        public FileEvent getEventType() {
             return toAgentEvent(event.kind());
         }
 
@@ -318,7 +320,7 @@ public class WatcherNIO2 implements Watcher {
 
         @Override
         public String toString() {
-            return "WatchEvent on path " + path + " for event " + event.kind();
+            return "WatchFileEvent on path " + path + " for event " + event.kind();
         }
 
         @Override
@@ -326,7 +328,7 @@ public class WatcherNIO2 implements Watcher {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            HotswapWatchEvent that = (HotswapWatchEvent) o;
+            HotswapWatchFileEvent that = (HotswapWatchFileEvent) o;
 
             if (!event.equals(that.event)) return false;
             if (!path.equals(that.path)) return false;

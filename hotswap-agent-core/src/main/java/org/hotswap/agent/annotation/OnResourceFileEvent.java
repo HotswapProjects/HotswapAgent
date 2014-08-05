@@ -1,11 +1,11 @@
 package org.hotswap.agent.annotation;
 
-import org.hotswap.agent.watch.WatchEvent;
-
 import java.lang.annotation.*;
 
+import static org.hotswap.agent.annotation.FileEvent.*;
+
 /**
- * Watch for a resource change.
+ * Event for a resource change (change of a file on the filesystem).
  * <p/>
  * Use with a non static method.
  * <p/>
@@ -13,7 +13,6 @@ import java.lang.annotation.*;
  * <li>URI - URI of the watched resource</li>
  * <li>URL - URL of the watched resource</li>
  * <li>ClassLoader - the application classloader</li>
- * <li>CtClass - javassist CtClass created from target file (use with .class filter)</li>
  * <li>ClassPool - initialized javassist classpool</li>
  * </ul>
  *
@@ -22,7 +21,7 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Watch {
+public @interface OnResourceFileEvent {
 
     /**
      * Prefix of resource path to watch.
@@ -37,8 +36,7 @@ public @interface Watch {
     /**
      * Filter watch event types. Default is all events (CREATE, MODIFY, DELETE).
      */
-    WatchEvent.WatchEventType[] watchEvents() default {WatchEvent.WatchEventType.CREATE,
-            WatchEvent.WatchEventType.MODIFY, WatchEvent.WatchEventType.DELETE};
+    FileEvent[] events() default {CREATE, MODIFY, DELETE};
 
     /**
      * Watch only for regular files. By default all other types (including directories) are filtered out.

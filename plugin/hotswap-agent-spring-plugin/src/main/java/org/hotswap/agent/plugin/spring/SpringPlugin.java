@@ -1,8 +1,8 @@
 package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
@@ -12,7 +12,7 @@ import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.classloader.*;
-import org.hotswap.agent.watch.WatchEvent;
+import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
@@ -102,7 +102,7 @@ public class SpringPlugin {
             } else {
                 watcher.addEventListener(appClassLoader, basePackageURL, new WatchEventListener() {
                     @Override
-                    public void onEvent(WatchEvent event) {
+                    public void onEvent(WatchFileEvent event) {
                         if (event.isFile() && event.getURI().toString().endsWith(".class")) {
                             // check that the class is not loaded by the classloader yet (avoid duplicate reload)
                             String className;
@@ -130,7 +130,7 @@ public class SpringPlugin {
      * This will override freeze method to init plugin - plugin will be initialized and the configuration
      * remains unfrozen, so bean (re)definition may be done by the plugin.
      */
-    @Transform(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
     public static void register(CtClass clazz) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
         src.append("setCacheBeanMetadata(false);");
@@ -160,7 +160,7 @@ public class SpringPlugin {
                 "setAllowRawInjectionDespiteWrapping(true); ");
     }
 
-    @Transform(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")
     public static void cglibAopProxyDisableCache(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod method = ctClass.getDeclaredMethod("createEnhancer");
         method.setBody("{" +

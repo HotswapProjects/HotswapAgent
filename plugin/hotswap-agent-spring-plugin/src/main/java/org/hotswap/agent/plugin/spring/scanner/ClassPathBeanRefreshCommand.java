@@ -1,10 +1,11 @@
 package org.hotswap.agent.plugin.spring.scanner;
 
+import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.IOUtils;
-import org.hotswap.agent.watch.WatchEvent;
+import org.hotswap.agent.watch.WatchFileEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -26,7 +27,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     String className;
 
     // either event or classDefinition is set by constructor (watcher or transformer)
-    WatchEvent event;
+    WatchFileEvent event;
     byte[] classDefinition;
 
     public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className, byte[] classDefinition) {
@@ -36,7 +37,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         this.classDefinition = classDefinition;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, WatchEvent event) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, WatchFileEvent event) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
         this.event = event;
@@ -99,9 +100,9 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         boolean deleteFound = false;
         for (ClassPathBeanRefreshCommand command : mergedCommands) {
             if (command.event != null) {
-                if (command.event.getEventType().equals(WatchEvent.WatchEventType.DELETE))
+                if (command.event.getEventType().equals(FileEvent.DELETE))
                     deleteFound = true;
-                if (command.event.getEventType().equals(WatchEvent.WatchEventType.CREATE))
+                if (command.event.getEventType().equals(FileEvent.CREATE))
                     createFound = true;
             }
         }

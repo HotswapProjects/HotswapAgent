@@ -1,6 +1,7 @@
 package org.hotswap.agent.watch.nio;
 
-import org.hotswap.agent.watch.WatchEvent;
+import org.hotswap.agent.annotation.FileEvent;
+import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
@@ -43,8 +44,8 @@ public class WatcherNIO2Test {
         final ResultHolder resultHolder = new ResultHolder();
         watcher.addEventListener(null, temp.toUri(), new WatchEventListener() {
             @Override
-            public void onEvent(WatchEvent event) {
-                assertEquals("New file event type", WatchEvent.WatchEventType.CREATE, event.getEventType());
+            public void onEvent(WatchFileEvent event) {
+                assertEquals("New file event type", FileEvent.CREATE, event.getEventType());
                 assertTrue("File name", event.getURI().toString().endsWith("test.class"));
                 resultHolder.result = true;
             }
@@ -63,7 +64,7 @@ public class WatcherNIO2Test {
         final ResultHolder resultHolder = new ResultHolder();
         watcher.addEventListener(null, uri, new WatchEventListener() {
             @Override
-            public void onEvent(WatchEvent event) {
+            public void onEvent(WatchFileEvent event) {
                 assertTrue("File name", event.getURI().toString().endsWith("test.class"));
                 resultHolder.result = true;
             }

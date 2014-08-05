@@ -8,7 +8,7 @@ import org.junit.Test;
 /**
  * Created by bubnik on 3.11.13.
  */
-public class WatchHandlerTest {
+public class OnResourceWatchFileEventHandlerTest {
 
     Mockery context = new Mockery() {{
         setImposteriser(ClassImposteriser.INSTANCE);

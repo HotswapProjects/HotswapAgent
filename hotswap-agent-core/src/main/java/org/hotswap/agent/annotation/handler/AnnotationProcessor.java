@@ -1,10 +1,7 @@
 package org.hotswap.agent.annotation.handler;
 
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
-import org.hotswap.agent.annotation.Watch;
 import org.hotswap.agent.logging.AgentLogger;
 
 import java.lang.annotation.Annotation;
@@ -34,8 +31,9 @@ public class AnnotationProcessor {
 
     public void init(PluginManager pluginManager) {
         addAnnotationHandler(Init.class, new InitHandler(pluginManager));
-        addAnnotationHandler(Transform.class, new TransformHandler(pluginManager));
-        addAnnotationHandler(Watch.class, new WatchHandler(pluginManager));
+        addAnnotationHandler(OnClassLoadEvent.class, new OnClassLoadedHandler(pluginManager));
+        addAnnotationHandler(OnClassFileEvent.class, new WatchHandler(pluginManager));
+        addAnnotationHandler(OnResourceFileEvent.class, new WatchHandler(pluginManager));
     }
 
     public void addAnnotationHandler(Class<? extends Annotation> annotation, PluginHandler handler) {

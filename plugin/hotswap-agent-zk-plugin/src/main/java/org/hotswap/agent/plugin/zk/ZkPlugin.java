@@ -1,9 +1,6 @@
 package org.hotswap.agent.plugin.zk;
 
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.annotation.Transform;
-import org.hotswap.agent.annotation.Watch;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
@@ -54,7 +51,7 @@ public class ZkPlugin {
     /**
      * Initialize the plugin after DHtmlLayoutServlet.init() method.
      */
-    @Transform(classNameRegexp = "org.zkoss.zk.ui.http.DHtmlLayoutServlet")
+    @OnClassLoadEvent(classNameRegexp = "org.zkoss.zk.ui.http.DHtmlLayoutServlet")
     public static void layoutServletCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("init");
         init.insertAfter(PluginManagerInvoker.buildInitializePlugin(ZkPlugin.class));
@@ -66,7 +63,7 @@ public class ZkPlugin {
      * <p/>
      * Note, that this is a little bit aggressive, but the user may override this by providing explicit value in zk.xml
      */
-    @Transform(classNameRegexp = "org.zkoss.lang.Library")
+    @OnClassLoadEvent(classNameRegexp = "org.zkoss.lang.Library")
     public static void defaultDisableCaches(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
         LOGGER.debug("org.zkoss.lang.Library enhanced to replace property '*.cache' default value to 'false'.");
         CtMethod m = ctClass.getDeclaredMethod("getProperty", new CtClass[]{classPool.get("java.lang.String")});
@@ -84,7 +81,7 @@ public class ZkPlugin {
         m.insertAfter("if (_props.get(key) == null && \"" + setPropertyFalse + "\".equals(key)) return \"false\";");
     }
 
-    @Watch(path = "/", filter = ".*.properites")
+    @OnResourceFileEvent(path = "/", filter = ".*.properites")
     public void refreshProperties() {
         // unable to tell if properties are ZK labels or not for custom label locator.
         // however Label refresh is very cheep, do it for any properties.
@@ -94,7 +91,7 @@ public class ZkPlugin {
     /**
      * BeanELResolver contains reflection cache (bean properites).
      */
-    @Transform(classNameRegexp = "org.zkoss.zel.BeanELResolver")
+    @OnClassLoadEvent(classNameRegexp = "org.zkoss.zel.BeanELResolver")
     public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(ZkPlugin.class, "registerBeanELResolver",
                 "this", "java.lang.Object");
@@ -118,7 +115,7 @@ public class ZkPlugin {
     /**
      * BeanELResolver contains reflection cache (bean properites).
      */
-    @Transform(classNameRegexp = "org.zkoss.bind.impl.BinderImpl")
+    @OnClassLoadEvent(classNameRegexp = "org.zkoss.bind.impl.BinderImpl")
     public static void binderImplRegisterVariable(CtClass ctClass) throws CannotCompileException {
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(ZkPlugin.class, "registerBinderImpl",
                 "this", "java.lang.Object");
@@ -142,7 +139,7 @@ public class ZkPlugin {
     }
 
     // invalidate BeanELResolver caches after any class reload (it is cheap to rebuild from reflection)
-    @Transform(classNameRegexp = ".*", onDefine = false)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidateClassCache() throws Exception {
         scheduler.scheduleCommand(invalidateClassCache);
     }

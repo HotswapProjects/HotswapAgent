@@ -1,6 +1,6 @@
 package org.hotswap.agent.plugin.tomcat;
 
-import org.hotswap.agent.annotation.Transform;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -17,7 +17,7 @@ public class WebappLoaderTransformer {
      * Hook into main init method of the loader. Init method name and resources type changes between
      * Tomcat versions.
      */
-    @Transform(classNameRegexp = "org.apache.catalina.loader.WebappLoader")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.loader.WebappLoader")
     public static void patchWebappLoader(CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
 
         // handled by various Tomcat versions
@@ -57,6 +57,7 @@ public class WebappLoaderTransformer {
                 ctClass.getDeclaredMethod("start").insertAfter(
                         TomcatPlugin.class.getName() + ".init(getClassLoader(), container.getResources());"
                 );
+                startHandled = true;
             } catch (NotFoundException e) {
             }
         }
@@ -73,8 +74,9 @@ public class WebappLoaderTransformer {
                 ctClass.getDeclaredMethod("stopInternal").insertBefore(
                         PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()")
                 );
+                stopHandled = true;
             } catch (NotFoundException e) {
-                LOGGER.debug("org.apache.catalina.core.StandardContext does not contain stopInternal() method. Hotswap agent will not be able to free Tomcat plugin resources.");
+                LOGGER.debug("org.apache.catalina.core.StandardContext does not contain stopInternal() method, trying older stop() method.");
             }
 
         }
@@ -85,8 +87,9 @@ public class WebappLoaderTransformer {
                 ctClass.getDeclaredMethod("stop").insertBefore(
                         PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()")
                 );
+                stopHandled = true;
             } catch (NotFoundException e) {
-                LOGGER.debug("org.apache.catalina.core.StandardContext does not contain stopInternal() method. Hotswap agent will not be able to free Tomcat plugin resources.");
+                LOGGER.debug("org.apache.catalina.core.StandardContext does not contain neither stop() nor stopInternal() method. Hotswap agent will not be able to free Tomcat plugin resources.");
             }
 
         }
@@ -98,7 +101,7 @@ public class WebappLoaderTransformer {
      *
      * Before the resource is handled by Tomcat, try to get extraResource handled by the plugin.
      */
-    @Transform(classNameRegexp = "org.apache.catalina.webresources.StandardRoot")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.webresources.StandardRoot")
     public static void patchStandardRoot(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
         try {
             ctClass.getDeclaredMethod("getResourceInternal", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertBefore(
@@ -133,7 +136,7 @@ public class WebappLoaderTransformer {
      *
      * Before the resource is handled by Tomcat, try to get extraResource handled by the plugin.
      */
-    @Transform(classNameRegexp = "org.apache.naming.resources.ProxyDirContext")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.naming.resources.ProxyDirContext")
     public static void patchProxyDirContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
 
         try {
@@ -161,7 +164,7 @@ public class WebappLoaderTransformer {
     /**
      * Disable loader caches - Tomact 7x,8x.
      */
-    @Transform(classNameRegexp = "org.apache.catalina.core.StandardContext")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.core.StandardContext")
     public static void patchStandardContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
         try {
             // force disable caching
@@ -178,7 +181,7 @@ public class WebappLoaderTransformer {
     /**
      * Brute force clear caches before any resource is loaded.
      */
-    @Transform(classNameRegexp = "org.apache.catalina.loader.WebappClassLoader")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.loader.WebappClassLoader")
     public static void patchWebappClassLoader(ClassPool classPool,CtClass ctClass) throws CannotCompileException, NotFoundException {
 
         // clear classloader cache

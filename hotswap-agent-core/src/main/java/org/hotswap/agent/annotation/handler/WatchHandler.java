@@ -1,14 +1,16 @@
 package org.hotswap.agent.annotation.handler;
 
+import org.hotswap.agent.annotation.OnClassFileEvent;
+import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.annotation.Watch;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.watch.WatchEvent;
+import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -17,11 +19,11 @@ import java.nio.file.Paths;
 import java.util.Enumeration;
 
 /**
- * Watch method handler - handle @Watch annotation on a method.
+ * Watch method handler - handle @OnResourceFileEvent annotation on a method.
  *
  * @author Jiri Bubnik
  */
-public class WatchHandler implements PluginHandler<Watch> {
+public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
     private static AgentLogger LOGGER = AgentLogger.getLogger(WatchHandler.class);
 
     protected PluginManager pluginManager;
@@ -31,13 +33,13 @@ public class WatchHandler implements PluginHandler<Watch> {
     }
 
     @Override
-    public boolean initField(PluginAnnotation<Watch> pluginAnnotation) {
-        throw new IllegalAccessError("@Transform annotation not allowed on fields.");
+    public boolean initField(PluginAnnotation<T> pluginAnnotation) {
+        throw new IllegalAccessError("@OnResourceFileEvent annotation not allowed on fields.");
     }
 
 
     @Override
-    public boolean initMethod(final PluginAnnotation<Watch> pluginAnnotation) {
+    public boolean initMethod(final PluginAnnotation<T> pluginAnnotation) {
         LOGGER.debug("Init for method " + pluginAnnotation.getMethod());
 
         ClassLoader classLoader = pluginManager.getPluginRegistry().getAppClassLoader(pluginAnnotation.getPlugin());
@@ -60,11 +62,13 @@ public class WatchHandler implements PluginHandler<Watch> {
      * - classpath (already should contain extraClasspath)
      * - plugin configuration - watchResources property
      */
-    private void registerResources(final PluginAnnotation<Watch> pluginAnnotation, final ClassLoader classLoader) throws IOException {
-        final Watch annot = pluginAnnotation.getAnnotation();
+    private void registerResources(final PluginAnnotation<T> pluginAnnotation, final ClassLoader classLoader) throws IOException {
+        final T annot = pluginAnnotation.getAnnotation();
+        WatchEventDTO watchEventDTO =  WatchEventDTO.parse(annot);
+
+        String path = watchEventDTO.getPath();
 
         // normalize
-        String path = annot.path();
         if (path.equals(".") || path.equals("/"))
             path = "";
         if (path.endsWith("/"))
@@ -87,22 +91,25 @@ public class WatchHandler implements PluginHandler<Watch> {
 
 
                 LOGGER.debug("Registering resource listener on classpath URI {}", uri);
-                registerResourceListener(pluginAnnotation, classLoader, uri);
+                registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, uri);
             } catch (URISyntaxException e) {
                 LOGGER.error("Unable convert root resource path URL to URI", e);
             }
         }
 
-        for (URL url : pluginManager.getPluginConfiguration(classLoader).getWatchResources()) {
-            try {
-                Path watchResourcePath = Paths.get(url.toURI());
-                Path pathInWatchResource = watchResourcePath.resolve(path);
-                if (pathInWatchResource.toFile().exists()) {
-                    LOGGER.debug("Registering resource listener on watchResources URI {}", pathInWatchResource.toUri());
-                    registerResourceListener(pluginAnnotation, classLoader, pathInWatchResource.toUri());
+        // add extra directories for watchResources property
+        if (!watchEventDTO.isClassFileEvent()) {
+            for (URL url : pluginManager.getPluginConfiguration(classLoader).getWatchResources()) {
+                try {
+                    Path watchResourcePath = Paths.get(url.toURI());
+                    Path pathInWatchResource = watchResourcePath.resolve(path);
+                    if (pathInWatchResource.toFile().exists()) {
+                        LOGGER.debug("Registering resource listener on watchResources URI {}", pathInWatchResource.toUri());
+                        registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, pathInWatchResource.toUri());
+                    }
+                } catch (URISyntaxException e) {
+                    LOGGER.error("Unable convert watch resource path URL {} to URI", e, url);
                 }
-            } catch (URISyntaxException e) {
-                LOGGER.error("Unable convert watch resource path URL {} to URI", e, url);
             }
         }
     }
@@ -113,17 +120,19 @@ public class WatchHandler implements PluginHandler<Watch> {
      * There might be several same events for a resource change (either from filesystem or when IDE clears and reloads
      * a class multiple time on rebuild). Use command scheduler to group same events into single invocation.
      */
-    private void registerResourceListener(final PluginAnnotation<Watch> pluginAnnotation, final ClassLoader classLoader, URI uri) throws IOException {
+    private void registerResourceListener(final PluginAnnotation<T> pluginAnnotation, final WatchEventDTO watchEventDTO,
+                                          final ClassLoader classLoader, URI uri) throws IOException {
         pluginManager.getWatcher().addEventListener(classLoader, uri, new WatchEventListener() {
             @Override
-            public void onEvent(WatchEvent event) {
+            public void onEvent(WatchFileEvent event) {
                 if (event.isFile()) {
                     Command command = new WatchEventCommand(pluginAnnotation, event, classLoader);
-                    pluginManager.getScheduler().scheduleCommand(command, pluginAnnotation.getAnnotation().timeout());
+                    pluginManager.getScheduler().scheduleCommand(command, watchEventDTO.getTimeout());
                     LOGGER.trace("Resource changed {}", event);
                 }
             }
         });
     }
+
 
 }
