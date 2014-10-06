@@ -30,7 +30,6 @@ public class ELResolverPlugin {
     @Init
     Scheduler scheduler;
 
-    @Init
     ClassLoader appClassLoader;
 
     Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
@@ -38,7 +37,7 @@ public class ELResolverPlugin {
         public void executeCommand() {
             LOGGER.debug("Refreshing BeanELResolver caches.");
             try {
-                Method beanElResolverMethod = resolveClass("javax.el.BeanELResolver").getDeclaredMethod("purgeBeanClasses", ClassLoader.class);
+                Method beanElResolverMethod = resolveClass("javax.el.BeanELResolver").getDeclaredMethod("purgeBeanClassesFromHotswapAgent", ClassLoader.class);
                 for (Object registeredBeanELResolver : registeredBeanELResolvers) {
                     beanElResolverMethod.invoke(registeredBeanELResolver, appClassLoader);
                 }
@@ -67,12 +66,18 @@ public class ELResolverPlugin {
 
         try {
             // JUEL, JSF BeanELResolver[s]
+            // check if we have purgeBeanClasses method
             CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
-            purgeMeth.setModifiers(org.hotswap.agent.javassist.Modifier.PUBLIC);
+//            purgeMeth.setModifiers(org.hotswap.agent.javassist.Modifier.PUBLIC);
+            ctClass.addMethod(CtNewMethod.make("public void purgeBeanClassesFromHotswapAgent(java.lang.ClassLoader classLoader) {" +
+                    "   java.beans.Introspector.flushCaches(); " +
+                    "   purgeBeanClasses(classLoader); " +
+                    "}", ctClass));
         } catch (NotFoundException e) {
             try {
                 // Apache (Tomcat's) BeanELResolver
-                ctClass.addMethod(CtNewMethod.make("public void purgeBeanClasses(java.lang.ClassLoader classLoader) {" +
+                ctClass.addMethod(CtNewMethod.make("public void purgeBeanClassesFromHotswapAgent(java.lang.ClassLoader classLoader) {" +
+                        "   java.beans.Introspector.flushCaches(); " +
                         "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
                         "}", ctClass));
             } catch (Exception e1) {
@@ -80,7 +85,7 @@ public class ELResolverPlugin {
             }
         }
 
-        LOGGER.debug("javax.el.BeanELResolver - added method __resetCache().");
+        LOGGER.debug("javax.el.BeanELResolver - added method purgeBeanClassesFromHotswapAgent(java.lang.ClassLoader classLoader).");
     }
 
     public void registerBeanELResolver(Object beanELResolver) {
@@ -89,7 +94,8 @@ public class ELResolverPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void invalidateClassCache() throws Exception {
+    public void invalidateClassCache(ClassLoader classLoader) throws Exception {
+        appClassLoader = classLoader;
         scheduler.scheduleCommand(invalidateClassCache);
     }
 
