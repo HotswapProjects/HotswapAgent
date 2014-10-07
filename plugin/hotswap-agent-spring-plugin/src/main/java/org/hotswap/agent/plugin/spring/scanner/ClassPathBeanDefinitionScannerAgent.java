@@ -96,10 +96,8 @@ public class ClassPathBeanDefinitionScannerAgent {
         this.scanner = scanner;
 
         this.registry = scanner.getRegistry();
-        this.scopeMetadataResolver = (ScopeMetadataResolver) ReflectionHelper.get(scanner,
-                ClassPathBeanDefinitionScanner.class, "scopeMetadataResolver");
-        this.beanNameGenerator = (BeanNameGenerator) ReflectionHelper.get(scanner,
-                ClassPathBeanDefinitionScanner.class, "beanNameGenerator");
+        this.scopeMetadataResolver = (ScopeMetadataResolver) ReflectionHelper.get(scanner, "scopeMetadataResolver");
+        this.beanNameGenerator = (BeanNameGenerator) ReflectionHelper.get(scanner, "beanNameGenerator");
     }
 
     /**
@@ -239,7 +237,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     }
 
     private MetadataReaderFactory getMetadataReaderFactory() {
-        return (MetadataReaderFactory) ReflectionHelper.get(scanner, ClassPathScanningCandidateComponentProvider.class, "metadataReaderFactory");
+        return (MetadataReaderFactory) ReflectionHelper.get(scanner, "metadataReaderFactory");
     }
 
     // metadataReader contains cache of loaded classes, reset this cache before BeanDefinition is resolved

@@ -1,18 +1,8 @@
 package org.hotswap.agent.plugin.spring.testBeans;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 /**
- * Basic service bean
+ * Simple service.
  */
-@Service
-public class BeanService {
-    @Autowired
-    BeanRepository beanRepository;
-    //BeanChangedRepository beanRepository;
-
-    public String hello() {
-        return beanRepository.hello() + " Service";
-    }
+public interface BeanService {
+    public String hello();
 }

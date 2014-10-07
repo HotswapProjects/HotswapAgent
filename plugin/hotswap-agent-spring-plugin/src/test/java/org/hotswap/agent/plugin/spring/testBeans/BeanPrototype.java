@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Scope("prototype")
 public class BeanPrototype {
     @Autowired
-    BeanService beanService;
+    BeanServiceImpl beanService;
 
     public String hello() {
         return beanService.hello() + " Prototype";

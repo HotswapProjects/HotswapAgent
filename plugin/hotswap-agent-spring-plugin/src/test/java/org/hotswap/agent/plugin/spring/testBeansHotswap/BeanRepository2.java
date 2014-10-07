@@ -16,4 +16,8 @@ public class BeanRepository2 {
     public String hello() {
         return beanChangedRepository.hello() + "2";
     }
+
+    public String helloNewMethod() {
+        return "Repository new method";
+    }
 }

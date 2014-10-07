@@ -10,7 +10,7 @@ import org.aspectj.lang.annotation.Aspect;
  */
 @Aspect
 public class TestAspect {
-    @Around("execution(* org.hotswap.agent.plugin.spring.testBeans.BeanService.hello(..))")
+    @Around("execution(* org.hotswap.agent.plugin.spring.testBeans.BeanServiceImpl.hello(..))")
     public Object around(ProceedingJoinPoint pjp) throws Throwable {
         return pjp.proceed() + "WithAspect";
     }
