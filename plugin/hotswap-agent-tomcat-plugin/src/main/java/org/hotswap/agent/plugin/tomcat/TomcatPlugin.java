@@ -106,7 +106,7 @@ public class TomcatPlugin {
     private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<ClassLoader,  Map<String, ClassLoader>>();
 
     private static void addRepositoriesAtStart(ClassLoader appClassLoader, URL[] newRepositories, boolean watchResources) {
-        String[] currentRepositories = (String[]) ReflectionHelper.get(appClassLoader, appClassLoader.getClass(), "repositories");
+        String[] currentRepositories = (String[]) ReflectionHelper.get(appClassLoader, "repositories");
         String[] repositories = new String[currentRepositories.length + newRepositories.length];
 
         for (int i=0; i < newRepositories.length; i++) {
@@ -117,7 +117,7 @@ public class TomcatPlugin {
         }
         ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "repositories", repositories);
 
-        File[] files = (File[]) ReflectionHelper.get(appClassLoader, appClassLoader.getClass(), "files");
+        File[] files = (File[]) ReflectionHelper.get(appClassLoader, "files");
         File[] result2 = new File[files.length + newRepositories.length];
         for (int i=0; i < newRepositories.length; i++) {
             try {
