@@ -131,27 +131,29 @@ public class PluginManager {
 
     public void initClassLoader(ClassLoader classLoader, ProtectionDomain protectionDomain) {
 
-        if (classLoaderConfigurations.containsKey(classLoader))
-            return;
+        synchronized (classLoader) {
+            if (classLoaderConfigurations.containsKey(classLoader))
+                return;
 
-        // parent of current classloader (system/bootstrap)
-        if (classLoader.equals(getClass().getClassLoader().getParent()))
-            return;
+            // parent of current classloader (system/bootstrap)
+            if (classLoader.equals(getClass().getClassLoader().getParent()))
+                return;
 
 
-        // transformation
-        if (classLoaderPatcher.isPatchAvailable(classLoader)) {
-            classLoaderPatcher.patch(getClass().getClassLoader(), PLUGIN_PACKAGE.replace(".", "/"),
-                    classLoader, protectionDomain);
+            // transformation
+            if (classLoaderPatcher.isPatchAvailable(classLoader)) {
+                classLoaderPatcher.patch(getClass().getClassLoader(), PLUGIN_PACKAGE.replace(".", "/"),
+                        classLoader, protectionDomain);
+            }
+
+            // create new configuration for the classloader
+            PluginConfiguration configuration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader);
+            classLoaderConfigurations.put(classLoader, configuration);
+
+            // call listeners
+            for (ClassLoaderInitListener classLoaderInitListener : classLoaderInitListeners)
+                classLoaderInitListener.onInit(classLoader);
         }
-
-        // create new configuration for the classloader
-        PluginConfiguration configuration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader);
-        classLoaderConfigurations.put(classLoader, configuration);
-
-        // call listeners
-        for (ClassLoaderInitListener classLoaderInitListener : classLoaderInitListeners)
-            classLoaderInitListener.onInit(classLoader);
     }
 
     /**
