@@ -15,9 +15,6 @@ import java.util.WeakHashMap;
 public class ReflectionHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ReflectionHelper.class);
 
-    private static Map<String, Field> fieldCache = new WeakHashMap<String, Field>();
-    private static Map<String, Method> methodCache = new WeakHashMap<String, Method>();
-
     /**
      * Convenience wrapper to reflection method invoke API. Invoke the method and hide checked exceptions.
      *
@@ -31,18 +28,14 @@ public class ReflectionHelper {
      * @throws IllegalStateException    for InvocationTargetException (exception in invoked method)
      */
     public static Object invoke(Object target, Class<?> clazz, String methodName, Class[] parameterTypes, Object... args) {
-        String key = clazz.getName() + "." + methodName + "(" + Arrays.toString(parameterTypes) + ")";
         try {
-            Method method = methodCache.get(key);
-            if (method == null) {
-                try {
-                    method = clazz.getMethod(methodName, parameterTypes);
-                } catch (NoSuchMethodException e) {
-                    method = clazz.getDeclaredMethod(methodName, parameterTypes);
-                }
-                method.setAccessible(true);
-                methodCache.put(key, method);
+            Method method = null;
+            try {
+                method = clazz.getMethod(methodName, parameterTypes);
+            } catch (NoSuchMethodException e) {
+                method = clazz.getDeclaredMethod(methodName, parameterTypes);
             }
+            method.setAccessible(true);
 
             return method.invoke(target, args);
         } catch (IllegalArgumentException e) {
@@ -63,6 +56,39 @@ public class ReflectionHelper {
 
     /**
      * Convenience wrapper to reflection method invoke API. Get field value and hide checked exceptions.
+     * Field class is set by
+     *
+     * @param target    object to get field value (or null for static methods)
+     * @param fieldName field name
+     * @return field value
+     * @throws IllegalArgumentException if field not found
+     */
+    public static Object get(Object target, String fieldName) {
+        if (target == null)
+            throw new NullPointerException("Target object cannot be null.");
+
+        Class clazz = target.getClass();
+
+        while (clazz != null) {
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                break;
+            } catch (NoSuchFieldException e) {
+                // ignore
+            }
+            clazz = clazz.getSuperclass();
+        }
+
+        if (clazz == null) {
+            throw new IllegalArgumentException(String.format("No such field %s.%s on %s", target.getClass(), fieldName, target));
+        }
+
+        return get(target, clazz, fieldName);
+    }
+
+    /**
+     * Convenience wrapper to reflection method invoke API. Get field value and hide checked exceptions.
      *
      * @param target    object to get field value (or null for static methods)
      * @param clazz     class name
@@ -71,15 +97,9 @@ public class ReflectionHelper {
      * @throws IllegalArgumentException if field not found
      */
     public static Object get(Object target, Class<?> clazz, String fieldName) {
-        String key = clazz.getName() + "." + fieldName;
         try {
-            Field field = fieldCache.get(key);
-            if (field == null) {
-                field = clazz.getDeclaredField(fieldName);
-                field.setAccessible(true);
-                fieldCache.put(key, field);
-            }
-
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
             return field.get(target);
         } catch (NoSuchFieldException e) {
             throw new IllegalArgumentException(String.format("No such field %s.%s on %s", clazz.getName(), fieldName, target), e);
@@ -116,15 +136,9 @@ public class ReflectionHelper {
      * @throws IllegalArgumentException if field not found
      */
     public static void set(Object target, Class<?> clazz, String fieldName, Object value) {
-        String key = clazz.getName() + "." + fieldName;
         try {
-            Field field = fieldCache.get(key);
-            if (field == null) {
-                field = clazz.getDeclaredField(fieldName);
-                field.setAccessible(true);
-                fieldCache.put(key, field);
-            }
-
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
             field.set(target, value);
         } catch (NoSuchFieldException e) {
             throw new IllegalArgumentException(String.format("No such field %s.%s on %s", clazz.getName(), fieldName, target), e);
