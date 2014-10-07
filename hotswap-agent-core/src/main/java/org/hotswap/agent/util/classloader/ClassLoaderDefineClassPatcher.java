@@ -1,10 +1,7 @@
 package org.hotswap.agent.util.classloader;
 
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.LoaderClassPath;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.scanner.ClassPathScanner;
 import org.hotswap.agent.util.scanner.Scanner;

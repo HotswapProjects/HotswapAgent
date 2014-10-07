@@ -69,7 +69,7 @@ public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
         String path = watchEventDTO.getPath();
 
         // normalize
-        if (path.equals(".") || path.equals("/"))
+        if (path == null || path.equals(".") || path.equals("/"))
             path = "";
         if (path.endsWith("/"))
             path = path.substring(0, path.length() - 2);
