@@ -131,14 +131,16 @@ public class PluginManager {
 
     public void initClassLoader(ClassLoader classLoader, ProtectionDomain protectionDomain) {
 
-        synchronized (classLoader) {
+        if (classLoaderConfigurations.containsKey(classLoader))
+            return;
+
+        // parent of current classloader (system/bootstrap)
+        if (classLoader.equals(getClass().getClassLoader().getParent()))
+            return;
+
+        synchronized (this) {
             if (classLoaderConfigurations.containsKey(classLoader))
                 return;
-
-            // parent of current classloader (system/bootstrap)
-            if (classLoader.equals(getClass().getClassLoader().getParent()))
-                return;
-
 
             // transformation
             if (classLoaderPatcher.isPatchAvailable(classLoader)) {
@@ -149,11 +151,11 @@ public class PluginManager {
             // create new configuration for the classloader
             PluginConfiguration configuration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader);
             classLoaderConfigurations.put(classLoader, configuration);
-
-            // call listeners
-            for (ClassLoaderInitListener classLoaderInitListener : classLoaderInitListeners)
-                classLoaderInitListener.onInit(classLoader);
         }
+
+        // call listeners
+        for (ClassLoaderInitListener classLoaderInitListener : classLoaderInitListeners)
+            classLoaderInitListener.onInit(classLoader);
     }
 
     /**
