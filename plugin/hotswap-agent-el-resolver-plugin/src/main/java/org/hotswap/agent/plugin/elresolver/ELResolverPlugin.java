@@ -31,7 +31,7 @@ public class ELResolverPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ELResolverPlugin.class);
 
-    public static final String PURGE_CLASS_CACHE_METHOD_NAME = "__purgeClassCache";
+    public static final String PURGE_CLASS_CACHE_METHOD_NAME = "__resetCache";
 
     @Init
     Scheduler scheduler;
