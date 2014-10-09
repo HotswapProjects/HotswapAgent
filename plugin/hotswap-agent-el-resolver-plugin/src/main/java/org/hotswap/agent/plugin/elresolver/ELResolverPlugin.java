@@ -55,6 +55,32 @@ public class ELResolverPlugin {
             constructor.insertAfter(registerThis);
         }
 
+        boolean found = false;
+        if (checkJuelEL(ctClass))
+        {
+            found = true;
+			LOGGER.debug("JuelEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+        }
+        else if (checkApacheCommonsEL(ctClass))
+        {
+            found = true;
+			LOGGER.debug("ApacheCommonsEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+        }
+        else if (checkOracle_3_0_EL(ctClass))
+        {
+            found = true;
+			LOGGER.debug("OracleEL 3.0 - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+        }
+
+        if (!found)
+        {
+            LOGGER.warning("Unable to add javax.el.BeanELResolver." + PURGE_CLASS_CACHE_METHOD_NAME + "() method. Purging will not be available.");
+        }
+    }
+
+
+    private static boolean checkJuelEL(CtClass ctClass)
+    {
         try {
             // JUEL, JSF BeanELResolver[s]
             // check if we have purgeBeanClasses method
@@ -64,19 +90,39 @@ public class ELResolverPlugin {
                     "   java.beans.Introspector.flushCaches(); " +
                     "   purgeBeanClasses(classLoader); " +
                     "}", ctClass));
-        } catch (NotFoundException e) {
-            try {
-                // Apache (Tomcat's) BeanELResolver
-                ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                        "   java.beans.Introspector.flushCaches(); " +
-                        "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-                        "}", ctClass));
-            } catch (Exception e1) {
-                LOGGER.warning("Unable to add javax.el.BeanELResolver." + PURGE_CLASS_CACHE_METHOD_NAME + "() method. Purging will not be available.", e);
-            }
+            return true;
+        } catch (NotFoundException | CannotCompileException e) {
+            // do nothing
         }
+        return false;
 
-        LOGGER.debug("javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader).");
+    }
+
+    private static boolean checkApacheCommonsEL(CtClass ctClass)
+    {
+		try {
+			// Apache Commons BeanELResolver
+			ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+							"   java.beans.Introspector.flushCaches(); " +
+							"   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+							"}", ctClass));
+			return true;
+		} catch (CannotCompileException e) {
+		}
+		return false;
+    }
+
+    private static boolean checkOracle_3_0_EL(CtClass ctClass) {
+		try {
+			// Oracle (system) EL Resolver
+			ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+							"   java.beans.Introspector.flushCaches(); " +
+							"   javax.el.BeanELResolver.properties = new javax.el.BeanELResolver.SoftConcurrentHashMap(); " +
+							"}", ctClass));
+			return true;
+		} catch (CannotCompileException e) {
+		}
+		return false;
     }
 
     public void registerBeanELResolver(Object beanELResolver) {
