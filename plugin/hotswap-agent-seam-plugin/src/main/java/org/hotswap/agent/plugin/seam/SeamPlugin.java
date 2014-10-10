@@ -37,11 +37,6 @@ public class SeamPlugin {
         LOGGER.debug("org.jboss.seam.init.Initialization enhanced with plugin initialization.");
     }
 
-    @OnResourceFileEvent(path = "/", filter = ".*messages_.*.properties")
-    public void refreshSeamProperties() {
-        scheduler.scheduleCommand(refreshLabels);
-    }
-
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void flushBeanIntrospectorsCaches() throws Exception {
         scheduler.scheduleCommand(flushBeanIntrospectors);
@@ -74,19 +69,6 @@ public class SeamPlugin {
                 for (Object referenceCache : registeredJbossReferenceCaches) {
                     clearCacheMethod.invoke(referenceCache);
                 }
-            } catch (Exception e) {
-                LOGGER.error("Error clear in jboss ReferenceCache .", e);
-            }
-        }
-    };
-
-    private Command refreshLabels = new Command() {
-        public void executeCommand() {
-            LOGGER.debug("Refreshing Jboss resource bundles.");
-            try {
-                Class<?> clazz = resolveClass("java.util.ResourceBundle");
-                Method clearCacheMethod = clazz.getDeclaredMethod("clearCache", ClassLoader.class);
-                clearCacheMethod.invoke(null, appClassLoader);
             } catch (Exception e) {
                 LOGGER.error("Error clear in jboss ReferenceCache .", e);
             }
