@@ -72,6 +72,12 @@ public class ELResolverPlugin {
 			LOGGER.debug("OracleEL 3.0 - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
 
+        else if (checkJBoss_3_0_EL(ctClass))
+        {
+            found = true;
+            LOGGER.debug("JBossEL 3.0 - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+        }
+
         if (!found)
         {
             LOGGER.warning("Unable to add javax.el.BeanELResolver." + PURGE_CLASS_CACHE_METHOD_NAME + "() method. Purging will not be available.");
@@ -123,6 +129,19 @@ public class ELResolverPlugin {
 		} catch (CannotCompileException e) {
 		}
 		return false;
+    }
+
+    private static boolean checkJBoss_3_0_EL(CtClass ctClass) {
+        try {
+            // JBoss (system) EL Resolver
+            ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                            "   java.beans.Introspector.flushCaches(); " +
+                            "   javax.el.BeanELResolver.properties.get(\"\");" +
+                            "}", ctClass));
+            return true;
+        } catch (CannotCompileException e) {
+        }
+        return false;
     }
 
     public void registerBeanELResolver(Object beanELResolver) {
