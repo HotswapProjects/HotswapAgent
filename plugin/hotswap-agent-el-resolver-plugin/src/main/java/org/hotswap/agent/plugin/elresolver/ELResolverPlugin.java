@@ -66,12 +66,6 @@ public class ELResolverPlugin {
             found = true;
 			LOGGER.debug("ApacheCommonsEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
-        else if (checkOracle_3_0_EL(ctClass))
-        {
-            found = true;
-			LOGGER.debug("OracleEL 3.0 - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
-        }
-
         else if (checkJBoss_3_0_EL(ctClass))
         {
             found = true;
@@ -111,19 +105,6 @@ public class ELResolverPlugin {
 			ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
 							"   java.beans.Introspector.flushCaches(); " +
 							"   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-							"}", ctClass));
-			return true;
-		} catch (CannotCompileException e) {
-		}
-		return false;
-    }
-
-    private static boolean checkOracle_3_0_EL(CtClass ctClass) {
-		try {
-			// Oracle (system) EL Resolver
-			ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-							"   java.beans.Introspector.flushCaches(); " +
-							"   javax.el.BeanELResolver.properties = new javax.el.BeanELResolver.SoftConcurrentHashMap(); " +
 							"}", ctClass));
 			return true;
 		} catch (CannotCompileException e) {
