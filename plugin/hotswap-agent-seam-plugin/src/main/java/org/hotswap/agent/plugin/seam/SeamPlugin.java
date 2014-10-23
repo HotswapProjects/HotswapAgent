@@ -44,7 +44,7 @@ public class SeamPlugin {
 
     public void registerJbossReferenceCache(Object referenceCache) {
         registeredJbossReferenceCaches.add(referenceCache);
-        LOGGER.debug("JsfPlugin - registerJbossReferenceCache : " + referenceCache.getClass().getName());
+        LOGGER.debug("SeamPlugin - registerJbossReferenceCache : " + referenceCache.getClass().getName());
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.el.util.ReferenceCache")
