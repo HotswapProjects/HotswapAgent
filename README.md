@@ -207,9 +207,11 @@ In case your DCEVM is named differently i.e. `server`
     mvn release:prepare -Darguments="-Ddcevm=server"
     mvn release:perform -Darguments="-Ddcevm=server"
 
-Eclipse RCP settings
-====================
-OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP. You need setup following options:
+Plugin specific settings
+========================
+
+### OsgiEquinox / Eclipse RCP
+OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP (Do not confuse with common Eclipse development!). You need to setup following options:
 
 in hotswap-agent.properties:
 
