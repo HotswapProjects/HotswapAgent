@@ -39,7 +39,7 @@ import org.hotswap.agent.watch.Watcher;
  *
  * @author Vladimir Dvorak
  */
-@Plugin(name = "Equinox",
+@Plugin(name = "OsgiEquinox",
         description = "Supports hotswapping in OSGI/Equinox class loaders therefore it can be used for hotswap in Eclipse RCP plugin development. ",
         testedVersions = {""},
         expectedVersions = {""})
@@ -59,9 +59,6 @@ public class OsgiEquinoxPlugin {
 
     @Init
     Watcher watcher;
-
-    @Init
-    ClassLoader appClassLoader;
 
     AutoHotswapPathEventListener listener;
 
@@ -87,7 +84,7 @@ public class OsgiEquinoxPlugin {
     }
 
     public void initOsgiEquinox() {
-        LOGGER.debug("Init OsgiEquinoxPlugin at classLoader {}", appClassLoader);
+        LOGGER.debug("Init OsgiEquinoxPlugin.");
 
         String extraClasspath = pluginConfiguration.getProperty("extraClasspath");
 
