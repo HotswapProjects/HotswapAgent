@@ -17,9 +17,11 @@ import java.util.StringTokenizer;
 import java.util.WeakHashMap;
 
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
+import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.config.PluginManager;
@@ -28,6 +30,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.hotswapper.HotswapperCommand;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -47,6 +50,8 @@ public class OsgiEquinoxPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OsgiEquinoxPlugin.class);
 
+    @Init
+    ClassLoader appClassLoader;
 
     @Init
     Scheduler scheduler;
@@ -79,16 +84,19 @@ public class OsgiEquinoxPlugin {
             constructor.insertAfter(initializePlugin);
             constructor.insertAfter(initializeThis);
         }
-
-
     }
 
     public void initOsgiEquinox() {
+
+    	if (hotswapCommand != null)
+    		return;
+
         LOGGER.debug("Init OsgiEquinoxPlugin.");
 
         String extraClasspath = pluginConfiguration.getProperty("extraClasspath");
 
         if (extraClasspath != null) {
+
             URL extraClasspathURLs[] = convertToURL(extraClasspath);
 
             listener = new AutoHotswapPathEventListener(this);
@@ -96,28 +104,38 @@ public class OsgiEquinoxPlugin {
             for (URL resource: extraClasspathURLs) {
                 try {
                   URI uri = resource.toURI();
+                  LOGGER.info("Initialize hotswap on URL {}.", uri);
                   watcher.addEventListener(null, uri, listener);
                 } catch (URISyntaxException e) {
                     LOGGER.error("Unable to watch path '{}' for changes.", e, resource);
                 }
             }
 
-            hotswapCommand = new Command() {
-                @Override
-                public void executeCommand() {
-                    pluginManager.hotswap(reloadMap);
-                }
+            final String port = pluginConfiguration.getProperty("autoHotswap.port");
 
-                @Override
-                public String toString() {
-                    return "pluginManager.hotswap(" + Arrays.toString(reloadMap.keySet().toArray()) + ")";
-                }
-            };
-        }
+            if (port == null || port.isEmpty()) {
+                hotswapCommand = new Command() {
+                    @Override
+                    public void executeCommand() {
+                        pluginManager.hotswap(reloadMap);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "pluginManager.hotswap(" + Arrays.toString(reloadMap.keySet().toArray()) + ")";
+                    }
+                };
+            }
+            else {
+                hotswapCommand = new ReflectionCommand(this, HotswapperCommand.class.getName(), "hotswap", appClassLoader,
+                        port, reloadMap);
+            }
+    	}
+
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.eclipse.osgi.internal.loader.EquinoxClassLoader")
-    public static void patchEquinoxClassLoaderClass(CtClass ctClass) throws CannotCompileException {
+    public static void patchEquinoxClassLoader(CtClass ctClass) throws CannotCompileException {
         String registerClassLoader = PluginManagerInvoker.buildCallPluginMethod(OsgiEquinoxPlugin.class, "registerEquinoxClassLoader", "this", "java.lang.Object");
 
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
@@ -126,8 +144,69 @@ public class OsgiEquinoxPlugin {
     }
 
     public void registerEquinoxClassLoader(Object equinoxClassLoader) {
-        LOGGER.debug("OsgiEquinoxPlugin - registerEquinoxClassLoader : " + equinoxClassLoader.getClass().getName());
+        LOGGER.debug("RegisterEquinoxClassLoader : " + equinoxClassLoader.getClass().getName());
         registeredEquinoxClassLoaders.add((ClassLoader)equinoxClassLoader);
+    }
+
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
+    public void classReload(CtClass ctClass, Class original) {
+    	try {
+            URL url = ctClass.getURL();
+            if (loadClassToTargetClassLoaders(ctClass, url.toURI())) {
+                scheduleHotswapCommand();
+            }
+		} catch (Exception e) {
+            LOGGER.warning("Exception : {}",  e.getMessage());
+		}
+    }
+
+	private void scheduleHotswapCommand() {
+        scheduler.scheduleCommand(hotswapCommand, 100, Scheduler.DuplicateSheduleBehaviour.SKIP);
+	}
+
+    private List<ClassLoader> getTargetLoaders(CtClass ctClass) {
+        List<ClassLoader> ret = null;
+        synchronized (registeredEquinoxClassLoaders) {
+            for (ClassLoader classLoader: registeredEquinoxClassLoaders) {
+                if (ClassLoaderHelper.isClassLoaded(classLoader, ctClass.getName())) {
+                    if (ret == null)
+                        ret = new ArrayList<>();
+                    ret.add(classLoader);
+                }
+            }
+        }
+        return ret;
+    }
+
+    private boolean loadClassToTargetClassLoaders(CtClass ctClass, URI uri) {
+        List<ClassLoader> targetClassLoaders = getTargetLoaders(ctClass);
+
+        if (targetClassLoaders == null) {
+            LOGGER.trace("Class {} not loaded yet, no need for autoHotswap, skipped file {}", ctClass.getName());
+            return false;
+        }
+
+        LOGGER.debug("Class {} will be reloaded from URL {}", ctClass.getName(), uri);
+
+        for (ClassLoader classLoader: targetClassLoaders) {
+            try {
+                Class clazz  = classLoader.loadClass(ctClass.getName());
+
+                synchronized (reloadMap) {
+                    reloadMap.put(clazz, ctClass.toBytecode());
+                }
+
+            } catch (ClassNotFoundException e) {
+                LOGGER.warning("OsgiEquinox tries to reload class {}, which is not known to Equinox classLoader {}.",
+                    ctClass.getName(), classLoader);
+                return false;
+            } catch (Exception e) {
+                LOGGER.warning("Exception : {}",  e.getMessage());
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static URL[] convertToURL(String resources) {
@@ -169,81 +248,38 @@ public class OsgiEquinoxPlugin {
 
         public AutoHotswapPathEventListener(OsgiEquinoxPlugin equinoxPlugin) {
             this.equinoxPlugin = equinoxPlugin;
-
         }
 
         @Override
         public void onEvent(WatchFileEvent event) {
+
             ClassPool pool = ClassPool.getDefault();
 
             if (!event.getURI().getPath().endsWith(".class")) {
                 return;
             }
 
-            File classFile = new File(event.getURI());
+            URI fileURI = event.getURI();
+
+            File classFile = new File(fileURI);
             CtClass ctClass = null;
 
+            boolean doHotswap = false;
             try {
-                try {
-                    ctClass = pool.makeClass(new FileInputStream(classFile));
-                } catch (Exception e) {
-                    LOGGER.warning("OsgiEquinox makeClass exception : {}",  e.getMessage());
-                    return;
-                }
-
-                List<ClassLoader> targetClassLoaders = getTargetLoaders(ctClass);
-
-                if (targetClassLoaders == null) {
-                    OsgiEquinoxPlugin.LOGGER.trace("Class {} not loaded yet, no need for autoHotswap, skipped file {}", ctClass.getName(), event.getURI());
-                    return;
-                }
-
-                LOGGER.debug("Class {} will be reloaded from URL {}", ctClass.getName(), event.getURI());
-
-                loadClassToTargetClassLoaders(ctClass, targetClassLoaders);
-
-                // search for a class to reload
+                ctClass = pool.makeClass(new FileInputStream(classFile));
+                doHotswap = equinoxPlugin.loadClassToTargetClassLoaders(ctClass, fileURI);
+            } catch (Exception e) {
+                LOGGER.warning("MakeClass exception : {}",  e.getMessage());
             } finally {
-                if (ctClass != null)
+                if (ctClass != null) {
                     ctClass.detach();
-            }
-
-            equinoxPlugin.scheduler.scheduleCommand(equinoxPlugin.hotswapCommand, 100, Scheduler.DuplicateSheduleBehaviour.SKIP);
-        }
-
-        private void loadClassToTargetClassLoaders(CtClass ctClass, List<ClassLoader> targetClassLoaders) {
-            for (ClassLoader classLoader: targetClassLoaders) {
-              Class clazz;
-              try {
-                  clazz  = classLoader.loadClass(ctClass.getName());
-                  synchronized (equinoxPlugin.reloadMap) {
-                      equinoxPlugin.reloadMap.put(clazz, ctClass.toBytecode());
-                  }
-              } catch (ClassNotFoundException e) {
-                  LOGGER.warning("OsgiEquinox tries to reload class {}, which is not known to application classLoader {}.",
-                          ctClass.getName(), classLoader);
-                  return;
-              } catch (Exception e) {
-                  LOGGER.warning("OsgiEquinox exception : {}",  e.getMessage());
-                  return;
-              }
-            }
-
-        }
-
-        private List<ClassLoader> getTargetLoaders(CtClass ctClass) {
-            List<ClassLoader> ret = null;
-            synchronized (equinoxPlugin.registeredEquinoxClassLoaders) {
-                for (ClassLoader classLoader: equinoxPlugin.registeredEquinoxClassLoaders) {
-                    if (ClassLoaderHelper.isClassLoaded(classLoader, ctClass.getName())) {
-                        if (ret == null)
-                            ret = new ArrayList<>();
-                        ret.add(classLoader);
-                    }
                 }
             }
-            return ret;
+
+            if (doHotswap)
+            	equinoxPlugin.scheduleHotswapCommand();
         }
+
     }
 
 }

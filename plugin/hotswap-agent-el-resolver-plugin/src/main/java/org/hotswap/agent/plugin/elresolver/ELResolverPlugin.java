@@ -59,12 +59,12 @@ public class ELResolverPlugin {
         if (checkJuelEL(ctClass))
         {
             found = true;
-			LOGGER.debug("JuelEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+            LOGGER.debug("JuelEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
         else if (checkApacheCommonsEL(ctClass))
         {
             found = true;
-			LOGGER.debug("ApacheCommonsEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+            LOGGER.debug("ApacheCommonsEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
         else if (checkJBoss_3_0_EL(ctClass))
         {
@@ -100,16 +100,16 @@ public class ELResolverPlugin {
 
     private static boolean checkApacheCommonsEL(CtClass ctClass)
     {
-		try {
-			// Apache Commons BeanELResolver
-			ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-							"   java.beans.Introspector.flushCaches(); " +
-							"   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-							"}", ctClass));
-			return true;
-		} catch (CannotCompileException e) {
-		}
-		return false;
+        try {
+            // Apache Commons BeanELResolver
+            ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                            "   java.beans.Introspector.flushCaches(); " +
+                            "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                            "}", ctClass));
+            return true;
+        } catch (CannotCompileException e) {
+        }
+        return false;
     }
 
     private static boolean checkJBoss_3_0_EL(CtClass ctClass) {
