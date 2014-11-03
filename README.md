@@ -211,25 +211,40 @@ Plugin specific settings
 ========================
 
 ### OsgiEquinox / Eclipse RCP
-OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP (Do not confuse with common Eclipse development!). You need to setup following options:
+OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP (Do not confuse with common Eclipse development!). 
+For hotswap in RUNTIME you need to setup following options (debuggee Eclipse instance):
 
-in hotswap-agent.properties:
+hotswap-agent.properties:
 
     extraClasspath=[your_development_classpath/]
 
-in eclipse.ini:
+eclipse.ini:
 
     -Dosgi.frameworkParentClassloader=app
     -Dosgi.dev=[your_development_classpath/]
     -XXaltjvm=dcevm
     -javaagent:PATH_TO_AGENT/hotswap-agent.jar
 
+You need to use the same RUNTIME option to support hotswap in DEBUG mode. Additionaly use the following debug options:
+    
+hotswap-agent.properties:
+
+    osgiEquinox.debugMode=true
+
+eclipse.ini
+
+    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
+    
+then connect the debugger to port 8000 and happy hotswapping!
+
+HotswapAgent writes all new/modified classes to extraClasspath in the DEBUGMODE, so there is no need to manually copy them.
+
 Credits
 =======
 Hotswap agent:
 
 * Jiri Bubnik - project coordinator, initial implementation
-* Vladimir Dvorak - Seam, ELResolver, JSF plugin implementation, OsgiEquinox
+* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox plugins implementation
 * Jan Tecl - web design
 
 DCEVM:
