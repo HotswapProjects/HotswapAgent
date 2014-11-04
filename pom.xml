@@ -25,6 +25,7 @@
         <module>plugin/hotswap-agent-jsf-plugin</module>
         <module>plugin/hotswap-agent-seam-plugin</module>
         <module>plugin/hotswap-agent-el-resolver-plugin</module>
+        <module>plugin/hotswap-agent-osgiequinox-plugin</module>
         <module>hotswap-agent</module>
     </modules>
 

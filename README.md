@@ -151,6 +151,10 @@ bean resolver cache.
 * Logback - Logback configuration reload
 * Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
 * AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
+* ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
+* Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
+* JSF (mojarra 2.1, 2.2) - support for application resource bundle files change (properties files).
+* OsgiEquinox - Check class changes on extraClasspath and reload them in appropriate Equinox class loader. Support hotswap in Eclipse RCP.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
 
@@ -203,11 +207,44 @@ In case your DCEVM is named differently i.e. `server`
     mvn release:prepare -Darguments="-Ddcevm=server"
     mvn release:perform -Darguments="-Ddcevm=server"
 
+Plugin specific settings
+========================
+
+### OsgiEquinox / Eclipse RCP
+OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP (Do not confuse with common Eclipse development!). 
+For hotswap in RUNTIME you need to setup following options (debuggee Eclipse instance):
+
+hotswap-agent.properties:
+
+    extraClasspath=[your_development_classpath/]
+
+eclipse.ini:
+
+    -Dosgi.frameworkParentClassloader=app
+    -Dosgi.dev=[your_development_classpath/]
+    -XXaltjvm=dcevm
+    -javaagent:PATH_TO_AGENT/hotswap-agent.jar
+
+You need to use the same RUNTIME option to support hotswap in DEBUG mode. Additionaly use the following debug options:
+    
+hotswap-agent.properties:
+
+    osgiEquinox.debugMode=true
+
+eclipse.ini
+
+    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
+    
+then connect the debugger to port 8000 and happy hotswapping!
+
+HotswapAgent writes all new/modified classes to extraClasspath in the DEBUGMODE, so there is no need to manually copy them.
+
 Credits
 =======
 Hotswap agent:
 
 * Jiri Bubnik - project coordinator, initial implementation
+* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox plugins implementation
 * Jan Tecl - web design
 
 DCEVM:
