@@ -257,4 +257,11 @@ public class PluginManager {
             reloadMap.clear();
         }
     }
+
+    /**
+     * @return the instrumentation
+     */
+    public Instrumentation getInstrumentation() {
+        return instrumentation;
+    }
 }
