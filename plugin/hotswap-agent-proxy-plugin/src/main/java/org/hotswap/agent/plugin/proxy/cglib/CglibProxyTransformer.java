@@ -36,7 +36,6 @@ public class CglibProxyTransformer {
 	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
 	public static byte[] transform(ClassLoader loader, String className, final Class<?> classBeingRedefined,
 			ProtectionDomain protectionDomain, final byte[] classfileBuffer) throws IllegalClassFormatException {
-		LOGGER.error(Thread.currentThread().getName());
 		try {
 			if (!isProxy(className, classBeingRedefined, classfileBuffer)) {
 				return null;
