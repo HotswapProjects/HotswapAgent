@@ -6,8 +6,6 @@ import java.security.ProtectionDomain;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.hotswap.agent.annotation.LoadEvent;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -26,7 +24,7 @@ public class GeneratorParametersRecorder {
 	private static final ClassPool classPool = ProxyTransformationUtils.getClassPool();
 	private static AgentLogger LOGGER = AgentLogger.getLogger(GeneratorParametersRecorder.class);
 	
-	@OnClassLoadEvent(classNameRegexp = ".*cglib.*", events = LoadEvent.DEFINE)
+	// @OnClassLoadEvent(classNameRegexp = ".*cglib.*", events = LoadEvent.DEFINE)
 	public static byte[] transform(ClassLoader loader, String className, final Class<?> classBeingRedefined,
 			ProtectionDomain protectionDomain, final byte[] classfileBuffer) {
 		CtClass cc;

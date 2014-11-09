@@ -5,8 +5,6 @@ import java.security.ProtectionDomain;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.hotswap.agent.annotation.LoadEvent;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
@@ -24,7 +22,7 @@ public class JavassistProxyTransformer {
 	protected Map<Class<?>, Long> transStart = new ConcurrentHashMap<Class<?>, Long>();
 	private static AgentLogger LOGGER = AgentLogger.getLogger(JavassistProxyTransformer.class);
 	
-	@OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
+	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
 	public static byte[] transform(ClassLoader loader, String className, final Class<?> classBeingRedefined,
 			ProtectionDomain protectionDomain, final byte[] classfileBuffer) throws IllegalClassFormatException {
 		try {

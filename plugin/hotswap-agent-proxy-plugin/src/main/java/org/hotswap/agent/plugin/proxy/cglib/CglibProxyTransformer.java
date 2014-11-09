@@ -2,7 +2,6 @@ package org.hotswap.agent.plugin.proxy.cglib;
 
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.IllegalClassFormatException;
-import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
@@ -10,9 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.LoadEvent;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -36,12 +32,11 @@ public class CglibProxyTransformer {
 	// is valid
 	public static boolean addThirdStep = false;
 	private static AgentLogger LOGGER = AgentLogger.getLogger(CglibProxyTransformer.class);
-	@Init
-	private static Instrumentation instrumentation;
 	
-	@OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
+	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
 	public static byte[] transform(ClassLoader loader, String className, final Class<?> classBeingRedefined,
 			ProtectionDomain protectionDomain, final byte[] classfileBuffer) throws IllegalClassFormatException {
+		LOGGER.error(Thread.currentThread().getName());
 		try {
 			if (!isProxy(className, classBeingRedefined, classfileBuffer)) {
 				return null;
