@@ -5,9 +5,10 @@
     <parent>
         <groupId>org.hotswap.agent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>0.1-beta5-SNAPSHOT</version>
+        <version>0.2</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
+
 
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 

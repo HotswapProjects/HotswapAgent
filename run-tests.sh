@@ -14,8 +14,8 @@ function test {
     mvn clean install
 
     # run tests for different versions
-    cd plugin/hotswap-agent-spring-plugin; run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-hibernate-plugin; run-tests.sh; cd ../..
+    cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..
+    cd plugin/hotswap-agent-hibernate-plugin; ./run-tests.sh; cd ../..
 }
 
 test "c:\Program Files\Java\jdk1.7.0_45"

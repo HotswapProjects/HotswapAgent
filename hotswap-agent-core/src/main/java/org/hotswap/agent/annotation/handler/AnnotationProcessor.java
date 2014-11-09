@@ -49,29 +49,34 @@ public class AnnotationProcessor {
      */
     public boolean processAnnotations(Class processClass, Class pluginClass) {
 
-        for (Field field : processClass.getDeclaredFields()) {
-            if (Modifier.isStatic(field.getModifiers()))
-                if (!processFieldAnnotations(null, field, pluginClass))
-                    return false;
+        try {
+            for (Field field : processClass.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()))
+                    if (!processFieldAnnotations(null, field, pluginClass))
+                        return false;
 
-        }
+            }
 
-        for (Method method : processClass.getDeclaredMethods()) {
-            if (Modifier.isStatic(method.getModifiers()))
-                if (!processMethodAnnotations(null, method, pluginClass))
-                    return false;
-        }
+            for (Method method : processClass.getDeclaredMethods()) {
+                if (Modifier.isStatic(method.getModifiers()))
+                    if (!processMethodAnnotations(null, method, pluginClass))
+                        return false;
+            }
 
-        // process annotations on all supporting classes in addition to the plugin itself
-        for (Annotation annotation : processClass.getDeclaredAnnotations()) {
-            if (annotation instanceof Plugin) {
-                for (Class supportClass : ((Plugin) annotation).supportClass()) {
-                    processAnnotations(supportClass, pluginClass);
+            // process annotations on all supporting classes in addition to the plugin itself
+            for (Annotation annotation : processClass.getDeclaredAnnotations()) {
+                if (annotation instanceof Plugin) {
+                    for (Class supportClass : ((Plugin) annotation).supportClass()) {
+                        processAnnotations(supportClass, pluginClass);
+                    }
                 }
             }
-        }
 
-        return true;
+            return true;
+        } catch (Throwable e) {
+            LOGGER.error("Unable to process plugin annotations '{}'", e, pluginClass);
+            return false;
+        }
     }
 
     /**
