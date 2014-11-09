@@ -95,6 +95,7 @@ public class OsgiEquinoxPlugin {
 
         extraClasspath = pluginConfiguration.getProperty("extraClasspath");
 
+
         if (extraClasspath != null) {
 
             String debugMode = pluginConfiguration.getProperty("osgiEquinox.debugMode");

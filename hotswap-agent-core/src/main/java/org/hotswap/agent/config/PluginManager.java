@@ -138,6 +138,8 @@ public class PluginManager {
         if (classLoader.equals(getClass().getClassLoader().getParent()))
             return;
 
+        // synchronize ClassLoader patching - multiple classloaders may be patched at the same time
+        // and they may synchronize loading for security reasons and introduce deadlocks
         synchronized (this) {
             if (classLoaderConfigurations.containsKey(classLoader))
                 return;
