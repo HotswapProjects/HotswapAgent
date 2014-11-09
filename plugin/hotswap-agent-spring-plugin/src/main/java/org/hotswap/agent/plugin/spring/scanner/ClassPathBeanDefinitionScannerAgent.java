@@ -11,6 +11,7 @@ import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
 import org.hotswap.agent.plugin.spring.ResetRequestMappingCaches;
 import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
+import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
@@ -169,6 +170,8 @@ public class ClassPathBeanDefinitionScannerAgent {
                 
                 freezeConfiguration();
             }
+
+			ProxyReplacer.clearAllProxies();
         }
 
     }

@@ -50,15 +50,16 @@ public class SpringPluginTest {
      */
     @Test
     public void hotswapSeviceTest() throws Exception {
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        BeanServiceImpl bean = factory.getBean(BeanServiceImpl.class);
+		assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
-        assertEquals("Hello from ChangedRepository Service2WithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        assertEquals("Hello from ChangedRepository Service2WithAspect", bean.hello());
         // ensure that using interface is Ok as well
         assertEquals("Hello from ChangedRepository Service2WithAspect", factory.getBean(BeanService.class).hello());
 
         // return configuration
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class.getName());
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
     }
 
 
@@ -84,13 +85,14 @@ public class SpringPluginTest {
 
     @Test
     public void hotswapRepositoryTest() throws Exception {
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        BeanServiceImpl bean = factory.getBean(BeanServiceImpl.class);
+		assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
         swapClasses(BeanRepository.class, BeanRepository2.class.getName());
-        assertEquals("Hello from ChangedRepository2 ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        assertEquals("Hello from ChangedRepository2 ServiceWithAspect", bean.hello());
 
         // return configuration
         swapClasses(BeanRepository.class, BeanRepository.class.getName());
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
     }
 
     @Test

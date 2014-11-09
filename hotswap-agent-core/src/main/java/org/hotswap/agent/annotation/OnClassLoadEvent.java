@@ -59,5 +59,12 @@ public @interface OnClassLoadEvent {
      * @return false to include anonymous classes.
      */
     boolean skipAnonymous() default true;
+    
+    /**
+     * Classes created at runtime are usually skipped
+     *
+     * @return false to include synthetic classes.
+     */
+    boolean skipSynthetic() default true;
 
 }

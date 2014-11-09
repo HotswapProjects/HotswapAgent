@@ -9,6 +9,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.watch.Watcher;
 
+import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -135,6 +136,8 @@ public class InitHandler implements PluginHandler<Init> {
             return pluginManager.getPluginConfiguration(classLoader);
         } else if (type.isAssignableFrom(ClassLoader.class)) {
             return classLoader;
+        } else if (type.isAssignableFrom(Instrumentation.class)) {
+            return pluginManager.getInstrumentation();
         } else {
             LOGGER.error("Unable process @Init on plugin '{}'." +
                     " Type '" + type + "' is not recognized for @Init annotation.", pluginClass);
