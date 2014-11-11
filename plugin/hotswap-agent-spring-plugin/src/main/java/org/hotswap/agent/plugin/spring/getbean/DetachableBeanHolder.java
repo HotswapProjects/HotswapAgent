@@ -1,56 +1,57 @@
+/**
+ * 
+ */
 package org.hotswap.agent.plugin.spring.getbean;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
-
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * MethodInterceptor for Cglib bean Proxies. If the bean inside the proxy is cleared, it will be retrieved from the
- * factory on demand.
- * 
  * @author Erki Ehtla
  * 
  */
-public class HotswapSpringCallback implements MethodInterceptor {
+public class DetachableBeanHolder {
 	
 	private Object bean;
 	private Object beanFactory;
 	private Class<?>[] paramClasses;
 	private Object[] paramValues;
-	private static Collection<WeakReference<HotswapSpringCallback>> beanProxies = Collections
-			.synchronizedSet(new HashSet<WeakReference<HotswapSpringCallback>>());
-	private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapSpringCallback.class);
+	private static Collection<WeakReference<DetachableBeanHolder>> beanProxies = Collections
+			.synchronizedSet(new HashSet<WeakReference<DetachableBeanHolder>>());
+	private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 	
-	public HotswapSpringCallback(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
+	public DetachableBeanHolder(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
 		this.bean = bean;
 		this.beanFactory = beanFactry;
 		this.paramClasses = paramClasses;
 		this.paramValues = paramValues;
-		beanProxies.add(new WeakReference<HotswapSpringCallback>(this));
+		beanProxies.add(new WeakReference<DetachableBeanHolder>(this));
 	}
 	
-	public static void clearBeans() {
+	public static void detachBeans() {
 		int clearCount = 0;
-		for (WeakReference<HotswapSpringCallback> el : beanProxies) {
-			HotswapSpringCallback hotswapSpringCallback = el.get();
+		for (WeakReference<DetachableBeanHolder> el : beanProxies) {
+			DetachableBeanHolder hotswapSpringCallback = el.get();
 			if (hotswapSpringCallback != null) {
-				hotswapSpringCallback.bean = null;
+				hotswapSpringCallback.detach();
 				clearCount++;
 			}
 		}
 		LOGGER.info("{} Cglib proxies reset", clearCount);
 	}
 	
-	@Override
-	public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+	public void detach() {
+		bean = null;
+	}
+	
+	public Object getBean() throws IllegalAccessException, InvocationTargetException {
 		Object beanCopy = bean;
 		if (beanCopy == null) {
 			Method[] methods = beanFactory.getClass().getMethods();
@@ -64,6 +65,7 @@ public class HotswapSpringCallback implements MethodInterceptor {
 				}
 			}
 		}
-		return proxy.invoke(beanCopy, args);
+		return beanCopy;
 	}
+	
 }

@@ -3,11 +3,6 @@ package org.hotswap.agent.plugin.spring.getbean;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 
-import net.sf.cglib.core.DefaultNamingPolicy;
-import net.sf.cglib.core.Predicate;
-import net.sf.cglib.proxy.Callback;
-import net.sf.cglib.proxy.Enhancer;
-
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
@@ -16,12 +11,6 @@ import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-
-/**
- * 
- * @author Erki Ehtla
- * 
- */
 
 /**
  * Proxies the beans returned by DefaultListableBeanFactory. The beans inside these proxies will be dereferenced when
@@ -85,8 +74,7 @@ public class ProxyReplacer {
 	 * dereferences the beans inside all of the proxies
 	 */
 	public static void clearAllProxies() {
-		HotswapSpringInvocationHandler.clearBeans();
-		HotswapSpringCallback.clearBeans();
+		DetachableBeanHolder.detachBeans();
 	}
 	
 	/**
@@ -104,29 +92,8 @@ public class ProxyReplacer {
 			Object newProxyInstance = Proxy.newProxyInstance(ProxyReplacer.class.getClassLoader(), bean.getClass()
 					.getInterfaces(), handler);
 			return newProxyInstance;
-		} else if (bean.getClass().getName().contains("CGLIB$$")) {
-			Callback handler = new HotswapSpringCallback(bean, beanFactry, classes, params);
-			Enhancer e = new Enhancer();
-			e.setUseCache(true);
-			Class[] proxyInterfaces = new Class<?>[bean.getClass().getInterfaces().length];
-			Class[] classInterfaces = bean.getClass().getInterfaces();
-			for (int i = 0; i < classInterfaces.length; i++) {
-				proxyInterfaces[i] = classInterfaces[i];
-			}
-			
-			e.setInterfaces(proxyInterfaces);
-			e.setSuperclass(bean.getClass().getSuperclass());
-			e.setCallback(handler);
-			e.setCallbackType(HotswapSpringCallback.class);
-			e.setNamingPolicy(new DefaultNamingPolicy() {
-				@Override
-				public String getClassName(String prefix, String source, Object key, Predicate names) {
-					return super.getClassName("HOTSWAPAGENT_" + prefix, source, key, names);
-				}
-			});
-			
-			Object create = e.create();
-			return create;
+		} else if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
+			return EnhancerProxyCreater.create(beanFactry, bean, classes, params);
 		}
 		return bean;
 	}
