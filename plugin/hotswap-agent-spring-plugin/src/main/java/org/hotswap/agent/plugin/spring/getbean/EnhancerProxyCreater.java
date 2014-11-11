@@ -7,13 +7,13 @@ import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewConstructor;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * Creates a Proxy along with the neccessary classes with either the repackaged version Cglib (Spring >= 3.2) or the stand-alone version (Spring < 3.2).
+ * Creates a Proxy along with the neccessary classes with either the repackaged version Cglib (Spring >= 3.2) or the
+ * stand-alone version (Spring < 3.2).
  * 
  * @author Erki Ehtla
  * 

@@ -1,14 +1,7 @@
 package org.hotswap.agent.plugin.spring.getbean;
 
-import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-
-import org.hotswap.agent.logging.AgentLogger;
 
 /**
  * MethodInterceptor for java.lang.reflect bean Proxies. If the bean inside the proxy is cleared, it will be retrieved
