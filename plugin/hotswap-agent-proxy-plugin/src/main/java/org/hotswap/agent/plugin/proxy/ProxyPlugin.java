@@ -9,6 +9,7 @@ import java.security.ProtectionDomain;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.cglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.cglib.GeneratorParametersRecorder;
 import org.hotswap.agent.plugin.proxy.java.JavassistProxyTransformer;
@@ -25,6 +26,7 @@ import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureRecorder;
 // JavassistProxyTransformer.class, CglibProxyTransformer.class }
 )
 public class ProxyPlugin {
+	private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyPlugin.class);
 	
 	@OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
 	public static byte[] transformRedefinitions(ClassLoader loader, String className,
@@ -47,5 +49,9 @@ public class ProxyPlugin {
 			ProtectionDomain protectionDomain, final byte[] classfileBuffer) throws IllegalClassFormatException {
 		return GeneratorParametersRecorder.transform(loader, className, classBeingRedefined, protectionDomain,
 				classfileBuffer);
+	}
+	
+	public static void initEnhancerProxyPlugin() {
+		LOGGER.info("Proxy plugin initialized");
 	}
 }

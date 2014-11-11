@@ -37,7 +37,7 @@ public class CglibProxyTransformer {
 	public static byte[] transform(ClassLoader loader, String className, final Class<?> classBeingRedefined,
 			ProtectionDomain protectionDomain, final byte[] classfileBuffer) throws IllegalClassFormatException {
 		try {
-			if (!isProxy(className, classBeingRedefined, classfileBuffer)) {
+			if (!isProxy(loader, className, classBeingRedefined, classfileBuffer)) {
 				return null;
 			}
 			return transformRedefine(loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
@@ -160,8 +160,9 @@ public class CglibProxyTransformer {
 		return transformationStates.put(classBeingRedefined, TransformationState.FINISHED);
 	}
 	
-	private static boolean isProxy(String className, Class<?> classBeingRedefined, byte[] classfileBuffer) {
-		return GeneratorParametersRecorder.getGeneratorParams().containsKey(className.replaceAll("/", "."));
+	private static boolean isProxy(ClassLoader loader, String className, Class<?> classBeingRedefined,
+			byte[] classfileBuffer) {
+		return GeneratorParametersRecorder.getGeneratorParams(loader).containsKey(className.replaceAll("/", "."));
 	}
 	
 	private static String getInitCall(CtClass cc, String random) throws Exception {
@@ -182,7 +183,7 @@ public class CglibProxyTransformer {
 	
 	private static byte[] getNewByteCode(ClassLoader loader, String className, Class<?> classBeingRedefined)
 			throws Exception {
-		GeneratorParams param = GeneratorParametersRecorder.getGeneratorParams().get(
+		GeneratorParams param = GeneratorParametersRecorder.getGeneratorParams(loader).get(
 				ProxyTransformationUtils.getClassName(className));
 		if (param == null)
 			throw new RuntimeException("No Parameters found for redefinition!");
