@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.proxy.cglib;
+package org.hotswap.agent.plugin.proxy.hscglib;
 
 /**
  * @author Erki Ehtla

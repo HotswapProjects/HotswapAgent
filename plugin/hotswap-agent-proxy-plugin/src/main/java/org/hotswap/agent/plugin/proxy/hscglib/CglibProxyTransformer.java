@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.proxy.cglib;
+package org.hotswap.agent.plugin.proxy.hscglib;
 
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.IllegalClassFormatException;

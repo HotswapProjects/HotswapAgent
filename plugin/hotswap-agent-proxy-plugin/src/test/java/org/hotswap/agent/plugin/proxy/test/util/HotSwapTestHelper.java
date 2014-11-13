@@ -24,7 +24,7 @@
 package org.hotswap.agent.plugin.proxy.test.util;
 
 import org.hotswap.agent.plugin.proxy.HotSwapTool;
-import org.hotswap.agent.plugin.proxy.cglib.CglibProxyTransformer;
+import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.util.test.WaitHelper;
 
 /**

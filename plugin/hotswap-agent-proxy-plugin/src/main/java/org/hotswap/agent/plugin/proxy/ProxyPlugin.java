@@ -9,9 +9,10 @@ import java.security.ProtectionDomain;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.proxy.cglib.CglibProxyTransformer;
-import org.hotswap.agent.plugin.proxy.cglib.GeneratorParametersRecorder;
+import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
+import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersRecorder;
 import org.hotswap.agent.plugin.proxy.java.JavassistProxyTransformer;
 import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureRecorder;
 
@@ -44,11 +45,9 @@ public class ProxyPlugin {
 		return result != null ? result : transform;
 	}
 	
-	@OnClassLoadEvent(classNameRegexp = ".*cglib.*", events = LoadEvent.DEFINE, skipSynthetic = false)
-	public static byte[] transformDefinitions(ClassLoader loader, String className, final Class<?> classBeingRedefined,
-			ProtectionDomain protectionDomain, final byte[] classfileBuffer) throws IllegalClassFormatException {
-		return GeneratorParametersRecorder.transform(loader, className, classBeingRedefined, protectionDomain,
-				classfileBuffer);
+	@OnClassLoadEvent(classNameRegexp = ".*/cglib/.*", events = LoadEvent.DEFINE, skipSynthetic = false)
+	public static void transformDefinitions(CtClass cc) throws IllegalClassFormatException {
+		 GeneratorParametersRecorder.transform(cc);
 	}
 	
 	public static void initEnhancerProxyPlugin() {
