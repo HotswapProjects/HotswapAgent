@@ -25,6 +25,7 @@ package org.hotswap.agent.plugin.proxy.test.util;
 
 import org.hotswap.agent.plugin.proxy.HotSwapTool;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
+import org.hotswap.agent.plugin.proxy.java.JavaProxyTransformer;
 import org.hotswap.agent.util.test.WaitHelper;
 
 /**
@@ -60,9 +61,15 @@ public class HotSwapTestHelper {
 		WaitHelper.waitForCommand(new WaitHelper.Command() {
 			@Override
 			public boolean result() throws Exception {
-				return !CglibProxyTransformer.isReloadingInProgress();
+				return !CglibProxyTransformer.isReloadingInProgress() && !JavaProxyTransformer.isReloadingInProgress();
 			}
 		});
+		// try {
+		// Thread.sleep(1000);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
 		CglibProxyTransformer.addThirdStep = false;
 	}
 	

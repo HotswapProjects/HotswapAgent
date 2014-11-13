@@ -1,13 +1,6 @@
 package org.hotswap.agent.plugin.proxy.signature;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.security.ProtectionDomain;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.ProxyTransformationUtils;
 
@@ -16,42 +9,33 @@ import org.hotswap.agent.plugin.proxy.ProxyTransformationUtils;
  * 
  */
 public class ClassfileSignatureRecorder {
+	private static AgentLogger LOGGER = AgentLogger.getLogger(ClassfileSignatureChecker.class);
 	
-	private static Map<String, String> classSignatures = new ConcurrentHashMap<>();
-	protected static final ClassPool classPool = ProxyTransformationUtils.getClassPool();
-	private static AgentLogger LOGGER = AgentLogger.getLogger(ClassfileSignatureRecorder.class);
-	
-	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
-	public static byte[] transform(ClassLoader loader, String className, final Class<?> classBeingRedefined,
-			ProtectionDomain protectionDomain, final byte[] classfileBuffer) {
+	private static boolean hasClassChanged(Class<?> clazz) {
+		String ctClassString;
 		try {
-			CtClass cc = classPool.makeClass(new ByteArrayInputStream(classfileBuffer), false);
-			classSignatures.put(classBeingRedefined.getName(), CtClassSignature.get(cc));
-		} catch (IOException | RuntimeException e) {
-			LOGGER.error("Error saving class signature of a changed class", e);
+			ctClassString = CtClassSignature.get(ProxyTransformationUtils.getClassPool().get(clazz.getName()));
+		} catch (NotFoundException e) {
+			LOGGER.error("Error reading siganture", e);
+			return false;
 		}
-		return null;
-	}
-	
-	public static boolean hasClassChanged(Class<?> clazz) {
-		String ctClassString = classSignatures.get(clazz.getName());
 		if (ctClassString == null)
 			return false;
 		return !JavaClassSignature.get(clazz).equals(ctClassString);
 	}
 	
 	public static boolean hasSuperClassOrInterfaceChanged(Class<?> clazz) {
+		if (hasClassChanged(clazz))
+			return true;
 		Class<?> superclass = clazz.getSuperclass();
 		if (superclass != null) {
-			if (ClassfileSignatureRecorder.hasClassChanged(superclass) || superclass.getSuperclass() != null
-					&& hasSuperClassOrInterfaceChanged(superclass)) {
+			if (ClassfileSignatureChecker.hasSuperClassOrInterfaceChanged(superclass)) {
 				return true;
 			}
 		}
 		Class<?>[] interfaces = clazz.getInterfaces();
 		for (Class<?> interfaceClazz : interfaces) {
-			if (ClassfileSignatureRecorder.hasClassChanged(interfaceClazz) || interfaceClazz.getSuperclass() != null
-					&& hasSuperClassOrInterfaceChanged(interfaceClazz)) {
+			if (ClassfileSignatureChecker.hasSuperClassOrInterfaceChanged(interfaceClazz)) {
 				return true;
 			}
 		}

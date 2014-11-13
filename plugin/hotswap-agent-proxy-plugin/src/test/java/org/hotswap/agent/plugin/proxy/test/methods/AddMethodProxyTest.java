@@ -77,7 +77,7 @@ public class AddMethodProxyTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		__toVersion__(0);
+		__toVersion__Delayed(0);
 	}
 	
 	@Test
@@ -90,7 +90,7 @@ public class AddMethodProxyTest {
 		
 		assertEquals(1, a.getValue1());
 		
-		__toVersion__(1);
+		__toVersion__Delayed(1);
 		
 		Method method = getMethod(a, "getValue2");
 		assertEquals(2, method.invoke(a, null));
@@ -107,7 +107,7 @@ public class AddMethodProxyTest {
 		
 		assertEquals(1, a.getValue1());
 		
-		__toVersion__(1);
+		__toVersion__Delayed(1);
 		Method method = getMethod(a, "getValue33");
 		assertEquals("getValue33", method.getName());
 		assertEquals(2, method.invoke(a, new Object[] { new Object[] { new Object() } }));
@@ -121,7 +121,7 @@ public class AddMethodProxyTest {
 				new AImpl()));
 		
 		assertEquals(1, a.getValue1());
-		__toVersion__(1);
+		__toVersion__Delayed(1);
 		
 		a = (A) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { A.class }, new DummyHandler(
 				new AImpl()));

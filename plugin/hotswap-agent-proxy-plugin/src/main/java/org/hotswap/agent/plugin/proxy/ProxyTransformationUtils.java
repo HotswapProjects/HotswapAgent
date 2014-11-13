@@ -12,25 +12,24 @@ public class ProxyTransformationUtils {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyTransformationUtils.class);
 	private static ClassPool classPool;
 	
-	public static String getClassName(String name) {
-		return name.replaceAll("/", ".");
+	public static ClassPool getClassPool() {
+		return classPool;
 	}
 	
-	public static ClassPool getClassPool() {
+	public static ClassPool getOrCreateClassPool(ClassLoader classLoader) {
 		if (classPool == null) {
-			initClassPool(null);
+			classPool = createClassPool(classLoader);
 		}
 		return classPool;
 	}
 	
-	public static void initClassPool(ClassLoader classLoader) {
-		if (classPool == null) {
-			classPool = new ClassPool();
-			classPool.appendSystemPath();
-			if (classLoader != null) {
-				LOGGER.trace("Adding loader classpath " + classLoader);
-				classPool.appendClassPath(new LoaderClassPath(classLoader));
-			}
+	public static ClassPool createClassPool(ClassLoader classLoader) {
+		ClassPool cp = new ClassPool();
+		cp.appendSystemPath();
+		if (classLoader != null) {
+			LOGGER.trace("Adding loader classpath " + classLoader);
+			cp.appendClassPath(new LoaderClassPath(classLoader));
 		}
+		return cp;
 	}
 }

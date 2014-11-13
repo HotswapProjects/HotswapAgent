@@ -142,6 +142,8 @@ public class AddEnhancerMethodProxyTest {
 	@Test
 	public void accessNewMethodOnProxyCreatedAfterSwap() throws IllegalAccessException, IllegalArgumentException,
 			InvocationTargetException, IOException {
+		// while (true) {
+		// __toVersion__Delayed(0);
 		assert __version__() == 0;
 		SerializableNoOp cb = new SerializableNoOp();
 		A a = createEnhancer(cb);
@@ -158,6 +160,7 @@ public class AddEnhancerMethodProxyTest {
 		assertEquals(1, cb.getInvocationCount());
 		assertEquals(2, method.invoke(a, null));
 		assertEquals(2, cb.getInvocationCount());
+		// }
 	}
 	
 	private Method getMethod(Object a, String methodName) {
