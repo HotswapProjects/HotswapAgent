@@ -9,7 +9,7 @@ import org.hotswap.agent.plugin.proxy.ProxyTransformationUtils;
  * 
  */
 public class ClassfileSignatureRecorder {
-	private static AgentLogger LOGGER = AgentLogger.getLogger(ClassfileSignatureChecker.class);
+	private static AgentLogger LOGGER = AgentLogger.getLogger(ClassfileSignatureRecorder.class);
 	
 	private static boolean hasClassChanged(Class<?> clazz) {
 		String ctClassString;
@@ -29,13 +29,13 @@ public class ClassfileSignatureRecorder {
 			return true;
 		Class<?> superclass = clazz.getSuperclass();
 		if (superclass != null) {
-			if (ClassfileSignatureChecker.hasSuperClassOrInterfaceChanged(superclass)) {
+			if (hasSuperClassOrInterfaceChanged(superclass)) {
 				return true;
 			}
 		}
 		Class<?>[] interfaces = clazz.getInterfaces();
 		for (Class<?> interfaceClazz : interfaces) {
-			if (ClassfileSignatureChecker.hasSuperClassOrInterfaceChanged(interfaceClazz)) {
+			if (hasSuperClassOrInterfaceChanged(interfaceClazz)) {
 				return true;
 			}
 		}
