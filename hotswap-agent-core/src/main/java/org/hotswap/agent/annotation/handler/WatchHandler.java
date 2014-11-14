@@ -1,7 +1,5 @@
 package org.hotswap.agent.annotation.handler;
 
-import org.hotswap.agent.annotation.OnClassFileEvent;
-import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.logging.AgentLogger;
@@ -125,7 +123,7 @@ public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
         pluginManager.getWatcher().addEventListener(classLoader, uri, new WatchEventListener() {
             @Override
             public void onEvent(WatchFileEvent event) {
-                if (event.isFile()) {
+                if (watchEventDTO.accept(event)) {
                     Command command = new WatchEventCommand(pluginAnnotation, event, classLoader);
                     pluginManager.getScheduler().scheduleCommand(command, watchEventDTO.getTimeout());
                     LOGGER.trace("Resource changed {}", event);

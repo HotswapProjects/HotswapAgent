@@ -3,6 +3,7 @@ package org.hotswap.agent.annotation.handler;
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.OnClassFileEvent;
 import org.hotswap.agent.annotation.OnResourceFileEvent;
+import org.hotswap.agent.watch.WatchFileEvent;
 
 import java.lang.annotation.Annotation;
 
@@ -76,5 +77,25 @@ public class WatchEventDTO {
 
     public boolean isOnlyRegularFiles() {
         return onlyRegularFiles;
+    }
+
+    /**
+     * Check if this handler supports actual event.
+     * @param event file event fired by filesystem
+     * @return true if supports - should continue handling
+     */
+    public boolean accept(WatchFileEvent event) {
+
+        // all handlers currently support only files
+        if (!event.isFile()) {
+            return false;
+        }
+
+        // load class files only from files named ".class"
+        if (isClassFileEvent() && event.getURI().toString().endsWith(".class")) {
+            return false;
+        }
+
+        return true;
     }
 }
