@@ -92,7 +92,7 @@ public class WatchEventDTO {
         }
 
         // load class files only from files named ".class"
-        if (isClassFileEvent() && event.getURI().toString().endsWith(".class")) {
+        if (isClassFileEvent() && !event.getURI().toString().endsWith(".class")) {
             return false;
         }
 
