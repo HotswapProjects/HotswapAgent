@@ -21,13 +21,21 @@ import org.hotswap.agent.javassist.bytecode.MethodInfo;
 public class CtClassSignature {
 	public static String get(CtClass cc) {
 		List<MethodInfo> methods = (List<MethodInfo>) cc.getClassFile().getMethods();
-		List<String> methodStrings = new ArrayList<>();
+		List<String> strings = new ArrayList<>();
 		for (MethodInfo method : methods) {
-			methodStrings.add(getMethodString(method));
+			if (method.getName().equals("<init>") || method.getName().equals("<clinit>"))
+				continue;
+			strings.add(getMethodString(method));
 		}
-		Collections.sort(methodStrings);
+		for (String className : cc.getClassFile().getInterfaces()) {
+			strings.add(className);
+		}
+		if (cc.getClassFile().getSuperclass() != null
+				&& !cc.getClassFile().getSuperclass().equals(Object.class.getName()))
+			strings.add(cc.getClassFile().getSuperclass());
+		Collections.sort(strings);
 		StringBuilder strBuilder = new StringBuilder();
-		for (String methodString : methodStrings) {
+		for (String methodString : strings) {
 			strBuilder.append(methodString);
 		}
 		return strBuilder.toString();

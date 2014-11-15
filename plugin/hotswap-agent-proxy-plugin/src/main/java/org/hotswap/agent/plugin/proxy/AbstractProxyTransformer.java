@@ -14,7 +14,6 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 
 /**
@@ -35,7 +34,7 @@ import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
  * 
  */
 public abstract class AbstractProxyTransformer {
-	private static final AgentLogger LOGGER = AgentLogger.getLogger(CglibProxyTransformer.class);
+	private static final AgentLogger LOGGER = AgentLogger.getLogger(AbstractProxyTransformer.class);
 	protected static final String INIT_FIELD_PREFIX = "initCalled";
 	
 	protected Class<?> classBeingRedefined;

@@ -20,13 +20,18 @@ import org.hotswap.agent.javassist.bytecode.Descriptor;
 public class JavaClassSignature {
 	
 	public static String get(Class<?> cc) {
-		List<String> methodStrings = new ArrayList<>();
+		List<String> strings = new ArrayList<>();
 		for (Method method : cc.getDeclaredMethods()) {
-			methodStrings.add(getMethodString(method));
+			strings.add(getMethodString(method));
 		}
-		Collections.sort(methodStrings);
+		for (Class<?> iClass : cc.getInterfaces()) {
+			strings.add(iClass.getName());
+		}
+		if (cc.getSuperclass() != null && !cc.getSuperclass().getName().equals(Object.class.getName()))
+			strings.add(cc.getSuperclass().getName());
+		Collections.sort(strings);
 		StringBuilder strBuilder = new StringBuilder();
-		for (String methodString : methodStrings) {
+		for (String methodString : strings) {
 			strBuilder.append(methodString);
 		}
 		return strBuilder.toString();

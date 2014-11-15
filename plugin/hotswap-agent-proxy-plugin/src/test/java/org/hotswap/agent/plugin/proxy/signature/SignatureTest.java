@@ -8,6 +8,135 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.junit.Test;
 
 public class SignatureTest {
+	public static class A {
+		static {
+		}
+		
+		{
+			
+		}
+	}
+	
+	public static abstract class B implements TestSignatures {
+		public abstract int get8();
+		
+		public int get9() {
+			return 0;
+		}
+	}
+	
+	public static class C extends B {
+		
+		public int get9() {
+			return 0;
+		}
+		
+		@Override
+		public int get3() {
+			
+			return 0;
+		}
+		
+		@Override
+		public int get2() {
+			
+			return 0;
+		}
+		
+		@Override
+		public int get1() {
+			
+			return 0;
+		}
+		
+		@Override
+		public int getA() {
+			
+			return 0;
+		}
+		
+		@Override
+		public int getB() {
+			
+			return 0;
+		}
+		
+		@Override
+		public int[] getBArray() {
+			
+			return null;
+		}
+		
+		@Override
+		public Object[] getBObjectArray() {
+			
+			return null;
+		}
+		
+		@Override
+		public Object getBObject() {
+			
+			return null;
+		}
+		
+		@Override
+		public int get3(int[] a) {
+			
+			return 0;
+		}
+		
+		@Override
+		public int get2(int[] a, int[] b) {
+			
+			return 0;
+		}
+		
+		@Override
+		public int get1(int[]... b) {
+			
+			return 0;
+		}
+		
+		@Override
+		public int getA(Object o) {
+			
+			return 0;
+		}
+		
+		@Override
+		public int getB(Object... o) {
+			
+			return 0;
+		}
+		
+		@Override
+		public int get3(Object[] a) {
+			
+			return 0;
+		}
+		
+		@Override
+		public int get2(Object[] a, Object[] b) {
+			
+			return 0;
+		}
+		
+		@Override
+		public int getA(Object[] a, Object[]... b) {
+			return 0;
+		}
+		
+		@Override
+		public int getB(Object[]... o) {
+			return 0;
+		}
+		
+		@Override
+		public int get8() {
+			return 0;
+		}
+	}
+	
 	public interface TestSignatures {
 		// test ordering
 		public int get3();
@@ -49,9 +178,33 @@ public class SignatureTest {
 	}
 	
 	@Test
-	public void testSignature() throws NotFoundException {
+	public void testInterfaceSignature() throws NotFoundException {
 		CtClass makeClass = ClassPool.getDefault().get(TestSignatures.class.getName());
 		String expected = JavaClassSignature.get(TestSignatures.class);
+		String actual = CtClassSignature.get(makeClass);
+		assertEquals("Signatures not equal", expected, actual);
+	}
+	
+	@Test
+	public void testClassSignature() throws NotFoundException {
+		{
+			CtClass makeClass = ClassPool.getDefault().get(A.class.getName());
+			String expected = JavaClassSignature.get(A.class);
+			String actual = CtClassSignature.get(makeClass);
+			assertEquals("Signatures not equal", expected, actual);
+		}
+		{
+			CtClass makeClass = ClassPool.getDefault().get(C.class.getName());
+			String expected = JavaClassSignature.get(C.class);
+			String actual = CtClassSignature.get(makeClass);
+			assertEquals("Signatures not equal", expected, actual);
+		}
+	}
+	
+	@Test
+	public void testAbstractClassSignature() throws NotFoundException {
+		CtClass makeClass = ClassPool.getDefault().get(B.class.getName());
+		String expected = JavaClassSignature.get(B.class);
 		String actual = CtClassSignature.get(makeClass);
 		assertEquals("Signatures not equal", expected, actual);
 	}
