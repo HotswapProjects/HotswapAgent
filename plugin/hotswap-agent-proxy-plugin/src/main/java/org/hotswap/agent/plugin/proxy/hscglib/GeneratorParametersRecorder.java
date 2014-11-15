@@ -11,6 +11,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.ProxyPlugin;
@@ -42,7 +43,8 @@ public class GeneratorParametersRecorder {
 					constructor.insertAfter(initalizer);
 				}
 				for (CtMethod method : cc.getDeclaredMethods()) {
-					if (method.getName().equals("generate") && method.getMethodInfo().getDescriptor().endsWith("[B")) {
+					if (!Modifier.isAbstract(method.getModifiers()) && method.getName().equals("generate")
+							&& method.getMethodInfo().getDescriptor().endsWith("[B")) {
 						method.insertAfter(GeneratorParametersRecorder.class.getName() + ".register($0, $1, $_);");
 					}
 				}
