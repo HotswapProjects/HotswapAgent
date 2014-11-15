@@ -10,26 +10,26 @@ public class GeneratorParams {
 		this.generator = generator;
 		this.param = params;
 	}
-	
+
 	private Object generator;
 	private Object param;
-	
+
 	public Object getGenerator() {
 		return generator;
 	}
-	
+
 	public void setGenerator(Object generator) {
 		this.generator = generator;
 	}
-	
+
 	public Object getParam() {
 		return param;
 	}
-	
+
 	public void setParam(Object params) {
 		this.param = params;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -38,7 +38,7 @@ public class GeneratorParams {
 		result = prime * result + ((param == null) ? 0 : param.hashCode());
 		return result;
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)

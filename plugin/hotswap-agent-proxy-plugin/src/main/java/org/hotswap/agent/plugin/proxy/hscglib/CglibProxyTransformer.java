@@ -1,23 +1,36 @@
 package org.hotswap.agent.plugin.proxy.hscglib;
 
+import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.plugin.proxy.AbstractProxyTransformer;
 import org.hotswap.agent.plugin.proxy.TransformationState;
 
 /**
+ * AbstractProxyTransformer based Proxy transformer for Cglib proxies. Takes more than one redefinition event to
+ * transform a Class
+ * 
  * @author Erki Ehtla
  * 
  */
 public class CglibProxyTransformer extends AbstractProxyTransformer {
+	// Class transformation states for all the ClassLoaders. Used in the Agent ClassLoader
 	private static final ConcurrentHashMap<Class<?>, TransformationState> TRANSFORMATION_STATES = new ConcurrentHashMap<Class<?>, TransformationState>();
+	private ClassLoader loader;
 	
-	public CglibProxyTransformer(ClassLoader loader, String className, Class<?> classBeingRedefined,
-			byte[] classfileBuffer) {
-		super(loader, className, classBeingRedefined, classfileBuffer, TRANSFORMATION_STATES);
+	public CglibProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
+			ClassLoader loader) {
+		super(classBeingRedefined, cc, cp, classfileBuffer, TRANSFORMATION_STATES);
+		this.loader = loader;
+	}
+	
+	public static byte[] transform(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
+			ClassLoader loader) throws IllegalClassFormatException {
+		return new CglibProxyTransformer(classBeingRedefined, cc, cp, classfileBuffer, loader).transform();
 	}
 	
 	@Override
@@ -55,6 +68,13 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 		return (byte[]) genMethod.invoke(param.getGenerator(), param.getParam());
 	}
 	
+	/**
+	 * Retrieves the actual Method that generates and returns the bytecode
+	 * 
+	 * @param generator
+	 *            GeneratorStrategy instance
+	 * @return Method that generates and returns the bytecode
+	 */
 	private Method getGenerateMethod(Object generator) {
 		Method[] methods = generator.getClass().getMethods();
 		for (Method method : methods) {

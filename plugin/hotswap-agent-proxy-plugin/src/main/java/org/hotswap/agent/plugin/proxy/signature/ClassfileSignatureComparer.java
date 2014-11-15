@@ -1,20 +1,22 @@
 package org.hotswap.agent.plugin.proxy.signature;
 
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.proxy.ProxyTransformationUtils;
 
 /**
+ * Checks if a Signature of a Class has changed
+ * 
  * @author Erki Ehtla
  * 
  */
-public class ClassfileSignatureRecorder {
-	private static AgentLogger LOGGER = AgentLogger.getLogger(ClassfileSignatureRecorder.class);
+public class ClassfileSignatureComparer {
+	private static AgentLogger LOGGER = AgentLogger.getLogger(ClassfileSignatureComparer.class);
 	
-	private static boolean hasClassChanged(Class<?> clazz) {
+	private static boolean isPoolClassDifferent(Class<?> clazz, ClassPool cp) {
 		String ctClassString;
 		try {
-			ctClassString = CtClassSignature.get(ProxyTransformationUtils.getClassPool().get(clazz.getName()));
+			ctClassString = CtClassSignature.get(cp.get(clazz.getName()));
 		} catch (NotFoundException e) {
 			LOGGER.error("Error reading siganture", e);
 			return false;
@@ -24,18 +26,18 @@ public class ClassfileSignatureRecorder {
 		return !JavaClassSignature.get(clazz).equals(ctClassString);
 	}
 	
-	public static boolean hasSuperClassOrInterfaceChanged(Class<?> clazz) {
-		if (hasClassChanged(clazz))
+	public static boolean isPoolClassOrParentDifferent(Class<?> clazz, ClassPool cp) {
+		if (isPoolClassDifferent(clazz, cp))
 			return true;
 		Class<?> superclass = clazz.getSuperclass();
 		if (superclass != null) {
-			if (hasSuperClassOrInterfaceChanged(superclass)) {
+			if (isPoolClassOrParentDifferent(superclass, cp)) {
 				return true;
 			}
 		}
 		Class<?>[] interfaces = clazz.getInterfaces();
 		for (Class<?> interfaceClazz : interfaces) {
-			if (hasSuperClassOrInterfaceChanged(interfaceClazz)) {
+			if (isPoolClassOrParentDifferent(interfaceClazz, cp)) {
 				return true;
 			}
 		}

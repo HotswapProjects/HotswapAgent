@@ -1,7 +1,9 @@
 package org.hotswap.agent.plugin.proxy.java;
 
+import java.lang.instrument.IllegalClassFormatException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
@@ -11,6 +13,9 @@ import org.hotswap.agent.plugin.proxy.TransformationState;
 import sun.misc.ProxyGenerator;
 
 /**
+ * AbstractProxyTransformer based Proxy transformer for java.lang.reflect.Proxy proxies. Takes more than one
+ * redefinition event to transform a Class
+ * 
  * @author Erki Ehtla
  * 
  */
@@ -18,9 +23,13 @@ public class JavaProxyTransformer extends AbstractProxyTransformer {
 	
 	private static final ConcurrentHashMap<Class<?>, TransformationState> TRANSFORMATION_STATES = new ConcurrentHashMap<Class<?>, TransformationState>();
 	
-	public JavaProxyTransformer(ClassLoader loader, String className, Class<?> classBeingRedefined,
-			byte[] classfileBuffer) {
-		super(loader, className, classBeingRedefined, classfileBuffer, TRANSFORMATION_STATES);
+	public JavaProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer) {
+		super(classBeingRedefined, cc, cp, classfileBuffer, TRANSFORMATION_STATES);
+	}
+	
+	public static byte[] transform(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer)
+			throws IllegalClassFormatException {
+		return new JavaProxyTransformer(classBeingRedefined, cc, cp, classfileBuffer).transform();
 	}
 	
 	@Override
@@ -33,12 +42,12 @@ public class JavaProxyTransformer extends AbstractProxyTransformer {
 	}
 	
 	protected boolean isProxy() {
-		return className.startsWith("com/sun/proxy/$Proxy");
+		return javaClassName.startsWith("com.sun.proxy.$Proxy");
 	}
 	
 	@Override
 	protected byte[] getNewByteCode() {
-		return ProxyGenerator.generateProxyClass(className, classBeingRedefined.getInterfaces());
+		return ProxyGenerator.generateProxyClass(javaClassName, classBeingRedefined.getInterfaces());
 	}
 	
 	public static boolean isReloadingInProgress() {

@@ -4,12 +4,14 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureRecorder;
+import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 
 /**
+ * Proxy transformer for java.lang.reflect.Proxy. One-step process.
+ * 
  * @author Erki Ehtla
  * 
  */
@@ -20,23 +22,24 @@ public class JavassistProxyTransformer {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(JavassistProxyTransformer.class);
 	
 	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
-	public static byte[] transform(String className, final Class<?> classBeingRedefined, final CtClass cc)
-			throws IllegalClassFormatException {
+	public static byte[] transform(final Class<?> classBeingRedefined, final CtClass cc, ClassPool cp,
+			byte[] classfileBuffer) throws IllegalClassFormatException {
 		try {
-			if (!isProxy(className) || !ClassfileSignatureRecorder.hasSuperClassOrInterfaceChanged(classBeingRedefined)) {
-				return null;
+			if (!isProxy(classBeingRedefined.getName())
+					|| !ClassfileSignatureComparer.isPoolClassOrParentDifferent(classBeingRedefined, cp)) {
+				return classfileBuffer;
 			}
-			String javaClassName = Descriptor.toJavaName(className);
-			byte[] generateProxyClass = CtClassJavaProxyGenerator.generateProxyClass(javaClassName, cc.getInterfaces());
-			LOGGER.reload("Class '{}' has been reloaded.", javaClassName);
+			byte[] generateProxyClass = CtClassJavaProxyGenerator.generateProxyClass(classBeingRedefined.getName(),
+					cc.getInterfaces(), cp);
+			LOGGER.reload("Class '{}' has been reloaded.", classBeingRedefined.getName());
 			return generateProxyClass;
 		} catch (Exception e) {
 			LOGGER.error("Error transforming a Java reflect Proxy", e);
-			return null;
+			return classfileBuffer;
 		}
 	}
 	
 	private static boolean isProxy(String className) {
-		return className.startsWith("com/sun/proxy/$Proxy");
+		return className.startsWith("com.sun.proxy.$Proxy");
 	}
 }

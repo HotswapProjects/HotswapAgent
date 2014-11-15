@@ -8,57 +8,67 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
-import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureRecorder;
+import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 
 /**
+ * Transforms proxy instances.
+ * 
+ * Takes 2 steps to transform a proxy unless instructed to add a third step through the public static field
+ * addThirdStep.
+ * 
+ * The new Proxy is created with original App classloader instances (both the generator and parameters are reused, their
+ * classes untouched). During the first step it is checked if the signature has changed. If it has, a second
+ * redefinition event is triggered, because we can't see the changes to Class file before the redefined class has
+ * loaded.
+ * 
+ * During the second step, the new bytecode is generated. Static field initialization code is added to the beginning of
+ * methods along with a new randomly named static field holding state of initilization.
+ * 
  * @author Erki Ehtla
  * 
  */
 public abstract class AbstractProxyTransformer {
-	private static AgentLogger LOGGER = AgentLogger.getLogger(CglibProxyTransformer.class);
+	private static final AgentLogger LOGGER = AgentLogger.getLogger(CglibProxyTransformer.class);
 	protected static final String INIT_FIELD_PREFIX = "initCalled";
 	
-	// protected Instrumentation inst;
-	protected ClassLoader loader;
-	protected String className;
 	protected Class<?> classBeingRedefined;
 	protected byte[] classfileBuffer;
 	protected Map<Class<?>, TransformationState> transformationStates;
 	protected String javaClassName;
+	protected ClassPool cp;
 	public static boolean addThirdStep = false;
 	
-	public AbstractProxyTransformer(ClassLoader loader, String className, Class<?> classBeingRedefined,
-			byte[] classfileBuffer, Map<Class<?>, TransformationState> transformationStates) {
-		this.loader = loader;
-		this.className = className;
-		this.javaClassName = Descriptor.toJavaName(className);
-		this.classBeingRedefined = classBeingRedefined;
+	public AbstractProxyTransformer(Class<?> classBeingRedefined2, CtClass cc, ClassPool cp, byte[] classfileBuffer,
+			Map<Class<?>, TransformationState> transformationStates) {
+		this.javaClassName = cc.getName();
+		this.classBeingRedefined = classBeingRedefined2;
 		this.classfileBuffer = classfileBuffer;
 		this.transformationStates = transformationStates;
+		this.cp = cp;
 	}
 	
 	public byte[] transform() throws IllegalClassFormatException {
 		try {
 			if (classBeingRedefined == null || !isProxy()) {
-				return null;
+				return classfileBuffer;
 			}
 			return transformRedefine();
 		} catch (Exception e) {
 			removeClassState();
-			LOGGER.error("", e);
+			LOGGER.error("Error transforming", e);
 			throw new RuntimeException(e);
 		}
 	}
 	
 	private boolean isTransformingNeeded() {
-		return ClassfileSignatureRecorder.hasSuperClassOrInterfaceChanged(classBeingRedefined);
+		return ClassfileSignatureComparer.isPoolClassOrParentDifferent(classBeingRedefined, cp);
 	}
 	
 	protected abstract boolean isProxy() throws Exception;
@@ -73,7 +83,7 @@ public abstract class AbstractProxyTransformer {
 				// We can't do the transformation in this event, because we can't see the changes in the class
 				// definitons. Schedule a new redefinition event.
 				scheduleRedefinition();
-				return null;
+				return classfileBuffer;
 			case WAITING:
 				byte[] newProxyClass = generateNewProxyClass();
 				if (addThirdStep) {
@@ -81,7 +91,7 @@ public abstract class AbstractProxyTransformer {
 					scheduleRedefinition();
 				} else
 					removeClassState();
-				LOGGER.reload("Class '{}' has been reloaded.", Descriptor.toJavaName(className));
+				LOGGER.reload("Class '{}' has been reloaded.", javaClassName);
 				return newProxyClass;
 			case FINISHED:
 				removeClassState();
@@ -107,7 +117,7 @@ public abstract class AbstractProxyTransformer {
 	}
 	
 	protected CtClass getCtClass(byte[] newByteCode) throws Exception {
-		return ProxyTransformationUtils.getClassPool().makeClass(new ByteArrayInputStream(newByteCode), false);
+		return cp.makeClass(new ByteArrayInputStream(newByteCode), false);
 	}
 	
 	protected abstract String getInitCall(CtClass cc, String random) throws Exception;
