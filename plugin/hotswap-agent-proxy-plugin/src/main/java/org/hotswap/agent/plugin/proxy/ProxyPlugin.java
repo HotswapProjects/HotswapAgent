@@ -43,7 +43,7 @@ public class ProxyPlugin {
 		
 		byte[] result = classfileBuffer;
 		
-		boolean useJavassistProxyTransformer = true;
+		boolean useJavassistProxyTransformer = false;
 		if (useJavassistProxyTransformer) {
 			result = JavassistProxyTransformer.transform(classBeingRedefined, cc, cp, result);
 		} else {
