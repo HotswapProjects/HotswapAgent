@@ -33,6 +33,7 @@ public class EnhancerProxyCreater {
 	private static Method createCglibProxy;
 	private static Object springLock = new Object();
 	private static Object cglibLock = new Object();
+	private static Object cpLock = new Object();
 	private static volatile ClassPool cp;
 	
 	public static boolean isSupportedCglibProxy(Object bean) {
@@ -55,6 +56,7 @@ public class EnhancerProxyCreater {
 							springProxy = buildProxyCreaterClass(SPRING_PACKAGE, springCallback.getName(),
 									springNamingPolicy.getName());
 							createSpringProxy = springProxy.getDeclaredMethods()[0];
+							cp = null;
 						}
 					}
 				}
@@ -68,6 +70,7 @@ public class EnhancerProxyCreater {
 							cglibProxy = buildProxyCreaterClass(CGLIB_PACKAGE, cglibCallback.getName(),
 									cglibNamingPolicy.getName());
 							createCglibProxy = cglibProxy.getDeclaredMethods()[0];
+							cp = null;
 						}
 					}
 				}
@@ -150,7 +153,7 @@ public class EnhancerProxyCreater {
 	
 	private static ClassPool getCp() {
 		if (cp == null) {
-			synchronized (cp) {
+			synchronized (cpLock) {
 				if (cp == null) {
 					cp = new ClassPool();
 					cp.appendSystemPath();
