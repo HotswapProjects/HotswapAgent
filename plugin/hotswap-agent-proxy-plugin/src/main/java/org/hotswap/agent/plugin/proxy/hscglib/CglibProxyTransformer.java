@@ -43,7 +43,6 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 		CtMethod[] methods = cc.getDeclaredMethods();
 		StringBuilder strB = new StringBuilder();
 		for (CtMethod ctMethod : methods) {
-			System.out.println(ctMethod.getName());
 			if (ctMethod.getName().startsWith("CGLIB$STATICHOOK")) {
 				ctMethod.insertAfter(INIT_FIELD_PREFIX + random + "=true;");
 				strB.insert(0, ctMethod.getName() + "();");

@@ -9,7 +9,6 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersTransformer;
@@ -44,7 +43,7 @@ public class ProxyPlugin {
 		
 		byte[] result = classfileBuffer;
 		
-		boolean useJavassistProxyTransformer = false;
+		boolean useJavassistProxyTransformer = true;
 		if (useJavassistProxyTransformer) {
 			result = JavassistProxyTransformer.transform(classBeingRedefined, cc, cp, result);
 		} else {
