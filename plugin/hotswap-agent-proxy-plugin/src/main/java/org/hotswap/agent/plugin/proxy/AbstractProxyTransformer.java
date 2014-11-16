@@ -1,13 +1,10 @@
 package org.hotswap.agent.plugin.proxy;
 
 import java.io.ByteArrayInputStream;
-import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.IllegalClassFormatException;
-import java.lang.instrument.UnmodifiableClassException;
 import java.util.Map;
 import java.util.UUID;
 
-import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtField;
@@ -34,6 +31,7 @@ import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
  * 
  */
 public abstract class AbstractProxyTransformer {
+	
 	private static final AgentLogger LOGGER = AgentLogger.getLogger(AbstractProxyTransformer.class);
 	protected static final String INIT_FIELD_PREFIX = "initCalled";
 	
@@ -76,7 +74,7 @@ public abstract class AbstractProxyTransformer {
 		switch (getTransformationstate()) {
 			case NEW:
 				if (!isTransformingNeeded()) {
-					return null;
+					return classfileBuffer;
 				}
 				setClassAsWaiting();
 				// We can't do the transformation in this event, because we can't see the changes in the class
@@ -84,14 +82,14 @@ public abstract class AbstractProxyTransformer {
 				scheduleRedefinition();
 				return classfileBuffer;
 			case WAITING:
-				byte[] newProxyClass = generateNewProxyClass();
+				classfileBuffer = generateNewProxyClass();
 				if (addThirdStep) {
 					setClassAsFinished();
 					scheduleRedefinition();
 				} else
 					removeClassState();
 				LOGGER.reload("Class '{}' has been reloaded.", javaClassName);
-				return newProxyClass;
+				return classfileBuffer;
 			case FINISHED:
 				removeClassState();
 				return classfileBuffer;
@@ -151,29 +149,26 @@ public abstract class AbstractProxyTransformer {
 	}
 	
 	protected void scheduleRedefinition() {
-		new Thread() {
-			@Override
-			public void run() {
-				try {
-					PluginManager.getInstance().getInstrumentation()
-							.redefineClasses(new ClassDefinition(classBeingRedefined, classfileBuffer));
-				} catch (ClassNotFoundException | UnmodifiableClassException e) {
-					removeClassState();
-					throw new RuntimeException(e);
-				}
-			}
-		}.start();
+		new Thread(new RedefinitionScheduler(this)).start();
 	}
 	
 	protected TransformationState setClassAsWaiting() {
 		return transformationStates.put(classBeingRedefined, TransformationState.WAITING);
 	}
 	
-	private TransformationState setClassAsFinished() {
+	protected TransformationState setClassAsFinished() {
 		return transformationStates.put(classBeingRedefined, TransformationState.FINISHED);
 	}
 	
 	protected TransformationState removeClassState() {
 		return transformationStates.remove(classBeingRedefined);
+	}
+	
+	public Class<?> getClassBeingRedefined() {
+		return classBeingRedefined;
+	}
+	
+	public byte[] getClassfileBuffer() {
+		return classfileBuffer;
 	}
 }

@@ -9,9 +9,10 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
-import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersRecorder;
+import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersTransformer;
 import org.hotswap.agent.plugin.proxy.java.JavaProxyTransformer;
 import org.hotswap.agent.plugin.proxy.java.JavassistProxyTransformer;
 
@@ -61,7 +62,7 @@ public class ProxyPlugin {
 		CtClass cc = ProxyTransformationUtils.getClassPool(loader).makeClass(new ByteArrayInputStream(classfileBuffer),
 				false);
 		try {
-			return GeneratorParametersRecorder.transform(cc);
+			return GeneratorParametersTransformer.transform(cc);
 		} finally {
 			// we dont need to store defined CtClass-es in the pool
 			cc.detach();

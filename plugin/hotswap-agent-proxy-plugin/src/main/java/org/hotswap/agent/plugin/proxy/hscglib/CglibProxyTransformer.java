@@ -35,7 +35,7 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 	
 	@Override
 	protected boolean isProxy() {
-		return GeneratorParametersRecorder.getGeneratorParams(loader).containsKey(javaClassName);
+		return GeneratorParametersTransformer.getGeneratorParams(loader).containsKey(javaClassName);
 	}
 	
 	@Override
@@ -43,6 +43,7 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 		CtMethod[] methods = cc.getDeclaredMethods();
 		StringBuilder strB = new StringBuilder();
 		for (CtMethod ctMethod : methods) {
+			System.out.println(ctMethod.getName());
 			if (ctMethod.getName().startsWith("CGLIB$STATICHOOK")) {
 				ctMethod.insertAfter(INIT_FIELD_PREFIX + random + "=true;");
 				strB.insert(0, ctMethod.getName() + "();");
@@ -57,7 +58,7 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 	
 	@Override
 	protected byte[] getNewByteCode() throws Exception {
-		GeneratorParams param = GeneratorParametersRecorder.getGeneratorParams(loader).get(javaClassName);
+		GeneratorParams param = GeneratorParametersTransformer.getGeneratorParams(loader).get(javaClassName);
 		if (param == null)
 			throw new RuntimeException("No Parameters found for redefinition!");
 		
@@ -86,6 +87,6 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 	}
 	
 	public static boolean isReloadingInProgress() {
-		return TRANSFORMATION_STATES.size() > 0;
+		return !TRANSFORMATION_STATES.isEmpty();
 	}
 }
