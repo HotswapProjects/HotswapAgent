@@ -22,12 +22,38 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 	private static final ConcurrentHashMap<Class<?>, TransformationState> TRANSFORMATION_STATES = new ConcurrentHashMap<Class<?>, TransformationState>();
 	private ClassLoader loader;
 	
+	/**
+	 * 
+	 * @param classBeingRedefined
+	 * @param cc
+	 *            CtClass from classfileBuffer
+	 * @param cp
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @param loader
+	 *            ClassLoader of the classBeingRedefined
+	 * @return classfileBuffer or new Proxy defition if there are signature changes
+	 * @throws IllegalClassFormatException
+	 */
 	public CglibProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
 			ClassLoader loader) {
 		super(classBeingRedefined, cc, cp, classfileBuffer, TRANSFORMATION_STATES);
 		this.loader = loader;
 	}
 	
+	/**
+	 * 
+	 * @param classBeingRedefined
+	 * @param cc
+	 *            CtClass from classfileBuffer
+	 * @param cp
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @param loader
+	 *            ClassLoader of the classBeingRedefined
+	 * @return classfileBuffer or new Proxy defition if there are signature changes
+	 * @throws IllegalClassFormatException
+	 */
 	public static byte[] transform(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
 			ClassLoader loader) throws IllegalClassFormatException {
 		return new CglibProxyTransformer(classBeingRedefined, cc, cp, classfileBuffer, loader).transform();

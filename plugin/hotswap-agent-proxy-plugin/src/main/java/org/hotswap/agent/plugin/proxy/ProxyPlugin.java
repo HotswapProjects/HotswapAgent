@@ -16,15 +16,14 @@ import org.hotswap.agent.plugin.proxy.java.JavaProxyTransformer;
 import org.hotswap.agent.plugin.proxy.java.JavassistProxyTransformer;
 
 /**
+ * Redefines proxy classes that implement or extend changed interfaces or classes. Currently it supports proxies created
+ * with Java reflection and the Cglib library.
  * 
  * 
  * @author Erki Ehtla
  * 
  */
-@Plugin(name = "Proxy", description = "Redefines proxies", testedVersions = { "" }, expectedVersions = { "all" }
-// , supportClass = { ClassfileSignatureRecorder.class, GeneratorParametersRecorder.class,
-// JavassistProxyTransformer.class, CglibProxyTransformer.class }
-)
+@Plugin(name = "Proxy", description = "Redefines proxies", testedVersions = { "" }, expectedVersions = { "all" })
 public class ProxyPlugin {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyPlugin.class);
 	

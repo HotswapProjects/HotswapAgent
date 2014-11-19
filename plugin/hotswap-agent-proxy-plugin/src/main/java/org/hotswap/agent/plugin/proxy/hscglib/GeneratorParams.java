@@ -1,35 +1,36 @@
 package org.hotswap.agent.plugin.proxy.hscglib;
 
 /**
+ * Parameters for new Cglib proxy creation
+ * 
  * @author Erki Ehtla
  * 
  */
 public class GeneratorParams {
+	private Object generator;
+	private Object param;
+	
 	public GeneratorParams(Object generator, Object params) {
-		super();
 		this.generator = generator;
 		this.param = params;
 	}
-
-	private Object generator;
-	private Object param;
-
+	
 	public Object getGenerator() {
 		return generator;
 	}
-
+	
 	public void setGenerator(Object generator) {
 		this.generator = generator;
 	}
-
+	
 	public Object getParam() {
 		return param;
 	}
-
+	
 	public void setParam(Object params) {
 		this.param = params;
 	}
-
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -38,7 +39,7 @@ public class GeneratorParams {
 		result = prime * result + ((param == null) ? 0 : param.hashCode());
 		return result;
 	}
-
+	
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)

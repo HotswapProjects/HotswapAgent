@@ -7,19 +7,23 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * Proxies the beans returned by DefaultListableBeanFactory. The beans inside these proxies will be dereferenced when
- * the Spring registry is reset.
+ * Transforms Spring classes so the beans go through this plugin. The returned beans are proxied and tracked. The bean
+ * proxies can be reset and reloaded from Spring.
  * 
  * @author Erki Ehtla
  * 
  */
 public class ProxyReplacerTransformer {
 	public static final String FACTORY_METHOD_NAME = "getBean";
-	private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyReplacerTransformer.class);
 	
+	/**
+	 * 
+	 * @param ctClass
+	 * @throws NotFoundException
+	 * @throws CannotCompileException
+	 */
 	@OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory", events = LoadEvent.DEFINE)
 	public static void replaceBeanWithProxy(CtClass ctClass) throws NotFoundException, CannotCompileException {
 		CtMethod[] methods = ctClass.getMethods();
@@ -37,7 +41,7 @@ public class ProxyReplacerTransformer {
 	}
 	
 	/**
-	 * disable cache usage in FastClass.Generator to avoid 'IllegalArgumentException: Protected method' exceptions
+	 * Disable cache usage in FastClass.Generator to avoid 'IllegalArgumentException: Protected method' exceptions
 	 * 
 	 * @param ctClass
 	 * @throws NotFoundException
@@ -53,7 +57,7 @@ public class ProxyReplacerTransformer {
 	}
 	
 	/**
-	 * disable cache usage in FastClass.Generator to avoid 'IllegalArgumentException: Protected method' exceptions
+	 * Disable cache usage in FastClass.Generator to avoid 'IllegalArgumentException: Protected method' exceptions
 	 * 
 	 * @param ctClass
 	 * @throws NotFoundException

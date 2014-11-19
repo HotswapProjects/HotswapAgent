@@ -1,6 +1,3 @@
-/**
- * 
- */
 package org.hotswap.agent.plugin.proxy.signature;
 
 import java.lang.reflect.Method;
@@ -12,7 +9,8 @@ import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 
 /**
- * String representation of a Java Class instance
+ * String representation of a Java Class instance. Consists of a super class name(if not Object), methods (names, return
+ * types, parameter types) and interface names ordered alphabetica
  * 
  * @author Erki Ehtla
  * 

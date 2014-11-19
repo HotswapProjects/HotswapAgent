@@ -1,6 +1,3 @@
-/**
- * 
- */
 package org.hotswap.agent.plugin.proxy.signature;
 
 import java.util.ArrayList;
@@ -13,13 +10,15 @@ import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 
 /**
- * String representation of a CtClass instance
+ * String representation of a CtClass instance. Consists of a super class name(if not Object), methods (names, return
+ * types, parameter types) and interface names ordered alphabetically.
  * 
  * @author Erki Ehtla
  * 
  */
 public class CtClassSignature {
 	public static String get(CtClass cc) {
+		@SuppressWarnings("unchecked")
 		List<MethodInfo> methods = (List<MethodInfo>) cc.getClassFile().getMethods();
 		List<String> strings = new ArrayList<>();
 		for (MethodInfo method : methods) {
@@ -41,7 +40,7 @@ public class CtClassSignature {
 		return strBuilder.toString();
 	}
 	
-	public static String getReturnType(String desc) {
+	private static String getReturnType(String desc) {
 		int i = desc.indexOf(')');
 		return Descriptor.toString(desc.substring(i + 1));
 	}

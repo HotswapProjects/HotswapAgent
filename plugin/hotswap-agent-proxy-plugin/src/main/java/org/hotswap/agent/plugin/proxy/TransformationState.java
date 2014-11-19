@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.proxy;
 
 /**
- * Transformation states for multistate PRoxy transformation
+ * Transformation states for multistate Proxy transformation
  * 
  * @author Erki Ehtla
  * 

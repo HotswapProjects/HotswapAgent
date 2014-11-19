@@ -26,6 +26,13 @@ public class ClassfileSignatureComparer {
 		return !JavaClassSignature.get(clazz).equals(ctClassString);
 	}
 	
+	/**
+	 * Checks if the CtClass or one of its parents signature differs from the one already loaded by Java.
+	 * 
+	 * @param clazz
+	 * @param cp
+	 * @return
+	 */
 	public static boolean isPoolClassOrParentDifferent(Class<?> clazz, ClassPool cp) {
 		if (isPoolClassDifferent(clazz, cp))
 			return true;

@@ -15,6 +15,8 @@ import org.hotswap.agent.plugin.proxy.ProxyPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
+ * Inits plugin and adds byte generation parameter storing
+ * 
  * @author Erki Ehtla
  * 
  */
@@ -22,7 +24,7 @@ public class GeneratorParametersTransformer {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(GeneratorParametersTransformer.class);
 	
 	/**
-	 * Add init plugin calls and add bytegeneration parameter storing
+	 * Add plugin init calls and byte generation parameter storing
 	 * 
 	 * @param cc
 	 * @return
@@ -50,12 +52,19 @@ public class GeneratorParametersTransformer {
 		return null;
 	}
 	
+	/**
+	 * Determines if a Class is a Cglib GeneratorStrategy subclass
+	 * 
+	 * @param cc
+	 * @return
+	 */
 	private static boolean isGeneratorStrategy(CtClass cc) {
 		String[] interfaces = cc.getClassFile2().getInterfaces();
 		for (String interfaceName : interfaces) {
 			// We use class name strings because some libraries repackage cglib to a different namespace to avoid
 			// conflicts.
 			if (interfaceName.endsWith(".GeneratorStrategy")) {
+				@SuppressWarnings("unchecked")
 				List<MethodInfo> methodInfos = cc.getClassFile2().getMethods();
 				for (MethodInfo method : methodInfos) {
 					if (method.getName().equals("generate") && method.getDescriptor().endsWith("[B")) {
@@ -67,6 +76,13 @@ public class GeneratorParametersTransformer {
 		return false;
 	}
 	
+	/**
+	 * Retrieves Class name, GeneratorParams Map from within a classloader
+	 * 
+	 * @param loader
+	 * @return Map of Class names and parameters used for Proxy creation
+	 */
+	@SuppressWarnings("unchecked")
 	public static Map<String, GeneratorParams> getGeneratorParams(ClassLoader loader) {
 		try {
 			return (Map<String, GeneratorParams>) loader

@@ -14,7 +14,7 @@ import sun.misc.ProxyGenerator;
 
 /**
  * AbstractProxyTransformer based Proxy transformer for java.lang.reflect.Proxy proxies. Takes more than one
- * redefinition event to transform a Class
+ * redefinition event to transform a Class.
  * 
  * @author Erki Ehtla
  * 
@@ -23,10 +23,31 @@ public class JavaProxyTransformer extends AbstractProxyTransformer {
 	
 	private static final ConcurrentHashMap<Class<?>, TransformationState> TRANSFORMATION_STATES = new ConcurrentHashMap<Class<?>, TransformationState>();
 	
+	/**
+	 * 
+	 * @param classBeingRedefined
+	 * @param cc
+	 *            CtClass from classfileBuffer
+	 * @param cp
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @throws IllegalClassFormatException
+	 */
 	public JavaProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer) {
 		super(classBeingRedefined, cc, cp, classfileBuffer, TRANSFORMATION_STATES);
 	}
 	
+	/**
+	 * 
+	 * @param classBeingRedefined
+	 * @param cc
+	 *            CtClass from classfileBuffer
+	 * @param cp
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @return classfileBuffer or new Proxy defition if there are signature changes
+	 * @throws IllegalClassFormatException
+	 */
 	public static byte[] transform(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
 		return new JavaProxyTransformer(classBeingRedefined, cc, cp, classfileBuffer).transform();
@@ -41,6 +62,7 @@ public class JavaProxyTransformer extends AbstractProxyTransformer {
 		return method.getName() + "();";
 	}
 	
+	@Override
 	protected boolean isProxy() {
 		return javaClassName.startsWith("com.sun.proxy.$Proxy");
 	}

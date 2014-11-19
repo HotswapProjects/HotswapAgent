@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.proxy;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.LoaderClassPath;
@@ -13,7 +14,7 @@ import org.hotswap.agent.logging.AgentLogger;
  */
 public class ProxyTransformationUtils {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyTransformationUtils.class);
-	private static ConcurrentHashMap<ClassLoader, ClassPool> classPoolMap = new ConcurrentHashMap<>(2);
+	private static Map<ClassLoader, ClassPool> classPoolMap = new HashMap<>(3);
 	
 	/**
 	 * Creates one ClassPool per ClassLoader and caches it

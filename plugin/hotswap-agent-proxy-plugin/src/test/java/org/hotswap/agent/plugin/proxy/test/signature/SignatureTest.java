@@ -1,10 +1,12 @@
-package org.hotswap.agent.plugin.proxy.signature;
+package org.hotswap.agent.plugin.proxy.test.signature;
 
 import static org.junit.Assert.*;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.plugin.proxy.signature.CtClassSignature;
+import org.hotswap.agent.plugin.proxy.signature.JavaClassSignature;
 import org.junit.Test;
 
 public class SignatureTest {

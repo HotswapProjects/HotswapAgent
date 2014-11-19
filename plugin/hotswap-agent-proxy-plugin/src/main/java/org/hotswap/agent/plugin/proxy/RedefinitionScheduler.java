@@ -1,31 +1,32 @@
 package org.hotswap.agent.plugin.proxy;
 
 import java.lang.instrument.ClassDefinition;
-import java.lang.instrument.UnmodifiableClassException;
 
 import org.hotswap.agent.config.PluginManager;
 
 /**
+ * RedefinesClass for AbstractProxyTransformer
  * 
  * @author Erki Ehtla
- * 
  */
 final class RedefinitionScheduler implements Runnable {
-	private AbstractProxyTransformer i;
+	private AbstractProxyTransformer transformer;
 	
-	public RedefinitionScheduler(AbstractProxyTransformer i) {
-		this.i = i;
+	public RedefinitionScheduler(AbstractProxyTransformer transformer) {
+		this.transformer = transformer;
 	}
 	
 	@Override
 	public void run() {
 		try {
-			PluginManager.getInstance().getInstrumentation()
-					.redefineClasses(new ClassDefinition(i.getClassBeingRedefined(), i.getClassfileBuffer()));
-		} catch (ClassNotFoundException | UnmodifiableClassException e) {
-			throw new RuntimeException(e);
-		} finally {
-			i.removeClassState();
+			PluginManager
+					.getInstance()
+					.getInstrumentation()
+					.redefineClasses(
+							new ClassDefinition(transformer.getClassBeingRedefined(), transformer.getClassfileBuffer()));
+		} catch (Throwable t) {
+			transformer.removeClassState();
+			throw new RuntimeException(t);
 		}
 	}
 }

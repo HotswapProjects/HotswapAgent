@@ -21,7 +21,7 @@ import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
  * 
  * The new Proxy is created with original App classloader instances (both the generator and parameters are reused, their
  * classes untouched). During the first step it is checked if the signature has changed. If it has, a second
- * redefinition event is triggered, because we can't see the changes to Class file before the redefined class has
+ * redefinition event is triggered, because we can't see the changes to java Class files before the redefined class has
  * loaded.
  * 
  * During the second step, the new bytecode is generated. Static field initialization code is added to the beginning of
@@ -42,15 +42,34 @@ public abstract class AbstractProxyTransformer {
 	protected ClassPool cp;
 	public static boolean addThirdStep = false;
 	
-	public AbstractProxyTransformer(Class<?> classBeingRedefined2, CtClass cc, ClassPool cp, byte[] classfileBuffer,
+	/**
+	 * 
+	 /**
+	 * 
+	 * @param classBeingRedefined
+	 * @param cc
+	 *            CtClass from classfileBuffer
+	 * @param cp
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @param transformationStates
+	 *            holds TransformationState for multistep classredefinition
+	 */
+	public AbstractProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
 			Map<Class<?>, TransformationState> transformationStates) {
 		this.javaClassName = cc.getName();
-		this.classBeingRedefined = classBeingRedefined2;
+		this.classBeingRedefined = classBeingRedefined;
 		this.classfileBuffer = classfileBuffer;
 		this.transformationStates = transformationStates;
 		this.cp = cp;
 	}
 	
+	/**
+	 * Transforms the classBeingRedefined if neccessary
+	 * 
+	 * @return bytecode of the new Class
+	 * @throws IllegalClassFormatException
+	 */
 	public byte[] transform() throws IllegalClassFormatException {
 		try {
 			if (classBeingRedefined == null || !isProxy()) {
@@ -64,12 +83,29 @@ public abstract class AbstractProxyTransformer {
 		}
 	}
 	
+	/**
+	 * Checks if there were changes that require the redefinition of the proxy
+	 * 
+	 * @return
+	 */
 	private boolean isTransformingNeeded() {
 		return ClassfileSignatureComparer.isPoolClassOrParentDifferent(classBeingRedefined, cp);
 	}
 	
+	/**
+	 * Check if the redefined Class is a supported proxy
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
 	protected abstract boolean isProxy() throws Exception;
 	
+	/**
+	 * Handles the current transformation state
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
 	protected byte[] transformRedefine() throws Exception {
 		switch (getTransformationstate()) {
 			case NEW:
@@ -98,6 +134,12 @@ public abstract class AbstractProxyTransformer {
 		}
 	}
 	
+	/**
+	 * Builds a new Proxy class with init code, which is executed with the first call on any method
+	 * 
+	 * @return bytecode of the new Class
+	 * @throws Exception
+	 */
 	protected byte[] generateNewProxyClass() throws Exception {
 		byte[] newByteCode = getNewByteCode();
 		
@@ -113,14 +155,37 @@ public abstract class AbstractProxyTransformer {
 		return cc.toBytecode();
 	}
 	
+	/**
+	 * Makes a CtClass out of the bytecode
+	 * 
+	 * @param newByteCode
+	 * @return CtClass from newByteCode
+	 * @throws Exception
+	 */
 	protected CtClass getCtClass(byte[] newByteCode) throws Exception {
 		return cp.makeClass(new ByteArrayInputStream(newByteCode), false);
 	}
 	
+	/**
+	 * Builds the Java code String which should be executed to initate the proxy
+	 * 
+	 * @param cc
+	 *            CtClass from new definition
+	 * @param random
+	 *            randomly generated String
+	 * @return Java code to call init the proxy
+	 */
 	protected abstract String getInitCall(CtClass cc, String random) throws Exception;
 	
+	/**
+	 * @return unchanged bytecode of the new Proxy Class. Does not contain any initialization.
+	 * @throws Exception
+	 */
 	protected abstract byte[] getNewByteCode() throws Exception;
 	
+	/**
+	 * @return Current transformation state of the classBeingRedefined
+	 */
 	protected TransformationState getTransformationstate() {
 		TransformationState transformationState = transformationStates.get(classBeingRedefined);
 		if (transformationState == null)
@@ -132,6 +197,18 @@ public abstract class AbstractProxyTransformer {
 		return UUID.randomUUID().toString().replace("-", "");
 	}
 	
+	/**
+	 * Adds the initCall as Java code to all the non static methods of the class. The initialization is only done if
+	 * clinitFieldName is false. Responsibility to set the clinitFieldName is on the initCall.
+	 * 
+	 * @param cc
+	 *            CtClass to be modified
+	 * @param clinitFieldName
+	 *            field name in CtClass
+	 * @param initCall
+	 *            Java code to initialize the Proxy
+	 * @throws Exception
+	 */
 	protected void addInitCallToMethods(CtClass cc, String clinitFieldName, String initCall) throws Exception {
 		CtMethod[] methods = cc.getDeclaredMethods();
 		for (CtMethod ctMethod : methods) {
@@ -141,6 +218,15 @@ public abstract class AbstractProxyTransformer {
 		}
 	}
 	
+	/**
+	 * Adds static boolean field to the class
+	 * 
+	 * @param cc
+	 *            CtClass to be modified
+	 * @param clinitFieldName
+	 *            field name in CtClass
+	 * @throws Exception
+	 */
 	protected void addStaticInitStateField(CtClass cc, String clinitFieldName) throws Exception {
 		CtField f = new CtField(CtClass.booleanType, clinitFieldName, cc);
 		f.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
@@ -148,26 +234,54 @@ public abstract class AbstractProxyTransformer {
 		cc.addField(f, "true");
 	}
 	
+	/**
+	 * Generate new redefinition event for current classBeingRedefined
+	 */
 	protected void scheduleRedefinition() {
 		new Thread(new RedefinitionScheduler(this)).start();
 	}
 	
+	/**
+	 * Set classBeingRedefined as waiting
+	 * 
+	 * @return
+	 */
 	protected TransformationState setClassAsWaiting() {
 		return transformationStates.put(classBeingRedefined, TransformationState.WAITING);
 	}
 	
+	/**
+	 * Set classBeingRedefined as finished
+	 * 
+	 * @return
+	 */
 	protected TransformationState setClassAsFinished() {
 		return transformationStates.put(classBeingRedefined, TransformationState.FINISHED);
 	}
 	
+	/**
+	 * Remove any state associated with classBeingRedefined
+	 * 
+	 * @return
+	 */
 	protected TransformationState removeClassState() {
 		return transformationStates.remove(classBeingRedefined);
 	}
 	
+	/**
+	 * The Class this instance is redefining
+	 * 
+	 * @return
+	 */
 	public Class<?> getClassBeingRedefined() {
 		return classBeingRedefined;
 	}
 	
+	/**
+	 * Bytecode of the Class this instance is redefining.
+	 * 
+	 * @return
+	 */
 	public byte[] getClassfileBuffer() {
 		return classfileBuffer;
 	}
