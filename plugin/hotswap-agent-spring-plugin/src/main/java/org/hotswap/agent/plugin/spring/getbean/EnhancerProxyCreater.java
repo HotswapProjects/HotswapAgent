@@ -67,10 +67,11 @@ public class EnhancerProxyCreater {
 				if (createSpringProxy == null) {
 					synchronized (springLock) {
 						if (createSpringProxy == null) {
-							springCallback = buildProxyCallbackClass(SPRING_PACKAGE);
-							springNamingPolicy = buildNamingPolicyClass(SPRING_PACKAGE);
+							ClassPool cp = getCp(beanFactry.getClass().getClassLoader());
+							springCallback = buildProxyCallbackClass(SPRING_PACKAGE, cp);
+							springNamingPolicy = buildNamingPolicyClass(SPRING_PACKAGE, cp);
 							springProxy = buildProxyCreaterClass(SPRING_PACKAGE, springCallback.getName(),
-									springNamingPolicy.getName());
+									springNamingPolicy.getName(), cp);
 							createSpringProxy = springProxy.getDeclaredMethods()[0];
 							cp = null;
 						}
@@ -81,10 +82,11 @@ public class EnhancerProxyCreater {
 				if (createCglibProxy == null) {
 					synchronized (cglibLock) {
 						if (createCglibProxy == null) {
-							cglibCallback = buildProxyCallbackClass(CGLIB_PACKAGE);
-							cglibNamingPolicy = buildNamingPolicyClass(CGLIB_PACKAGE);
+							ClassPool cp = getCp(beanFactry.getClass().getClassLoader());
+							cglibCallback = buildProxyCallbackClass(CGLIB_PACKAGE, cp);
+							cglibNamingPolicy = buildNamingPolicyClass(CGLIB_PACKAGE, cp);
 							cglibProxy = buildProxyCreaterClass(CGLIB_PACKAGE, cglibCallback.getName(),
-									cglibNamingPolicy.getName());
+									cglibNamingPolicy.getName(), cp);
 							createCglibProxy = cglibProxy.getDeclaredMethods()[0];
 							cp = null;
 						}
@@ -112,15 +114,15 @@ public class EnhancerProxyCreater {
 	 *            Cglib Package name
 	 * @param callback
 	 *            Callback class used for Enhancer
-	 * @param namingPolciy
+	 * @param namingPolicy
 	 *            NamingPolicy class used for Enhancer
 	 * @return Class that creates proxies via method "public static Object create(Object beanFactry, Object bean,
 	 *         Class[] classes, Object[] params)"
 	 * @throws CannotCompileException
 	 */
-	private static Class<?> buildProxyCreaterClass(String cglibPackage, String callback, String namingPolciy)
-			throws CannotCompileException {
-		CtClass ct = getCp().makeClass("HotswapAgentSpringBeanProxy" + getClassSuffix(cglibPackage));
+	private static Class<?> buildProxyCreaterClass(String cglibPackage, String callback, String namingPolicy,
+			ClassPool cp) throws CannotCompileException {
+		CtClass ct = cp.makeClass("HotswapAgentSpringBeanProxy" + getClassSuffix(cglibPackage));
 		String proxy = cglibPackage + "proxy.";
 		String core = cglibPackage + "core.";
 		String rawBody = "public static Object create(Object beanFactry, Object bean, Class[] classes, Object[] params) {"
@@ -140,7 +142,7 @@ public class EnhancerProxyCreater {
 				+ "		return e.create();"//
 				+ "	}";
 		String body = rawBody.replaceAll("\\{0\\}", proxy).replaceAll("\\{1\\}", core).replaceAll("\\{2\\}", callback)
-				.replaceAll("\\{3\\}", namingPolciy);
+				.replaceAll("\\{3\\}", namingPolicy);
 		CtMethod m = CtNewMethod.make(body, ct);
 		ct.addMethod(m);
 		return ct.toClass();
@@ -156,11 +158,11 @@ public class EnhancerProxyCreater {
 	 * @throws CannotCompileException
 	 * @throws NotFoundException
 	 */
-	private static Class<?> buildNamingPolicyClass(String cglibPackage) throws CannotCompileException,
+	private static Class<?> buildNamingPolicyClass(String cglibPackage, ClassPool cp) throws CannotCompileException,
 			NotFoundException {
-		CtClass ct = getCp().makeClass("HotswapAgentSpringNamingPolicy" + getClassSuffix(cglibPackage));
+		CtClass ct = cp.makeClass("HotswapAgentSpringNamingPolicy" + getClassSuffix(cglibPackage));
 		String core = cglibPackage + "core.";
-		ct.setSuperclass(getCp().get(core + "DefaultNamingPolicy"));
+		ct.setSuperclass(cp.get(core + "DefaultNamingPolicy"));
 		String rawBody = "			public String getClassName(String prefix, String source, Object key, {0}Predicate names) {"//
 				+ "				return super.getClassName(\"HOTSWAPAGENT_\" + prefix, source, key, names);"//
 				+ "			}";
@@ -183,12 +185,12 @@ public class EnhancerProxyCreater {
 	 * @throws CannotCompileException
 	 * @throws NotFoundException
 	 */
-	private static Class<?> buildProxyCallbackClass(String cglibPackage) throws CannotCompileException,
+	private static Class<?> buildProxyCallbackClass(String cglibPackage, ClassPool cp) throws CannotCompileException,
 			NotFoundException {
 		String proxyPackage = cglibPackage + "proxy.";
-		CtClass ct = getCp().makeClass("HotswapSpringCallback" + getClassSuffix(cglibPackage));
-		ct.setSuperclass(getCp().get(DetachableBeanHolder.class.getName()));
-		ct.addInterface(getCp().get(proxyPackage + "MethodInterceptor"));
+		CtClass ct = cp.makeClass("HotswapSpringCallback" + getClassSuffix(cglibPackage));
+		ct.setSuperclass(cp.get(DetachableBeanHolder.class.getName()));
+		ct.addInterface(cp.get(proxyPackage + "MethodInterceptor"));
 		// String constructor = "public " + callbackClassName
 		// + "(Object bean, Object beanFactry, Class[] paramClasses, Object[] paramValues) {"//
 		// + "		super(bean, beanFactry, paramClasses, paramValues);"//
@@ -205,13 +207,13 @@ public class EnhancerProxyCreater {
 		return ct.toClass();
 	}
 	
-	private static ClassPool getCp() {
+	private static ClassPool getCp(ClassLoader loader) {
 		if (cp == null) {
 			synchronized (cpLock) {
 				if (cp == null) {
 					cp = new ClassPool();
 					cp.appendSystemPath();
-					cp.appendClassPath(new LoaderClassPath(EnhancerProxyCreater.class.getClassLoader()));
+					cp.appendClassPath(new LoaderClassPath(loader));
 					return cp;
 				}
 			}
