@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.WeakHashMap;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -371,7 +371,7 @@ public class CtClassJavaProxyGenerator {
 		private CtClass throwable;
 	}
 	
-	private static Map<ClassPool, CtClassProxyFields> fieldsMap = new ConcurrentHashMap<ClassPool, CtClassJavaProxyGenerator.CtClassProxyFields>(
+	private static Map<ClassPool, CtClassProxyFields> fieldsMap = new WeakHashMap<ClassPool, CtClassJavaProxyGenerator.CtClassProxyFields>(
 			2);
 	private CtClassProxyFields f;
 	

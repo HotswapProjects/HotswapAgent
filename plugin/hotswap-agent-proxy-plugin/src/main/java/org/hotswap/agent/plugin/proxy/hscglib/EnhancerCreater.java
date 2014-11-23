@@ -5,7 +5,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.hotswap.agent.plugin.proxy.ParentLastClassLoader;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -31,7 +30,7 @@ public class EnhancerCreater {
 	 */
 	public EnhancerCreater(GeneratorParams param, ClassLoader classLoader) {
 		this.param = param;
-		this.classLoader = new ParentLastClassLoader(classLoader);
+		this.classLoader = classLoader;
 		this.enhancer = param.getParam();
 		this.enhancerClass = enhancer.getClass();
 		this.abstractGeneratorClass = enhancerClass.getSuperclass();

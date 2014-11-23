@@ -1,9 +1,10 @@
 package org.hotswap.agent.plugin.proxy.java;
 
 import java.lang.instrument.IllegalClassFormatException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
@@ -21,7 +22,8 @@ import sun.misc.ProxyGenerator;
  */
 public class JavaProxyTransformer extends AbstractProxyTransformer {
 	
-	private static final ConcurrentHashMap<Class<?>, TransformationState> TRANSFORMATION_STATES = new ConcurrentHashMap<Class<?>, TransformationState>();
+	private static final Map<Class<?>, TransformationState> TRANSFORMATION_STATES = Collections
+			.synchronizedMap(new WeakHashMap<Class<?>, TransformationState>());
 	
 	/**
 	 * 
@@ -33,8 +35,8 @@ public class JavaProxyTransformer extends AbstractProxyTransformer {
 	 *            new definition of Class<?>
 	 * @throws IllegalClassFormatException
 	 */
-	public JavaProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer) {
-		super(classBeingRedefined, cc, cp, classfileBuffer, TRANSFORMATION_STATES);
+	public JavaProxyTransformer(Class<?> classBeingRedefined, ClassLoader loader, byte[] classfileBuffer) {
+		super(classBeingRedefined, classfileBuffer, loader, TRANSFORMATION_STATES);
 	}
 	
 	/**
@@ -48,9 +50,9 @@ public class JavaProxyTransformer extends AbstractProxyTransformer {
 	 * @return classfileBuffer or new Proxy defition if there are signature changes
 	 * @throws IllegalClassFormatException
 	 */
-	public static byte[] transform(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer)
+	public static byte[] transform(Class<?> classBeingRedefined, ClassLoader loader, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
-		return new JavaProxyTransformer(classBeingRedefined, cc, cp, classfileBuffer).transform();
+		return new JavaProxyTransformer(classBeingRedefined, loader, classfileBuffer).transform();
 	}
 	
 	@Override

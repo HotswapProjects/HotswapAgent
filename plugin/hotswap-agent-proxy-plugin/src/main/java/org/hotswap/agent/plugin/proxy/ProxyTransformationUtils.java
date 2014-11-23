@@ -3,8 +3,8 @@ package org.hotswap.agent.plugin.proxy;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.LoaderClassPath;
@@ -17,7 +17,7 @@ import org.hotswap.agent.logging.AgentLogger;
  */
 public class ProxyTransformationUtils {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyTransformationUtils.class);
-	private static Map<ClassLoader, ClassPool> classPoolMap = new HashMap<>(3);
+	private static Map<ClassLoader, ClassPool> classPoolMap = new WeakHashMap<>(3);
 	
 	/**
 	 * Creates one ClassPool per ClassLoader and caches it

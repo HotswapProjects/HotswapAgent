@@ -5,7 +5,6 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.util.Map;
 import java.util.UUID;
 
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
@@ -41,8 +40,9 @@ public abstract class AbstractProxyTransformer {
 	protected byte[] classfileBuffer;
 	protected Map<Class<?>, TransformationState> transformationStates;
 	protected String javaClassName;
-	protected ClassPool cp;
+	protected ClassLoader loader;
 	public static boolean addThirdStep = false;
+	private ParentLastClassLoader parentLastClassLoader;
 	
 	/**
 	 * 
@@ -57,13 +57,13 @@ public abstract class AbstractProxyTransformer {
 	 * @param transformationStates
 	 *            holds TransformationState for multistep classredefinition
 	 */
-	public AbstractProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
+	public AbstractProxyTransformer(Class<?> classBeingRedefined, byte[] classfileBuffer, ClassLoader loader,
 			Map<Class<?>, TransformationState> transformationStates) {
-		this.javaClassName = cc.getName();
+		this.javaClassName = classBeingRedefined.getName();
 		this.classBeingRedefined = classBeingRedefined;
 		this.classfileBuffer = classfileBuffer;
 		this.transformationStates = transformationStates;
-		this.cp = cp;
+		this.loader = loader;
 	}
 	
 	/**
@@ -91,7 +91,16 @@ public abstract class AbstractProxyTransformer {
 	 * @return
 	 */
 	private boolean isTransformingNeeded() {
-		return ClassfileSignatureComparer.isPoolClassOrParentDifferent(classBeingRedefined, cp);
+		return ClassfileSignatureComparer.isPoolClassOrParentDifferent(classBeingRedefined, getNewClassLoader());
+	}
+	
+	/**
+	 * @return
+	 */
+	protected ClassLoader getNewClassLoader() {
+		if (parentLastClassLoader == null)
+			parentLastClassLoader = new ParentLastClassLoader(loader);
+		return parentLastClassLoader;
 	}
 	
 	/**
@@ -169,7 +178,7 @@ public abstract class AbstractProxyTransformer {
 	 * @throws Exception
 	 */
 	protected CtClass getCtClass(byte[] newByteCode) throws Exception {
-		return cp.makeClass(new ByteArrayInputStream(newByteCode), false);
+		return ProxyTransformationUtils.createClassPool(loader).makeClass(new ByteArrayInputStream(newByteCode), false);
 	}
 	
 	/**

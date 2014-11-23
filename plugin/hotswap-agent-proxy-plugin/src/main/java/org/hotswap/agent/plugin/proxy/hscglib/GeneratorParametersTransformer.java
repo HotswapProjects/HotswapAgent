@@ -1,8 +1,11 @@
 package org.hotswap.agent.plugin.proxy.hscglib;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
@@ -22,6 +25,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  */
 public class GeneratorParametersTransformer {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(GeneratorParametersTransformer.class);
+	private static Map<ClassLoader, WeakReference<Map<String, GeneratorParams>>> classLoaderMaps = new WeakHashMap<ClassLoader, WeakReference<Map<String, GeneratorParams>>>();
 	
 	/**
 	 * Add plugin init calls and byte generation parameter storing
@@ -85,9 +89,25 @@ public class GeneratorParametersTransformer {
 	@SuppressWarnings("unchecked")
 	public static Map<String, GeneratorParams> getGeneratorParams(ClassLoader loader) {
 		try {
-			return (Map<String, GeneratorParams>) loader
-					.loadClass("org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersRecorder")
-					.getField("generatorParams").get(null);
+			WeakReference<Map<String, GeneratorParams>> mapRef = classLoaderMaps.get(loader);
+			if (mapRef == null) {
+				synchronized (classLoaderMaps) {
+					if (mapRef == null) {
+						mapRef = classLoaderMaps.get(loader);
+						Map<String, GeneratorParams> map = (Map<String, GeneratorParams>) loader
+								.loadClass("org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersRecorder")
+								.getField("generatorParams").get(null);
+						mapRef = new WeakReference<Map<String, GeneratorParams>>(map);
+						classLoaderMaps.put(loader, mapRef);
+						
+					}
+				}
+			}
+			Map<String, GeneratorParams> map = mapRef.get();
+			if (map == null) {
+				return new HashMap<>();
+			}
+			return map;
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException
 				| ClassNotFoundException e) {
 			LOGGER.error("Unable to access field with proxy generation parameters. Proxy redefinition failed.");

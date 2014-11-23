@@ -20,6 +20,8 @@ public class JavaClassSignature {
 	public static String get(Class<?> cc) {
 		List<String> strings = new ArrayList<>();
 		for (Method method : cc.getDeclaredMethods()) {
+			if (java.lang.reflect.Modifier.isPrivate(method.getModifiers()))
+				continue;
 			strings.add(getMethodString(method));
 		}
 		for (Class<?> iClass : cc.getInterfaces()) {

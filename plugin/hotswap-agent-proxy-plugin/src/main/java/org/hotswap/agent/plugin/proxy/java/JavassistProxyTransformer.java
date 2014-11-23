@@ -1,10 +1,12 @@
 package org.hotswap.agent.plugin.proxy.java;
 
+import java.io.ByteArrayInputStream;
 import java.lang.instrument.IllegalClassFormatException;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.proxy.ProxyTransformationUtils;
 import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 
 /**
@@ -28,11 +30,14 @@ public class JavassistProxyTransformer {
 	 * @throws IllegalClassFormatException
 	 */
 	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
-	public static byte[] transform(final Class<?> classBeingRedefined, final CtClass cc, ClassPool cp,
-			byte[] classfileBuffer) {
+	public static byte[] transform(final Class<?> classBeingRedefined, byte[] classfileBuffer, ClassLoader loader) {
 		try {
-			if (!isProxy(classBeingRedefined.getName())
-					|| !ClassfileSignatureComparer.isPoolClassOrParentDifferent(classBeingRedefined, cp)) {
+			if (!isProxy(classBeingRedefined.getName()))
+				return classfileBuffer;
+			
+			ClassPool cp = ProxyTransformationUtils.createClassPool(loader);
+			CtClass cc = cp.makeClass(new ByteArrayInputStream(classfileBuffer));
+			if (!ClassfileSignatureComparer.isPoolClassOrParentDifferent(classBeingRedefined, cp)) {
 				return classfileBuffer;
 			}
 			byte[] generateProxyClass = CtClassJavaProxyGenerator.generateProxyClass(classBeingRedefined.getName(),
@@ -45,7 +50,7 @@ public class JavassistProxyTransformer {
 		}
 	}
 	
-	private static boolean isProxy(String className) {
+	public static boolean isProxy(String className) {
 		return className.startsWith("com.sun.proxy.$Proxy");
 	}
 }

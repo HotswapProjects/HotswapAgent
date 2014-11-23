@@ -22,7 +22,8 @@ public class CtClassSignature {
 		List<MethodInfo> methods = cc.getClassFile().getMethods();
 		List<String> strings = new ArrayList<>();
 		for (MethodInfo method : methods) {
-			if (method.getName().equals("<init>") || method.getName().equals("<clinit>"))
+			if (method.getName().equals("<init>") || method.getName().equals("<clinit>")
+					|| (method.getAccessFlags() & org.hotswap.agent.javassist.bytecode.AccessFlag.PRIVATE) != 0)
 				continue;
 			strings.add(getMethodString(method));
 		}

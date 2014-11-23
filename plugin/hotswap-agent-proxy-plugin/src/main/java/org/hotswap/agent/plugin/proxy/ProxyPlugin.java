@@ -7,13 +7,11 @@ import java.lang.instrument.IllegalClassFormatException;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersTransformer;
-import org.hotswap.agent.plugin.proxy.java.JavaProxyTransformer;
-import org.hotswap.agent.plugin.proxy.java.JavassistProxyTransformer;
+import org.hotswap.agent.plugin.proxy.java.NewClassLoaderJavaProxyTransformer;
 
 /**
  * Redefines proxy classes that implement or extend changed interfaces or classes. Currently it supports proxies created
@@ -36,19 +34,12 @@ public class ProxyPlugin {
 	@OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
 	public static byte[] transformRedefinitions(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
 			final ClassLoader loader) throws IllegalClassFormatException, IOException, RuntimeException {
-		// load the class in the pool for ClassfileSignatureComparer and JavassistProxyTransformer
-		ClassPool cp = ProxyTransformationUtils.getClassPool(loader);
-		CtClass cc = cp.makeClass(new ByteArrayInputStream(classfileBuffer), false);
-		
-		byte[] result = classfileBuffer;
-		
-		boolean useJavassistProxyTransformer = true;
-		if (useJavassistProxyTransformer) {
-			result = JavassistProxyTransformer.transform(classBeingRedefined, cc, cp, result);
-		} else {
-			result = JavaProxyTransformer.transform(classBeingRedefined, cc, cp, result);
+		if (NewClassLoaderJavaProxyTransformer.isProxy(classBeingRedefined.getName())) {
+			return NewClassLoaderJavaProxyTransformer.transform(classBeingRedefined, classfileBuffer, loader);
+		} else if (CglibProxyTransformer.isProxy(loader, classBeingRedefined.getName())) {
+			return CglibProxyTransformer.transform(classBeingRedefined, classfileBuffer, loader);
 		}
-		return CglibProxyTransformer.transform(classBeingRedefined, cc, cp, result, loader);
+		return classfileBuffer;
 	}
 	
 	/**
@@ -62,7 +53,7 @@ public class ProxyPlugin {
 		try {
 			return GeneratorParametersTransformer.transform(cc);
 		} finally {
-			// we dont need to store defined CtClass-es in the pool
+			// we dont need to store the defined CtClass-es in the pool
 			cc.detach();
 		}
 	}

@@ -2,9 +2,10 @@ package org.hotswap.agent.plugin.proxy.hscglib;
 
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.Method;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.plugin.proxy.AbstractProxyTransformer;
@@ -19,8 +20,8 @@ import org.hotswap.agent.plugin.proxy.TransformationState;
  */
 public class CglibProxyTransformer extends AbstractProxyTransformer {
 	// Class transformation states for all the ClassLoaders. Used in the Agent ClassLoader
-	private static final ConcurrentHashMap<Class<?>, TransformationState> TRANSFORMATION_STATES = new ConcurrentHashMap<Class<?>, TransformationState>();
-	private ClassLoader loader;
+	private static final Map<Class<?>, TransformationState> TRANSFORMATION_STATES = Collections
+			.synchronizedMap(new WeakHashMap<Class<?>, TransformationState>());
 	
 	/**
 	 * 
@@ -35,10 +36,8 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 	 * @return classfileBuffer or new Proxy defition if there are signature changes
 	 * @throws IllegalClassFormatException
 	 */
-	public CglibProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
-			ClassLoader loader) {
-		super(classBeingRedefined, cc, cp, classfileBuffer, TRANSFORMATION_STATES);
-		this.loader = loader;
+	public CglibProxyTransformer(Class<?> classBeingRedefined, byte[] classfileBuffer, ClassLoader loader) {
+		super(classBeingRedefined, classfileBuffer, loader, TRANSFORMATION_STATES);
 	}
 	
 	/**
@@ -54,13 +53,17 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 	 * @return classfileBuffer or new Proxy defition if there are signature changes
 	 * @throws IllegalClassFormatException
 	 */
-	public static byte[] transform(Class<?> classBeingRedefined, CtClass cc, ClassPool cp, byte[] classfileBuffer,
-			ClassLoader loader) throws IllegalClassFormatException {
-		return new CglibProxyTransformer(classBeingRedefined, cc, cp, classfileBuffer, loader).transform();
+	public static byte[] transform(Class<?> classBeingRedefined, byte[] classfileBuffer, ClassLoader loader)
+			throws IllegalClassFormatException {
+		return new CglibProxyTransformer(classBeingRedefined, classfileBuffer, loader).transform();
 	}
 	
 	@Override
 	protected boolean isProxy() {
+		return isProxy(loader, javaClassName);
+	}
+	
+	public static boolean isProxy(ClassLoader loader, String javaClassName) {
 		return GeneratorParametersTransformer.getGeneratorParams(loader).containsKey(javaClassName);
 	}
 	
@@ -90,7 +93,7 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 		if (genMethod == null)
 			throw new RuntimeException("No generation Method found for redefinition!");
 		if (isGeneratedByEnhancer(param)) {
-			return new EnhancerCreater(param, loader).create();
+			return new EnhancerCreater(param, getNewClassLoader()).create();
 		}
 		
 		return (byte[]) genMethod.invoke(param.getGenerator(), param.getParam());
