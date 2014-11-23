@@ -156,6 +156,9 @@ public class AddMethodProxyTest {
 		Method method = getMethod(a, "getValue2");
 		assertEquals("getValue2", method.getName());
 		assertEquals(2, method.invoke(a, null));
+		method = getMethod(a, "getValue33");
+		assertEquals("getValue33", method.getName());
+		assertEquals(2, method.invoke(a, new Object[] { new Object[] { new Object() } }));
 	}
 	
 	private Method getMethod(Object a, String methodName) {
