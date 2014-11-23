@@ -1,5 +1,8 @@
 package org.hotswap.agent.plugin.proxy;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,5 +53,29 @@ public class ProxyTransformationUtils {
 			cp.appendClassPath(new LoaderClassPath(classLoader));
 		}
 		return cp;
+	}
+	
+	private static final int BUFFER_SIZE = 8192;
+	
+	public static byte[] copyToByteArray(InputStream in) throws IOException {
+		ByteArrayOutputStream out = new ByteArrayOutputStream(BUFFER_SIZE);
+		try {
+			byte[] buffer = new byte[BUFFER_SIZE];
+			int bytesRead = -1;
+			while ((bytesRead = in.read(buffer)) != -1) {
+				out.write(buffer, 0, bytesRead);
+			}
+			out.flush();
+			return out.toByteArray();
+		} finally {
+			try {
+				in.close();
+			} catch (IOException ex) {
+			}
+			try {
+				out.close();
+			} catch (IOException ex) {
+			}
+		}
 	}
 }

@@ -16,16 +16,18 @@ import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 /**
  * Transforms proxy instances.
  * 
- * Takes 2 steps to transform a proxy unless instructed to add a third step through the public static field
- * addThirdStep.
+ * Takes 1 or 2 redefinition events to transform a proxy unless instructed to add a third step through the public static
+ * field addThirdStep.
  * 
- * The new Proxy is created with original App classloader instances (both the generator and parameters are reused, their
- * classes untouched). During the first step it is checked if the signature has changed. If it has, a second
- * redefinition event is triggered, because we can't see the changes to java Class files before the redefined class has
- * loaded.
+ * With a 2 step transformation, the new Proxy is created with original App classloader instances (both the generator
+ * and parameters are reused, their classes untouched). During the first step it is checked if the signature has
+ * changed. If it has, a second redefinition event is triggered.
  * 
  * During the second step, the new bytecode is generated. Static field initialization code is added to the beginning of
  * methods along with a new randomly named static field holding state of initilization.
+ * 
+ * 1 step transformation is usually done using a new ParentLastClassLoader instance. Needs a specific implementation for
+ * the method handleNewClass, to skip the second event
  * 
  * @author Erki Ehtla
  * 
@@ -112,11 +114,7 @@ public abstract class AbstractProxyTransformer {
 				if (!isTransformingNeeded()) {
 					return classfileBuffer;
 				}
-				setClassAsWaiting();
-				// We can't do the transformation in this event, because we can't see the changes in the class
-				// definitons. Schedule a new redefinition event.
-				scheduleRedefinition();
-				return classfileBuffer;
+				return handleNewClass();
 			case WAITING:
 				classfileBuffer = generateNewProxyClass();
 				if (addThirdStep) {
@@ -124,7 +122,6 @@ public abstract class AbstractProxyTransformer {
 					scheduleRedefinition();
 				} else
 					removeClassState();
-				LOGGER.reload("Class '{}' has been reloaded.", javaClassName);
 				return classfileBuffer;
 			case FINISHED:
 				removeClassState();
@@ -134,8 +131,16 @@ public abstract class AbstractProxyTransformer {
 		}
 	}
 	
+	protected byte[] handleNewClass() throws Exception {
+		setClassAsWaiting();
+		// We can't do the transformation in this event, because we can't see the changes in the class
+		// definitons. Schedule a new redefinition event.
+		scheduleRedefinition();
+		return classfileBuffer;
+	}
+	
 	/**
-	 * Builds a new Proxy class with init code, which is executed with the first call on any method
+	 * Builds a new Proxy class with initialization code, which is executed during the first call on any method
 	 * 
 	 * @return bytecode of the new Class
 	 * @throws Exception
@@ -151,8 +156,9 @@ public abstract class AbstractProxyTransformer {
 		String method = getInitCall(cc, random);
 		
 		addInitCallToMethods(cc, initFieldName, method);
-		
-		return cc.toBytecode();
+		byte[] bytecode = cc.toBytecode();
+		LOGGER.reload("Class '{}' has been reloaded.", javaClassName);
+		return bytecode;
 	}
 	
 	/**
@@ -167,7 +173,7 @@ public abstract class AbstractProxyTransformer {
 	}
 	
 	/**
-	 * Builds the Java code String which should be executed to initate the proxy
+	 * Builds the Java code String which should be executed to initialize the proxy
 	 * 
 	 * @param cc
 	 *            CtClass from new definition
@@ -213,7 +219,8 @@ public abstract class AbstractProxyTransformer {
 		CtMethod[] methods = cc.getDeclaredMethods();
 		for (CtMethod ctMethod : methods) {
 			if (!ctMethod.isEmpty() && !Modifier.isStatic(ctMethod.getModifiers())) {
-				ctMethod.insertBefore("if(!" + clinitFieldName + "){" + initCall + "}");
+				ctMethod.insertBefore("if(!" + clinitFieldName + "){synchronized(this){if(!" + clinitFieldName + "){"
+						+ initCall + "}}}");
 			}
 		}
 	}

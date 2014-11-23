@@ -34,6 +34,25 @@ public class AddMethodProxyTest {
 	
 	// Version 0
 	public static class AImpl implements A {
+		@Override
+		public int getValue1() {
+			return 1;
+		}
+		
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see com.github.dcevm.test.methods.AddMethodProxyTest.A#getValue1(java.lang.Object[])
+		 */
+		@Override
+		public int getValue3(Object[] o) {
+			return 1;
+		}
+	}
+	
+	// Version 0
+	public static class AImpl___0 implements A___0 {
+		@Override
 		public int getValue1() {
 			return 1;
 		}
@@ -51,6 +70,7 @@ public class AddMethodProxyTest {
 	
 	// Version 1
 	public static class AImpl___1 implements A___1 {
+		@Override
 		public int getValue2() {
 			return 2;
 		}
@@ -63,6 +83,13 @@ public class AddMethodProxyTest {
 	
 	// Version 0
 	public interface A {
+		public int getValue1();
+		
+		public int getValue3(Object[] o);
+	}
+	
+	// Version 0
+	public interface A___0 {
 		public int getValue1();
 		
 		public int getValue3(Object[] o);

@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -18,21 +17,17 @@ import org.springframework.cglib.proxy.MethodProxy;
 
 public class AddEnhancerMethodProxyTest {
 	
-	static public class DummyHandler implements InvocationHandler {
-		private Object a;
-		
-		public DummyHandler(Object a) {
-			this.a = a;
-		}
-		
+	// Version 0
+	public static class AImpl implements A {
 		@Override
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			return method.invoke(a, args);
+		public int getValue1() {
+			return 1;
 		}
 	}
 	
 	// Version 0
-	public static class AImpl implements A {
+	public static class AImpl___0 implements A___0 {
+		@Override
 		public int getValue1() {
 			return 1;
 		}
@@ -40,13 +35,15 @@ public class AddEnhancerMethodProxyTest {
 	
 	// Version 1
 	public static class AImpl___1 implements A___1 {
+		@Override
 		public int getValue2() {
 			return 2;
 		}
 	}
 	
-	// Version 1
+	// Version 2
 	public static class AImpl___2 implements A___2 {
+		@Override
 		public int getValue3() {
 			return 3;
 		}
@@ -57,12 +54,17 @@ public class AddEnhancerMethodProxyTest {
 		public int getValue1();
 	}
 	
+	// Version 0
+	public interface A___0 {
+		public int getValue1();
+	}
+	
 	// Version 1
 	public interface A___1 {
 		public int getValue2();
 	}
 	
-	// Version 1
+	// Version 2
 	public interface A___2 {
 		public int getValue3();
 	}
@@ -75,7 +77,6 @@ public class AddEnhancerMethodProxyTest {
 	@Test
 	public void addMethodToInterfaceAndImplementation() throws IllegalAccessException, IllegalArgumentException,
 			InvocationTargetException {
-		
 		assert __version__() == 0;
 		
 		final A a = new AImpl();
@@ -90,11 +91,13 @@ public class AddEnhancerMethodProxyTest {
 	
 	public static class SerializableNoOp implements Serializable, MethodInterceptor {
 		private int count;
+		private AImpl obj = new AImpl();
 		
 		@Override
 		public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
-			count++;
-			return method.invoke(new AImpl(), args);
+			if (method.getName().startsWith("getValue"))
+				count++;
+			return method.invoke(obj, args);
 		}
 		
 		public int getInvocationCount() {
@@ -105,7 +108,6 @@ public class AddEnhancerMethodProxyTest {
 	@Test
 	public void accessNewMethodOnProxy() throws IllegalAccessException, IllegalArgumentException,
 			InvocationTargetException {
-		
 		assert __version__() == 0;
 		
 		SerializableNoOp cb = new SerializableNoOp();
@@ -142,8 +144,6 @@ public class AddEnhancerMethodProxyTest {
 	@Test
 	public void accessNewMethodOnProxyCreatedAfterSwap() throws IllegalAccessException, IllegalArgumentException,
 			InvocationTargetException, IOException {
-		// while (true) {
-		// __toVersion__Delayed(0);
 		assert __version__() == 0;
 		SerializableNoOp cb = new SerializableNoOp();
 		A a = createEnhancer(cb);
@@ -160,7 +160,6 @@ public class AddEnhancerMethodProxyTest {
 		assertEquals(1, cb.getInvocationCount());
 		assertEquals(2, method.invoke(a, null));
 		assertEquals(2, cb.getInvocationCount());
-		// }
 	}
 	
 	private Method getMethod(Object a, String methodName) {

@@ -11,8 +11,8 @@ import org.hotswap.agent.plugin.proxy.AbstractProxyTransformer;
 import org.hotswap.agent.plugin.proxy.TransformationState;
 
 /**
- * AbstractProxyTransformer based Proxy transformer for Cglib proxies. Takes more than one redefinition event to
- * transform a Class
+ * AbstractProxyTransformer based Proxy transformer for Cglib proxies. Takes one redefinition event to transform a
+ * Classc reated with an Enhancer and 2 events for everything else.
  * 
  * @author Erki Ehtla
  * 
@@ -78,7 +78,7 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 		
 		if (strB.length() == 0)
 			throw new RuntimeException("Could not find CGLIB$STATICHOOK method");
-		return strB.toString() + ";CGLIB$BIND_CALLBACKS(this);";
+		return strB.toString() + "CGLIB$BIND_CALLBACKS(this);";
 	}
 	
 	@Override
@@ -86,10 +86,12 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 		GeneratorParams param = GeneratorParametersTransformer.getGeneratorParams(loader).get(javaClassName);
 		if (param == null)
 			throw new RuntimeException("No Parameters found for redefinition!");
-		
 		Method genMethod = getGenerateMethod(param.getGenerator());
 		if (genMethod == null)
 			throw new RuntimeException("No generation Method found for redefinition!");
+		if (isGeneratedByEnhancer(param)) {
+			return new EnhancerCreater(param, loader).create();
+		}
 		
 		return (byte[]) genMethod.invoke(param.getGenerator(), param.getParam());
 	}
@@ -113,5 +115,26 @@ public class CglibProxyTransformer extends AbstractProxyTransformer {
 	
 	public static boolean isReloadingInProgress() {
 		return !TRANSFORMATION_STATES.isEmpty();
+	}
+	
+	@Override
+	protected byte[] handleNewClass() throws Exception {
+		if (isGeneratedByEnhancer()) {
+			return generateNewProxyClass();
+		} else {
+			return super.handleNewClass();
+			
+		}
+	}
+	
+	private boolean isGeneratedByEnhancer() {
+		GeneratorParams generatorParams = GeneratorParametersTransformer.getGeneratorParams(loader).get(javaClassName);
+		if (generatorParams == null)
+			return false;
+		return isGeneratedByEnhancer(generatorParams);
+	}
+	
+	private boolean isGeneratedByEnhancer(GeneratorParams generatorParams) {
+		return generatorParams.getParam().getClass().getName().endsWith(".Enhancer");
 	}
 }

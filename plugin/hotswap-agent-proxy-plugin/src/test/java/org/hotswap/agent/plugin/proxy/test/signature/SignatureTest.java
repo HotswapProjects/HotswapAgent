@@ -29,6 +29,7 @@ public class SignatureTest {
 	
 	public static class C extends B {
 		
+		@Override
 		public int get9() {
 			return 0;
 		}

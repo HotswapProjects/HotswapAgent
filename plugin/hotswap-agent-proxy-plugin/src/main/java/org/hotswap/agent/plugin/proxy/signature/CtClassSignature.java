@@ -19,7 +19,7 @@ import org.hotswap.agent.javassist.bytecode.MethodInfo;
 public class CtClassSignature {
 	public static String get(CtClass cc) {
 		@SuppressWarnings("unchecked")
-		List<MethodInfo> methods = (List<MethodInfo>) cc.getClassFile().getMethods();
+		List<MethodInfo> methods = cc.getClassFile().getMethods();
 		List<String> strings = new ArrayList<>();
 		for (MethodInfo method : methods) {
 			if (method.getName().equals("<init>") || method.getName().equals("<clinit>"))
