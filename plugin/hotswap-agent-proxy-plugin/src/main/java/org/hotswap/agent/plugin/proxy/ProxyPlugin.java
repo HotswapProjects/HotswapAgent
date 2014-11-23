@@ -28,8 +28,6 @@ public class ProxyPlugin {
 	/**
 	 * Transforms the proxies after changes
 	 * 
-	 * We need to have all the changed classes in the ClassPool, so the ClassfileSignatureComparer can determine if a
-	 * classhierarchy has been changed and also for the one-step JavassistProxyTransformer to see the changed interfaces
 	 */
 	@OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
 	public static byte[] transformRedefinitions(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
