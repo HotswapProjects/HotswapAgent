@@ -7,6 +7,7 @@ import java.util.List;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.ExceptionsAttribute;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 
 /**
@@ -23,7 +24,7 @@ public class CtClassSignature {
 		List<String> strings = new ArrayList<>();
 		for (MethodInfo method : methods) {
 			if (method.getName().equals("<init>") || method.getName().equals("<clinit>")
-					|| (method.getAccessFlags() & org.hotswap.agent.javassist.bytecode.AccessFlag.PRIVATE) != 0)
+					|| Modifier.isPrivate(method.getAccessFlags()) || Modifier.isStatic(method.getAccessFlags()))
 				continue;
 			strings.add(getMethodString(method));
 		}
@@ -48,6 +49,25 @@ public class CtClassSignature {
 	
 	private static String getMethodString(MethodInfo method) {
 		return Modifier.toString(method.getAccessFlags()) + " " + getReturnType(method.getDescriptor()) + " "
-				+ method.getName() + Descriptor.toString(method.getDescriptor()) + ";";
+				+ method.getName() + Descriptor.toString(method.getDescriptor())
+				+ toString(method.getExceptionsAttribute()) + ";";
+	}
+	
+	public static String toString(ExceptionsAttribute ea) {
+		if (ea == null || ea.getExceptions() == null)
+			return "[]";
+		
+		int iMax = ea.getExceptions().length - 1;
+		if (iMax == -1)
+			return "[]";
+		
+		StringBuilder b = new StringBuilder();
+		b.append('[');
+		for (int i = 0;; i++) {
+			b.append("class " + ea.getExceptions()[i]);
+			if (i == iMax)
+				return b.append(']').toString();
+			b.append(", ");
+		}
 	}
 }

@@ -2,6 +2,8 @@ package org.hotswap.agent.plugin.proxy.test.signature;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
@@ -136,6 +138,10 @@ public class SignatureTest {
 		
 		@Override
 		public int get8() {
+			return 0;
+		}
+		
+		public int get123() throws IOException, NotFoundException {
 			return 0;
 		}
 	}

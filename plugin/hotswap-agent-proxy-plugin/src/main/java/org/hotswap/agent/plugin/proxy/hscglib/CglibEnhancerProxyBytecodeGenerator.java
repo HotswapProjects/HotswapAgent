@@ -5,20 +5,23 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.hotswap.agent.plugin.proxy.ParentLastClassLoader;
+import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
- * Creates a new Cglib proxy with an Enhancer. Uses Classes loaded with a new ParentLastClassLoader instance.
+ * Creates a new bytecode for a Cglib Enhancer proxy. Uses Classes loaded with a new instance of ParentLastClassLoader.
  * 
  * @author Erki Ehtla
  * 
  */
-public class EnhancerCreater {
+
+public class CglibEnhancerProxyBytecodeGenerator implements ProxyBytecodeGenerator {
 	
 	private GeneratorParams param;
 	private ClassLoader classLoader;
-	private Class<?> enhancerClass;
-	private Object enhancer;
+	private Class<?> generatorClass;
+	private Object generator;
 	private Class<?> abstractGeneratorClass;
 	
 	/**
@@ -28,12 +31,12 @@ public class EnhancerCreater {
 	 * @param classLoader
 	 *            Enhancer classloader
 	 */
-	public EnhancerCreater(GeneratorParams param, ClassLoader classLoader) {
+	public CglibEnhancerProxyBytecodeGenerator(GeneratorParams param, ClassLoader classLoader) {
 		this.param = param;
-		this.classLoader = classLoader;
-		this.enhancer = param.getParam();
-		this.enhancerClass = enhancer.getClass();
-		this.abstractGeneratorClass = enhancerClass.getSuperclass();
+		this.classLoader = new ParentLastClassLoader(classLoader);
+		this.generator = param.getParam();
+		this.generatorClass = generator.getClass();
+		this.abstractGeneratorClass = generatorClass.getSuperclass();
 	}
 	
 	private static class FieldState {
@@ -52,20 +55,21 @@ public class EnhancerCreater {
 	 * @return bytecode of the new proxy class
 	 * @throws Exception
 	 */
-	public byte[] create() throws Exception {
+	@Override
+	public byte[] generate() throws Exception {
 		Collection<FieldState> oldClassValues = getFieldValuesWithClasses();
-		ClassLoader oldClassLoader = (ClassLoader) ReflectionHelper.get(enhancer, "classLoader");
-		Boolean oldUseCache = (Boolean) ReflectionHelper.get(enhancer, "useCache");
+		ClassLoader oldClassLoader = (ClassLoader) ReflectionHelper.get(generator, "classLoader");
+		Boolean oldUseCache = (Boolean) ReflectionHelper.get(generator, "useCache");
 		try {
-			ReflectionHelper.set(enhancer, abstractGeneratorClass, "classLoader", classLoader);
-			ReflectionHelper.set(enhancer, abstractGeneratorClass, "useCache", Boolean.FALSE);
+			ReflectionHelper.set(generator, abstractGeneratorClass, "classLoader", classLoader);
+			ReflectionHelper.set(generator, abstractGeneratorClass, "useCache", Boolean.FALSE);
 			setFieldValuesWithNewLoadedClasses(oldClassValues);
-			
-			return (byte[]) ReflectionHelper.invoke(param.getGenerator(), param.getGenerator().getClass(), "generate",
-					new Class[] { getGeneratorInterfaceClass() }, enhancer);
+			byte[] invoke = (byte[]) ReflectionHelper.invoke(param.getGenerator(), param.getGenerator().getClass(),
+					"generate", new Class[] { getGeneratorInterfaceClass() }, generator);
+			return invoke;
 		} finally {
-			ReflectionHelper.set(enhancer, abstractGeneratorClass, "classLoader", oldClassLoader);
-			ReflectionHelper.set(enhancer, abstractGeneratorClass, "useCache", oldUseCache);
+			ReflectionHelper.set(generator, abstractGeneratorClass, "classLoader", oldClassLoader);
+			ReflectionHelper.set(generator, abstractGeneratorClass, "useCache", oldUseCache);
 			setFieldValues(oldClassValues);
 		}
 	}
@@ -85,37 +89,52 @@ public class EnhancerCreater {
 	
 	private void setFieldValues(Collection<FieldState> fieldStates) throws IllegalAccessException {
 		for (FieldState fieldState : fieldStates) {
-			fieldState.field.set(enhancer, fieldState.fieldValue);
+			fieldState.field.set(generator, fieldState.fieldValue);
 		}
 	}
 	
+	/**
+	 * replaces fields with Class values with new classes loaded by a ParentLastClassLoader
+	 * 
+	 * @param fieldStates
+	 * @throws IllegalAccessException
+	 * @throws ClassNotFoundException
+	 */
 	private void setFieldValuesWithNewLoadedClasses(Collection<FieldState> fieldStates) throws IllegalAccessException,
 			ClassNotFoundException {
 		for (FieldState fieldState : fieldStates) {
-			fieldState.field.set(enhancer, loadFromClassloader(fieldState.fieldValue));
+			fieldState.field.set(generator, loadFromClassloader(fieldState.fieldValue));
 		}
 	}
 	
 	private Collection<FieldState> getFieldValuesWithClasses() throws IllegalAccessException {
 		Collection<FieldState> classValueFields = new ArrayList<FieldState>();
 		
-		Field[] fields = enhancerClass.getDeclaredFields();
+		Field[] fields = generatorClass.getDeclaredFields();
 		for (Field field : fields) {
 			if (!Modifier.isStatic(field.getModifiers())
 					&& (field.getType().isInstance(Class.class) || field.getType().isInstance(Class[].class))) {
 				field.setAccessible(true);
-				classValueFields.add(new FieldState(field, field.get(enhancer)));
+				classValueFields.add(new FieldState(field, field.get(generator)));
 			}
 		}
 		return classValueFields;
 	}
 	
+	/**
+	 * Load classes from ParentLastClassLoader
+	 * 
+	 * @param fieldState
+	 * @return
+	 * @throws ClassNotFoundException
+	 */
 	private Object loadFromClassloader(Object fieldState) throws ClassNotFoundException {
 		if (fieldState instanceof Class[]) {
 			Class<?>[] classes = ((Class[]) fieldState);
 			Class<?>[] newClasses = new Class[classes.length];
 			for (int i = 0; i < classes.length; i++) {
-				newClasses[i] = classLoader.loadClass(classes[i].getName());
+				Class<?> loadClass = classLoader.loadClass(classes[i].getName());
+				newClasses[i] = loadClass;
 			}
 			return newClasses;
 		} else {

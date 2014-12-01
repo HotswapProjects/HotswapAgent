@@ -23,8 +23,8 @@
  */
 package org.hotswap.agent.plugin.proxy.test.util;
 
-import org.hotswap.agent.plugin.proxy.AbstractProxyTransformer;
 import org.hotswap.agent.plugin.proxy.HotSwapTool;
+import org.hotswap.agent.plugin.proxy.MultistepProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.java.JavaProxyTransformer;
 import org.hotswap.agent.util.test.WaitHelper;
@@ -56,7 +56,7 @@ public class HotSwapTestHelper {
 	 *            the target version number
 	 */
 	public static void __toVersion__Delayed(int versionNumber, Class<?>... extra) {
-		AbstractProxyTransformer.addThirdStep = true;
+		MultistepProxyTransformer.addThirdStep = true;
 		HotSwapTool.toVersion(determineOuter(0), versionNumber, extra);
 		// allow time for multiple redefinitions
 		WaitHelper.waitForCommand(new WaitHelper.Command() {
@@ -71,7 +71,7 @@ public class HotSwapTestHelper {
 		// // TODO Auto-generated catch block
 		// e.printStackTrace();
 		// }
-		AbstractProxyTransformer.addThirdStep = false;
+		MultistepProxyTransformer.addThirdStep = false;
 	}
 	
 	/**

@@ -53,6 +53,12 @@ import sun.security.action.GetBooleanAction;
  * @author Peter Jones
  * @since 1.3
  */
+/**
+ * Added static field init-code to proxy methods
+ * 
+ * @author Erki Ehtla
+ * 
+ */
 public class ProxyGenerator {
 	/*
 	 * In the comments below, "JVMS" refers to The Java Virtual Machine Specification Second Edition and "JLS" refers to

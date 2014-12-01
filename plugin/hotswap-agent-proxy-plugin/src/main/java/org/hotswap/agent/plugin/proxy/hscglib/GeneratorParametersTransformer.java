@@ -1,21 +1,16 @@
 package org.hotswap.agent.plugin.proxy.hscglib;
 
-import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.proxy.ProxyPlugin;
-import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
  * Inits plugin and adds byte generation parameter storing
@@ -25,35 +20,26 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  */
 public class GeneratorParametersTransformer {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(GeneratorParametersTransformer.class);
-	private static Map<ClassLoader, WeakReference<Map<String, GeneratorParams>>> classLoaderMaps = new WeakHashMap<ClassLoader, WeakReference<Map<String, GeneratorParams>>>();
+	private static Map<ClassLoader, WeakReference<Map<String, Object>>> classLoaderMaps = new WeakHashMap<ClassLoader, WeakReference<Map<String, Object>>>();
 	
 	/**
 	 * Add plugin init calls and byte generation parameter storing
 	 * 
 	 * @param cc
 	 * @return
+	 * @throws Exception
 	 */
-	// @OnClassLoadEvent(classNameRegexp = ".*cglib.*", events = LoadEvent.DEFINE)
-	public static byte[] transform(CtClass cc) {
-		try {
-			if (isGeneratorStrategy(cc)) {
-				String initalizer = "{" + PluginManagerInvoker.buildInitializePlugin(ProxyPlugin.class) + "}";
-				cc.defrost();
-				for (CtConstructor constructor : cc.getDeclaredConstructors()) {
-					constructor.insertAfter(initalizer);
+	public static CtClass transform(CtClass cc) throws Exception {
+		if (isGeneratorStrategy(cc)) {
+			for (CtMethod method : cc.getDeclaredMethods()) {
+				if (!Modifier.isAbstract(method.getModifiers()) && method.getName().equals("generate")
+						&& method.getMethodInfo().getDescriptor().endsWith(";)[B")) {
+					cc.defrost();
+					method.insertAfter("org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersRecorder.register($0, $1, $_);");
 				}
-				for (CtMethod method : cc.getDeclaredMethods()) {
-					if (!Modifier.isAbstract(method.getModifiers()) && method.getName().equals("generate")
-							&& method.getMethodInfo().getDescriptor().endsWith("[B")) {
-						method.insertAfter("org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersRecorder.register($0, $1, $_);");
-					}
-				}
-				return cc.toBytecode();
 			}
-		} catch (RuntimeException | CannotCompileException | IOException e) {
-			LOGGER.error("error modifying class for cglib proxy creation parameter recording", e);
 		}
-		return null;
+		return cc;
 	}
 	
 	/**
@@ -81,29 +67,28 @@ public class GeneratorParametersTransformer {
 	}
 	
 	/**
-	 * Retrieves Class name, GeneratorParams Map from within a classloader
+	 * Retrieves GeneratorParams Map from within a ClassLoader
 	 * 
 	 * @param loader
 	 * @return Map of Class names and parameters used for Proxy creation
 	 */
 	@SuppressWarnings("unchecked")
-	public static Map<String, GeneratorParams> getGeneratorParams(ClassLoader loader) {
+	private static Map<String, Object> getGeneratorParamsMap(ClassLoader loader) {
 		try {
-			WeakReference<Map<String, GeneratorParams>> mapRef = classLoaderMaps.get(loader);
+			WeakReference<Map<String, Object>> mapRef = classLoaderMaps.get(loader);
 			if (mapRef == null) {
 				synchronized (classLoaderMaps) {
 					if (mapRef == null) {
 						mapRef = classLoaderMaps.get(loader);
-						Map<String, GeneratorParams> map = (Map<String, GeneratorParams>) loader
-								.loadClass("org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersRecorder")
-								.getField("generatorParams").get(null);
-						mapRef = new WeakReference<Map<String, GeneratorParams>>(map);
+						Map<String, Object> map = (Map<String, Object>) loader
+								.loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
+								.get(null);
+						mapRef = new WeakReference<Map<String, Object>>(map);
 						classLoaderMaps.put(loader, mapRef);
-						
 					}
 				}
 			}
-			Map<String, GeneratorParams> map = mapRef.get();
+			Map<String, Object> map = mapRef.get();
 			if (map == null) {
 				return new HashMap<>();
 			}
@@ -113,5 +98,25 @@ public class GeneratorParametersTransformer {
 			LOGGER.error("Unable to access field with proxy generation parameters. Proxy redefinition failed.");
 			throw new RuntimeException(e);
 		}
+	}
+	
+	/**
+	 * Retrieves GeneratorParams from within a ClassLoader
+	 * 
+	 * @param loader
+	 * @param name
+	 *            CLass name
+	 * @return GeneratorParams instance in this ClassLoader
+	 */
+	public static GeneratorParams getGeneratorParams(ClassLoader loader, String name) {
+		Object generatorParams = getGeneratorParamsMap(loader).get(name);
+		if (generatorParams != null) {
+			try {
+				return GeneratorParams.valueOf(generatorParams);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return null;
 	}
 }

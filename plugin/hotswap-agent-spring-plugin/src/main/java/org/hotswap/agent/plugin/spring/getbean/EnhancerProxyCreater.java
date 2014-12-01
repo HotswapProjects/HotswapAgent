@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring.getbean;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.ProtectionDomain;
 
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
@@ -20,21 +21,31 @@ import org.hotswap.agent.logging.AgentLogger;
  * 
  */
 public class EnhancerProxyCreater {
+	
 	private static AgentLogger LOGGER = AgentLogger.getLogger(EnhancerProxyCreater.class);
+	private static EnhancerProxyCreater INSTANCE;
 	public static final String SPRING_PACKAGE = "org.springframework.cglib.";
 	public static final String CGLIB_PACKAGE = "net.sf.cglib.";
-	private static Class<?> springProxy;
-	private static Class<?> springCallback;
-	private static Class<?> springNamingPolicy;
-	private static volatile Method createSpringProxy;
-	private static Class<?> cglibProxy;
-	private static Class<?> cglibCallback;
-	private static Class<?> cglibNamingPolicy;
-	private static volatile Method createCglibProxy;
-	private static Object springLock = new Object();
-	private static Object cglibLock = new Object();
-	private static Object cpLock = new Object();
-	private static volatile ClassPool cp;
+	
+	private Class<?> springProxy;
+	private Class<?> springCallback;
+	private Class<?> springNamingPolicy;
+	private Method createSpringProxy;
+	private Class<?> cglibProxy;
+	private Class<?> cglibCallback;
+	private Class<?> cglibNamingPolicy;
+	private Method createCglibProxy;
+	
+	private Object springLock = new Object();
+	private Object cglibLock = new Object();
+	private final ClassLoader loader;
+	private final ProtectionDomain pd;
+	
+	public EnhancerProxyCreater(ClassLoader loader, ProtectionDomain pd) {
+		super();
+		this.loader = loader;
+		this.pd = pd;
+	}
 	
 	public static boolean isSupportedCglibProxy(Object bean) {
 		if (bean == null) {
@@ -60,47 +71,58 @@ public class EnhancerProxyCreater {
 	 *            ProxyReplacer.FACTORY_METHOD_NAME
 	 * @return
 	 */
-	public static Object create(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+	public static Object createProxy(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+		if (INSTANCE == null) {
+			INSTANCE = new EnhancerProxyCreater(bean.getClass().getClassLoader(), bean.getClass().getProtectionDomain());
+		}
+		return INSTANCE.create(beanFactry, bean, paramClasses, paramValues);
+	}
+	
+	private Object create(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
 		try {
-			String beanClassName = bean.getClass().getName();
-			if (beanClassName.contains("$$EnhancerBySpringCGLIB")) {
-				if (createSpringProxy == null) {
-					synchronized (springLock) {
-						if (createSpringProxy == null) {
-							ClassPool cp = getCp(bean.getClass().getClassLoader());
-							springCallback = buildProxyCallbackClass(SPRING_PACKAGE, cp, bean);
-							springNamingPolicy = buildNamingPolicyClass(SPRING_PACKAGE, cp, bean);
-							springProxy = buildProxyCreaterClass(SPRING_PACKAGE, springCallback.getName(),
-									springNamingPolicy.getName(), cp, bean);
-							createSpringProxy = springProxy.getDeclaredMethods()[0];
-							cp = null;
-						}
-					}
-				}
-				return createSpringProxy.invoke(null, beanFactry, bean, paramClasses, paramValues);
-			} else if (beanClassName.contains("$$EnhancerByCGLIB")) {
-				if (createCglibProxy == null) {
-					synchronized (cglibLock) {
-						if (createCglibProxy == null) {
-							ClassPool cp = getCp(beanFactry.getClass().getClassLoader());
-							cglibCallback = buildProxyCallbackClass(CGLIB_PACKAGE, cp, bean);
-							cglibNamingPolicy = buildNamingPolicyClass(CGLIB_PACKAGE, cp, bean);
-							cglibProxy = buildProxyCreaterClass(CGLIB_PACKAGE, cglibCallback.getName(),
-									cglibNamingPolicy.getName(), cp, bean);
-							createCglibProxy = cglibProxy.getDeclaredMethods()[0];
-							cp = null;
-						}
-					}
-				}
-				return createCglibProxy.invoke(null, beanFactry, bean, paramClasses, paramValues);
-			} else {
-				LOGGER.error("Unable to determine the location of the Cglib package");
+			Method proxyCreater = getProxyCreationMethod(bean);
+			if (proxyCreater == null) {
 				return bean;
 			}
+			return proxyCreater.invoke(null, beanFactry, bean, paramClasses, paramValues);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | CannotCompileException
 				| NotFoundException e) {
 			LOGGER.error("Creating a proxy failed", e);
 			throw new RuntimeException(e);
+		}
+	}
+	
+	private Method getProxyCreationMethod(Object bean) throws CannotCompileException, NotFoundException {
+		String beanClassName = bean.getClass().getName();
+		if (beanClassName.contains("$$EnhancerBySpringCGLIB")) {
+			if (createSpringProxy == null) {
+				synchronized (springLock) {
+					if (createSpringProxy == null) {
+						ClassPool cp = getCp(loader);
+						springCallback = buildProxyCallbackClass(SPRING_PACKAGE, cp);
+						springNamingPolicy = buildNamingPolicyClass(SPRING_PACKAGE, cp);
+						springProxy = buildProxyCreaterClass(SPRING_PACKAGE, springCallback, springNamingPolicy, cp);
+						createSpringProxy = springProxy.getDeclaredMethods()[0];
+					}
+				}
+			}
+			return createSpringProxy;
+		} else if (beanClassName.contains("$$EnhancerByCGLIB")) {
+			if (createCglibProxy == null) {
+				synchronized (cglibLock) {
+					if (createCglibProxy == null) {
+						ClassPool cp = getCp(loader);
+						cglibCallback = buildProxyCallbackClass(CGLIB_PACKAGE, cp);
+						cglibNamingPolicy = buildNamingPolicyClass(CGLIB_PACKAGE, cp);
+						cglibProxy = buildProxyCreaterClass(CGLIB_PACKAGE, cglibCallback, cglibNamingPolicy, cp);
+						createCglibProxy = cglibProxy.getDeclaredMethods()[0];
+					}
+				}
+			}
+			return createSpringProxy;
+		} else {
+			LOGGER.error("Unable to determine the location of the Cglib package");
+			return null;
 		}
 	}
 	
@@ -112,17 +134,20 @@ public class EnhancerProxyCreater {
 	 * 
 	 * @param cglibPackage
 	 *            Cglib Package name
+	 * @param cglibNamingPolicy2
+	 * @param cglibCallback2
 	 * @param callback
 	 *            Callback class used for Enhancer
 	 * @param namingPolicy
 	 *            NamingPolicy class used for Enhancer
+	 * @param cp
 	 * @param classLoader
 	 * @return Class that creates proxies via method "public static Object create(Object beanFactry, Object bean,
 	 *         Class[] classes, Object[] params)"
 	 * @throws CannotCompileException
 	 */
-	private static Class<?> buildProxyCreaterClass(String cglibPackage, String callback, String namingPolicy,
-			ClassPool cp, Object bean) throws CannotCompileException {
+	private Class<?> buildProxyCreaterClass(String cglibPackage, Class<?> callback, Class<?> namingPolicy, ClassPool cp)
+			throws CannotCompileException {
 		CtClass ct = cp.makeClass("HotswapAgentSpringBeanProxy" + getClassSuffix(cglibPackage));
 		String proxy = cglibPackage + "proxy.";
 		String core = cglibPackage + "core.";
@@ -142,11 +167,11 @@ public class EnhancerProxyCreater {
 				+ "		e.setNamingPolicy(new {3}());"//
 				+ "		return e.create();"//
 				+ "	}";
-		String body = rawBody.replaceAll("\\{0\\}", proxy).replaceAll("\\{1\\}", core).replaceAll("\\{2\\}", callback)
-				.replaceAll("\\{3\\}", namingPolicy);
+		String body = rawBody.replaceAll("\\{0\\}", proxy).replaceAll("\\{1\\}", core)
+				.replaceAll("\\{2\\}", callback.getName()).replaceAll("\\{3\\}", namingPolicy.getName());
 		CtMethod m = CtNewMethod.make(body, ct);
 		ct.addMethod(m);
-		return ct.toClass(bean.getClass().getClassLoader(), bean.getClass().getProtectionDomain());
+		return ct.toClass(loader, pd);
 	}
 	
 	/**
@@ -155,12 +180,13 @@ public class EnhancerProxyCreater {
 	 * 
 	 * @param cglibPackage
 	 *            Cglib Package name
+	 * @param cp
 	 * @return DefaultNamingPolicy sublass
 	 * @throws CannotCompileException
 	 * @throws NotFoundException
 	 */
-	private static Class<?> buildNamingPolicyClass(String cglibPackage, ClassPool cp, Object bean)
-			throws CannotCompileException, NotFoundException {
+	private Class<?> buildNamingPolicyClass(String cglibPackage, ClassPool cp) throws CannotCompileException,
+			NotFoundException {
 		CtClass ct = cp.makeClass("HotswapAgentSpringNamingPolicy" + getClassSuffix(cglibPackage));
 		String core = cglibPackage + "core.";
 		ct.setSuperclass(cp.get(core + "DefaultNamingPolicy"));
@@ -170,7 +196,7 @@ public class EnhancerProxyCreater {
 		String body = rawBody.replaceAll("\\{0\\}", core);
 		CtMethod m = CtNewMethod.make(body, ct);
 		ct.addMethod(m);
-		return ct.toClass(bean.getClass().getClassLoader(), bean.getClass().getProtectionDomain());
+		return ct.toClass(loader, pd);
 	}
 	
 	private static String getClassSuffix(String cglibPackage) {
@@ -182,12 +208,13 @@ public class EnhancerProxyCreater {
 	 * 
 	 * @param cglibPackage
 	 *            Cglib Package name
+	 * @param cp
 	 * @return Class of the Enhancer Proxy callback
 	 * @throws CannotCompileException
 	 * @throws NotFoundException
 	 */
-	private static Class<?> buildProxyCallbackClass(String cglibPackage, ClassPool cp, Object bean)
-			throws CannotCompileException, NotFoundException {
+	private Class<?> buildProxyCallbackClass(String cglibPackage, ClassPool cp) throws CannotCompileException,
+			NotFoundException {
 		String proxyPackage = cglibPackage + "proxy.";
 		CtClass ct = cp.makeClass("HotswapSpringCallback" + getClassSuffix(cglibPackage));
 		ct.setSuperclass(cp.get(DetachableBeanHolder.class.getName()));
@@ -205,20 +232,13 @@ public class EnhancerProxyCreater {
 		
 		CtMethod m = CtNewMethod.make(body, ct);
 		ct.addMethod(m);
-		return ct.toClass(bean.getClass().getClassLoader(), bean.getClass().getProtectionDomain());
+		return ct.toClass(loader, pd);
 	}
 	
-	private static ClassPool getCp(ClassLoader loader) {
-		if (cp == null) {
-			synchronized (cpLock) {
-				if (cp == null) {
-					cp = new ClassPool();
-					cp.appendSystemPath();
-					cp.appendClassPath(new LoaderClassPath(loader));
-					return cp;
-				}
-			}
-		}
+	private ClassPool getCp(ClassLoader loader) {
+		ClassPool cp = new ClassPool();
+		cp.appendSystemPath();
+		cp.appendClassPath(new LoaderClassPath(loader));
 		return cp;
 	}
 }

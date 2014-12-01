@@ -23,7 +23,7 @@ public class ProxyReplacer {
 	}
 	
 	/**
-	 * Creates a proxied Spring bean
+	 * Creates a proxied Spring bean. Called from within WebApp code by modification of Spring classes
 	 * 
 	 * @param beanFactry
 	 *            Spring beanFactory
@@ -43,7 +43,7 @@ public class ProxyReplacer {
 			return Proxy.newProxyInstance(beanFactry.getClass().getClassLoader(), bean.getClass().getInterfaces(),
 					handler);
 		} else if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
-			return EnhancerProxyCreater.create(beanFactry, bean, paramClasses, paramValues);
+			return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
 		}
 		return bean;
 	}

@@ -1,27 +1,22 @@
 package org.hotswap.agent.plugin.proxy.hscglib;
 
 import java.lang.instrument.IllegalClassFormatException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.plugin.proxy.MultistepProxyTransformer;
 import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
 import org.hotswap.agent.plugin.proxy.ProxyBytecodeTransformer;
-import org.hotswap.agent.plugin.proxy.TransformationState;
+import org.hotswap.agent.plugin.proxy.SinglestepProxyTransformer;
 
 /**
- * Redefines Cglib proxy classes. Uses several redefinition events
+ * Redefines Cglib Enhancer proxy classes. Uses CglibEnhancerProxyBytecodeGenerator for the bytecode generation.
  * 
  * @author Erki Ehtla
  * 
  */
-public class CglibProxyTransformer extends MultistepProxyTransformer {
-	// Class transformation states for all the ClassLoaders. Used in the Agent ClassLoader
-	private static final Map<Class<?>, TransformationState> TRANSFORMATION_STATES = Collections
-			.synchronizedMap(new WeakHashMap<Class<?>, TransformationState>());
+public class CglibEnhancerProxyTransformer extends SinglestepProxyTransformer {
+	
 	private GeneratorParams params;
+	private ClassLoader loader;
 	
 	/**
 	 * 
@@ -30,13 +25,16 @@ public class CglibProxyTransformer extends MultistepProxyTransformer {
 	 *            Classpool of the classloader
 	 * @param classfileBuffer
 	 *            new definition of Class<?>
+	 * @param loader
+	 *            classloader of classBeingRedefined
 	 * @param params
 	 *            parameters used to generate proxy
 	 * @throws IllegalClassFormatException
 	 */
-	public CglibProxyTransformer(Class<?> classBeingRedefined, ClassPool classPool, byte[] classfileBuffer,
-			GeneratorParams params) {
-		super(classBeingRedefined, classPool, classfileBuffer, TRANSFORMATION_STATES);
+	public CglibEnhancerProxyTransformer(Class<?> classBeingRedefined, ClassPool classPool, byte[] classfileBuffer,
+			ClassLoader loader, GeneratorParams params) {
+		super(classBeingRedefined, classPool, classfileBuffer);
+		this.loader = loader;
 		this.params = params;
 	}
 	
@@ -54,17 +52,14 @@ public class CglibProxyTransformer extends MultistepProxyTransformer {
 	 * @throws IllegalClassFormatException
 	 */
 	public static byte[] transform(Class<?> classBeingRedefined, ClassPool classPool, byte[] classfileBuffer,
-			GeneratorParams params) throws Exception {
-		return new CglibProxyTransformer(classBeingRedefined, classPool, classfileBuffer, params).transformRedefine();
-	}
-	
-	public static boolean isReloadingInProgress() {
-		return !TRANSFORMATION_STATES.isEmpty();
+			ClassLoader loader, GeneratorParams params) throws Exception {
+		return new CglibEnhancerProxyTransformer(classBeingRedefined, classPool, classfileBuffer, loader, params)
+				.transformRedefine();
 	}
 	
 	@Override
 	protected ProxyBytecodeGenerator createGenerator() {
-		return new CglibProxyBytecodeGenerator(params);
+		return new CglibEnhancerProxyBytecodeGenerator(params, loader);
 	}
 	
 	@Override

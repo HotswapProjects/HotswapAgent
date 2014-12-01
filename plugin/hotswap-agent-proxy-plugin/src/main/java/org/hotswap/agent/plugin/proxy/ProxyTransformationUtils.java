@@ -45,8 +45,13 @@ public class ProxyTransformationUtils {
 	 * @param classLoader
 	 * @return
 	 */
-	public static ClassPool createClassPool(ClassLoader classLoader) {
-		ClassPool cp = new ClassPool();
+	public static ClassPool createClassPool(final ClassLoader classLoader) {
+		ClassPool cp = new ClassPool() {
+			@Override
+			public ClassLoader getClassLoader() {
+				return classLoader;
+			}
+		};
 		cp.appendSystemPath();
 		if (classLoader != null) {
 			LOGGER.trace("Adding loader classpath " + classLoader);

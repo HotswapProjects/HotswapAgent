@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.WeakHashMap;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -52,6 +51,11 @@ import org.hotswap.agent.javassist.bytecode.Descriptor;
  * 
  * @author Peter Jones
  * @since 1.3
+ */
+/**
+ * Converted to use ClassPool and CtClass. Added static field init-code to proxy methods.
+ * 
+ * @author Erki Ehtla
  */
 public class CtClassJavaProxyGenerator {
 	/*
@@ -371,32 +375,34 @@ public class CtClassJavaProxyGenerator {
 		private CtClass throwable;
 	}
 	
-	private static Map<ClassPool, CtClassProxyFields> fieldsMap = new WeakHashMap<ClassPool, CtClassJavaProxyGenerator.CtClassProxyFields>(
-			2);
+	// private static Map<ClassPool, WeakReference<CtClassProxyFields>> fieldsMap = new WeakHashMap<ClassPool,
+	// WeakReference<CtClassProxyFields>>(
+	// 2);
 	private CtClassProxyFields f;
 	
 	private void initFields(ClassPool clp) {
-		CtClassProxyFields f = fieldsMap.get(clp);
-		if (f == null) {
-			synchronized (fieldsMap) {
-				f = fieldsMap.get(clp);
-				if (f == null) {
-					f = new CtClassProxyFields();
-					try {
-						f.oclp = clp.get(Object.class.getName());
-						f.error = clp.get(Error.class.getName());
-						f.runtimee = clp.get(RuntimeException.class.getName());
-						f.throwable = clp.get(Throwable.class.getName());
-						f.hashCodeMethod = f.oclp.getDeclaredMethod("hashCode");
-						f.equalsMethod = f.oclp.getDeclaredMethod("equals");
-						f.toStringMethod = f.oclp.getDeclaredMethod("toString");
-					} catch (NotFoundException e) {
-						throw new RuntimeException(e);
-					}
-					fieldsMap.put(clp, f);
-				}
-			}
+		// WeakReference<CtClassProxyFields> ref = fieldsMap.get(clp);
+		CtClassProxyFields f = null;
+		// if (f == null || (f = ref.get()) == null) {
+		// synchronized (fieldsMap) {
+		// ref = fieldsMap.get(clp);
+		// if (ref == null || (f = ref.get()) == null) {
+		f = new CtClassProxyFields();
+		try {
+			f.oclp = clp.get(Object.class.getName());
+			f.error = clp.get(Error.class.getName());
+			f.runtimee = clp.get(RuntimeException.class.getName());
+			f.throwable = clp.get(Throwable.class.getName());
+			f.hashCodeMethod = f.oclp.getDeclaredMethod("hashCode");
+			f.equalsMethod = f.oclp.getDeclaredMethod("equals");
+			f.toStringMethod = f.oclp.getDeclaredMethod("toString");
+		} catch (NotFoundException e) {
+			throw new RuntimeException(e);
 		}
+		// fieldsMap.put(clp, new WeakReference<CtClassProxyFields>(f));
+		// }
+		// }
+		// }
 		this.f = f;
 	}
 	

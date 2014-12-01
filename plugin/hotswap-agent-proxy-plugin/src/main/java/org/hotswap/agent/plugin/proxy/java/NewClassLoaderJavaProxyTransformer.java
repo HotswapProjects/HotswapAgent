@@ -1,37 +1,56 @@
 package org.hotswap.agent.plugin.proxy.java;
 
-import java.lang.instrument.IllegalClassFormatException;
-
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.proxy.ParentLastClassLoader;
+import org.hotswap.agent.plugin.proxy.ProxyTransformer;
 import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 
 /**
- * Proxy transformer for java.lang.reflect.Proxy. One-step process, uses CtClasses from the ClassPool.
+ * Redefines Java proxy classes. One-step process. Uses Classes from a new classloader.
  * 
  * @author Erki Ehtla
  * 
  */
-public class NewClassLoaderJavaProxyTransformer {
+public class NewClassLoaderJavaProxyTransformer implements ProxyTransformer {
+	/**
+	 * 
+	 * @param classBeingRedefined
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @param loader
+	 *            classloader of classBeingRedefined
+	 * @return classfileBuffer or new Proxy defition if there are signature changes
+	 */
+	public NewClassLoaderJavaProxyTransformer(Class<?> classBeingRedefined, byte[] classfileBuffer, ClassLoader loader) {
+		super();
+		this.classBeingRedefined = classBeingRedefined;
+		this.classfileBuffer = classfileBuffer;
+		this.loader = loader;
+	}
+	
 	private static AgentLogger LOGGER = AgentLogger.getLogger(NewClassLoaderJavaProxyTransformer.class);
+	private final Class<?> classBeingRedefined;
+	private final byte[] classfileBuffer;
+	private final ClassLoader loader;
 	
 	/**
 	 * 
 	 * @param classBeingRedefined
-	 * @param cc
-	 *            CtClass from classfileBuffer
-	 * @param cp
 	 * @param classfileBuffer
 	 *            new definition of Class<?>
+	 * @param loader
+	 *            classloader of classBeingRedefined
 	 * @return classfileBuffer or new Proxy defition if there are signature changes
-	 * @throws IllegalClassFormatException
+	 * @throws Exception
 	 */
-	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
-	public static byte[] transform(final Class<?> classBeingRedefined, byte[] classfileBuffer, ClassLoader loader) {
+	public static byte[] transform(final Class<?> classBeingRedefined, byte[] classfileBuffer, ClassLoader loader)
+			throws Exception {
+		return new NewClassLoaderJavaProxyTransformer(classBeingRedefined, classfileBuffer, loader).transformRedefine();
+	}
+	
+	@Override
+	public byte[] transformRedefine() throws Exception {
 		try {
-			if (!isProxy(classBeingRedefined.getName())) {
-				return classfileBuffer;
-			}
 			ParentLastClassLoader parentLastClassLoader = new ParentLastClassLoader(loader);
 			Class<?>[] interfaces = classBeingRedefined.getInterfaces();
 			Class<?>[] newInterfaces = new Class[interfaces.length];
@@ -51,9 +70,5 @@ public class NewClassLoaderJavaProxyTransformer {
 			LOGGER.error("Error transforming a Java reflect Proxy", e);
 			return classfileBuffer;
 		}
-	}
-	
-	public static boolean isProxy(String className) {
-		return className.startsWith("com.sun.proxy.$Proxy");
 	}
 }

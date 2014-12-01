@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.proxy.signature;
 
 import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -47,6 +48,40 @@ public class ClassfileSignatureComparer {
 			}
 		}
 		return false;
+	}
+	
+	/**
+	 * Checks if the CtClass or one of its parents signature differs from the one already loaded by Java. Ignores
+	 * synthetic classes
+	 * 
+	 * @param classBeingRedefined
+	 * @param cp
+	 * @return
+	 */
+	public static boolean isNonSyntheticPoolClassOrParentDifferent(Class<?> classBeingRedefined, ClassPool cp) {
+		Class<?> clazz = classBeingRedefined.getSuperclass();
+		while (clazz.isSynthetic() || clazz.getName().contains("$Enhancer")) {
+			clazz = clazz.getSuperclass();
+		}
+		if (ClassfileSignatureComparer.isPoolClassOrParentDifferent(clazz, cp))
+			return true;
+		Class<?>[] interfaces = classBeingRedefined.getInterfaces();
+		for (Class<?> intr : interfaces) {
+			if (ClassfileSignatureComparer.isPoolClassOrParentDifferent(intr, cp))
+				return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Checks if the CtClass or one of its parents signature differs from the one already loaded by Java.
+	 * 
+	 * @param clazz
+	 * @param cc
+	 * @return
+	 */
+	public static boolean isPoolClassOrParentDifferent(Class<?> clazz, CtClass cc) {
+		return isPoolClassDifferent(clazz, cc.getClassPool());
 	}
 	
 	/**
