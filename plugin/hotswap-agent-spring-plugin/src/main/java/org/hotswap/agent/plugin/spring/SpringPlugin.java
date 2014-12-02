@@ -6,7 +6,7 @@ import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
+import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
 import org.hotswap.agent.util.HotswapTransformer;
@@ -31,7 +31,7 @@ import java.util.Enumeration;
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
         testedVersions = {"All between 3.0.1 - 4.0.5"}, expectedVersions = {"3x", "4x"},
-        supportClass = {ClassPathBeanDefinitionScannerTransformer.class, ProxyReplacer.class})
+        supportClass = {ClassPathBeanDefinitionScannerTransformer.class, ProxyReplacerTransformer.class})
 public class SpringPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 

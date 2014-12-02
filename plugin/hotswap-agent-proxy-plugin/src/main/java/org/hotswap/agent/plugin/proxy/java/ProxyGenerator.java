@@ -27,8 +27,14 @@ package org.hotswap.agent.plugin.proxy.java;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -37,12 +43,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtPrimitiveType;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
+import sun.security.action.GetBooleanAction;
 
 /**
  * ProxyGenerator contains the code to generate a dynamic proxy class for the java.lang.reflect.Proxy API.
@@ -53,11 +54,12 @@ import org.hotswap.agent.javassist.bytecode.Descriptor;
  * @since 1.3
  */
 /**
- * Converted to use ClassPool and CtClass. Added static field init-code to proxy methods.
+ * Added static field init-code to proxy methods
  * 
  * @author Erki Ehtla
+ * 
  */
-public class CtClassJavaProxyGenerator {
+public class ProxyGenerator {
 	/*
 	 * In the comments below, "JVMS" refers to The Java Virtual Machine Specification Second Edition and "JLS" refers to
 	 * the original version of The Java Language Specification, unless otherwise specified.
@@ -73,7 +75,7 @@ public class CtClassJavaProxyGenerator {
 	
 	/* constant pool tags */
 	private static final int CONSTANT_UTF8 = 1;
-	// private static final int CONSTANT_UNICODE = 2;
+	private static final int CONSTANT_UNICODE = 2;
 	private static final int CONSTANT_INTEGER = 3;
 	private static final int CONSTANT_FLOAT = 4;
 	private static final int CONSTANT_LONG = 5;
@@ -312,16 +314,14 @@ public class CtClassJavaProxyGenerator {
 	private final static String handlerFieldName = "h";
 	
 	/** debugging flag for saving generated class files */
-	// private final static boolean saveGeneratedFiles = java.security.AccessController.doPrivileged(
-	// new GetBooleanAction("sun.misc.ProxyGenerator.saveGeneratedFiles")).booleanValue();
+	private final static boolean saveGeneratedFiles = java.security.AccessController.doPrivileged(
+			new GetBooleanAction("sun.misc.ProxyGenerator.saveGeneratedFiles")).booleanValue();
 	
 	/**
 	 * Generate a public proxy class given a name and a list of proxy interfaces.
-	 * 
-	 * @param loader
 	 */
-	public static byte[] generateProxyClass(final String name, CtClass[] interfaces, ClassPool cp) {
-		return generateProxyClass(name, interfaces, cp, (ACC_PUBLIC | ACC_FINAL | ACC_SUPER));
+	public static byte[] generateProxyClass(final String name, Class<?>[] interfaces) {
+		return generateProxyClass(name, interfaces, (ACC_PUBLIC | ACC_FINAL | ACC_SUPER));
 	}
 	
 	/**
@@ -331,79 +331,50 @@ public class CtClassJavaProxyGenerator {
 	 *            the class name of the proxy class
 	 * @param interfaces
 	 *            proxy interfaces
-	 * @param cp
 	 * @param accessFlags
 	 *            access flags of the proxy class
 	 */
-	public static byte[] generateProxyClass(final String name, CtClass[] interfaces, ClassPool cp, int accessFlags) {
-		CtClassJavaProxyGenerator gen = new CtClassJavaProxyGenerator(name, interfaces, cp, accessFlags);
+	public static byte[] generateProxyClass(final String name, Class<?>[] interfaces, int accessFlags) {
+		ProxyGenerator gen = new ProxyGenerator(name, interfaces, accessFlags);
 		final byte[] classFile = gen.generateClassFile();
 		
-		// if (saveGeneratedFiles) {
-		// java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<Void>() {
-		// public Void run() {
-		// try {
-		// int i = name.lastIndexOf('.');
-		// Path path;
-		// if (i > 0) {
-		// Path dir = Paths.get(name.substring(0, i).replace('.', File.separatorChar));
-		// Files.createDirectories(dir);
-		// path = dir.resolve(name.substring(i + 1, name.length()) + ".class");
-		// } else {
-		// path = Paths.get(name + ".class");
-		// }
-		// Files.write(path, classFile);
-		// return null;
-		// } catch (IOException e) {
-		// throw new InternalError("I/O exception saving generated file: " + e);
-		// }
-		// }
-		// });
-		// }
+		if (saveGeneratedFiles) {
+			java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<Void>() {
+				public Void run() {
+					try {
+						int i = name.lastIndexOf('.');
+						Path path;
+						if (i > 0) {
+							Path dir = Paths.get(name.substring(0, i).replace('.', File.separatorChar));
+							Files.createDirectories(dir);
+							path = dir.resolve(name.substring(i + 1, name.length()) + ".class");
+						} else {
+							path = Paths.get(name + ".class");
+						}
+						Files.write(path, classFile);
+						return null;
+					} catch (IOException e) {
+						throw new InternalError("I/O exception saving generated file: " + e);
+					}
+				}
+			});
+		}
 		
 		return classFile;
 	}
 	
 	/* preloaded Method objects for methods in java.lang.Object */
-	private static class CtClassProxyFields {
-		private CtMethod hashCodeMethod;
-		private CtMethod equalsMethod;
-		private CtMethod toStringMethod;
-		private CtClass oclp;
-		private CtClass error;
-		private CtClass runtimee;
-		private CtClass throwable;
-	}
-	
-	// private static Map<ClassPool, WeakReference<CtClassProxyFields>> fieldsMap = new WeakHashMap<ClassPool,
-	// WeakReference<CtClassProxyFields>>(
-	// 2);
-	private CtClassProxyFields f;
-	
-	private void initFields(ClassPool clp) {
-		// WeakReference<CtClassProxyFields> ref = fieldsMap.get(clp);
-		CtClassProxyFields f = null;
-		// if (f == null || (f = ref.get()) == null) {
-		// synchronized (fieldsMap) {
-		// ref = fieldsMap.get(clp);
-		// if (ref == null || (f = ref.get()) == null) {
-		f = new CtClassProxyFields();
+	private static Method hashCodeMethod;
+	private static Method equalsMethod;
+	private static Method toStringMethod;
+	static {
 		try {
-			f.oclp = clp.get(Object.class.getName());
-			f.error = clp.get(Error.class.getName());
-			f.runtimee = clp.get(RuntimeException.class.getName());
-			f.throwable = clp.get(Throwable.class.getName());
-			f.hashCodeMethod = f.oclp.getDeclaredMethod("hashCode");
-			f.equalsMethod = f.oclp.getDeclaredMethod("equals");
-			f.toStringMethod = f.oclp.getDeclaredMethod("toString");
-		} catch (NotFoundException e) {
-			throw new RuntimeException(e);
+			hashCodeMethod = Object.class.getMethod("hashCode");
+			equalsMethod = Object.class.getMethod("equals", new Class<?>[] { Object.class });
+			toStringMethod = Object.class.getMethod("toString");
+		} catch (NoSuchMethodException e) {
+			throw new NoSuchMethodError(e.getMessage());
 		}
-		// fieldsMap.put(clp, new WeakReference<CtClassProxyFields>(f));
-		// }
-		// }
-		// }
-		this.f = f;
 	}
 	
 	/** name of proxy class */
@@ -413,7 +384,7 @@ public class CtClassJavaProxyGenerator {
 	private String initMethodName = "clinitMethodByJavaAgentForHotSwap";
 	
 	/** proxy interfaces */
-	private CtClass[] interfaces;
+	private Class<?>[] interfaces;
 	
 	/** proxy class access flags */
 	private int accessFlags;
@@ -439,14 +410,11 @@ public class CtClassJavaProxyGenerator {
 	 * Construct a ProxyGenerator to generate a proxy class with the specified name and for the given interfaces.
 	 * 
 	 * A ProxyGenerator object contains the state for the ongoing generation of a particular proxy class.
-	 * 
-	 * @param cp
 	 */
-	private CtClassJavaProxyGenerator(String className, CtClass[] interfaces, ClassPool cp, int accessFlags) {
+	private ProxyGenerator(String className, Class<?>[] interfaces, int accessFlags) {
 		this.className = className;
 		this.interfaces = interfaces;
 		this.accessFlags = accessFlags;
-		initFields(cp);
 	}
 	
 	/**
@@ -464,16 +432,16 @@ public class CtClassJavaProxyGenerator {
 		 * is done before the methods from the proxy interfaces so that the methods from java.lang.Object take
 		 * precedence over duplicate methods in the proxy interfaces.
 		 */
-		addProxyMethod(f.hashCodeMethod, f.oclp);
-		addProxyMethod(f.equalsMethod, f.oclp);
-		addProxyMethod(f.toStringMethod, f.oclp);
+		addProxyMethod(hashCodeMethod, Object.class);
+		addProxyMethod(equalsMethod, Object.class);
+		addProxyMethod(toStringMethod, Object.class);
 		
 		/*
 		 * Now record all of the methods from the proxy interfaces, giving earlier interfaces precedence over later ones
 		 * with duplicate methods.
 		 */
-		for (CtClass intf : interfaces) {
-			for (CtMethod m : intf.getDeclaredMethods()) {
+		for (Class<?> intf : interfaces) {
+			for (Method m : intf.getMethods()) {
 				addProxyMethod(m, intf);
 			}
 		}
@@ -494,6 +462,7 @@ public class CtClassJavaProxyGenerator {
 			
 			for (List<ProxyMethod> sigmethods : proxyMethods.values()) {
 				for (ProxyMethod pm : sigmethods) {
+					
 					// add static field for method's Method object
 					fields.add(new FieldInfo(pm.methodFieldName, "Ljava/lang/reflect/Method;", ACC_PRIVATE | ACC_STATIC));
 				}
@@ -507,11 +476,12 @@ public class CtClassJavaProxyGenerator {
 					methods.add(pm.generateMethod());
 				}
 			}
+			
 			methods.add(generateStaticInitializer());
 			methods.add(generateStaticInitializerCaller());
 			
 		} catch (IOException e) {
-			throw new InternalError("unexpected I/O Exception");
+			throw new InternalError("unexpected I/O Exception" + e);
 		}
 		
 		if (methods.size() > 65535) {
@@ -531,7 +501,7 @@ public class CtClassJavaProxyGenerator {
 		 */
 		cp.getClass(dotToSlash(className));
 		cp.getClass(superclassName);
-		for (CtClass intf : interfaces) {
+		for (Class<?> intf : interfaces) {
 			cp.getClass(dotToSlash(intf.getName()));
 		}
 		
@@ -567,7 +537,7 @@ public class CtClassJavaProxyGenerator {
 			// u2 interfaces_count;
 			dout.writeShort(interfaces.length);
 			// u2 interfaces[interfaces_count];
-			for (CtClass intf : interfaces) {
+			for (Class<?> intf : interfaces) {
 				dout.writeShort(cp.getClass(dotToSlash(intf.getName())));
 			}
 			
@@ -589,7 +559,7 @@ public class CtClassJavaProxyGenerator {
 			dout.writeShort(0); // (no ClassFile attributes for proxy classes)
 			
 		} catch (IOException e) {
-			throw new InternalError("unexpected I/O Exception");
+			throw new InternalError("unexpected I/O Exception" + e);
 		}
 		
 		return bout.toByteArray();
@@ -604,32 +574,25 @@ public class CtClassJavaProxyGenerator {
 	 * descriptor identifies the Method object (and thus the declaring class) that will be passed to the invocation
 	 * handler's "invoke" method for a given set of duplicate methods.
 	 */
-	private void addProxyMethod(CtMethod m, CtClass fromClass) {
+	private void addProxyMethod(Method m, Class<?> fromClass) {
 		String name = m.getName();
-		CtClass[] parameterTypes;
-		CtClass returnType;
-		CtClass[] exceptionTypes;
-		try {
-			parameterTypes = m.getParameterTypes();
-			returnType = m.getReturnType();
-			exceptionTypes = m.getExceptionTypes();
-		} catch (NotFoundException e) {
-			throw new RuntimeException(e);
-		}
+		Class<?>[] parameterTypes = m.getParameterTypes();
+		Class<?> returnType = m.getReturnType();
+		Class<?>[] exceptionTypes = m.getExceptionTypes();
 		
 		String sig = name + getParameterDescriptors(parameterTypes);
 		List<ProxyMethod> sigmethods = proxyMethods.get(sig);
 		if (sigmethods != null) {
 			for (ProxyMethod pm : sigmethods) {
-				if (returnType == pm.returnType || returnType.getName().equals(pm.returnType.getName())) {
+				if (returnType == pm.returnType) {
 					/*
 					 * Found a match: reduce exception types to the greatest set of exceptions that can thrown
 					 * compatibly with the throws clauses of both overridden methods.
 					 */
-					List<CtClass> legalExceptions = new ArrayList<>();
+					List<Class<?>> legalExceptions = new ArrayList<>();
 					collectCompatibleTypes(exceptionTypes, pm.exceptionTypes, legalExceptions);
 					collectCompatibleTypes(pm.exceptionTypes, exceptionTypes, legalExceptions);
-					pm.exceptionTypes = new CtClass[legalExceptions.size()];
+					pm.exceptionTypes = new Class<?>[legalExceptions.size()];
 					pm.exceptionTypes = legalExceptions.toArray(pm.exceptionTypes);
 					return;
 				}
@@ -660,10 +623,10 @@ public class CtClassJavaProxyGenerator {
 		/*
 		 * List of return types that are not yet known to be assignable from ("covered" by) any of the others.
 		 */
-		LinkedList<CtClass> uncoveredReturnTypes = new LinkedList<>();
+		LinkedList<Class<?>> uncoveredReturnTypes = new LinkedList<>();
 		
 		nextNewReturnType: for (ProxyMethod pm : methods) {
-			CtClass newReturnType = pm.returnType;
+			Class<?> newReturnType = pm.returnType;
 			if (newReturnType.isPrimitive()) {
 				throw new IllegalArgumentException("methods with same signature "
 						+ getFriendlyMethodSignature(pm.methodName, pm.parameterTypes)
@@ -674,14 +637,14 @@ public class CtClassJavaProxyGenerator {
 			/*
 			 * Compare the new return type to the existing uncovered return types.
 			 */
-			ListIterator<CtClass> liter = uncoveredReturnTypes.listIterator();
+			ListIterator<Class<?>> liter = uncoveredReturnTypes.listIterator();
 			while (liter.hasNext()) {
-				CtClass uncoveredReturnType = liter.next();
+				Class<?> uncoveredReturnType = liter.next();
 				
 				/*
 				 * If an existing uncovered return type is assignable to this new one, then we can forget the new one.
 				 */
-				if (isAssignableFrom(newReturnType, uncoveredReturnType)) {
+				if (newReturnType.isAssignableFrom(uncoveredReturnType)) {
 					assert !added;
 					continue nextNewReturnType;
 				}
@@ -691,7 +654,7 @@ public class CtClassJavaProxyGenerator {
 				 * one with the new one (or just forget the existing one, if the new one has already be put in the
 				 * list).
 				 */
-				if (isAssignableFrom(uncoveredReturnType, newReturnType)) {
+				if (uncoveredReturnType.isAssignableFrom(newReturnType)) {
 					// (we can assume that each return type is unique)
 					if (!added) {
 						liter.set(newReturnType);
@@ -870,18 +833,15 @@ public class CtClassJavaProxyGenerator {
 	 */
 	private class ProxyMethod {
 		
-		/**
-		 * 
-		 */
 		public String methodName;
-		public CtClass[] parameterTypes;
-		public CtClass returnType;
-		public CtClass[] exceptionTypes;
-		public CtClass fromClass;
+		public Class<?>[] parameterTypes;
+		public Class<?> returnType;
+		public Class<?>[] exceptionTypes;
+		public Class<?> fromClass;
 		public String methodFieldName;
 		
-		private ProxyMethod(String methodName, CtClass[] parameterTypes, CtClass returnType, CtClass[] exceptionTypes,
-				CtClass fromClass) {
+		private ProxyMethod(String methodName, Class<?>[] parameterTypes, Class<?> returnType,
+				Class<?>[] exceptionTypes, Class<?> fromClass) {
 			this.methodName = methodName;
 			this.parameterTypes = parameterTypes;
 			this.returnType = returnType;
@@ -907,6 +867,7 @@ public class CtClassJavaProxyGenerator {
 			short pc, tryBegin = 0, tryEnd;
 			
 			DataOutputStream out = new DataOutputStream(minfo.code);
+			
 			out.writeByte(opc_getstatic);
 			out.writeShort(cp.getFieldRef(dotToSlash(className), initFieldName, "Z"));
 			out.writeByte(opc_ifne);
@@ -952,7 +913,7 @@ public class CtClassJavaProxyGenerator {
 			out.writeByte(4);
 			out.writeByte(0);
 			
-			if (returnType == CtClass.voidType) {
+			if (returnType == void.class) {
 				
 				out.writeByte(opc_pop);
 				
@@ -965,10 +926,10 @@ public class CtClassJavaProxyGenerator {
 			
 			tryEnd = pc = (short) minfo.code.size();
 			
-			List<CtClass> catchList = computeUniqueCatchList(exceptionTypes);
+			List<Class<?>> catchList = computeUniqueCatchList(exceptionTypes);
 			if (catchList.size() > 0) {
 				
-				for (CtClass ex : catchList) {
+				for (Class<?> ex : catchList) {
 					minfo.exceptionTable.add(new ExceptionTableEntry(tryBegin, tryEnd, pc, cp.getClass(dotToSlash(ex
 							.getName()))));
 				}
@@ -1016,18 +977,18 @@ public class CtClassJavaProxyGenerator {
 		 * variable index, in order for it to be passed (as an Object) to the invocation handler's "invoke" method. The
 		 * code is written to the supplied stream.
 		 */
-		private void codeWrapArgument(CtClass type, int slot, DataOutputStream out) throws IOException {
+		private void codeWrapArgument(Class<?> type, int slot, DataOutputStream out) throws IOException {
 			if (type.isPrimitive()) {
 				PrimitiveTypeInfo prim = PrimitiveTypeInfo.get(type);
 				
-				if (type == CtClass.intType || type == CtClass.booleanType || type == CtClass.byteType
-						|| type == CtClass.charType || type == CtClass.shortType) {
+				if (type == int.class || type == boolean.class || type == byte.class || type == char.class
+						|| type == short.class) {
 					code_iload(slot, out);
-				} else if (type == CtClass.longType) {
+				} else if (type == long.class) {
 					code_lload(slot, out);
-				} else if (type == CtClass.floatType) {
+				} else if (type == float.class) {
 					code_fload(slot, out);
-				} else if (type == CtClass.doubleType) {
+				} else if (type == double.class) {
 					code_dload(slot, out);
 				} else {
 					throw new AssertionError();
@@ -1046,7 +1007,7 @@ public class CtClassJavaProxyGenerator {
 		 * Generate code for unwrapping a return value of the given type from the invocation handler's "invoke" method
 		 * (as type Object) to its correct type. The code is written to the supplied stream.
 		 */
-		private void codeUnwrapReturnValue(CtClass type, DataOutputStream out) throws IOException {
+		private void codeUnwrapReturnValue(Class<?> type, DataOutputStream out) throws IOException {
 			if (type.isPrimitive()) {
 				PrimitiveTypeInfo prim = PrimitiveTypeInfo.get(type);
 				
@@ -1056,14 +1017,14 @@ public class CtClassJavaProxyGenerator {
 				out.writeByte(opc_invokevirtual);
 				out.writeShort(cp.getMethodRef(prim.wrapperClassName, prim.unwrapMethodName, prim.unwrapMethodDesc));
 				
-				if (type == CtClass.intType || type == CtClass.booleanType || type == CtClass.byteType
-						|| type == CtClass.charType || type == CtClass.shortType) {
+				if (type == int.class || type == boolean.class || type == byte.class || type == char.class
+						|| type == short.class) {
 					out.writeByte(opc_ireturn);
-				} else if (type == CtClass.longType) {
+				} else if (type == long.class) {
 					out.writeByte(opc_lreturn);
-				} else if (type == CtClass.floatType) {
+				} else if (type == float.class) {
 					out.writeByte(opc_freturn);
-				} else if (type == CtClass.doubleType) {
+				} else if (type == double.class) {
 					out.writeByte(opc_dreturn);
 				} else {
 					throw new AssertionError();
@@ -1144,9 +1105,6 @@ public class CtClassJavaProxyGenerator {
 		return minfo;
 	}
 	
-	/**
-	 * Generate the static initializer method for the proxy class.
-	 */
 	private MethodInfo generateStaticInitializerCaller() throws IOException {
 		MethodInfo minfo = new MethodInfo("<clinit>", "()V", ACC_STATIC);
 		
@@ -1356,11 +1314,8 @@ public class CtClassJavaProxyGenerator {
 	 * The code is written to the supplied stream. Note that the code generated by this method may caused the checked
 	 * ClassNotFoundException to be thrown.
 	 */
-	private void codeClassForName(CtClass cl, DataOutputStream out) throws IOException {
-		if (cl.isArray()) {
-			code_ldc(cp.getString(Descriptor.of(cl).replace("/", ".")), out);
-		} else
-			code_ldc(cp.getString(cl.getName()), out);
+	private void codeClassForName(Class<?> cl, DataOutputStream out) throws IOException {
+		code_ldc(cp.getString(cl.getName()), out);
 		
 		out.writeByte(opc_invokestatic);
 		out.writeShort(cp.getMethodRef("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;"));
@@ -1383,9 +1338,8 @@ public class CtClassJavaProxyGenerator {
 	 * Return the "method descriptor" string for a method with the given parameter types and return type. See JVMS
 	 * section 4.3.3.
 	 */
-	private static String getMethodDescriptor(CtClass[] parameterTypes, CtClass returnType) {
-		return getParameterDescriptors(parameterTypes)
-				+ ((returnType == CtClass.voidType) ? "V" : getFieldType(returnType));
+	private static String getMethodDescriptor(Class<?>[] parameterTypes, Class<?> returnType) {
+		return getParameterDescriptors(parameterTypes) + ((returnType == void.class) ? "V" : getFieldType(returnType));
 	}
 	
 	/**
@@ -1393,7 +1347,7 @@ public class CtClassJavaProxyGenerator {
 	 * types (in other words, a method descriptor without a return descriptor). This string is useful for constructing
 	 * string keys for methods without regard to their return type.
 	 */
-	private static String getParameterDescriptors(CtClass[] parameterTypes) {
+	private static String getParameterDescriptors(Class<?>[] parameterTypes) {
 		StringBuilder desc = new StringBuilder("(");
 		for (int i = 0; i < parameterTypes.length; i++) {
 			desc.append(getFieldType(parameterTypes[i]));
@@ -1406,7 +1360,7 @@ public class CtClassJavaProxyGenerator {
 	 * Return the "field type" string for the given type, appropriate for a field descriptor, a parameter descriptor, or
 	 * a return descriptor other than "void". See JVMS section 4.3.2.
 	 */
-	private static String getFieldType(CtClass type) {
+	private static String getFieldType(Class<?> type) {
 		if (type.isPrimitive()) {
 			return PrimitiveTypeInfo.get(type).baseTypeString;
 		} else if (type.isArray()) {
@@ -1416,7 +1370,7 @@ public class CtClassJavaProxyGenerator {
 			 * 
 			 * return "[" + getTypeDescriptor(type.getComponentType());
 			 */
-			return Descriptor.of(type);
+			return type.getName().replace('.', '/');
 		} else {
 			return "L" + dotToSlash(type.getName()) + ";";
 		}
@@ -1425,21 +1379,17 @@ public class CtClassJavaProxyGenerator {
 	/**
 	 * Returns a human-readable string representing the signature of a method with the given name and parameter types.
 	 */
-	private static String getFriendlyMethodSignature(String name, CtClass[] parameterTypes) {
+	private static String getFriendlyMethodSignature(String name, Class<?>[] parameterTypes) {
 		StringBuilder sig = new StringBuilder(name);
 		sig.append('(');
 		for (int i = 0; i < parameterTypes.length; i++) {
 			if (i > 0) {
 				sig.append(',');
 			}
-			CtClass parameterType = parameterTypes[i];
+			Class<?> parameterType = parameterTypes[i];
 			int dimensions = 0;
 			while (parameterType.isArray()) {
-				try {
-					parameterType = parameterType.getComponentType();
-				} catch (NotFoundException e) {
-					throw new RuntimeException(e);
-				}
+				parameterType = parameterType.getComponentType();
 				dimensions++;
 			}
 			sig.append(parameterType.getName());
@@ -1458,8 +1408,8 @@ public class CtClassJavaProxyGenerator {
 	 * Note that the original version of the JVMS contained a definition of this abstract notion of a "word" in section
 	 * 3.4, but that definition was removed for the second edition.
 	 */
-	private static int getWordsPerType(CtClass type) {
-		if (type == CtClass.longType || type == CtClass.doubleType) {
+	private static int getWordsPerType(Class<?> type) {
+		if (type == long.class || type == double.class) {
 			return 2;
 		} else {
 			return 1;
@@ -1473,11 +1423,11 @@ public class CtClassJavaProxyGenerator {
 	 * This method is useful for computing the greatest common set of declared exceptions from duplicate methods
 	 * inherited from different interfaces.
 	 */
-	private static void collectCompatibleTypes(CtClass[] from, CtClass[] with, List<CtClass> list) {
-		for (CtClass fc : from) {
+	private static void collectCompatibleTypes(Class<?>[] from, Class<?>[] with, List<Class<?>> list) {
+		for (Class<?> fc : from) {
 			if (!list.contains(fc)) {
-				for (CtClass wc : with) {
-					if (isAssignableFrom(wc, fc)) {
+				for (Class<?> wc : with) {
+					if (wc.isAssignableFrom(fc)) {
 						list.add(fc);
 						break;
 					}
@@ -1502,22 +1452,22 @@ public class CtClassJavaProxyGenerator {
 	 * The returned List will be empty if java.lang.Throwable is in the given list of declared exceptions, indicating
 	 * that no exceptions need to be caught.
 	 */
-	private List<CtClass> computeUniqueCatchList(CtClass[] exceptions) {
-		List<CtClass> uniqueList = new ArrayList<>();
+	private static List<Class<?>> computeUniqueCatchList(Class<?>[] exceptions) {
+		List<Class<?>> uniqueList = new ArrayList<>();
 		// unique exceptions to catch
 		
-		uniqueList.add(f.error); // always catch/rethrow these
-		uniqueList.add(f.runtimee);
+		uniqueList.add(Error.class); // always catch/rethrow these
+		uniqueList.add(RuntimeException.class);
 		
-		nextException: for (CtClass ex : exceptions) {
-			if (isAssignableFrom(ex, f.throwable)) {
+		nextException: for (Class<?> ex : exceptions) {
+			if (ex.isAssignableFrom(Throwable.class)) {
 				/*
 				 * If Throwable is declared to be thrown by the proxy method, then no catch blocks are necessary,
 				 * because the invoke can, at most, throw Throwable anyway.
 				 */
 				uniqueList.clear();
 				break;
-			} else if (!isAssignableFrom(f.throwable, ex)) {
+			} else if (!Throwable.class.isAssignableFrom(ex)) {
 				/*
 				 * Ignore types that cannot be thrown by the invoke method.
 				 */
@@ -1527,14 +1477,14 @@ public class CtClassJavaProxyGenerator {
 			 * Compare this exception against the current list of exceptions that need to be caught:
 			 */
 			for (int j = 0; j < uniqueList.size();) {
-				CtClass ex2 = uniqueList.get(j);
-				if (isAssignableFrom(ex2, ex)) {
+				Class<?> ex2 = uniqueList.get(j);
+				if (ex2.isAssignableFrom(ex)) {
 					/*
 					 * if a superclass of this exception is already on the list to catch, then ignore this one and
 					 * continue;
 					 */
 					continue nextException;
-				} else if (isAssignableFrom(ex, ex2)) {
+				} else if (ex.isAssignableFrom(ex2)) {
 					/*
 					 * if a subclass of this exception is on the list to catch, then remove it;
 					 */
@@ -1547,19 +1497,6 @@ public class CtClassJavaProxyGenerator {
 			uniqueList.add(ex);
 		}
 		return uniqueList;
-	}
-	
-	/**
-	 * @param ex2
-	 * @param ex
-	 * @return
-	 */
-	private static boolean isAssignableFrom(CtClass ex2, CtClass ex) {
-		try {
-			return ex.subtypeOf(ex2);
-		} catch (NotFoundException e) {
-			throw new RuntimeException(e);
-		}
 	}
 	
 	/**
@@ -1583,49 +1520,33 @@ public class CtClassJavaProxyGenerator {
 		/** descriptor of same method */
 		public String unwrapMethodDesc;
 		
-		private static Map<CtClass, PrimitiveTypeInfo> table = new HashMap<>();
-		// static {
-		// add(byte.class, Byte.class);
-		// add(char.class, Character.class);
-		// add(double.class, Double.class);
-		// add(float.class, Float.class);
-		// add(int.class, Integer.class);
-		// add(long.class, Long.class);
-		// add(short.class, Short.class);
-		// add(boolean.class, Boolean.class);
-		// }
-		
+		private static Map<Class<?>, PrimitiveTypeInfo> table = new HashMap<>();
 		static {
-			add(CtClass.byteType);
-			add(CtClass.charType);
-			add(CtClass.doubleType);
-			add(CtClass.floatType);
-			add(CtClass.intType);
-			add(CtClass.longType);
-			add(CtClass.shortType);
-			add(CtClass.booleanType);
+			add(byte.class, Byte.class);
+			add(char.class, Character.class);
+			add(double.class, Double.class);
+			add(float.class, Float.class);
+			add(int.class, Integer.class);
+			add(long.class, Long.class);
+			add(short.class, Short.class);
+			add(boolean.class, Boolean.class);
 		}
 		
-		private static void add(CtClass primitiveClass) {
-			table.put(primitiveClass, new PrimitiveTypeInfo(primitiveClass));
+		private static void add(Class<?> primitiveClass, Class<?> wrapperClass) {
+			table.put(primitiveClass, new PrimitiveTypeInfo(primitiveClass, wrapperClass));
 		}
 		
-		private PrimitiveTypeInfo(CtClass primitiveClass) {
+		private PrimitiveTypeInfo(Class<?> primitiveClass, Class<?> wrapperClass) {
 			assert primitiveClass.isPrimitive();
 			
-			// try {
-			// baseTypeString = Array.newInstance(primitiveClass.toClass(), 0).getClass().getName().substring(1);
-			// } catch (NegativeArraySizeException | CannotCompileException e) {
-			// throw new RuntimeException();
-			// }
-			baseTypeString = String.valueOf(((CtPrimitiveType) primitiveClass).getDescriptor());
-			wrapperClassName = dotToSlash(((CtPrimitiveType) primitiveClass).getWrapperName());
+			baseTypeString = Array.newInstance(primitiveClass, 0).getClass().getName().substring(1);
+			wrapperClassName = dotToSlash(wrapperClass.getName());
 			wrapperValueOfDesc = "(" + baseTypeString + ")L" + wrapperClassName + ";";
 			unwrapMethodName = primitiveClass.getName() + "Value";
 			unwrapMethodDesc = "()" + baseTypeString;
 		}
 		
-		public static PrimitiveTypeInfo get(CtClass cl) {
+		public static PrimitiveTypeInfo get(Class<?> cl) {
 			return table.get(cl);
 		}
 	}
@@ -1672,19 +1593,19 @@ public class CtClassJavaProxyGenerator {
 			return getValue(s);
 		}
 		
-		// /**
-		// * Get or assign the index for a CONSTANT_Integer entry.
-		// */
-		// public short getInteger(int i) {
-		// return getValue(new Integer(i));
-		// }
-		//
-		// /**
-		// * Get or assign the index for a CONSTANT_Float entry.
-		// */
-		// public short getFloat(float f) {
-		// return getValue(new Float(f));
-		// }
+		/**
+		 * Get or assign the index for a CONSTANT_Integer entry.
+		 */
+		public short getInteger(int i) {
+			return getValue(new Integer(i));
+		}
+		
+		/**
+		 * Get or assign the index for a CONSTANT_Float entry.
+		 */
+		public short getFloat(float f) {
+			return getValue(new Float(f));
+		}
 		
 		/**
 		 * Get or assign the index for a CONSTANT_Class entry.

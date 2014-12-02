@@ -1,18 +1,21 @@
-package org.hotswap.agent.plugin.proxy.cglib;
+package org.hotswap.agent.plugin.proxy.hscglib;
+
+import org.hotswap.agent.util.ReflectionHelper;
 
 /**
+ * Parameters for new Cglib proxy creation
+ * 
  * @author Erki Ehtla
  * 
  */
 public class GeneratorParams {
-	public GeneratorParams(Object generator, Object params) {
-		super();
-		this.generator = generator;
-		this.param = params;
-	}
-	
 	private Object generator;
 	private Object param;
+	
+	public GeneratorParams(Object generator, Object param) {
+		this.generator = generator;
+		this.param = param;
+	}
 	
 	public Object getGenerator() {
 		return generator;
@@ -59,5 +62,22 @@ public class GeneratorParams {
 		} else if (!param.equals(other.param))
 			return false;
 		return true;
+	}
+	
+	/**
+	 * Return an instance in this classloader
+	 * 
+	 * @param paramsFromOtherClassLoader
+	 *            instamce in another classlaoder
+	 * @return instance in this classloader
+	 * @throws Exception
+	 */
+	public static GeneratorParams valueOf(Object paramsFromOtherClassLoader) throws Exception {
+		if (paramsFromOtherClassLoader.getClass().getClassLoader() == GeneratorParams.class.getClassLoader()) {
+			return (GeneratorParams) paramsFromOtherClassLoader;
+		}
+		Object params = ReflectionHelper.get(paramsFromOtherClassLoader, "getParam");
+		Object generator = ReflectionHelper.get(paramsFromOtherClassLoader, "getGenerator");
+		return new GeneratorParams(generator, params);
 	}
 }

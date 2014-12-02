@@ -1,47 +1,73 @@
 package org.hotswap.agent.plugin.proxy.java;
 
-import java.lang.instrument.IllegalClassFormatException;
-import java.security.ProtectionDomain;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.proxy.ProxyTransformationUtils;
-import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureRecorder;
+import org.hotswap.agent.plugin.proxy.ProxyTransformer;
+import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 
 /**
+ * Redefines Java proxy classes. One-step process. Uses CtClasses from the ClassPool.
+ * 
  * @author Erki Ehtla
  * 
  */
-public class JavassistProxyTransformer {
-	protected static final String INIT_FIELD_PREFIX = "initCalled";
-	protected static final ClassPool classPool = ProxyTransformationUtils.getClassPool();
-	
-	protected Map<Class<?>, Long> transStart = new ConcurrentHashMap<Class<?>, Long>();
+public class JavassistProxyTransformer implements ProxyTransformer {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(JavassistProxyTransformer.class);
+	private final Class<?> classBeingRedefined;
+	private final byte[] classfileBuffer;
+	private final CtClass cc;
+	private final ClassPool cp;
 	
-	// @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
-	public static byte[] transform(ClassLoader loader, String className, final Class<?> classBeingRedefined,
-			ProtectionDomain protectionDomain, final byte[] classfileBuffer) throws IllegalClassFormatException {
+	/**
+	 * 
+	 * @param classBeingRedefined
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @param cc
+	 *            CtClass from classfileBuffer
+	 * @param cp
+	 *            Classpool of the classloader
+	 * @return classfileBuffer or new Proxy defition if there are signature changes
+	 */
+	public JavassistProxyTransformer(Class<?> classBeingRedefined, byte[] classfileBuffer, CtClass cc, ClassPool cp) {
+		super();
+		this.classBeingRedefined = classBeingRedefined;
+		this.classfileBuffer = classfileBuffer;
+		this.cc = cc;
+		this.cp = cp;
+	}
+	
+	/**
+	 * 
+	 * @param classBeingRedefined
+	 * @param classfileBuffer
+	 *            new definition of Class<?>
+	 * @param cc
+	 *            CtClass from classfileBuffer
+	 * @param cp
+	 *            Classpool of the classloader
+	 * @return classfileBuffer or new Proxy defition if there are signature changes
+	 * @throws Exception
+	 */
+	public static byte[] transform(final Class<?> classBeingRedefined, byte[] classfileBuffer, CtClass cc, ClassPool cp)
+			throws Exception {
+		return new JavassistProxyTransformer(classBeingRedefined, classfileBuffer, cc, cp).transformRedefine();
+	}
+	
+	@Override
+	public byte[] transformRedefine() throws Exception {
 		try {
-			if (!isProxy(className, classBeingRedefined, classfileBuffer)
-					|| !ClassfileSignatureRecorder.hasSuperClassOrInterfaceChanged(classBeingRedefined)) {
-				return null;
+			if (!ClassfileSignatureComparer.isNonSyntheticPoolClassOrParentDifferent(classBeingRedefined, cp)) {
+				return classfileBuffer;
 			}
-			String javaClassName = ProxyTransformationUtils.getClassName(className);
-			CtClass cc = classPool.get(javaClassName);
-			byte[] generateProxyClass = CtClassJavaProxyGenerator.generateProxyClass(javaClassName, cc.getInterfaces());
-			LOGGER.reload("Class '{}' has been reloaded.", javaClassName);
+			byte[] generateProxyClass = CtClassJavaProxyGenerator.generateProxyClass(classBeingRedefined.getName(),
+					cc.getInterfaces(), cp);
+			LOGGER.reload("Class '{}' has been reloaded.", classBeingRedefined.getName());
 			return generateProxyClass;
 		} catch (Exception e) {
 			LOGGER.error("Error transforming a Java reflect Proxy", e);
-			return null;
+			return classfileBuffer;
 		}
-	}
-	
-	private static boolean isProxy(String className, Class<?> classBeingRedefined, byte[] classfileBuffer) {
-		return className.startsWith("com/sun/proxy/$Proxy");
 	}
 }

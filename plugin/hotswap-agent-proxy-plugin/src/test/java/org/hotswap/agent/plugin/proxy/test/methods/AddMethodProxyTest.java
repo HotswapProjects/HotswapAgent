@@ -34,6 +34,25 @@ public class AddMethodProxyTest {
 	
 	// Version 0
 	public static class AImpl implements A {
+		@Override
+		public int getValue1() {
+			return 1;
+		}
+		
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see com.github.dcevm.test.methods.AddMethodProxyTest.A#getValue1(java.lang.Object[])
+		 */
+		@Override
+		public int getValue3(Object[] o) {
+			return 1;
+		}
+	}
+	
+	// Version 0
+	public static class AImpl___0 implements A___0 {
+		@Override
 		public int getValue1() {
 			return 1;
 		}
@@ -51,6 +70,7 @@ public class AddMethodProxyTest {
 	
 	// Version 1
 	public static class AImpl___1 implements A___1 {
+		@Override
 		public int getValue2() {
 			return 2;
 		}
@@ -68,6 +88,13 @@ public class AddMethodProxyTest {
 		public int getValue3(Object[] o);
 	}
 	
+	// Version 0
+	public interface A___0 {
+		public int getValue1();
+		
+		public int getValue3(Object[] o);
+	}
+	
 	// Version 1
 	public interface A___1 {
 		public int getValue2();
@@ -77,7 +104,7 @@ public class AddMethodProxyTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		__toVersion__(0);
+		__toVersion__Delayed(0);
 	}
 	
 	@Test
@@ -90,7 +117,7 @@ public class AddMethodProxyTest {
 		
 		assertEquals(1, a.getValue1());
 		
-		__toVersion__(1);
+		__toVersion__Delayed(1);
 		
 		Method method = getMethod(a, "getValue2");
 		assertEquals(2, method.invoke(a, null));
@@ -107,7 +134,7 @@ public class AddMethodProxyTest {
 		
 		assertEquals(1, a.getValue1());
 		
-		__toVersion__(1);
+		__toVersion__Delayed(1);
 		Method method = getMethod(a, "getValue33");
 		assertEquals("getValue33", method.getName());
 		assertEquals(2, method.invoke(a, new Object[] { new Object[] { new Object() } }));
@@ -121,7 +148,7 @@ public class AddMethodProxyTest {
 				new AImpl()));
 		
 		assertEquals(1, a.getValue1());
-		__toVersion__(1);
+		__toVersion__Delayed(1);
 		
 		a = (A) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { A.class }, new DummyHandler(
 				new AImpl()));
@@ -129,6 +156,9 @@ public class AddMethodProxyTest {
 		Method method = getMethod(a, "getValue2");
 		assertEquals("getValue2", method.getName());
 		assertEquals(2, method.invoke(a, null));
+		method = getMethod(a, "getValue33");
+		assertEquals("getValue33", method.getName());
+		assertEquals(2, method.invoke(a, new Object[] { new Object[] { new Object() } }));
 	}
 	
 	private Method getMethod(Object a, String methodName) {
