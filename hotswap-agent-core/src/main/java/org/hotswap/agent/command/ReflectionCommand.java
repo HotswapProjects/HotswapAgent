@@ -14,7 +14,7 @@ import java.util.List;
  *
  * @author Jiri Bubnik
  */
-public class ReflectionCommand implements Command {
+public class ReflectionCommand extends MergeableCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ReflectionCommand.class);
 
     /**
@@ -186,5 +186,33 @@ public class ReflectionCommand implements Command {
         Method m = classInAppClassLoader.getDeclaredMethod(method, paramTypes);
 
         return m.invoke(target, params.toArray());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ReflectionCommand)) return false;
+
+        ReflectionCommand that = (ReflectionCommand) o;
+
+        if (!className.equals(that.className)) return false;
+        if (!methodName.equals(that.methodName)) return false;
+        if (!params.equals(that.params)) return false;
+        if (plugin != null ? !plugin.equals(that.plugin) : that.plugin != null) return false;
+        if (target != null ? !target.equals(that.target) : that.target != null) return false;
+        if (targetClassLoader != null ? !targetClassLoader.equals(that.targetClassLoader) : that.targetClassLoader != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = target != null ? target.hashCode() : 0;
+        result = 31 * result + className.hashCode();
+        result = 31 * result + methodName.hashCode();
+        result = 31 * result + params.hashCode();
+        result = 31 * result + (plugin != null ? plugin.hashCode() : 0);
+        result = 31 * result + (targetClassLoader != null ? targetClassLoader.hashCode() : 0);
+        return result;
     }
 }
