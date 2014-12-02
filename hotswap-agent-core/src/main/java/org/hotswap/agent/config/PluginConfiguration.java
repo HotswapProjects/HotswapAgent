@@ -1,5 +1,6 @@
 package org.hotswap.agent.config;
 
+import org.hotswap.agent.HotswapAgent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
@@ -225,7 +226,7 @@ public class PluginConfiguration {
      * Check if the plugin is disabled (in this classloader)
      */
     public boolean isDisabledPlugin(String pluginName) {
-        return getDisabledPlugins().contains(pluginName);
+        return HotswapAgent.isPluginDisabled(pluginName) || getDisabledPlugins().contains(pluginName);
     }
 
     /**
