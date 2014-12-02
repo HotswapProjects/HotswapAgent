@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.spring.test.signature;
+package org.hotswap.agent.plugin.spring.signature;
 
 import static org.junit.Assert.*;
 
