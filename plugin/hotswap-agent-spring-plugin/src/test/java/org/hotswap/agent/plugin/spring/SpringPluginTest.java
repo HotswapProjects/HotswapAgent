@@ -66,7 +66,7 @@ public class SpringPluginTest {
     /**
      * Add new method - invoke via reflection (not available at compilation time).
      */
-//    @Test
+    @Test
     public void hotswapSeviceAddMethodTest() throws Exception {
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
 
