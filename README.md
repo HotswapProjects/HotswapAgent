@@ -211,8 +211,8 @@ Plugin specific settings
 ========================
 
 ### OsgiEquinox / Eclipse RCP
-OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP (Do not confuse with common Eclipse development!). 
-For hotswap in RUNTIME you need to setup following options (debuggee Eclipse instance):
+OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP (Do not confuse it with common Eclipse development!). 
+For hotswap in RUNTIME you will need to setup following options (debuggee Eclipse instance):
 
 hotswap-agent.properties:
 
@@ -225,7 +225,7 @@ eclipse.ini:
     -XXaltjvm=dcevm
     -javaagent:PATH_TO_AGENT/hotswap-agent.jar
 
-You need to use the same RUNTIME option to support hotswap in DEBUG mode. Additionaly use the following debug options:
+For hotswap while dubugging eclipse instance from another eclipse instance you will need to use the same RUNTIME option and additionaly use the following DEBUG options:
     
 hotswap-agent.properties:
 
@@ -237,7 +237,7 @@ eclipse.ini
     
 then connect the debugger to port 8000 and happy hotswapping!
 
-HotswapAgent writes all new/modified classes to extraClasspath in the DEBUGMODE, so there is no need to manually copy them.
+HotswapAgent writes all new/modified classes to extraClasspath in the DEBUG mode, so there is no need to manually copy them.
 
 Credits
 =======
