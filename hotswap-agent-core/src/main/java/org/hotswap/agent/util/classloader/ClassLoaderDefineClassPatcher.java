@@ -46,10 +46,12 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
                         CtClass patchClass = cp.makeClass(file);
 
                         // skip plugin classes
-                        if (patchClass.hasAnnotation(Plugin.class)) {
-                            LOGGER.trace("Skipping plugin class: " + patchClass.getName());
-                            return;
-                        }
+                        // TODO this should be skipped only in patching application classloader. To copy
+                         // classes into agent classloader, Plugin class must be copied as well
+//                        if (patchClass.hasAnnotation(Plugin.class)) {
+//                            LOGGER.trace("Skipping plugin class: " + patchClass.getName());
+//                            return;
+//                        }
 
                         try {
                             // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
