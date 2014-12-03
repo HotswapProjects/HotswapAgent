@@ -73,8 +73,8 @@ public abstract class AbstractProxyBytecodeTransformer implements ProxyBytecodeT
 		CtMethod[] methods = cc.getDeclaredMethods();
 		for (CtMethod ctMethod : methods) {
 			if (!ctMethod.isEmpty() && !Modifier.isStatic(ctMethod.getModifiers())) {
-				ctMethod.insertBefore("if(!" + clinitFieldName + "){synchronized(this){if(!" + clinitFieldName + "){"
-						+ initCall + "}}}");
+				ctMethod.insertBefore("if(!" + clinitFieldName + "){synchronized(this.getClass()){if(!"
+						+ clinitFieldName + "){" + initCall + "}}}");
 			}
 		}
 	}

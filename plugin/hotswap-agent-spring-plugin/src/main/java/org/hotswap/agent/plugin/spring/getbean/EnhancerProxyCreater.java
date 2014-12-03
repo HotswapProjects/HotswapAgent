@@ -226,6 +226,8 @@ public class EnhancerProxyCreater {
 		// CtNewConstructor.make(constructor, ct);
 		
 		String rawBody = "	public Object intercept(Object obj, java.lang.reflect.Method method, Object[] args, {0}MethodProxy proxy) throws Throwable {"//
+				+ "		if(!isBeanLoaded() && method != null && method.getName().equals(\"finalize\") && method.getParameterTypes().length == 0)" //
+				+ "			return null;" //
 				+ "		return proxy.invoke(getBean(), args);" //
 				+ "	}";
 		String body = rawBody.replaceAll("\\{0\\}", proxyPackage);

@@ -75,17 +75,16 @@ public class GeneratorParametersTransformer {
 	@SuppressWarnings("unchecked")
 	private static Map<String, Object> getGeneratorParamsMap(ClassLoader loader) {
 		try {
-			WeakReference<Map<String, Object>> mapRef = classLoaderMaps.get(loader);
-			if (mapRef == null) {
-				synchronized (classLoaderMaps) {
-					if (mapRef == null) {
-						mapRef = classLoaderMaps.get(loader);
-						Map<String, Object> map = (Map<String, Object>) loader
-								.loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
-								.get(null);
-						mapRef = new WeakReference<Map<String, Object>>(map);
-						classLoaderMaps.put(loader, mapRef);
-					}
+			WeakReference<Map<String, Object>> mapRef;
+			synchronized (classLoaderMaps) {
+				mapRef = classLoaderMaps.get(loader);
+				if (mapRef == null) {
+					mapRef = classLoaderMaps.get(loader);
+					Map<String, Object> map = (Map<String, Object>) loader
+							.loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
+							.get(null);
+					mapRef = new WeakReference<Map<String, Object>>(map);
+					classLoaderMaps.put(loader, mapRef);
 				}
 			}
 			Map<String, Object> map = mapRef.get();
@@ -105,7 +104,7 @@ public class GeneratorParametersTransformer {
 	 * 
 	 * @param loader
 	 * @param name
-	 *            CLass name
+	 *            Class name
 	 * @return GeneratorParams instance in this ClassLoader
 	 */
 	public static GeneratorParams getGeneratorParams(ClassLoader loader, String name) {

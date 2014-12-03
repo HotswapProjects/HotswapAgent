@@ -3,10 +3,10 @@ package org.hotswap.agent.plugin.spring.getbean;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -23,8 +23,8 @@ public class DetachableBeanHolder {
 	private Object beanFactory;
 	private Class<?>[] paramClasses;
 	private Object[] paramValues;
-	private static Collection<WeakReference<DetachableBeanHolder>> beanProxies = Collections
-			.synchronizedSet(new HashSet<WeakReference<DetachableBeanHolder>>());
+	private static List<WeakReference<DetachableBeanHolder>> beanProxies = Collections
+			.synchronizedList(new ArrayList<WeakReference<DetachableBeanHolder>>());
 	private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 	
 	/**
@@ -48,15 +48,19 @@ public class DetachableBeanHolder {
 	 * Clears the bean references inside all of the proxies
 	 */
 	public static void detachBeans() {
-		int clearCount = 0;
-		for (WeakReference<DetachableBeanHolder> el : beanProxies) {
-			DetachableBeanHolder hotswapSpringCallback = el.get();
-			if (hotswapSpringCallback != null) {
-				hotswapSpringCallback.detach();
-				clearCount++;
+		int i = 0;
+		synchronized (beanProxies) {
+			while (i < beanProxies.size()) {
+				DetachableBeanHolder beanHolder = beanProxies.get(i).get();
+				if (beanHolder != null) {
+					beanHolder.detach();
+					i++;
+				} else {
+					beanProxies.remove(i);
+				}
 			}
 		}
-		LOGGER.info("{} Spring proxies reset", clearCount);
+		LOGGER.info("{} Spring proxies reset", i);
 	}
 	
 	/**
@@ -90,4 +94,7 @@ public class DetachableBeanHolder {
 		return beanCopy;
 	}
 	
+	protected boolean isBeanLoaded(){
+		return bean != null;
+	}
 }
