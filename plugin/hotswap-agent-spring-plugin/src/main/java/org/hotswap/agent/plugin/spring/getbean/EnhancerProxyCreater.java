@@ -219,14 +219,9 @@ public class EnhancerProxyCreater {
 		CtClass ct = cp.makeClass("HotswapSpringCallback" + getClassSuffix(cglibPackage));
 		ct.setSuperclass(cp.get(DetachableBeanHolder.class.getName()));
 		ct.addInterface(cp.get(proxyPackage + "MethodInterceptor"));
-		// String constructor = "public " + callbackClassName
-		// + "(Object bean, Object beanFactry, Class[] paramClasses, Object[] paramValues) {"//
-		// + "		super(bean, beanFactry, paramClasses, paramValues);"//
-		// + "	}";
-		// CtNewConstructor.make(constructor, ct);
 		
 		String rawBody = "	public Object intercept(Object obj, java.lang.reflect.Method method, Object[] args, {0}MethodProxy proxy) throws Throwable {"//
-				+ "		if(!isBeanLoaded() && method != null && method.getName().equals(\"finalize\") && method.getParameterTypes().length == 0)" //
+				+ "		if(method != null && method.getName().equals(\"finalize\") && method.getParameterTypes().length == 0)" //
 				+ "			return null;" //
 				+ "		return proxy.invoke(getBean(), args);" //
 				+ "	}";
