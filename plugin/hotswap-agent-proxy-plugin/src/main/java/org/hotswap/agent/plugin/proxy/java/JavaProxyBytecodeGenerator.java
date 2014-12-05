@@ -5,7 +5,7 @@ import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
 import sun.misc.ProxyGenerator;
 
 /**
- * Creates a new bytecode for a Java proxy. Changed Classes have to be already loaded classes classloader.
+ * Creates a new bytecode for a Java proxy. Changed Classes have to be already loaded in the App classloader.
  * 
  * @author Erki Ehtla
  * 

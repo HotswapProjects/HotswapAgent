@@ -10,7 +10,7 @@ import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
- * Creates a new bytecode for a Cglib Enhancer proxy. Uses Classes loaded with a new instance of ParentLastClassLoader.
+ * Creates new bytecode for a Cglib Enhancer proxy. Uses Classes loaded with a new instance of a ParentLastClassLoader.
  * 
  * @author Erki Ehtla
  * 
@@ -27,7 +27,7 @@ public class CglibEnhancerProxyBytecodeGenerator implements ProxyBytecodeGenerat
 	/**
 	 * 
 	 * @param param
-	 *            Parameters of the previous bytecode generation
+	 *            Parameters of the previous bytecode generation call
 	 * @param classLoader
 	 *            Enhancer classloader
 	 */

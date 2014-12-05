@@ -4,7 +4,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.plugin.proxy.signature.ClassfileSignatureComparer;
 
 /**
- * Transforms the bytecode of a new proxy definition so its is initialized on the first access of one of its methods.
+ * Redefines a proxy
  * 
  * @author Erki Ehtla
  * 

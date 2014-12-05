@@ -5,8 +5,7 @@ import java.lang.reflect.Method;
 import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
 
 /**
- * Creates a new bytecode for a Cglib proxy. Changed Classes have to be already loaded with the Cglib GeneratorStrategy
- * classloader.
+ * Creates new bytecode for a Cglib proxy. Changed Classes have to be loaded alreadyin the App classloader.
  * 
  * @author Erki Ehtla
  * 

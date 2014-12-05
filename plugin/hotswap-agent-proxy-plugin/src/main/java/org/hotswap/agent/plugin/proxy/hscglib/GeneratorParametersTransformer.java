@@ -13,7 +13,7 @@ import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * Inits plugin and adds byte generation parameter storing
+ * Inits plugin and adds bytecode generation call parameter recording
  * 
  * @author Erki Ehtla
  * 
@@ -23,7 +23,7 @@ public class GeneratorParametersTransformer {
 	private static Map<ClassLoader, WeakReference<Map<String, Object>>> classLoaderMaps = new WeakHashMap<ClassLoader, WeakReference<Map<String, Object>>>();
 	
 	/**
-	 * Add plugin init calls and byte generation parameter storing
+	 * Adds bytecode generation call parameter recording
 	 * 
 	 * @param cc
 	 * @return

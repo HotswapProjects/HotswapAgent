@@ -19,9 +19,9 @@ public abstract class AbstractProxyBytecodeTransformer implements ProxyBytecodeT
 	private ClassPool classPool;
 	
 	/**
-	 * Classpool used to make a CtClass
 	 * 
 	 * @param classPool
+	 *            Classpool used to make a CtClass
 	 */
 	public AbstractProxyBytecodeTransformer(ClassPool classPool) {
 		this.classPool = classPool;
