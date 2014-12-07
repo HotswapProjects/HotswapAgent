@@ -98,7 +98,7 @@ public class ProxyPlugin {
 	 * 
 	 * @throws Exception
 	 */
-	@OnClassLoadEvent(classNameRegexp = ".*/cglib/.*", events = LoadEvent.DEFINE, skipSynthetic = false)
+	@OnClassLoadEvent(classNameRegexp = ".*/cglib/.*", skipSynthetic = false)
 	public static CtClass transformDefinitions(CtClass cc) throws Exception {
 		try {
 			return GeneratorParametersTransformer.transform(cc);
