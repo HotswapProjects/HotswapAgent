@@ -13,9 +13,9 @@ import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 
 /**
- * String representation of a Java Class instance. Consists of a super class name(if not Object), constructors and methods (names, return
- * types, parameter types, parameter annotations, exceptions), interface names, class and field annotations ordered
- * alphabetically.
+ * String representation of a Java Class instance. Consists of a super class name(if not Object), constructors and
+ * methods (names, return types, parameter types, parameter annotations, exceptions), interface names, class and field
+ * annotations ordered alphabetically.
  * 
  * @author Erki Ehtla
  * 
@@ -31,8 +31,7 @@ public class JavaClassSignature {
 		}
 		
 		for (Constructor<?> method : cc.getDeclaredConstructors()) {
-			if (java.lang.reflect.Modifier.isPrivate(method.getModifiers())
-					|| java.lang.reflect.Modifier.isStatic(method.getModifiers()))
+			if (java.lang.reflect.Modifier.isPrivate(method.getModifiers()))
 				continue;
 			strings.add(getConstructorString(method));
 		}

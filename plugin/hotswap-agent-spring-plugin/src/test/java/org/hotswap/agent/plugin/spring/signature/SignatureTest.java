@@ -21,7 +21,7 @@ public class SignatureTest {
 		NEW, FINISHED, WAITING
 	}
 	
-	@Target({ ElementType.PARAMETER, ElementType.TYPE })
+	@Target({ ElementType.PARAMETER, ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface Asd {
 		SigTestEnum value() default SigTestEnum.FINISHED;
@@ -49,7 +49,11 @@ public class SignatureTest {
 	
 	@Asd(value = SigTestEnum.WAITING)
 	public static class OneMethod {
-		public int get9(@Asd(value = SigTestEnum.NEW) @Bcd Object o) {
+		@Asd(value = SigTestEnum.WAITING)
+		int aField;
+		
+		@Asd(value = SigTestEnum.WAITING)
+		public int get9(@Asd(value = SigTestEnum.NEW) @Bcd Object o,@Asd(value = SigTestEnum.NEW) @Bcd Object o2 ) throws IOException {
 			return 0;
 		}
 	}

@@ -40,7 +40,7 @@ public class SpringChangesAnalyzer {
 		CtClass makeClass = null;
 		try {
 			makeClass = cp.makeClass(new java.io.ByteArrayInputStream(classfileBuffer));
-			ClassfileSignatureComparer.isPoolClassDifferent(classBeingRedefined, cp);
+			return ClassfileSignatureComparer.isPoolClassDifferent(classBeingRedefined, cp);
 		} catch (Exception e) {
 			LOGGER.error("Error analyzing class {} for reload necessity. Defaulting to yes.", e,
 					classBeingRedefined.getName());
