@@ -60,7 +60,11 @@ public class DetachableBeanHolder {
 				}
 			}
 		}
-		LOGGER.info("{} Spring proxies reset", i);
+		if (i > 0) {
+			LOGGER.info("{} Spring proxies reset", i);
+		} else {
+			LOGGER.debug("No spring proxies reset");
+		}
 	}
 	
 	/**
