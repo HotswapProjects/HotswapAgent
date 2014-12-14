@@ -30,7 +30,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -449,6 +452,17 @@ public class CtClassJavaProxyGenerator {
 		initFields(cp);
 	}
 	
+	private void addInterfacesWithSuperInterfaces(Collection<CtClass> iWithSuper, CtClass[] interfaces) {
+		iWithSuper.addAll(Arrays.asList(interfaces));
+		for (CtClass intf : interfaces) {
+			try {
+				addInterfacesWithSuperInterfaces(iWithSuper, intf.getInterfaces());
+			} catch (NotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	/**
 	 * Generate a class file for the proxy class. This method drives the class file generation process.
 	 */
@@ -468,11 +482,13 @@ public class CtClassJavaProxyGenerator {
 		addProxyMethod(f.equalsMethod, f.oclp);
 		addProxyMethod(f.toStringMethod, f.oclp);
 		
+		Collection<CtClass> iWithSuper = new HashSet<>();
+		addInterfacesWithSuperInterfaces(iWithSuper, interfaces);
 		/*
 		 * Now record all of the methods from the proxy interfaces, giving earlier interfaces precedence over later ones
 		 * with duplicate methods.
 		 */
-		for (CtClass intf : interfaces) {
+		for (CtClass intf : iWithSuper) {
 			for (CtMethod m : intf.getDeclaredMethods()) {
 				addProxyMethod(m, intf);
 			}

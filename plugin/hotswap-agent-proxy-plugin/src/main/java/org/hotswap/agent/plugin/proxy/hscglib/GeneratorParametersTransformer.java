@@ -13,7 +13,7 @@ import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * Inits plugin and adds byte generation parameter storing
+ * Inits plugin and adds bytecode generation call parameter recording
  * 
  * @author Erki Ehtla
  * 
@@ -23,7 +23,7 @@ public class GeneratorParametersTransformer {
 	private static Map<ClassLoader, WeakReference<Map<String, Object>>> classLoaderMaps = new WeakHashMap<ClassLoader, WeakReference<Map<String, Object>>>();
 	
 	/**
-	 * Add plugin init calls and byte generation parameter storing
+	 * Adds bytecode generation call parameter recording
 	 * 
 	 * @param cc
 	 * @return
@@ -75,17 +75,16 @@ public class GeneratorParametersTransformer {
 	@SuppressWarnings("unchecked")
 	private static Map<String, Object> getGeneratorParamsMap(ClassLoader loader) {
 		try {
-			WeakReference<Map<String, Object>> mapRef = classLoaderMaps.get(loader);
-			if (mapRef == null) {
-				synchronized (classLoaderMaps) {
-					if (mapRef == null) {
-						mapRef = classLoaderMaps.get(loader);
-						Map<String, Object> map = (Map<String, Object>) loader
-								.loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
-								.get(null);
-						mapRef = new WeakReference<Map<String, Object>>(map);
-						classLoaderMaps.put(loader, mapRef);
-					}
+			WeakReference<Map<String, Object>> mapRef;
+			synchronized (classLoaderMaps) {
+				mapRef = classLoaderMaps.get(loader);
+				if (mapRef == null) {
+					mapRef = classLoaderMaps.get(loader);
+					Map<String, Object> map = (Map<String, Object>) loader
+							.loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
+							.get(null);
+					mapRef = new WeakReference<Map<String, Object>>(map);
+					classLoaderMaps.put(loader, mapRef);
 				}
 			}
 			Map<String, Object> map = mapRef.get();
@@ -105,7 +104,7 @@ public class GeneratorParametersTransformer {
 	 * 
 	 * @param loader
 	 * @param name
-	 *            CLass name
+	 *            Class name
 	 * @return GeneratorParams instance in this ClassLoader
 	 */
 	public static GeneratorParams getGeneratorParams(ClassLoader loader, String name) {

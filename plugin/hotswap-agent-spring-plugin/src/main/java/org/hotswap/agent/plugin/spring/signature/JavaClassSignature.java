@@ -1,20 +1,21 @@
-package org.hotswap.agent.plugin.proxy.signature.annot;
+package org.hotswap.agent.plugin.spring.signature;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 
 /**
- * String representation of a Java Class instance. Consists of a super class name(if not Object), methods (names, return
- * types, parameter types) and interface names ordered alphabetica
+ * String representation of a Java Class instance. Consists of a super class name(if not Object), constructors and
+ * methods (names, return types, parameter types, parameter annotations, exceptions), interface names, class and field
+ * annotations ordered alphabetically.
  * 
  * @author Erki Ehtla
  * 
@@ -24,15 +25,13 @@ public class JavaClassSignature {
 	public static String get(Class<?> cc) {
 		List<String> strings = new ArrayList<>();
 		for (Method method : cc.getDeclaredMethods()) {
-			if (Modifier.isPrivate(method.getModifiers())
-			// || Modifier.isStatic(method.getModifiers())
-			)
+			if (Modifier.isPrivate(method.getModifiers()))
 				continue;
 			strings.add(getMethodString(method));
 		}
 		
 		for (Constructor<?> method : cc.getDeclaredConstructors()) {
-			if (Modifier.isPrivate(method.getModifiers()))
+			if (java.lang.reflect.Modifier.isPrivate(method.getModifiers()))
 				continue;
 			strings.add(getConstructorString(method));
 		}
@@ -43,10 +42,8 @@ public class JavaClassSignature {
 		}
 		if (cc.getSuperclass() != null && !cc.getSuperclass().getName().equals(Object.class.getName()))
 			strings.add(cc.getSuperclass().getName());
-		for (Field field : cc.getDeclaredFields()) {
-			if (Modifier.isStatic(field.getModifiers()))
-				continue;
-			strings.add(field.getType().getName() + " " + field.getName() + toString(field.getAnnotations()) + ";");
+		for (Field iClass : cc.getDeclaredFields()) {
+			strings.add(iClass.getType().getName() + " " + iClass.getName() + toString(iClass.getAnnotations()) + ";");
 		}
 		Collections.sort(strings);
 		StringBuilder strBuilder = new StringBuilder();
@@ -108,16 +105,16 @@ public class JavaClassSignature {
 	private static <T> T[] sort(T[] a) {
 		
 		a = Arrays.copyOf(a, a.length);
-		Arrays.sort(a, ObjectToStringComparator.INSTANCE);
+		Arrays.sort(a, ToStringComparator.INSTANCE);
 		return a;
 	}
 	
 	private static <T> T[][] sort(T[][] a) {
 		
 		a = Arrays.copyOf(a, a.length);
-		Arrays.sort(a, ObjectToStringComparator.INSTANCE);
+		Arrays.sort(a, ToStringComparator.INSTANCE);
 		for (Object[] objects : a) {
-			Arrays.sort(objects, ObjectToStringComparator.INSTANCE);
+			Arrays.sort(objects, ToStringComparator.INSTANCE);
 		}
 		return a;
 	}

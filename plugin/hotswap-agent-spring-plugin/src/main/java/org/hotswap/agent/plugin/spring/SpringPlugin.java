@@ -72,13 +72,15 @@ public class SpringPlugin {
      */
     public void registerComponentScanBasePackage(final String basePackage) {
         LOGGER.info("Registering basePackage {}", basePackage);
-
+        final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
         hotswapTransformer.registerTransformer(appClassLoader, basePackage + ".*", new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if (classBeingRedefined != null) {
-                    scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                        basePackage, className, classfileBuffer));
+                    if (analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer)) {
+                        scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
+                            basePackage, className, classfileBuffer));
+                    }
                 }
                 return classfileBuffer;
             }

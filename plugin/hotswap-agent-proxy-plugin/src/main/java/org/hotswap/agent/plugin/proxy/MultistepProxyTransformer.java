@@ -6,7 +6,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * Multistep proxy redefinition strategy. Uses Instrumentation to schedule and run next steps
+ * Multistep proxy redefinition strategy. Uses Instrumentation to schedule and run next steps.
  * 
  * @author Erki Ehtla
  * 

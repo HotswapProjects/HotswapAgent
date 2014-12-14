@@ -24,7 +24,7 @@ public class ProxyReplacerTransformer {
 	 * @throws NotFoundException
 	 * @throws CannotCompileException
 	 */
-	@OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory", events = LoadEvent.DEFINE)
+	@OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
 	public static void replaceBeanWithProxy(CtClass ctClass) throws NotFoundException, CannotCompileException {
 		CtMethod[] methods = ctClass.getMethods();
 		for (CtMethod ctMethod : methods) {
@@ -47,7 +47,7 @@ public class ProxyReplacerTransformer {
 	 * @throws NotFoundException
 	 * @throws CannotCompileException
 	 */
-	@OnClassLoadEvent(classNameRegexp = "org.springframework.cglib.reflect.FastClass.Generator", events = LoadEvent.DEFINE)
+	@OnClassLoadEvent(classNameRegexp = "org.springframework.cglib.reflect.FastClass.Generator")
 	public static void replaceSpringFastClassGenerator(CtClass ctClass) throws NotFoundException,
 			CannotCompileException {
 		CtConstructor[] constructors = ctClass.getConstructors();
@@ -63,7 +63,7 @@ public class ProxyReplacerTransformer {
 	 * @throws NotFoundException
 	 * @throws CannotCompileException
 	 */
-	@OnClassLoadEvent(classNameRegexp = "net.sf.cglib.reflect.FastClass.Generator", events = LoadEvent.DEFINE)
+	@OnClassLoadEvent(classNameRegexp = "net.sf.cglib.reflect.FastClass.Generator")
 	public static void replaceCglibFastClassGenerator(CtClass ctClass) throws NotFoundException, CannotCompileException {
 		CtConstructor[] constructors = ctClass.getConstructors();
 		for (CtConstructor ctConstructor : constructors) {

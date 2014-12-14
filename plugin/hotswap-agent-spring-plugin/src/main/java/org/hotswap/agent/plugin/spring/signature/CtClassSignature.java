@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.proxy.signature.annot;
+package org.hotswap.agent.plugin.spring.signature;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -15,8 +15,9 @@ import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.NotFoundException;
 
 /**
- * String representation of a CtClass instance. Consists of a super class name(if not Object), methods (names, return
- * types, parameter types) and interface names ordered alphabetically.
+ * String representation of a CtClass instance. Consists of a super class name(if not Object), constructors and methods
+ * (names, return types, parameter types, parameter annotations, exceptions), interface names, class and field
+ * annotations ordered alphabetically.
  * 
  * @author Erki Ehtla
  * 
@@ -59,9 +60,7 @@ public class CtClassSignature {
 	public static String get(CtClass cc) throws NotFoundException, ClassNotFoundException {
 		List<String> strings = new ArrayList<>();
 		for (CtMethod method : cc.getDeclaredMethods()) {
-			if (Modifier.isPrivate(method.getModifiers())
-			// || Modifier.isStatic(method.getModifiers())
-			)
+			if (Modifier.isPrivate(method.getModifiers()))
 				continue;
 			strings.add(getMethodString(method));
 		}
@@ -91,10 +90,6 @@ public class CtClassSignature {
 		return strBuilder.toString();
 	}
 	
-	/**
-	 * @param annotations
-	 * @return
-	 */
 	private static String toStringE(CtClass[] a) {
 		if (a == null)
 			return "null";
@@ -113,10 +108,6 @@ public class CtClassSignature {
 		}
 	}
 	
-	/**
-	 * @param annotations
-	 * @return
-	 */
 	private static String toStringA(Object[] a) {
 		if (a == null)
 			return "null";
@@ -168,7 +159,7 @@ public class CtClassSignature {
 	private static <T> T[] sort(T[] a) {
 		
 		a = Arrays.copyOf(a, a.length);
-		Arrays.sort(a, ObjectToStringComparator.INSTANCE);
+		Arrays.sort(a, ToStringComparator.INSTANCE);
 		return a;
 	}
 	
@@ -182,9 +173,9 @@ public class CtClassSignature {
 	private static <T> T[][] sort(T[][] a) {
 		
 		a = Arrays.copyOf(a, a.length);
-		Arrays.sort(a, ObjectToStringComparator.INSTANCE);
+		Arrays.sort(a, ToStringComparator.INSTANCE);
 		for (Object[] objects : a) {
-			Arrays.sort(objects, ObjectToStringComparator.INSTANCE);
+			Arrays.sort(objects, ToStringComparator.INSTANCE);
 		}
 		return a;
 	}

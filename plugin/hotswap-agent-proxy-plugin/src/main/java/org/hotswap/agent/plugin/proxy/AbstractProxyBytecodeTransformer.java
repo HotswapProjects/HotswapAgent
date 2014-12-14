@@ -19,9 +19,9 @@ public abstract class AbstractProxyBytecodeTransformer implements ProxyBytecodeT
 	private ClassPool classPool;
 	
 	/**
-	 * Classpool used to make a CtClass
 	 * 
 	 * @param classPool
+	 *            Classpool used to make a CtClass
 	 */
 	public AbstractProxyBytecodeTransformer(ClassPool classPool) {
 		this.classPool = classPool;
@@ -73,8 +73,8 @@ public abstract class AbstractProxyBytecodeTransformer implements ProxyBytecodeT
 		CtMethod[] methods = cc.getDeclaredMethods();
 		for (CtMethod ctMethod : methods) {
 			if (!ctMethod.isEmpty() && !Modifier.isStatic(ctMethod.getModifiers())) {
-				ctMethod.insertBefore("if(!" + clinitFieldName + "){synchronized(this){if(!" + clinitFieldName + "){"
-						+ initCall + "}}}");
+				ctMethod.insertBefore("if(!" + clinitFieldName + "){synchronized(" + cc.getName() + ".class){if(!"
+						+ clinitFieldName + "){" + initCall + "}}}");
 			}
 		}
 	}
