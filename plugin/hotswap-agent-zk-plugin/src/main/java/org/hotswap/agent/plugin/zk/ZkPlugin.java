@@ -152,8 +152,10 @@ public class ZkPlugin {
 
             try {
                 Method beanElResolverMethod = resolveClass("org.zkoss.zel.BeanELResolver").getDeclaredMethod("__resetCache");
-                for (Object registeredBeanELResolver : registeredBeanELResolvers)
+                for (Object registeredBeanELResolver : registeredBeanELResolvers) {
+                    LOGGER.trace("Invoking org.zkoss.zel.BeanELResolver.__resetCache on {}", registeredBeanELResolver);
                     beanElResolverMethod.invoke(registeredBeanELResolver);
+                }
 
                 Method binderImplMethod = resolveClass("org.zkoss.bind.impl.BinderImpl").getDeclaredMethod("__resetCache");
                 for (Object registerBinderImpl : registerBinderImpls)
