@@ -76,8 +76,8 @@ public class GeneratorParams {
 		if (paramsFromOtherClassLoader.getClass().getClassLoader() == GeneratorParams.class.getClassLoader()) {
 			return (GeneratorParams) paramsFromOtherClassLoader;
 		}
-		Object params = ReflectionHelper.get(paramsFromOtherClassLoader, "getParam");
-		Object generator = ReflectionHelper.get(paramsFromOtherClassLoader, "getGenerator");
+		Object params = ReflectionHelper.get(paramsFromOtherClassLoader, "param");
+		Object generator = ReflectionHelper.get(paramsFromOtherClassLoader, "generator");
 		return new GeneratorParams(generator, params);
 	}
 }
