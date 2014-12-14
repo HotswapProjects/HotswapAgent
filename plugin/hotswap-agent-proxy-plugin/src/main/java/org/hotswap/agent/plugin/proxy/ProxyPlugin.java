@@ -1,11 +1,15 @@
 package org.hotswap.agent.plugin.proxy;
 
+import java.beans.Introspector;
 import java.io.IOException;
 import java.lang.instrument.IllegalClassFormatException;
 
+import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.command.ReflectionCommand;
+import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
@@ -73,7 +77,10 @@ public class ProxyPlugin {
 		if (generatorParams == null) {
 			return classfileBuffer;
 		}
-		
+
+		// flush standard java beans caches
+		loader.loadClass("java.beans.Introspector").getMethod("flushCaches").invoke(null);
+
 		if (generatorParams.getParam().getClass().getName().endsWith(".Enhancer")) {
 			try {
 				return CglibEnhancerProxyTransformer.transform(classBeingRedefined, cp, classfileBuffer, loader,
@@ -90,6 +97,7 @@ public class ProxyPlugin {
 			} catch (Exception e) {
 				LOGGER.error("Error redifining Cglib proxy {}", e, classBeingRedefined.getName());
 			}
+
 		return classfileBuffer;
 	}
 	
