@@ -6,6 +6,7 @@ import org.springframework.beans.CachedIntrospectionResults;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -63,6 +64,7 @@ public class ResetSpringStaticCaches {
     public static void reset() {
         resetTypeVariableCache();
         resetAnnotationUtilsCache();
+        resetReflectionUtilsCache();
         resetPropetyCache();
         CachedIntrospectionResults.clearClassLoader(ResetSpringStaticCaches.class.getClassLoader());
     }
@@ -80,6 +82,16 @@ public class ResetSpringStaticCaches {
         }
     }
 
+    private static void resetReflectionUtilsCache() {
+        Map declaredMethodsCache = (Map) ReflectionHelper.getNoException(null, ReflectionUtils.class, "declaredMethodsCache");
+        if (declaredMethodsCache != null) {
+            declaredMethodsCache.clear();
+            LOGGER.trace("Cache cleared: ReflectionUtils.declaredMethodsCache");
+        } else {
+            LOGGER.trace("Cache NOT cleared: ReflectionUtils.declaredMethodsCache not exists");
+        }
+    }
+
     private static void resetAnnotationUtilsCache() {
         Map annotatedInterfaceCache = (Map) ReflectionHelper.getNoException(null, AnnotationUtils.class, "annotatedInterfaceCache");
         if (annotatedInterfaceCache != null) {
@@ -87,6 +99,14 @@ public class ResetSpringStaticCaches {
             LOGGER.trace("Cache cleared: AnnotationUtils.annotatedInterfaceCache");
         } else {
             LOGGER.trace("Cache NOT cleared: AnnotationUtils.annotatedInterfaceCache not exists in target Spring verion (pre 3.1.x)");
+        }
+        
+        Map findAnnotationCache = (Map) ReflectionHelper.getNoException(null, AnnotationUtils.class, "findAnnotationCache");
+        if (findAnnotationCache != null) {
+            findAnnotationCache.clear();
+            LOGGER.trace("Cache cleared: AnnotationUtils.findAnnotationCache");
+        } else {
+            LOGGER.trace("Cache NOT cleared: AnnotationUtils.findAnnotationCache not exists in target Spring version (pre 4.1)");
         }
 
     }
