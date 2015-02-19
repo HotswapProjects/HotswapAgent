@@ -23,6 +23,6 @@ public class HelloServiceImpl2 implements HelloService {
     }
 
     public String helloNewMethod() {
-        return "Hello from helloNewMethod:"  + name;
+        return "Hello from helloNewMethod";
     }
 }

@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
-import javax.inject.Inject;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent;
@@ -27,7 +26,7 @@ import org.junit.runner.RunWith;
  *
  * See maven setup for javaagent and autohotswap settings.
  *
- * @author Jiri Bubnik / modified Vladimir Dvorak
+ * @author Jiri Bubnik / modified by Vladimir Dvorak
  */
 @RunWith(WeldJUnit4Runner.class)
 public class WeldPluginTest {
@@ -75,7 +74,6 @@ public class WeldPluginTest {
      */
     @Test
     public void hotswapSeviceAddMethodTest() throws Exception {
-        /*
         swapClasses(HelloServiceImpl.class, HelloServiceImpl2.class.getName());
 
         String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(getBean(HelloService.class),
@@ -89,7 +87,6 @@ public class WeldPluginTest {
         // return configuration
         swapClasses(HelloServiceImpl.class, HelloServiceImpl.class.getName());
         assertEquals("Service:Hello", getBean(HelloServiceImpl.class).hello());
-        */
     }
 
     @Test
@@ -108,7 +105,6 @@ public class WeldPluginTest {
 
     @Test
     public void hotswapRepositoryNewMethodTest() throws Exception {
-        /*
         assertEquals("Service:Hello", getBean(HelloServiceImpl.class).hello());
         swapClasses(HelloProducer.class, HelloProducer2.class.getName());
 
@@ -119,7 +115,6 @@ public class WeldPluginTest {
         // return configuration
         swapClasses(HelloProducer.class, HelloProducer.class.getName());
         assertEquals("Service:Hello", getBean(HelloServiceImpl.class).hello());
-        */
     }
 
     @Test
