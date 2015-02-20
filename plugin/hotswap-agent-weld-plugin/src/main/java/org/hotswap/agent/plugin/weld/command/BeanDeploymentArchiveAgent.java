@@ -10,6 +10,8 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.weld.WeldPlugin;
+import org.hotswap.agent.util.PluginManagerInvoker;
 import org.jboss.weld.annotated.enhanced.EnhancedAnnotatedType;
 import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
 import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
@@ -45,18 +47,18 @@ public class BeanDeploymentArchiveAgent {
 
     public static BeanDeploymentArchiveAgent registerArchive(WeldBeanDeploymentArchive beanArchive) {
         BeanDeploymentArchiveAgent bdaAgent = null;
-        File path;
-        String pathPrefix = beanArchive.getId();
+        String bdaId = beanArchive.getId();
         try {
             // check that it is regular file
-            // toString() is weird and solves HiarchicalUriException for URI like "file:./src/resources/file.txt".
-            path = new File(pathPrefix);
-            if (!instances.containsKey(beanArchive)) {
+            // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
+            File path = new File(bdaId);
+            bdaAgent = instances.get(bdaId);
+            if (bdaAgent == null) {
                 bdaAgent = new BeanDeploymentArchiveAgent(beanArchive);
-                instances.put(beanArchive.getId(), bdaAgent);
+                instances.put(bdaId, bdaAgent);
             }
         } catch (IllegalArgumentException e) {
-            LOGGER.warning("Unable to watch deployment archive with archive id=", pathPrefix);
+            LOGGER.warning("Unable to watch deployment archive with archive id=", bdaId);
         }
 
         return bdaAgent;
@@ -83,9 +85,8 @@ public class BeanDeploymentArchiveAgent {
 
     public void register() {
         if (!registered) {
-            // TODO : there is a problem that WeldPlugin.class is unknown in applClassLoader
-//            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
-//                    "registerBeanDeplArchivePath", new Class[]{String.class}, new Object[]{deploymentArchivePath});
+            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
+                    "registerBeanDeplArchivePath", new Class[]{String.class}, new Object[]{bdaId});
             registered = true;
         }
     }
@@ -94,7 +95,7 @@ public class BeanDeploymentArchiveAgent {
      * Called by a reflection command from WeldPlugin transformer.
      *
      * @param bdaId the Bean Deployment Archive ID
-     * @param beanClassName the bean class name
+     * @param beanClassName
      * @throws IOException error working with classDefinition
      */
     public static void refreshClass(String bdaId, String beanClassName) throws IOException {
@@ -112,7 +113,7 @@ public class BeanDeploymentArchiveAgent {
      * Reload bean in existing bean manager.
      *
      * @param bdaId the Bean Deployment Archive ID
-     * @param beanClassName the bean class name
+     * @param beanClassName
      */
     public void reloadBean(String bdaId, String beanClassName) {
 

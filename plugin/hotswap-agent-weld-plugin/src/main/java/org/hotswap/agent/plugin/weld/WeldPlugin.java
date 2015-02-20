@@ -16,7 +16,6 @@ import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.ClassPathBeanRefreshCommand;
@@ -59,7 +58,16 @@ public class WeldPlugin {
 //    private Map<Object, Object> registeredBeans = new WeakHashMap<Object, Object>();
 //    private Map<String, CtClass> hotswappedCtClassMap = new HashMap<String, CtClass>();
 
-    public void registerBeanDeplArchivePath(final String bdaPath) {
+    public void init() {
+        LOGGER.info("CDI/Weld plugin initialized.");
+    }
+    /**
+     * Register watcher - in case of new file the file is not known
+     * to JVM and hence no hotswap is called.
+     *
+     * @param basePackage only files in a basePackage
+     */
+    public synchronized void registerBeanDeplArchivePath(final String bdaPath) {
         LOGGER.info("Registering path {}", bdaPath);
 
         URL resource = null;
@@ -120,8 +128,15 @@ public class WeldPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.bootstrap.WeldBootstrap")
     public static void weldBootstrapInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        CtMethod init = ctClass.getDeclaredMethod("startInitialization");
-        init.insertBefore(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
+        src.append("}");
+
+        for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
+            constructor.insertBeforeBody(src.toString());
+        }
+
         LOGGER.debug("org.jboss.weld.bootstrap.WeldBootstrap enhanced with plugin initialization.");
     }
 
