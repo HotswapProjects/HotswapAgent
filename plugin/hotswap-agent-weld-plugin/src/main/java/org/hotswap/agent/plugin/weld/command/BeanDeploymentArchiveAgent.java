@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.logging.AgentLogger;
@@ -16,6 +17,7 @@ import org.jboss.weld.annotated.enhanced.EnhancedAnnotatedType;
 import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
 import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
 import org.jboss.weld.bean.ManagedBean;
+import org.jboss.weld.bean.attributes.BeanAttributesFactory;
 import org.jboss.weld.bean.builtin.BeanManagerProxy;
 import org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive;
 import org.jboss.weld.manager.BeanManagerImpl;
@@ -126,29 +128,40 @@ public class BeanDeploymentArchiveAgent {
 
             if (beans != null && !beans.isEmpty()) {
                 for (Bean<?> bean : beans) {
-                    TypeStore store = new TypeStore();
-                    SharedObjectCache cache = new SharedObjectCache();
-                    ReflectionCache reflectionCache = ReflectionCacheFactory.newInstance(store);
-                    ClassTransformer classTransformer = new ClassTransformer(store,
-                            cache, reflectionCache, "STATIC_INSTANCE");
-                    BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, beanClass, bdaId);
-
-                    EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+                    EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
 
                     ((ManagedBean) bean).setProducer(
                             beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
                     );
                 }
+                LOGGER.debug("Bean reloaded '{}'", beanClassName);
             }
             else
             {
-                // TODO : create new bean
+                    EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
+                    BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
+                    ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
+                    // TODO:
+//                    beanManager.addBean(bean);
+                    LOGGER.debug("Bean defined '{}'", beanClassName);
             }
         }
-        catch (Exception e)
+        catch (ClassNotFoundException e)
         {
-            // TODO:
+            LOGGER.warning("Class load exception : {}",  e.getMessage());
         }
+    }
+
+    private EnhancedAnnotatedType getEnhancedAnnotatedType(String bdaId,
+            Class<?> beanClass) {
+        TypeStore store = new TypeStore();
+        SharedObjectCache cache = new SharedObjectCache();
+        ReflectionCache reflectionCache = ReflectionCacheFactory.newInstance(store);
+        ClassTransformer classTransformer = new ClassTransformer(store, cache, reflectionCache, "STATIC_INSTANCE");
+        BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, beanClass, bdaId);
+
+        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+        return eat;
     }
 
 }

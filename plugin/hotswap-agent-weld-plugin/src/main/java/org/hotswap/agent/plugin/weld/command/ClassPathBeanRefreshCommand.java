@@ -35,10 +35,18 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
-        String path = event.getURI().getPath();
-        path = path.substring(path.indexOf(archivePath.replace(".", "/")));
-        path = path.substring(0, path.indexOf(".class"));
-        this.className = path;
+        String classFullPath = event.getURI().getPath();
+        int indx = classFullPath.indexOf(archivePath);
+        if (indx == 0)
+        {
+            String classPath = classFullPath.substring(archivePath.length());
+            classPath = classPath.substring(0, classPath.indexOf(".class"));
+            if (classPath.startsWith("/"))
+            {
+                classPath = classPath.substring(1);
+            }
+            this.className = classPath.replace("/", ".");
+        }
     }
 
     @Override

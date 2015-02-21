@@ -92,8 +92,7 @@ public class WeldPlugin {
                             }
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
                                 // refresh weld only for new classes
-                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                                        bdaPath, event), WAIT_ON_CREATE);
+                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, bdaPath, event), WAIT_ON_CREATE);
                             }
                         }
                     }
