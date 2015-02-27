@@ -88,8 +88,8 @@ public class TomcatPlugin {
             }
         }
 
-        TomcatPlugin plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
-        plugin.init(version);
+        Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
+        ReflectionHelper.invoke(plugin, plugin.getClass(), "init", new Class[]{String.class}, version);
     }
 
     /**
