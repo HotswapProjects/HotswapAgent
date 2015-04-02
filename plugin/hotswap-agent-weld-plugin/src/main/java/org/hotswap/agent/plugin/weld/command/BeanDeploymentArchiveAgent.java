@@ -122,28 +122,33 @@ public class BeanDeploymentArchiveAgent {
         try {
             Class<?> beanClass = this.getClass().getClassLoader().loadClass(beanClassName);
 
-            BeanManagerImpl beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
+            // check if it is Object descendant
+            if (Object.class.isAssignableFrom(beanClass)) {
+                BeanManagerImpl beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
 
-            Set<Bean<?>> beans = beanManager.getBeans(beanClass);
+                Set<Bean<?>> beans = beanManager.getBeans(beanClass);
 
-            if (beans != null && !beans.isEmpty()) {
-                for (Bean<?> bean : beans) {
-                    EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
+                if (beans != null && !beans.isEmpty()) {
+                    for (Bean<?> bean : beans) {
+                        EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
 
-                    ((ManagedBean) bean).setProducer(
-                            beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
-                    );
+                        ((ManagedBean) bean).setProducer(
+                                beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
+                        );
+                    }
+                    LOGGER.debug("Bean reloaded '{}'", beanClassName);
+                } else {
+                    try {
+                        EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
+                        BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
+                        ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
+                        // TODO:
+    //                    beanManager.addBean(bean);
+                        LOGGER.debug("Bean defined '{}'", beanClassName);
+                    } catch (Exception ex) {
+                      // Temporary swallow exception
+                    }
                 }
-                LOGGER.debug("Bean reloaded '{}'", beanClassName);
-            }
-            else
-            {
-                    EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
-                    BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
-                    ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
-                    // TODO:
-//                    beanManager.addBean(bean);
-                    LOGGER.debug("Bean defined '{}'", beanClassName);
             }
         }
         catch (ClassNotFoundException e)
