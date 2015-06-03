@@ -1,7 +1,9 @@
 package org.hotswap.agent.plugin.weld.command;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,17 +37,17 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
-        String classFullPath = event.getURI().getPath();
+        String classFullPath = Paths.get(event.getURI()).toString();
         int indx = classFullPath.indexOf(archivePath);
         if (indx == 0)
         {
             String classPath = classFullPath.substring(archivePath.length());
             classPath = classPath.substring(0, classPath.indexOf(".class"));
-            if (classPath.startsWith("/"))
+            if (classPath.startsWith(File.separator))
             {
                 classPath = classPath.substring(1);
             }
-            this.className = classPath.replace("/", ".");
+            this.className = classPath.replace(File.separator, ".");
         }
     }
 

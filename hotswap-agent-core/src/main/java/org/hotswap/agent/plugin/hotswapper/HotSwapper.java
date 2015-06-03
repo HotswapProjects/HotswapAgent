@@ -7,6 +7,8 @@ import org.hotswap.agent.javassist.LoaderClassPath;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by bubnik on 22.5.2014.
@@ -38,6 +40,19 @@ public class HotSwapper {
         reloadMap.put(original, bytes);
 
         PluginManager.getInstance().hotswap(reloadMap);
+    }
+
+    public static Class newClass(String className, String directory, ClassLoader cl){
+        try {
+            ClassPool classPool = new ClassPool();
+            classPool.appendClassPath(new LoaderClassPath(cl));
+            CtClass makeClass = classPool.makeClass(className);
+            makeClass.writeFile(directory);
+            return makeClass.toClass();
+        } catch (Throwable ex) {
+            Logger.getLogger(HotSwapper.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
+        } 
     }
 
 

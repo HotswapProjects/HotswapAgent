@@ -13,7 +13,7 @@ import org.hotswap.agent.plugin.weld.testBeans.HelloService;
 @Singleton
 @Alternative
 public class HelloServiceImpl2 implements HelloService {
-    String name = "Service2";
+    String name;
 
     @Inject
     ChangedHelloProducer helloChanged;
@@ -24,5 +24,9 @@ public class HelloServiceImpl2 implements HelloService {
 
     public String helloNewMethod() {
         return "Hello from helloNewMethod";
+    }
+
+    public void initName(){
+        this.name = "Service2";
     }
 }

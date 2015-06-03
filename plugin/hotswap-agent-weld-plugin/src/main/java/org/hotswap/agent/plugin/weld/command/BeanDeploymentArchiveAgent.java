@@ -2,7 +2,11 @@ package org.hotswap.agent.plugin.weld.command;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,9 +38,9 @@ public class BeanDeploymentArchiveAgent {
     private static Map<String, BeanDeploymentArchiveAgent> instances = new HashMap<String, BeanDeploymentArchiveAgent>();
 
     /**
-     * Flag to check reload status.
-     * In unit test we need to wait for reload finish before the test can continue. Set flag to true
-     * in the test class and wait until the flag is false again.
+     * Flag to check reload status. In unit test we need to wait for reload
+     * finish before the test can continue. Set flag to true in the test class
+     * and wait until the flag is false again.
      */
     public static boolean reloadFlag = false;
 
@@ -68,16 +72,27 @@ public class BeanDeploymentArchiveAgent {
 
     /**
      * Get archive instance by supplied path
+     *
      * @param bdaId the Bean Deployment Archive ID
      * @return the archive agent
      */
     public static BeanDeploymentArchiveAgent getInstance(String bdaId) {
         for (BeanDeploymentArchiveAgent scannerAgent : instances.values()) {
-            if (bdaId.equals(scannerAgent.bdaId))
+            if (bdaId.equals(scannerAgent.bdaId)) {
                 return scannerAgent;
+            }
         }
         return null;
     }
+
+    public static Collection<BeanDeploymentArchiveAgent> getInstances() {
+        return instances.values();
+    }
+
+    public String geId(){
+        return bdaId;
+    }
+
 
     // Create new instance from getInstance(ClassPathBeanDefinitionScanner scanner) and obtain services from the scanner
     private BeanDeploymentArchiveAgent(WeldBeanDeploymentArchive archive) {
@@ -121,7 +136,6 @@ public class BeanDeploymentArchiveAgent {
 
         try {
             Class<?> beanClass = this.getClass().getClassLoader().loadClass(beanClassName);
-
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {
                 BeanManagerImpl beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
@@ -131,10 +145,16 @@ public class BeanDeploymentArchiveAgent {
                 if (beans != null && !beans.isEmpty()) {
                     for (Bean<?> bean : beans) {
                         EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
+                        final ManagedBean managedBean = (ManagedBean) bean;
 
-                        ((ManagedBean) bean).setProducer(
+                        (managedBean).setProducer(
                                 beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
                         );
+                        Object get = beanManager.getContext(bean.getScope()).get(bean);
+                        if (get != null) {
+                            LOGGER.debug("Bean injections point reinitialize '{}'", beanClassName);
+                            (managedBean).getProducer().inject(get, beanManager.createCreationalContext(bean));
+                        }
                     }
                     LOGGER.debug("Bean reloaded '{}'", beanClassName);
                 } else {
@@ -142,18 +162,21 @@ public class BeanDeploymentArchiveAgent {
                         EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
                         BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
                         ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
+                        Field field = beanManager.getClass().getDeclaredField("beanSet");
+                        field.setAccessible(true);
+                        field.set(beanManager, Collections.synchronizedSet(new HashSet<Bean<?>>()));
                         // TODO:
-    //                    beanManager.addBean(bean);
+                        beanManager.addBean(bean);
+                        beanManager.getBeanResolver().clear();
+//                        beanManager.cleanupAfterBoot();
                         LOGGER.debug("Bean defined '{}'", beanClassName);
                     } catch (Exception ex) {
-                      // Temporary swallow exception
+                        LOGGER.debug(bdaId, ex);
                     }
                 }
             }
-        }
-        catch (ClassNotFoundException e)
-        {
-            LOGGER.warning("Class load exception : {}",  e.getMessage());
+        } catch (ClassNotFoundException e) {
+            LOGGER.warning("Class load exception : {}", e.getMessage());
         }
     }
 
