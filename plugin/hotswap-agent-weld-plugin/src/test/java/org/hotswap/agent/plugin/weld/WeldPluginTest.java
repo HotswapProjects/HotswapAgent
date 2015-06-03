@@ -1,5 +1,7 @@
 package org.hotswap.agent.plugin.weld;
 
+import java.net.URL;
+import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -18,6 +20,7 @@ import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloProducer2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloServiceImpl2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
+import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -47,41 +50,42 @@ public class WeldPluginTest {
         assertEquals("Dependent:Service:Hello", getBean(DependentHello.class).hello());
     }
 
-
     /**
      * Switch method implementation (using bean definition or interface).
      */
     @Test
     public void hotswapServiceTest() throws Exception {
-        /*
+
         HelloServiceImpl bean = getBean(HelloServiceImpl.class);
-		assertEquals("Service:Hello", bean.hello());
+        assertEquals("Service:Hello", bean.hello());
         swapClasses(HelloServiceImpl.class, HelloServiceImpl2.class.getName());
-        String v = bean.hello();
-        assertEquals("Service2:ChangedHello", bean.hello());
+
+        assertEquals("null:ChangedHello", bean.hello());
+        HelloServiceImpl.class.getMethod("initName", new Class[0]).invoke(bean, new Object[0]);
+        assertEquals("Service2:ChangedHello", getBean(HelloServiceImpl.class).hello());
         // ensure that using interface is Ok as well
         assertEquals("Service2:ChangedHello", getBean(HelloService.class).hello());
 
         // return configuration
         swapClasses(HelloServiceImpl.class, HelloServiceImpl.class.getName());
         assertEquals("Service:Hello", bean.hello());
-        */
+
     }
 
-
     /**
-     * Add new method - invoke via reflection (not available at compilation time).
+     * Add new method - invoke via reflection (not available at compilation
+     * time).
      */
     @Test
     public void hotswapSeviceAddMethodTest() throws Exception {
         swapClasses(HelloServiceImpl.class, HelloServiceImpl2.class.getName());
 
         String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(getBean(HelloService.class),
-                HelloServiceImpl.class, "helloNewMethod", new Class[] {});
+                HelloServiceImpl.class, "helloNewMethod", new Class[]{});
         assertEquals("Hello from helloNewMethod", helloNewMethodIfaceVal);
 
         String helloNewMethodImplVal = (String) ReflectionHelper.invoke(getBean(HelloServiceImpl.class),
-                HelloServiceImpl.class, "helloNewMethod", new Class[] {});
+                HelloServiceImpl.class, "helloNewMethod", new Class[]{});
         assertEquals("Hello from helloNewMethod", helloNewMethodImplVal);
 
         // return configuration
@@ -91,16 +95,16 @@ public class WeldPluginTest {
 
     @Test
     public void hotswapRepositoryTest() throws Exception {
-        /*
+
         HelloServiceImpl bean = getBean(HelloServiceImpl.class);
-		assertEquals("Service:Hello", bean.hello());
+        assertEquals("Service:Hello", bean.hello());
         swapClasses(HelloProducer.class, HelloProducer2.class.getName());
         assertEquals("Service:ChangedHello", bean.hello());
 
         // return configuration
         swapClasses(HelloProducer.class, HelloProducer.class.getName());
         assertEquals("Service:Hello", bean.hello());
-        */
+
     }
 
     @Test
@@ -109,7 +113,7 @@ public class WeldPluginTest {
         swapClasses(HelloProducer.class, HelloProducer2.class.getName());
 
         String helloNewMethodImplVal = (String) ReflectionHelper.invoke(getBean(HelloProducer.class),
-                HelloProducer.class, "helloNewMethod", new Class[] {});
+                HelloProducer.class, "helloNewMethod", new Class[]{});
         assertEquals("Hello from helloNewMethod2", helloNewMethodImplVal);
 
         // return configuration
@@ -139,26 +143,41 @@ public class WeldPluginTest {
      * Plugin is currently unable to reload prototype bean instance.
      */
     @Test
-    public void hotswapPrototypeTestFailWhenHoldingInstance() throws Exception {
-        /*
+    public void hotswapPrototypeTestNotFailWhenHoldingInstanceBecauseSingletonInjectionPointWasReinitialize() throws Exception {
+
         DependentHello dependentBeanInstance = getBean(DependentHello.class);
         assertEquals("Dependent:Service:Hello", dependentBeanInstance.hello());
 
         // swap service this is dependent to
-        try {
-            swapClasses(HelloServiceImpl.class, HelloServiceImpl2.class.getName());
-            assertEquals("Dependent:Service2:Hello", dependentBeanInstance.hello());
-            throw new IllegalStateException("Reload dependant bean should not be correctly initialized.");
-        } catch (NullPointerException e) {
-            // BeanServiceImpl2 contains reference to different bean. Because existing reference
-            // is not changed, this reference is null
-        }
+        swapClasses(HelloServiceImpl.class, HelloServiceImpl2.class.getName());
+        ReflectionHelper.invoke(getBean(HelloService.class),
+                HelloServiceImpl.class, "initName", new Class[]{});
+        assertEquals("Dependent:Service2:ChangedHello", dependentBeanInstance.hello());
 
         // return configuration
         swapClasses(HelloServiceImpl.class, HelloServiceImpl.class.getName());
         assertEquals("Dependent:Service:Hello", getBean(DependentHello.class).hello());
-        */
+
     }
+
+    @Test
+    public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
+        WeldPlugin.IS_TEST_ENVARIMENT = true;
+        Collection<BeanDeploymentArchiveAgent> instances = BeanDeploymentArchiveAgent.getInstances();
+        for (BeanDeploymentArchiveAgent instance : instances) {
+            System.out.println(instance.geId());
+            //create new class and class file. rerun test only after clean
+            Class newClass = HotSwapper.newClass("NewClass", instance.geId(), getClass().getClassLoader());
+            URL resource = newClass.getClassLoader().getResource("NewClass.class");
+            System.out.println(resource);
+            Thread.sleep(1000); // wait redefine
+            Object bean = getBean(newClass);
+            assertNotNull(bean);
+            break;
+        }
+        WeldPlugin.IS_TEST_ENVARIMENT = false;
+    }
+
 
     private void swapClasses(Class original, String swap) throws Exception {
         BeanDeploymentArchiveAgent.reloadFlag = true;
