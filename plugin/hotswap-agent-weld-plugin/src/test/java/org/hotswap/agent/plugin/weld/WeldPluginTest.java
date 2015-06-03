@@ -162,7 +162,7 @@ public class WeldPluginTest {
 
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
-        WeldPlugin.IS_TEST_ENVARIMENT = true;
+        WeldPlugin.IS_TEST_ENVIRONMENT = true;
         Collection<BeanDeploymentArchiveAgent> instances = BeanDeploymentArchiveAgent.getInstances();
         for (BeanDeploymentArchiveAgent instance : instances) {
             System.out.println(instance.geId());
@@ -175,7 +175,7 @@ public class WeldPluginTest {
             assertNotNull(bean);
             break;
         }
-        WeldPlugin.IS_TEST_ENVARIMENT = false;
+        WeldPlugin.IS_TEST_ENVIRONMENT = false;
     }
 
 

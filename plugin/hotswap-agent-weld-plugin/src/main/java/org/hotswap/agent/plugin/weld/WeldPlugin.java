@@ -37,7 +37,7 @@ import org.hotswap.agent.watch.Watcher;
         expectedVersions = {"All between 2.0 - 2.2"})
 public class WeldPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(WeldPlugin.class);
-    static boolean IS_TEST_ENVARIMENT = Boolean.FALSE;
+    static boolean IS_TEST_ENVIRONMENT = Boolean.FALSE;
 
     /**
      * If a class is modified in IDE, sequence of multiple events is generated -
@@ -91,7 +91,7 @@ public class WeldPlugin {
                                 LOGGER.trace("Watch event on resource '{}' skipped, probably Ok because of delete/create event sequence (compilation not finished yet).", e, event.getURI());
                                 return;
                             }
-                            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVARIMENT) {
+                            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
                                 scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, bdaPath, event), WAIT_ON_CREATE);
