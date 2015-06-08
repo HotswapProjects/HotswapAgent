@@ -245,7 +245,8 @@ Credits
 Hotswap agent:
 
 * Jiri Bubnik - project coordinator, initial implementation
-* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox plugins implementation
+* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld plugins implementation
+* Sergey Lysenko - Weld plugin
 * Jan Tecl - web design
 
 DCEVM:
