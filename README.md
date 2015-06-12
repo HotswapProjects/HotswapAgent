@@ -155,7 +155,7 @@ bean resolver cache.
 * Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
 * JSF (mojarra 2.1, 2.2) - support for application resource bundle files change (properties files).
 * OsgiEquinox - Check class changes on extraClasspath and reload them in appropriate Equinox class loader. Support hotswap in Eclipse RCP.
-* CDI/Weld - reload bean class definition after class change. Currently it doesn't support new class definition.
+* CDI/Weld - reload bean class definition after class change.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
 
