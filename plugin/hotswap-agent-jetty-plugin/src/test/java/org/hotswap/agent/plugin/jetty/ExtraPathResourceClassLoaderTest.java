@@ -6,7 +6,7 @@ import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.nio.WatcherNIO2;
 import org.junit.Test;
 
-import java.io.File;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,9 +38,9 @@ public class ExtraPathResourceClassLoaderTest {
 
         assertNull("Not returned before modification", classLoader.getResource(tempFile.getName()));
 
-        // modify the tested file
-        tempFile.setLastModified(new Date().getTime());
-
+        // modify the tested file, make sure we change second for Mac file system.
+        tempFile.setLastModified(new Date().getTime()+1000);
+		        
         // check that classloader will return the modified file
         WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
