@@ -41,10 +41,6 @@ public class PluginManager {
     private PluginManager() {
         hotswapTransformer = new HotswapTransformer();
         pluginRegistry = new PluginRegistry(this, classLoaderPatcher);
-
-        // create default configuration from this classloader
-        ClassLoader classLoader = getClass().getClassLoader();
-        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
     }
 
     // the instrumentation API
@@ -93,6 +89,11 @@ public class PluginManager {
      */
     public void init(Instrumentation instrumentation) {
         this.instrumentation = instrumentation;
+
+        // create default configuration from this classloader
+        ClassLoader classLoader = getClass().getClassLoader();
+        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
+
         if (watcher == null) {
             try {
                 watcher = new WatcherFactory().getWatcher();
