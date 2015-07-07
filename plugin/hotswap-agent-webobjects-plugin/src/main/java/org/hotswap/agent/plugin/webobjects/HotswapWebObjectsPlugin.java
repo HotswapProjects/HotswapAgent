@@ -6,7 +6,8 @@ import java.lang.reflect.*;
 import java.net.URI;
 
 import org.hotswap.agent.annotation.*;
-import org.hotswap.agent.config.PluginConfiguration;
+import org.hotswap.agent.command.*;
+import org.hotswap.agent.config.*;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -86,23 +87,72 @@ public class HotswapWebObjectsPlugin {
     public void reloadClass(CtClass ctClass) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, CannotCompileException {
     	LOGGER.debug("Class "+ctClass.getSimpleName()+" redefined.");
     	
-    	LOGGER.info("Resetting KeyValueCoding caches");
-    	kvcDefaultImplementation_flushCaches.invoke(null);
-    	kvcReflectionKeyBindingCreation_flushCaches.invoke(null);
-    	kvcValueAccessor_flushCaches.invoke(null);
+    	PluginManager.getInstance().getScheduler().scheduleCommand(clearKVCCacheCommand);
 
 		woApplication_removeComponentDefinitionCacheContents.invoke(woApplicationObject);
     	if (ctClass.subclassOf(woComponentCtClass)) {
-    		woApplication_removeComponentDefinitionCacheContents.invoke(woApplicationObject);
-    		LOGGER.info("Resetting Component Definition cache");
+    		PluginManager.getInstance().getScheduler().scheduleCommand(clearComponentCacheCommand);
     	}
     	if (ctClass.subclassOf(woActionCtClass)) {
-    		nsThreadsafeMutableDictionary_removeAllObjects.invoke(actionClassesCacheDictionnary);
-    		LOGGER.info("Resetting Action class cache");
+    		PluginManager.getInstance().getScheduler().scheduleCommand(clearActionCacheCommand);
     	}
     	if (ctClass.subclassOf(nsValidationCtClass)) {
-    		nsValidationDefaultImplementation_flushCaches.invoke(null);
-    		LOGGER.info("Resetting NSValidation cache");
+    		PluginManager.getInstance().getScheduler().scheduleCommand(clearValidationCacheCommand);
     	}
     }
+    
+     private ClearKVCCache clearKVCCacheCommand = new ClearKVCCache();
+     public class ClearKVCCache implements Command {
+		@Override
+		public void executeCommand() {
+			try {
+				kvcDefaultImplementation_flushCaches.invoke(null);
+				kvcReflectionKeyBindingCreation_flushCaches.invoke(null);
+				kvcValueAccessor_flushCaches.invoke(null);
+				LOGGER.info("Resetting KeyValueCoding caches");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+     private ClearComponentCache clearComponentCacheCommand = new ClearComponentCache();
+     public class ClearComponentCache implements Command {
+		@Override
+		public void executeCommand() {
+			try {
+				woApplication_removeComponentDefinitionCacheContents.invoke(woApplicationObject);
+				LOGGER.info("Resetting Component Definition cache");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+     private ClearActionCache clearActionCacheCommand = new ClearActionCache();
+     public class ClearActionCache implements Command {
+		@Override
+		public void executeCommand() {
+			try {
+				nsThreadsafeMutableDictionary_removeAllObjects.invoke(actionClassesCacheDictionnary);
+				LOGGER.info("Resetting Action class cache");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+     private ClearValidationCache clearValidationCacheCommand = new ClearValidationCache();
+     public class ClearValidationCache implements Command {
+		@Override
+		public void executeCommand() {
+			try {
+				nsValidationDefaultImplementation_flushCaches.invoke(null);
+				LOGGER.info("Resetting NSValidation cache");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 }
