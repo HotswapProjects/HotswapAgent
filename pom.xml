@@ -27,6 +27,7 @@
         <module>plugin/hotswap-agent-el-resolver-plugin</module>
         <module>plugin/hotswap-agent-osgiequinox-plugin</module>
         <module>plugin/hotswap-agent-proxy-plugin</module>
+        <module>plugin/hotswap-agent-webobjects-plugin</module>
         <module>plugin/hotswap-agent-weld-plugin</module>
         <module>hotswap-agent</module>
     </modules>
