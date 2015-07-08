@@ -156,6 +156,7 @@ bean resolver cache.
 * JSF (mojarra 2.1, 2.2) - support for application resource bundle files change (properties files).
 * OsgiEquinox - Check class changes on extraClasspath and reload them in appropriate Equinox class loader. Support hotswap in Eclipse RCP.
 * CDI/Weld - reload bean class definition after class change.
+* WebObjects - Clear key value coding, component, action and validation caches after class change.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
 
@@ -247,6 +248,7 @@ Hotswap agent:
 * Jiri Bubnik - project coordinator, initial implementation
 * Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld plugins implementation
 * Sergey Lysenko - Weld plugin
+* Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
 
 DCEVM:
