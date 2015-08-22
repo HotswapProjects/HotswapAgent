@@ -191,8 +191,7 @@ public class OsgiEquinoxPlugin {
 
                 Class clazz  = classLoader.loadClass(ctClass.getName());
 
-                if (putToReloadMap)
-                {
+                if (putToReloadMap) {
                     synchronized (reloadMap) {
                         reloadMap.put(clazz, bytecode);
                     }

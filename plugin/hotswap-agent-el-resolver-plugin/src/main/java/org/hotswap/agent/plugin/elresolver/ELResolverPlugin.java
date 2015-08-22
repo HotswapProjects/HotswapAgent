@@ -19,12 +19,12 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
- * Clear javax.el.BeanELResolver cache after a class is redefined.
+ * Clear javax.el.BeanELResolver cache after any class redefinition.
  *
  * @author Vladimir Dvorak
  */
 @Plugin(name = "ELResolver",
-        description = "Purge BeanELResolver class cache on any class change.",
+        description = "Purge BeanELResolver class cache on any class redefinition.",
         testedVersions = {"2.2"},
         expectedVersions = {"2.2"})
 public class ELResolverPlugin {
@@ -56,24 +56,18 @@ public class ELResolverPlugin {
         }
 
         boolean found = false;
-        if (checkJuelEL(ctClass))
-        {
+        if (checkJuelEL(ctClass)) {
             found = true;
             LOGGER.debug("JuelEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
-        }
-        else if (checkApacheCommonsEL(ctClass))
-        {
+        } else if (checkApacheCommonsEL(ctClass)) {
             found = true;
             LOGGER.debug("ApacheCommonsEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
-        }
-        else if (checkJBoss_3_0_EL(ctClass))
-        {
+        } else if (checkJBoss_3_0_EL(ctClass)) {
             found = true;
             LOGGER.debug("JBossEL 3.0 - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
 
-        if (!found)
-        {
+        if (!found) {
             LOGGER.warning("Unable to add javax.el.BeanELResolver." + PURGE_CLASS_CACHE_METHOD_NAME + "() method. Purging will not be available.");
         }
     }
@@ -135,6 +129,5 @@ public class ELResolverPlugin {
         PurgeBeanELResolverCacheCommand cmd = new PurgeBeanELResolverCacheCommand(appClassLoader, registeredBeanELResolvers);
         scheduler.scheduleCommand(cmd);
     }
-
 
 }

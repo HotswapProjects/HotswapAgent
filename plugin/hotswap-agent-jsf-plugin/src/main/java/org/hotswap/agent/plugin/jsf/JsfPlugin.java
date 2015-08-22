@@ -21,7 +21,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 @Plugin(name = "JSF",
-        description = "JSF Framework refreshes resource bundles. Currently only for mojarra",
+        description = "JSF/Mojarra. Clear resource bundle cache when *.properties files are changed.",
         testedVersions = {"2.1.23, 2.2.8"},
         expectedVersions = {"2.1", "2.2"})
 public class JsfPlugin {

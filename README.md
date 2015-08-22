@@ -8,9 +8,9 @@ Save&Reload during development should be standard and many other languages (incl
 This project is still in a beta version.
 
 ### Easy to start
-Download and install latest [DCEVM Java patch](https://github.com/dcevm/dcevm/releases) + 
-[agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) and launch your application server 
-with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup. 
+Download and install latest [DCEVM Java patch](https://github.com/dcevm/dcevm/releases) +
+[agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) and launch your application server
+with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup.
 Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.
 
 ### Plugins
@@ -28,14 +28,14 @@ example/integration test. There is always need for documentation improvement :-)
 Quick start:
 ===========
 ### Install
-1. download [latest release of DCEVM Java patch](https://github.com/dcevm/dcevm/releases) and launch the installer 
+1. download [latest release of DCEVM Java patch](https://github.com/dcevm/dcevm/releases) and launch the installer
 (e.g. `java -jar installer-light.jar`). Currently you need to select correct installer for Java major version (7/8).
 1. select java installation directory on your disc and press "Install DCEVM as altjvm" button. Java 1.7+ versions are supported.
-1. download [latest release of Hotswap agent jar](https://github.com/HotswapProjects/HotswapAgent/releases), 
+1. download [latest release of Hotswap agent jar](https://github.com/HotswapProjects/HotswapAgent/releases),
 unpack `hotswap-agent.jar` and put it anywhere on your disc. For example: `C:\java\hotswap-agent.jar`
 
 ### Run your application
-1. add following command line java attributes: `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar` (you 
+1. add following command line java attributes: `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar` (you
 need to replace PATH_TO_AGENT with an actual) directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\hotswap-agent.jar YourApp`.
   See [IntelliJ IDEA](https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss)
   and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides.
@@ -52,12 +52,12 @@ need to replace PATH_TO_AGENT with an actual) directory. For example `java -XXal
 ### What is available?
 * Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
   is hierarchy change (change the superclass or remove an interface).
-    * You can use standard Java Hotswap from IDE in debug mode to reload changed class 
+    * You can use standard Java Hotswap from IDE in debug mode to reload changed class
     * or set autoHotswap property `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar=autoHotswap=true` to reload
     changed classes after compilation. This setup allows even reload on production system without restart.
 * Automatic configuration - all local classes and resources known to the running Java application are automatically
   discovered and watched for reload (all files on local filesystem, not inside JAR file).
-* Extra classpath - Need change a runtime class inside dependent JAR? Use extraClasspath property to add any directory 
+* Extra classpath - Need change a runtime class inside dependent JAR? Use extraClasspath property to add any directory
 as a classpath to watch for class files.
 * Reload resource after a change - resources from webapp directory are usually reloaded by application server. But what about
   other resources like src/main/resources? Use watchResources property to add any directory to watch for a resource change.
@@ -73,14 +73,14 @@ This project is similar to [JRebel](http://zeroturnaround.com/software/jrebel/).
 * JRebel is currently more mature and contains more plugins.
 * JRebel is neither open source nor free.
 * JRebel modifies bytecode of all classes on reload. You need special IDE plugin to fix debugging.
-* HotswapAgent extraClasspath is similar to JRebel <classpath> configuration 
+* HotswapAgent extraClasspath is similar to JRebel <classpath> configuration
 * HotswapAgent adds watchResources configuration
 
 ### Examples
 See [HotswapAgentExamples](https://github.com/HotswapProjects/HotswapAgentExamples) GitHub project.
 The purpose of an example application is:
 
-* complex automate integration tests (check various configurations before a release, see `run-tests.sh` script) 
+* complex automate integration tests (check various configurations before a release, see `run-tests.sh` script)
 * to check "real world" plugin usage during plugin development (i.e. inside container)
 * to provide working solution for typical application setups
 * sandbox to simulate issues for existing or new setups
@@ -109,9 +109,9 @@ Full syntax of command line options is:
 Hotswap agent accepts following options:
 
 * autoHotswap=true - watch all .class files for change and automatically Hotswap the class in the running application
- (instead of running Hotswap from your IDE debugging session) 
-* disablePlugin=[pluginName] - disable a plugin. Note that this will completely forbid the plugin to load 
-    (opposite to disablePlugin option in hotswap-agent.properties, which will only disable the plugin for a classloader. 
+ (instead of running Hotswap from your IDE debugging session)
+* disablePlugin=[pluginName] - disable a plugin. Note that this will completely forbid the plugin to load
+    (opposite to disablePlugin option in hotswap-agent.properties, which will only disable the plugin for a classloader.
     You can repeat this option for every plugin to disable.
 
 
@@ -154,7 +154,7 @@ bean resolver cache.
 * ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
 * JSF (mojarra 2.1, 2.2) - support for application resource bundle files change (properties files).
-* OsgiEquinox - Check class changes on extraClasspath and reload them in appropriate Equinox class loader. Support hotswap in Eclipse RCP.
+* OsgiEquinox - Hotswap support for Eclipse plugin or Eclipse platform development.
 * CDI/Weld - reload bean class definition after class change.
 * WebObjects - Clear key value coding, component, action and validation caches after class change.
 
@@ -195,9 +195,9 @@ See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgentExamples/blob
 
 Creating Release
 ================
-Launch `run-tests.sh` script in the main directory. Currently you have to setup JAVA_HOME location directory manually. 
-At least Java 7 and Java 8 with DCEVM should be checked before a release. All automatic tests are set to fail 
-the whole script in case of any single test failure. 
+Launch `run-tests.sh` script in the main directory. Currently you have to setup JAVA_HOME location directory manually.
+At least Java 7 and Java 8 with DCEVM should be checked before a release. All automatic tests are set to fail
+the whole script in case of any single test failure.
 
 Go to directory representing repository root. In case DCEVM is named `dcevm`
 
@@ -213,33 +213,31 @@ Plugin specific settings
 ========================
 
 ### OsgiEquinox / Eclipse RCP
-OsgiEquinox plugin provides hotswap support for Eclipse plugin development in Eclipse RCP (Do not confuse it with common Eclipse development!). 
-For hotswap in RUNTIME you will need to setup following options (debuggee Eclipse instance):
+OsgiEquinox / Eclipse plugin provides hotswap support for Eclipse plugin or Eclipse platform development
+(Do not confuse it with common development in Eclipse!).
 
-hotswap-agent.properties:
+Following options should be setup in eclipse.ini for debugee Eclipse instance:
 
-    extraClasspath=[your_development_classpath/]
-
-eclipse.ini:
-
+     # use application classloader for the framework
     -Dosgi.frameworkParentClassloader=app
-    -Dosgi.dev=[your_development_classpath/]
+     # development classpath that is added to each plugin classpath
+    -Dosgi.dev=[extra_classpath]
+     # use dcevm as JVM
     -XXaltjvm=dcevm
+     # enable hotswapagent
     -javaagent:PATH_TO_AGENT/hotswap-agent.jar
+     # enable remote debugging on port 8000
+    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
 
-For hotswap while dubugging eclipse instance from another eclipse instance you will need to use the same RUNTIME option and additionaly use the following DEBUG options:
-    
-hotswap-agent.properties:
+extra_classpath points to directory with compiled classes. When a new class is compiled it is sent by remote debugger to HotswapAgent. HotswapAgent
+stores this file into extra_classpath directory.
 
+It is also necessary to setup following hotswap-agent.properties:
+
+    extraClasspath=[extra_classpath]
     osgiEquinox.debugMode=true
 
-eclipse.ini
-
-    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
-    
-then connect the debugger to port 8000 and happy hotswapping!
-
-HotswapAgent writes all new/modified classes to extraClasspath in the DEBUG mode, so there is no need to manually copy them.
+then connect the IDE debugger (eclipse, netbeans or idea) to port 8000 and happy hotswapping!
 
 Credits
 =======

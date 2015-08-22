@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 @Plugin(name = "Seam",
-        description = "Seam framework maintains message and bean retrospection cache.",
+        description = "Seam framework (http://seamframework.org/). Clears java.beans.Introspector cache and org.jboss.el.util.ReferenceCache on any class redefinition.",
         testedVersions = {"2.3.1"},
         expectedVersions = {"2.2", "2.3"})
 public class SeamPlugin {
