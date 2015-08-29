@@ -1,7 +1,12 @@
 package org.hotswap.agent.plugin.tomcat;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtPrimitiveType;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -31,7 +36,6 @@ public class WebappLoaderTransformer {
             try {
                 // fail for older tomcat version, which does not contain context
                 ctClass.getDeclaredMethod("getContext");
-
                 ctClass.getDeclaredMethod("startInternal").insertAfter(
                         TomcatPlugin.class.getName() + ".init(getClassLoader(), getContext().getResources());"
                 );
@@ -180,7 +184,7 @@ public class WebappLoaderTransformer {
     }
 
     /**
-     * Disable loader caches - Tomcat 7x,8x.
+     * Disable loader caches - Tomcat 7x
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.core.StandardContext")
     public static void patchStandardContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
@@ -188,9 +192,8 @@ public class WebappLoaderTransformer {
             // force disable caching
             ctClass.getDeclaredMethod("isCachingAllowed").setBody("return false;");
         } catch (NotFoundException e) {
-            LOGGER.debug("org.apache.catalina.core.StandardContext does not contain isCachingAllowed() method (pre 7x version).");
+            LOGGER.debug("org.apache.catalina.core.StandardContext does not contain isCachingAllowed() method (not 7x version).");
         }
-
 
         // Tomcat version
         // this.getServletContext().getServerInfo()
@@ -198,32 +201,11 @@ public class WebappLoaderTransformer {
 
     /**
      * Brute force clear caches before any resource is loaded.
-     * WebappClassLoader - Tomcat 7
+     * WebappClassLoader - Tomcat 7x
+     * WebappClassLoaderBase - Tomcat 8x
      */
-    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.loader.WebappClassLoader")
-    public static void patchWebappClassLoader7(ClassPool classPool,CtClass ctClass) throws CannotCompileException, NotFoundException {
-        if (!webappClassLoaderPatched) {
-            try {
-                // clear classloader cache
-                ctClass.getDeclaredMethod("getResource", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
-                        "resourceEntries.clear();"
-                );
-                ctClass.getDeclaredMethod("getResourceAsStream", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
-                        "resourceEntries.clear();"
-                );
-                webappClassLoaderPatched = true;
-            } catch (NotFoundException e) {
-                LOGGER.trace("WebappClassLoader does not contain getResource(), getResourceAsStream method.");
-            }
-        }
-    }
-
-    /**
-     * Brute force clear caches before any resource is loaded.
-     * WebappClassLoader - Tomcat 8
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.loader.WebappClassLoaderBase")
-    public static void patchWebappClassLoader8(ClassPool classPool,CtClass ctClass) throws CannotCompileException, NotFoundException {
+    @OnClassLoadEvent(classNameRegexp = "(org.apache.catalina.loader.WebappClassLoader)|(org.apache.catalina.loader.WebappClassLoaderBase)")
+    public static void patchWebappClassLoader(ClassPool classPool,CtClass ctClass) throws CannotCompileException, NotFoundException {
         if (!webappClassLoaderPatched) {
             try {
                 // clear classloader cache
