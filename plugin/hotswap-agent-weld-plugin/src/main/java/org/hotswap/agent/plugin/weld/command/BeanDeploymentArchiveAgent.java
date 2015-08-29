@@ -150,10 +150,14 @@ public class BeanDeploymentArchiveAgent {
                         (managedBean).setProducer(
                                 beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
                         );
-                        Object get = beanManager.getContext(bean.getScope()).get(bean);
-                        if (get != null) {
-                            LOGGER.debug("Bean injections point reinitialize '{}'", beanClassName);
-                            (managedBean).getProducer().inject(get, beanManager.createCreationalContext(bean));
+                        try {
+                            Object get = beanManager.getContext(bean.getScope()).get(bean);
+                            if (get != null) {
+                                LOGGER.debug("Bean injections point reinitialize '{}'", beanClassName);
+                                (managedBean).getProducer().inject(get, beanManager.createCreationalContext(bean));
+                            }
+                        } catch (org.jboss.weld.context.ContextNotActiveException e) {
+                            LOGGER.warning("No active contexts for {}", beanClass.getName());
                         }
                     }
                     LOGGER.debug("Bean reloaded '{}'", beanClassName);
