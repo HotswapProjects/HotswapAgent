@@ -18,24 +18,24 @@ import org.hotswap.agent.javassist.NotFoundException;
  * String representation of a CtClass instance. Consists of a super class name(if not Object), constructors and methods
  * (names, return types, parameter types, parameter annotations, exceptions), interface names, class and field
  * annotations ordered alphabetically.
- * 
+ *
  * @author Erki Ehtla
- * 
+ *
  */
 public class CtClassSignature {
-	
+
 	private static String getConstructorString(CtConstructor method) throws ClassNotFoundException, NotFoundException {
 		return Modifier.toString(method.getModifiers()) + " " + method.getDeclaringClass().getName()
 				+ getParams(method.getParameterTypes()) + toStringA(method.getAnnotations())
 				+ toStringA(method.getParameterAnnotations()) + toStringE(method.getExceptionTypes()) + ";";
 	}
-	
+
 	private static String getMethodString(CtMethod method) throws ClassNotFoundException, NotFoundException {
 		return Modifier.toString(method.getModifiers()) + " " + getName(method.getReturnType()) + " "
 				+ method.getName() + getParams(method.getParameterTypes()) + toStringA(method.getAnnotations())
 				+ toStringA(method.getParameterAnnotations()) + toStringE(method.getExceptionTypes()) + ";";
 	}
-	
+
 	private static String getParams(CtClass[] ctClasses) {
 		StringBuilder strB = new StringBuilder("(");
 		boolean first = true;
@@ -49,14 +49,14 @@ public class CtClassSignature {
 		strB.append(")");
 		return strB.toString();
 	}
-	
+
 	private static String getName(CtClass ctClass) {
 		// if (ctClass.isArray())
 		// return Descriptor.toString(ctClass.getName());
 		// else
 		return ctClass.getName();
 	}
-	
+
 	public static String get(CtClass cc) throws NotFoundException, ClassNotFoundException {
 		List<String> strings = new ArrayList<>();
 		for (CtMethod method : cc.getDeclaredMethods()) {
@@ -64,13 +64,13 @@ public class CtClassSignature {
 				continue;
 			strings.add(getMethodString(method));
 		}
-		
+
 		for (CtConstructor method : cc.getDeclaredConstructors()) {
 			if (Modifier.isPrivate(method.getModifiers()))
 				continue;
 			strings.add(getConstructorString(method));
 		}
-		
+
 		strings.add(toStringA(cc.getAnnotations()));
 		for (CtClass iClass : cc.getInterfaces()) {
 			strings.add(iClass.getName());
@@ -89,7 +89,7 @@ public class CtClassSignature {
 		}
 		return strBuilder.toString();
 	}
-	
+
 	private static String toStringE(CtClass[] a) {
 		if (a == null)
 			return "null";
@@ -97,7 +97,7 @@ public class CtClassSignature {
 		if (iMax == -1)
 			return "[]";
 		a = sort(a);
-		
+
 		StringBuilder b = new StringBuilder();
 		b.append('[');
 		for (int i = 0;; i++) {
@@ -107,7 +107,7 @@ public class CtClassSignature {
 			b.append(", ");
 		}
 	}
-	
+
 	private static String toStringA(Object[] a) {
 		if (a == null)
 			return "null";
@@ -125,7 +125,8 @@ public class CtClassSignature {
 			for (Method method : declaredMethods) {
 				if (Arrays.binarySearch(ignore, method.getName()) < 0) {
 					Object value = getValue(object, method.getName());
-					values.add(method.getName() + "=" + value.getClass() + ":" + value);
+					if (value != null)
+						values.add(method.getName() + "=" + value.getClass() + ":" + value);
 				}
 			}
 			b.append(values);
@@ -135,16 +136,16 @@ public class CtClassSignature {
 			b.append(", ");
 		}
 	}
-	
+
 	private static String toStringA(Object[][] a) {
 		if (a == null)
 			return "null";
-		
+
 		int iMax = a.length - 1;
 		if (iMax == -1)
 			return "[]";
 		a = sort(a);
-		
+
 		StringBuilder b = new StringBuilder();
 		b.append('[');
 		for (int i = 0;; i++) {
@@ -155,23 +156,23 @@ public class CtClassSignature {
 			b.append(", ");
 		}
 	}
-	
+
 	private static <T> T[] sort(T[] a) {
-		
+
 		a = Arrays.copyOf(a, a.length);
 		Arrays.sort(a, ToStringComparator.INSTANCE);
 		return a;
 	}
-	
+
 	private static CtClass[] sort(CtClass[] a) {
-		
+
 		a = Arrays.copyOf(a, a.length);
 		Arrays.sort(a, CtClassComparator.INSTANCE);
 		return a;
 	}
-	
+
 	private static <T> T[][] sort(T[][] a) {
-		
+
 		a = Arrays.copyOf(a, a.length);
 		Arrays.sort(a, ToStringComparator.INSTANCE);
 		for (Object[] objects : a) {
@@ -179,7 +180,7 @@ public class CtClassSignature {
 		}
 		return a;
 	}
-	
+
 	private static Object getValue(Annotation annotation, String attributeName) {
 		try {
 			Method method = annotation.annotationType().getDeclaredMethod(attributeName);
@@ -189,7 +190,7 @@ public class CtClassSignature {
 			return null;
 		}
 	}
-	
+
 	public static void makeAccessible(Method method) {
 		if ((!Modifier.isPublic(method.getModifiers()) || !Modifier.isPublic(method.getDeclaringClass().getModifiers()))
 				&& !method.isAccessible()) {
