@@ -48,9 +48,6 @@ public class OsgiEquinoxPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(OsgiEquinoxPlugin.class);
 
     @Init
-    ClassLoader appClassLoader;
-
-    @Init
     Scheduler scheduler;
 
     @Init

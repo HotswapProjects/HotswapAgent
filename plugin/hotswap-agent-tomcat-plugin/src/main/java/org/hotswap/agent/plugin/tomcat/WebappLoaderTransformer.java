@@ -114,13 +114,11 @@ public class WebappLoaderTransformer {
         CtClass[] constructorTypes = ctFileResourceConstructor.getParameterTypes();
         String constrParams;
 
-        if (constructorTypes.length == 4) {
-            LOGGER.info("FOUND 4.");
+        if (constructorTypes.length == 4)
             constrParams = "this, path, file, false";
-        } else if (constructorTypes.length == 5) {
+        else if (constructorTypes.length == 5)
             constrParams = "this, path, file, false, null";
-            LOGGER.info("FOUND 5.");
-        } else {
+        else {
             LOGGER.warning("org.apache.catalina.webresources.FileResource unknown constructor. Tomcat plugin will not work properly.");
             return;
         }
@@ -135,7 +133,7 @@ public class WebappLoaderTransformer {
             return;
         }
 
-        // if getResources() should conain extraClasspath, expand the original returned array and prepend extraClasspath result
+        // if getResources() should contain extraClasspath, expand the original returned array and prepend extraClasspath result
         try {
             ctClass.getDeclaredMethod("getResources", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertAfter(
                     "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, path);" +
