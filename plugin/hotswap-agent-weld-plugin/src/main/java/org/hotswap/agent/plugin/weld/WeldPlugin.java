@@ -56,27 +56,25 @@ public class WeldPlugin {
     @Init
     ClassLoader appClassLoader;
 
-//    private Map<Object, Object> registeredBeans = new WeakHashMap<Object, Object>();
-//    private Map<String, CtClass> hotswappedCtClassMap = new HashMap<String, CtClass>();
-
     public void init() {
         LOGGER.info("CDI/Weld plugin initialized.");
     }
+
     /**
      * Register watcher - in case of new file the file is not known
      * to JVM and hence no hotswap is called.
      *
-     * @param basePackage only files in a basePackage
+     * @param bdaId the Bean Deployment Archive ID
      */
-    public synchronized void registerBeanDeplArchivePath(final String bdaPath) {
-        LOGGER.info("Registering path {}", bdaPath);
+    public synchronized void registerBeanDeplArchivePath(final String bdaId, final String archivePath) {
+        LOGGER.info("Registering path {}", archivePath);
 
         URL resource = null;
         try {
-            resource = resourceNameToURL(bdaPath);
+            resource = resourceNameToURL(archivePath);
             URI uri = resource.toURI();
             if (!IOUtils.isFileURL(uri.toURL())) {
-                LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", bdaPath);
+                LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
                 return;
             } else {
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
@@ -94,7 +92,7 @@ public class WeldPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, bdaPath, event), WAIT_ON_CREATE);
+                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, bdaId, archivePath, event), WAIT_ON_CREATE);
                             }
                         }
                     }
@@ -142,6 +140,14 @@ public class WeldPlugin {
         LOGGER.debug("org.jboss.weld.bootstrap.WeldBootstrap enhanced with plugin initialization.");
     }
 
+    /**
+     * Basic WeldBeanDeploymentArchive transformation.
+     *
+     * @param clazz
+     * @param classPool
+     * @throws NotFoundException
+     * @throws CannotCompileException
+     */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
@@ -154,10 +160,43 @@ public class WeldPlugin {
 
         CtConstructor declaredConstructor = clazz.getDeclaredConstructor(constructorParams);
         declaredConstructor.insertAfter(
-            "org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this).register();"
+            "org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this);"
         );
 
         LOGGER.debug("Class 'org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive' patched with basePackage registration.");
+    }
+
+    /**
+     * Jboss BeanDeploymentArchiveImpl transformation
+     *
+     * @param clazz
+     * @param classPool
+     * @throws NotFoundException
+     * @throws CannotCompileException
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl")
+    public static void transformJbossBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
+        src.append("if (beanArchiveType!=null && \"EXPLICIT\".equals(beanArchiveType.toString())){");
+        src.append("  String beanXml = \"META-INF/beans.xml\";");
+        src.append("  java.util.List resList = module.getClassLoader().loadResourceLocal(beanXml);");
+        src.append("  if(resList.size() == 1) {");
+        src.append("    org.jboss.modules.Resource res = (org.jboss.modules.Resource) resList.get(0);");
+        src.append("    String archPath = res.getURL().getPath();");
+        src.append("    archPath = archPath.substring(0, archPath.length()-beanXml.length());");
+        src.append("    org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this,archPath);");
+        src.append("  }");
+        src.append("}}");
+        String a;
+
+        for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
+            constructor.insertAfter(src.toString());
+        }
+
+        LOGGER.debug("Class 'org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl' patched with basePackage registration.");
     }
 
     private URL resourceNameToURL(String resource) throws Exception {

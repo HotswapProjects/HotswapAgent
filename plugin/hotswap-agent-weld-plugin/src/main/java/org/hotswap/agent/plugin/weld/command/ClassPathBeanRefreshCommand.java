@@ -17,29 +17,27 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassPathBeanRefreshCommand.class);
 
     ClassLoader appClassLoader;
-
-    String archivePath;
+    String bdaId;
 
     String className;
-
     // either event or classDefinition is set by constructor (watcher or transformer)
     WatchFileEvent event;
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String archivePath, String className) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String bdaId, String className) {
         this.appClassLoader = appClassLoader;
-        this.archivePath = archivePath;
+        this.bdaId = bdaId;
         this.className = className;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String archivePath, WatchFileEvent event) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String bdaId, String archivePath, WatchFileEvent event) {
         this.appClassLoader = appClassLoader;
-        this.archivePath = archivePath;
+        this.bdaId = bdaId;
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
         String classFullPath = Paths.get(event.getURI()).toString();
-        int indx = classFullPath.indexOf(archivePath);
-        if (indx == 0)
+        int index = classFullPath.indexOf(archivePath);
+        if (index == 0)
         {
             String classPath = classFullPath.substring(archivePath.length());
             classPath = classPath.substring(0, classPath.indexOf(".class"));
@@ -60,11 +58,15 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         }
 
         try {
-            LOGGER.debug("Executing ClassPathBeanDefinitionScannerAgent.refreshBean('{}')", className);
-
-            Class<?> clazz = appClassLoader.loadClass(BeanDeploymentArchiveAgent.class.getName());
-            Method method  = clazz.getDeclaredMethod("refreshClass", new Class[] {String.class, String.class});
-            method.invoke(null, archivePath, className);
+            Class<?> bdaAgentRegistryClazz = appClassLoader.loadClass(BdaAgentRegistry.class.getName());
+            Method regMethod  = bdaAgentRegistryClazz.getDeclaredMethod("contains", new Class[] {String.class});
+            Object contains = regMethod.invoke(null, bdaId);
+            if (contains instanceof Boolean && ((Boolean)contains).booleanValue()) {
+                LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshClass('{}')", className);
+                Class<?> bdaAgentClazz = appClassLoader.loadClass(BeanDeploymentArchiveAgent.class.getName());
+                Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshClass", new Class[] {String.class, String.class});
+                bdaMethod.invoke(null, bdaId, className);
+            }
 
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
@@ -129,7 +131,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     public String toString() {
         return "ClassPathBeanRefreshCommand{" +
                 "appClassLoader=" + appClassLoader +
-                ", basePackage='" + archivePath + '\'' +
+                ", basePackage='" + bdaId + '\'' +
                 ", className='" + className + '\'' +
                 '}';
     }

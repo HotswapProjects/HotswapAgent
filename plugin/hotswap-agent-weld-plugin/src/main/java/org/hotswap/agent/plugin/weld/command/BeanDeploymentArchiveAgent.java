@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.Bean;
@@ -23,7 +21,7 @@ import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
 import org.jboss.weld.bean.ManagedBean;
 import org.jboss.weld.bean.attributes.BeanAttributesFactory;
 import org.jboss.weld.bean.builtin.BeanManagerProxy;
-import org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive;
+import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
 import org.jboss.weld.manager.BeanManagerImpl;
 import org.jboss.weld.metadata.TypeStore;
 import org.jboss.weld.resources.ClassTransformer;
@@ -35,8 +33,6 @@ public class BeanDeploymentArchiveAgent {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanDeploymentArchiveAgent.class);
 
-    private static Map<String, BeanDeploymentArchiveAgent> instances = new HashMap<String, BeanDeploymentArchiveAgent>();
-
     /**
      * Flag to check reload status. In unit test we need to wait for reload
      * finish before the test can continue. Set flag to true in the test class
@@ -44,67 +40,83 @@ public class BeanDeploymentArchiveAgent {
      */
     public static boolean reloadFlag = false;
 
-    WeldBeanDeploymentArchive deploymentArchive;
+    BeanDeploymentArchive deploymentArchive;
 
-    // list of basePackages registered with target scanner
-    String bdaId;
+    String archivePath;
 
-    private boolean registered = false;
+    boolean registered = false;
 
-    public static BeanDeploymentArchiveAgent registerArchive(WeldBeanDeploymentArchive beanArchive) {
+    public static void registerArchive(BeanDeploymentArchive beanArchive) {
+       registerArchive(beanArchive, beanArchive.getId());
+    }
+
+    public static void registerArchive(BeanDeploymentArchive beanArchive, String archivePath) {
         BeanDeploymentArchiveAgent bdaAgent = null;
         String bdaId = beanArchive.getId();
         try {
             // check that it is regular file
             // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
-            File path = new File(bdaId);
-            bdaAgent = instances.get(bdaId);
+            File path = new File(archivePath);
+            bdaAgent = BdaAgentRegistry.get(bdaId);
             if (bdaAgent == null) {
-                bdaAgent = new BeanDeploymentArchiveAgent(beanArchive);
-                instances.put(bdaId, bdaAgent);
+                bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
+                BdaAgentRegistry.put(bdaId, bdaAgent);
             }
+            bdaAgent.register();
         } catch (IllegalArgumentException e) {
             LOGGER.warning("Unable to watch deployment archive with archive id=", bdaId);
         }
 
-        return bdaAgent;
+
     }
 
     /**
-     * Get archive instance by supplied path
+     * Get archive instance by supplied bdaId
      *
      * @param bdaId the Bean Deployment Archive ID
      * @return the archive agent
      */
     public static BeanDeploymentArchiveAgent getInstance(String bdaId) {
-        for (BeanDeploymentArchiveAgent scannerAgent : instances.values()) {
-            if (bdaId.equals(scannerAgent.bdaId)) {
-                return scannerAgent;
-            }
-        }
-        return null;
+        return BdaAgentRegistry.getByBdaIdFromValues(bdaId);
     }
 
+    /**
+     * Gets the collection of registered BeanDeploymentArchive(s)
+     *
+     * @return the instances
+     */
     public static Collection<BeanDeploymentArchiveAgent> getInstances() {
-        return instances.values();
+        return BdaAgentRegistry.values();
     }
 
-    public String geId(){
-        return bdaId;
+    private BeanDeploymentArchiveAgent(BeanDeploymentArchive deploymentArchive, String archivePath) {
+        this.deploymentArchive = deploymentArchive;
+        this.archivePath = archivePath;
     }
 
-
-    // Create new instance from getInstance(ClassPathBeanDefinitionScanner scanner) and obtain services from the scanner
-    private BeanDeploymentArchiveAgent(WeldBeanDeploymentArchive archive) {
-        this.deploymentArchive = archive;
-        this.bdaId = archive.getId();
+    /**
+     * Gets the bdaId.
+     *
+     * @return the bdaId
+     */
+    public String getBdaId(){
+        return deploymentArchive.getId();
     }
 
-    public void register() {
+    /**
+     * Gets the archive path.
+     *
+     * @return the archive path
+     */
+    public String getArchivePath() {
+        return archivePath;
+    }
+
+    private void register() {
         if (!registered) {
-            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
-                    "registerBeanDeplArchivePath", new Class[]{String.class}, new Object[]{bdaId});
             registered = true;
+            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
+                    "registerBeanDeplArchivePath", new Class[]{String.class, String.class}, new Object[]{getBdaId(), archivePath});
         }
     }
 
@@ -116,12 +128,12 @@ public class BeanDeploymentArchiveAgent {
      * @throws IOException error working with classDefinition
      */
     public static void refreshClass(String bdaId, String beanClassName) throws IOException {
-        BeanDeploymentArchiveAgent scannerAgent = getInstance(bdaId);
-        if (scannerAgent == null) {
+        BeanDeploymentArchiveAgent bdaAgent = getInstance(bdaId);
+        if (bdaAgent == null) {
             LOGGER.error("basePackage '{}' not associated with any archiveAgent", bdaId);
             return;
         }
-        scannerAgent.reloadBean(bdaId, beanClassName);
+        bdaAgent.reloadBean(bdaId, beanClassName);
 
         reloadFlag = false;
     }
@@ -147,14 +159,14 @@ public class BeanDeploymentArchiveAgent {
                         EnhancedAnnotatedType eat = getEnhancedAnnotatedType(bdaId, beanClass);
                         final ManagedBean managedBean = (ManagedBean) bean;
 
-                        (managedBean).setProducer(
+                        managedBean.setProducer(
                                 beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
                         );
                         try {
                             Object get = beanManager.getContext(bean.getScope()).get(bean);
                             if (get != null) {
                                 LOGGER.debug("Bean injections point reinitialize '{}'", beanClassName);
-                                (managedBean).getProducer().inject(get, beanManager.createCreationalContext(bean));
+                                managedBean.getProducer().inject(get, beanManager.createCreationalContext(bean));
                             }
                         } catch (org.jboss.weld.context.ContextNotActiveException e) {
                             LOGGER.warning("No active contexts for {}", beanClass.getName());
@@ -184,8 +196,7 @@ public class BeanDeploymentArchiveAgent {
         }
     }
 
-    private EnhancedAnnotatedType getEnhancedAnnotatedType(String bdaId,
-            Class<?> beanClass) {
+    private EnhancedAnnotatedType getEnhancedAnnotatedType(String bdaId, Class<?> beanClass) {
         TypeStore store = new TypeStore();
         SharedObjectCache cache = new SharedObjectCache();
         ReflectionCache reflectionCache = ReflectionCacheFactory.newInstance(store);

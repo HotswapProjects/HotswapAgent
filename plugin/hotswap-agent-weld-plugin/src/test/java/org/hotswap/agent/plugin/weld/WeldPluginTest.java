@@ -179,9 +179,9 @@ public class WeldPluginTest {
         WeldPlugin.IS_TEST_ENVIRONMENT = true;
         Collection<BeanDeploymentArchiveAgent> instances = BeanDeploymentArchiveAgent.getInstances();
         for (BeanDeploymentArchiveAgent instance : instances) {
-            System.out.println(instance.geId());
+            System.out.println(instance.getBdaId());
             //create new class and class file. rerun test only after clean
-            Class newClass = HotSwapper.newClass("NewClass", instance.geId(), getClass().getClassLoader());
+            Class newClass = HotSwapper.newClass("NewClass", instance.getBdaId(), getClass().getClassLoader());
             URL resource = newClass.getClassLoader().getResource("NewClass.class");
             System.out.println(resource);
             Thread.sleep(1000); // wait redefine
