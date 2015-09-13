@@ -13,36 +13,41 @@ import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchFileEvent;
 
+/**
+ * ClassPathBeanRefreshCommand
+ *
+ * @author Vladimir Dvorak
+ */
 public class ClassPathBeanRefreshCommand extends MergeableCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassPathBeanRefreshCommand.class);
 
     ClassLoader appClassLoader;
-    String bdaId;
+
+    String archivePath;
 
     String className;
+
     // either event or classDefinition is set by constructor (watcher or transformer)
     WatchFileEvent event;
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String bdaId, String className) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String archivePath, String className) {
         this.appClassLoader = appClassLoader;
-        this.bdaId = bdaId;
+        this.archivePath = archivePath;
         this.className = className;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String bdaId, String archivePath, WatchFileEvent event) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String archivePath, WatchFileEvent event) {
         this.appClassLoader = appClassLoader;
-        this.bdaId = bdaId;
+        this.archivePath = archivePath;
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
         String classFullPath = Paths.get(event.getURI()).toString();
         int index = classFullPath.indexOf(archivePath);
-        if (index == 0)
-        {
+        if (index == 0) {
             String classPath = classFullPath.substring(archivePath.length());
             classPath = classPath.substring(0, classPath.indexOf(".class"));
-            if (classPath.startsWith(File.separator))
-            {
+            if (classPath.startsWith(File.separator)) {
                 classPath = classPath.substring(1);
             }
             this.className = classPath.replace(File.separator, ".");
@@ -60,14 +65,15 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         try {
             Class<?> bdaAgentRegistryClazz = appClassLoader.loadClass(BdaAgentRegistry.class.getName());
             Method regMethod  = bdaAgentRegistryClazz.getDeclaredMethod("contains", new Class[] {String.class});
-            Object contains = regMethod.invoke(null, bdaId);
+            Object contains = regMethod.invoke(null, archivePath);
             if (contains instanceof Boolean && ((Boolean)contains).booleanValue()) {
                 LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshClass('{}')", className);
                 Class<?> bdaAgentClazz = appClassLoader.loadClass(BeanDeploymentArchiveAgent.class.getName());
                 Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshClass", new Class[] {String.class, String.class});
-                bdaMethod.invoke(null, bdaId, className);
+                bdaMethod.invoke(null, archivePath, className);
+            } else {
+                LOGGER.warning("BeanDeploymentArchiveAgent not found in BdaAgentRegistry archivePath='{}'", archivePath);
             }
-
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
@@ -75,7 +81,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Plugin error, illegal access", e);
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
+            throw new IllegalStateException("Plugin error, CDI class not found in application classloader", e);
         }
 
     }
@@ -131,7 +137,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     public String toString() {
         return "ClassPathBeanRefreshCommand{" +
                 "appClassLoader=" + appClassLoader +
-                ", basePackage='" + bdaId + '\'' +
+                ", archivePath='" + archivePath + '\'' +
                 ", className='" + className + '\'' +
                 '}';
     }

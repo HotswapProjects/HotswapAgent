@@ -61,13 +61,13 @@ public class WeldPlugin {
     }
 
     /**
-     * Register watcher - in case of new file the file is not known
-     * to JVM and hence no hotswap is called.
+     * Register BeanDeploymentArchive by bdaId to watcher. In case of new class the class file is not known
+     * to JVM hence no hotswap is called and therefore it must be handled by watcher.
      *
-     * @param bdaId the Bean Deployment Archive ID
+     * @param bdaId the BeanDeploymentArchive ID
      */
-    public synchronized void registerBeanDeplArchivePath(final String bdaId, final String archivePath) {
-        LOGGER.info("Registering path {}", archivePath);
+    public synchronized void registerBeanDeplArchivePath(final String archivePath) {
+        LOGGER.info("Registering archive path {}", archivePath);
 
         URL resource = null;
         try {
@@ -92,7 +92,7 @@ public class WeldPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, bdaId, archivePath, event), WAIT_ON_CREATE);
+                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
                             }
                         }
                     }
@@ -112,11 +112,11 @@ public class WeldPlugin {
                 String classFilePath = ctClass.getURL().getPath();
                 String className = ctClass.getName().replace(".", "/");
                 // archive path ends with '/' therefore we set end position before the '/' (-1)
-                String bdaId = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
-                bdaId = new File(bdaId).toPath().toString();
-                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, bdaId, original.getName()), WAIT_ON_CREATE);
+                String archivePath = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
+                archivePath = new File(archivePath).toPath().toString();
+                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, archivePath, original.getName()), WAIT_ON_CREATE);
             } catch (Exception e) {
-                LOGGER.warning("classReload() exception : {}",  e.getMessage());
+                LOGGER.error("classReload() exception {}.", e.getMessage());
             }
         }
     }
@@ -186,7 +186,7 @@ public class WeldPlugin {
         src.append("  if(resList.size() == 1) {");
         src.append("    org.jboss.modules.Resource res = (org.jboss.modules.Resource) resList.get(0);");
         src.append("    String archPath = res.getURL().getPath();");
-        src.append("    archPath = archPath.substring(0, archPath.length()-beanXml.length());");
+        src.append("    archPath = archPath.substring(0, archPath.length()-beanXml.length()-1);"); /* -1 ~ eat "/" at the end of path */
         src.append("    org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this,archPath);");
         src.append("  }");
         src.append("}}");

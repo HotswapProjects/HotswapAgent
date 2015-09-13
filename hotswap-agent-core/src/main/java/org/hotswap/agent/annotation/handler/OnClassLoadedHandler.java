@@ -91,7 +91,7 @@ public class OnClassLoadedHandler implements PluginHandler<OnClassLoadEvent> {
                             Class<?> redefiningClass, ProtectionDomain protectionDomain, byte[] bytes) {
         // skip synthetic classes
         if (pluginAnnotation.getAnnotation().skipSynthetic()) {
-            if (isSynthaticClass(className) || (redefiningClass != null && redefiningClass.isSynthetic()))
+            if (isSyntheticClass(className) || (redefiningClass != null && redefiningClass.isSynthetic()))
                 return bytes;
         }
 
@@ -217,7 +217,7 @@ public class OnClassLoadedHandler implements PluginHandler<OnClassLoadEvent> {
     /**
      * Skip proxy and javassist synthetic classes.
      */
-    protected boolean isSynthaticClass(String className) {
+    protected boolean isSyntheticClass(String className) {
         return className.contains("$$_javassist") || className.startsWith("com/sun/proxy");
     }
 

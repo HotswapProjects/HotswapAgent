@@ -5,43 +5,34 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * BdaAgentRegistry - maps bdaId to BeanDeploymentArchiveAgent. This class is separated from BeanDeploymentArchiveAgent
+ * BdaAgentRegistry - maps archivePath to BeanDeploymentArchiveAgent. This class is separated from BeanDeploymentArchiveAgent
  * to avoid "class not found exception" when map is accessed from ClassPathBeanRefreshCommand.
+ *
+ * @author Vladimir Dvorak
  */
 public class BdaAgentRegistry {
 
-    // map bdaId-> BeanDeploymentArchiveAgent
+    // map archive path -> BeanDeploymentArchiveAgent
     private static Map<String, BeanDeploymentArchiveAgent> INSTANCES = new ConcurrentHashMap<String, BeanDeploymentArchiveAgent>();
 
     public static Map<String, BeanDeploymentArchiveAgent> getInstances() {
         return INSTANCES;
     }
 
-    public static Boolean contains(String bdaId) {
-        return INSTANCES.containsKey(bdaId);
+    public static Boolean contains(String archivePath) {
+        return INSTANCES.containsKey(archivePath);
     }
 
-    public static void put(String bdaId, BeanDeploymentArchiveAgent bdaAgent) {
-        INSTANCES.put(bdaId, bdaAgent);
+    public static void put(String archivePath, BeanDeploymentArchiveAgent bdaAgent) {
+        INSTANCES.put(archivePath, bdaAgent);
     }
 
-    public static BeanDeploymentArchiveAgent get(String bdaId) {
-        return INSTANCES.get(bdaId);
+    public static BeanDeploymentArchiveAgent get(String archivePath) {
+        return INSTANCES.get(archivePath);
     }
 
     public static Collection<BeanDeploymentArchiveAgent> values() {
         return INSTANCES.values();
-    }
-
-    public static BeanDeploymentArchiveAgent getByBdaIdFromValues(String bdaId) {
-        if (bdaId != null) {
-            for (BeanDeploymentArchiveAgent bdaAgent : INSTANCES.values()) {
-                if (bdaId.equals(bdaAgent.getBdaId())) {
-                    return bdaAgent;
-                }
-            }
-        }
-        return null;
     }
 
 }

@@ -11,6 +11,11 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.ReflectionHelper;
 
+/**
+ * RecreateProxyClassCommand
+ *
+ * @author Vladimir Dvorak
+ */
 public class RecreateProxyClassCommand extends MergeableCommand {
 	private static AgentLogger LOGGER = AgentLogger.getLogger(WeldPlugin.class);
 	private Map<Object, Object> registeredBeans;
