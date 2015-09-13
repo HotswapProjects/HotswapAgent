@@ -189,7 +189,10 @@ public class EnhancerProxyCreater {
 			NotFoundException {
 		CtClass ct = cp.makeClass("HotswapAgentSpringNamingPolicy" + getClassSuffix(cglibPackage));
 		String core = cglibPackage + "core.";
-		ct.setSuperclass(cp.get(core + "DefaultNamingPolicy"));
+		String originalNamingPolicy = core + "SpringNamingPolicy";
+		if (cp.find(originalNamingPolicy) == null)
+			originalNamingPolicy = core + "DefaultNamingPolicy";
+		ct.setSuperclass(cp.get(originalNamingPolicy));
 		String rawBody = "			public String getClassName(String prefix, String source, Object key, {0}Predicate names) {"//
 				+ "				return super.getClassName(\"HOTSWAPAGENT_\" + prefix, source, key, names);"//
 				+ "			}";
