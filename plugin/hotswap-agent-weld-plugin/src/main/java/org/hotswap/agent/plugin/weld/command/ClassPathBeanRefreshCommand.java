@@ -63,12 +63,12 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         }
 
         try {
-            Class<?> bdaAgentRegistryClazz = appClassLoader.loadClass(BdaAgentRegistry.class.getName());
+            Class<?> bdaAgentRegistryClazz = Class.forName(BdaAgentRegistry.class.getName(), true, appClassLoader);
             Method regMethod  = bdaAgentRegistryClazz.getDeclaredMethod("contains", new Class[] {String.class});
-            Object contains = regMethod.invoke(null, archivePath);
-            if (contains instanceof Boolean && ((Boolean)contains).booleanValue()) {
+            boolean contains = (boolean) regMethod.invoke(null, archivePath);
+            if (contains) {
                 LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshClass('{}')", className);
-                Class<?> bdaAgentClazz = appClassLoader.loadClass(BeanDeploymentArchiveAgent.class.getName());
+                Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, appClassLoader);
                 Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshClass", new Class[] {String.class, String.class});
                 bdaMethod.invoke(null, archivePath, className);
             } else {

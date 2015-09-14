@@ -56,8 +56,15 @@ public class WeldPlugin {
     @Init
     ClassLoader appClassLoader;
 
+    boolean inJbossAS = false;
+
     public void init() {
         LOGGER.info("CDI/Weld plugin initialized.");
+    }
+
+    public void initInJBossAS() {
+        LOGGER.info("CDI/Weld plugin initialized in JBossAS.");
+        inJbossAS = true;
     }
 
     /**
@@ -167,7 +174,10 @@ public class WeldPlugin {
     }
 
     /**
-     * Jboss BeanDeploymentArchiveImpl transformation
+     * Jboss BeanDeploymentArchiveImpl transformation.
+     *
+     * TODO: Module initialization from @OnClassLoadEvent(org.jboss.weld.bootstrap.WeldBootstrap) should be avoided
+     *       in case of JbossAs.
      *
      * @param clazz
      * @param classPool
@@ -178,9 +188,9 @@ public class WeldPlugin {
     public static void transformJbossBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         StringBuilder src = new StringBuilder("{");
-        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
-        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
         src.append("if (beanArchiveType!=null && \"EXPLICIT\".equals(beanArchiveType.toString())){");
+        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "initInJBossAS"));
         src.append("  String beanXml = \"META-INF/beans.xml\";");
         src.append("  java.util.List resList = module.getClassLoader().loadResourceLocal(beanXml);");
         src.append("  if(resList.size() == 1) {");
@@ -190,7 +200,6 @@ public class WeldPlugin {
         src.append("    org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this,archPath);");
         src.append("  }");
         src.append("}}");
-        String a;
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
             constructor.insertAfter(src.toString());

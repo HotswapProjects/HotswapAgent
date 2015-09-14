@@ -19,7 +19,7 @@ public class BdaAgentRegistry {
         return INSTANCES;
     }
 
-    public static Boolean contains(String archivePath) {
+    public static boolean contains(String archivePath) {
         return INSTANCES.containsKey(archivePath);
     }
 
