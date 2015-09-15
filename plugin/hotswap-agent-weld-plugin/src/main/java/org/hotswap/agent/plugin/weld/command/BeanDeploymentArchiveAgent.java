@@ -153,6 +153,9 @@ public class BeanDeploymentArchiveAgent {
     public void reloadBean(String beanClassName) {
 
         try {
+
+            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+
             Class<?> beanClass = this.getClass().getClassLoader().loadClass(beanClassName);
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {

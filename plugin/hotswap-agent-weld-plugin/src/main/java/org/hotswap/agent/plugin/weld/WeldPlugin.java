@@ -189,15 +189,17 @@ public class WeldPlugin {
 
         StringBuilder src = new StringBuilder("{");
         src.append("if (beanArchiveType!=null && \"EXPLICIT\".equals(beanArchiveType.toString())){");
-        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
-        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "initInJBossAS"));
+        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
+        src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldPlugin.class, "initInJBossAS"));
         src.append("  String beanXml = \"META-INF/beans.xml\";");
         src.append("  java.util.List resList = module.getClassLoader().loadResourceLocal(beanXml);");
         src.append("  if(resList.size() == 1) {");
         src.append("    org.jboss.modules.Resource res = (org.jboss.modules.Resource) resList.get(0);");
         src.append("    String archPath = res.getURL().getPath();");
         src.append("    archPath = archPath.substring(0, archPath.length()-beanXml.length()-1);"); /* -1 ~ eat "/" at the end of path */
-        src.append("    org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this,archPath);");
+        src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent\", true, module.getClassLoader());");
+        src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class,java.lang.String.class});");
+        src.append("    agM.invoke(null, new Object[] { this, archPath });");
         src.append("  }");
         src.append("}}");
 
