@@ -52,15 +52,6 @@ public class BeanDeploymentArchiveAgent {
     boolean registered = false;
 
     /**
-     * Register bean archive. Archive path is encoded in the id of the bean archive.
-     *
-     * @param beanArchive the bean archive
-     */
-    public static void registerArchive(BeanDeploymentArchive beanArchive) {
-       registerArchive(beanArchive, beanArchive.getId());
-    }
-
-    /**
      * Register bean archive with appropriate bean archive path
      *
      * @param beanArchive
@@ -79,7 +70,7 @@ public class BeanDeploymentArchiveAgent {
             }
             bdaAgent.register();
         } catch (IllegalArgumentException e) {
-            LOGGER.warning("Unable to watch BeanDeploymentArchive with id=", beanArchive.getId());
+            LOGGER.warning("Unable to watch BeanDeploymentArchive with id={}", beanArchive.getId());
         }
 
 

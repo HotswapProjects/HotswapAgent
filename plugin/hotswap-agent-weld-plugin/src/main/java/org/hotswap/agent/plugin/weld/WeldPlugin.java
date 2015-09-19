@@ -58,13 +58,21 @@ public class WeldPlugin {
 
     boolean inJbossAS = false;
 
+    boolean initialized = false;
+
     public void init() {
-        LOGGER.info("CDI/Weld plugin initialized.");
+        if (!initialized) {
+            LOGGER.info("CDI/Weld plugin initialized.");
+            initialized = true;
+        }
     }
 
     public void initInJBossAS() {
-        LOGGER.info("CDI/Weld plugin initialized in JBossAS.");
-        inJbossAS = true;
+        if (!initialized) {
+            LOGGER.info("CDI/Weld plugin initialized in JBossAS.");
+            inJbossAS = true;
+            initialized = true;
+        }
     }
 
     /**
@@ -129,25 +137,6 @@ public class WeldPlugin {
     }
 
     /**
-     * Add plugin initialization at the end of weld initialization.
-     *
-     * @param ctClass the WeldBootstrap ctClass
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.bootstrap.WeldBootstrap")
-    public static void weldBootstrapInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        StringBuilder src = new StringBuilder("{");
-        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
-        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
-        src.append("}");
-
-        for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
-            constructor.insertBeforeBody(src.toString());
-        }
-
-        LOGGER.debug("org.jboss.weld.bootstrap.WeldBootstrap enhanced with plugin initialization.");
-    }
-
-    /**
      * Basic WeldBeanDeploymentArchive transformation.
      *
      * @param clazz
@@ -165,19 +154,20 @@ public class WeldPlugin {
             classPool.get("java.util.Set")
         };
 
-        CtConstructor declaredConstructor = clazz.getDeclaredConstructor(constructorParams);
-        declaredConstructor.insertAfter(
-            "org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this);"
-        );
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
+        src.append("org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this, this.getId());");
+        src.append("}");
 
-        LOGGER.debug("Class 'org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive' patched with basePackage registration.");
+        CtConstructor declaredConstructor = clazz.getDeclaredConstructor(constructorParams);
+        declaredConstructor.insertAfter(src.toString());
+
+        LOGGER.debug("Class 'org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive' patched with BDA registration.");
     }
 
     /**
      * Jboss BeanDeploymentArchiveImpl transformation.
-     *
-     * TODO: Module initialization from @OnClassLoadEvent(org.jboss.weld.bootstrap.WeldBootstrap) should be avoided
-     *       in case of JbossAs.
      *
      * @param clazz
      * @param classPool
@@ -207,7 +197,7 @@ public class WeldPlugin {
             constructor.insertAfter(src.toString());
         }
 
-        LOGGER.debug("Class 'org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl' patched with basePackage registration.");
+        LOGGER.debug("Class 'org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl' patched with BDA registration.");
     }
 
     private URL resourceNameToURL(String resource) throws Exception {
