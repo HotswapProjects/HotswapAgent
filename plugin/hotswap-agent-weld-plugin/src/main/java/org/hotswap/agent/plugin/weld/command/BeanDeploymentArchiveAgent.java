@@ -164,19 +164,23 @@ public class BeanDeploymentArchiveAgent {
                 if (beans != null && !beans.isEmpty()) {
                     for (Bean<?> bean : beans) {
                         EnhancedAnnotatedType eat = getEnhancedAnnotatedType(getBdaId(), beanClass);
-                        final ManagedBean managedBean = (ManagedBean) bean;
+                        if (bean instanceof ManagedBean) {
+                            final ManagedBean managedBean = (ManagedBean) bean;
 
-                        managedBean.setProducer(
-                                beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
-                        );
-                        try {
-                            Object get = beanManager.getContext(bean.getScope()).get(bean);
-                            if (get != null) {
-                                LOGGER.debug("Bean injections point reinitialize '{}'", beanClassName);
-                                managedBean.getProducer().inject(get, beanManager.createCreationalContext(bean));
+                            managedBean.setProducer(
+                                    beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
+                            );
+                            try {
+                                Object get = beanManager.getContext(bean.getScope()).get(bean);
+                                if (get != null) {
+                                    LOGGER.debug("Bean injections point reinitialize '{}'", beanClassName);
+                                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(bean));
+                                }
+                            } catch (org.jboss.weld.context.ContextNotActiveException e) {
+                                LOGGER.warning("No active contexts for {}", beanClass.getName());
                             }
-                        } catch (org.jboss.weld.context.ContextNotActiveException e) {
-                            LOGGER.warning("No active contexts for {}", beanClass.getName());
+                        } else {
+                           LOGGER.warning("reloadBean() : reloading for class '{}' is not implemented.", bean.getClass().getName());
                         }
                     }
                     LOGGER.debug("Bean reloaded '{}'", beanClassName);
