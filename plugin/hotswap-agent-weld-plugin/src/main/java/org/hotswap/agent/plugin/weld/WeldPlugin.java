@@ -18,9 +18,11 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
 import org.hotswap.agent.plugin.weld.command.ClassPathBeanRefreshCommand;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
@@ -107,7 +109,9 @@ public class WeldPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
+                                if (isBdaRegistered(appClassLoader, archivePath)) {
+                                    scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
+                                }
                             }
                         }
                     }
@@ -121,7 +125,7 @@ public class WeldPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(CtClass ctClass, Class original) {
+    public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
         if (original != null) {
             try {
                 String classFilePath = ctClass.getURL().getPath();
@@ -129,7 +133,9 @@ public class WeldPlugin {
                 // archive path ends with '/' therefore we set end position before the '/' (-1)
                 String archivePath = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
                 archivePath = new File(archivePath).toPath().toString();
-                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, archivePath, original.getName()), WAIT_ON_CREATE);
+                if (isBdaRegistered(appClassLoader, archivePath)) {
+                    scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classLoader, archivePath, original.getName()), WAIT_ON_CREATE);
+                }
             } catch (Exception e) {
                 LOGGER.error("classReload() exception {}.", e.getMessage());
             }
@@ -157,7 +163,7 @@ public class WeldPlugin {
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
-        src.append("org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(this, this.getId());");
+        src.append("org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(getClass().getClassLoader(), this, this.getId());");
         src.append("}");
 
         CtConstructor declaredConstructor = clazz.getDeclaredConstructor(constructorParams);
@@ -179,17 +185,17 @@ public class WeldPlugin {
 
         StringBuilder src = new StringBuilder("{");
         src.append("if (beanArchiveType!=null && \"EXPLICIT\".equals(beanArchiveType.toString())){");
-        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
-        src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldPlugin.class, "initInJBossAS"));
         src.append("  String beanXml = \"META-INF/beans.xml\";");
         src.append("  java.util.List resList = module.getClassLoader().loadResourceLocal(beanXml);");
         src.append("  if(resList.size() == 1) {");
+        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
+        src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldPlugin.class, "initInJBossAS"));
         src.append("    org.jboss.modules.Resource res = (org.jboss.modules.Resource) resList.get(0);");
         src.append("    String archPath = res.getURL().getPath();");
         src.append("    archPath = archPath.substring(0, archPath.length()-beanXml.length()-1);"); /* -1 ~ eat "/" at the end of path */
         src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent\", true, module.getClassLoader());");
-        src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class,java.lang.String.class});");
-        src.append("    agM.invoke(null, new Object[] { this, archPath });");
+        src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
+        src.append("    agM.invoke(null, new Object[] { module.getClassLoader(),this,archPath });");
         src.append("  }");
         src.append("}}");
 
@@ -212,4 +218,15 @@ public class WeldPlugin {
             return file.toURI().toURL();
         }
     }
+
+    private static boolean isBdaRegistered(ClassLoader classLoader, String archivePath) {
+        try {
+            return (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+                    "contains", new Class[] {String.class}, archivePath);
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("isBdaRegistered() exception {}.", e.getMessage());
+        }
+        return false;
+    }
+
 }

@@ -15,6 +15,7 @@ import javax.enterprise.inject.spi.CDI;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.jboss.weld.annotated.enhanced.EnhancedAnnotatedType;
 import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
 import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
@@ -57,20 +58,25 @@ public class BeanDeploymentArchiveAgent {
      * @param beanArchive
      * @param archivePath
      */
-    public static void registerArchive(BeanDeploymentArchive beanArchive, String archivePath) {
+    public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String archivePath) {
         BeanDeploymentArchiveAgent bdaAgent = null;
         try {
             // check that it is regular file
             // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
             File path = new File(archivePath);
-            bdaAgent = BdaAgentRegistry.get(archivePath);
-            if (bdaAgent == null) {
+            boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+                    "contains", new Class[] {String.class}, archivePath);
+            if (!contain) {
                 bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
-                BdaAgentRegistry.put(archivePath, bdaAgent);
+                ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+                    "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
             }
             bdaAgent.register();
         } catch (IllegalArgumentException e) {
             LOGGER.warning("Unable to watch BeanDeploymentArchive with id={}", beanArchive.getId());
+        }
+        catch (Exception e) {
+            LOGGER.error("registerArchive() exception {}.", e.getMessage());
         }
 
 
@@ -120,17 +126,18 @@ public class BeanDeploymentArchiveAgent {
     /**
      * Called by a reflection command from WeldPlugin transformer.
      *
+     * @param classLoader
      * @param archivePath
      * @param beanClassName
      * @throws IOException error working with classDefinition
      */
-    public static void refreshClass(String archivePath, String beanClassName) throws IOException {
+    public static void refreshClass(ClassLoader classLoader, String archivePath, String beanClassName) throws IOException {
         BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
         if (bdaAgent == null) {
             LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
             return;
         }
-        bdaAgent.reloadBean(beanClassName);
+        bdaAgent.reloadBean(classLoader, beanClassName);
 
         reloadFlag = false;
     }
@@ -141,11 +148,11 @@ public class BeanDeploymentArchiveAgent {
      * @param bdaId the Bean Deployment Archive ID
      * @param beanClassName
      */
-    public void reloadBean(String beanClassName) {
+    public void reloadBean(ClassLoader classLoader, String beanClassName) {
 
         try {
 
-            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+            Thread.currentThread().setContextClassLoader(classLoader);
 
             Class<?> beanClass = this.getClass().getClassLoader().loadClass(beanClassName);
             // check if it is Object descendant
