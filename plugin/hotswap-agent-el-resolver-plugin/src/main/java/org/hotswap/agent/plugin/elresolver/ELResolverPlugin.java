@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.elresolver;
 
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -12,6 +13,7 @@ import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
@@ -40,8 +42,8 @@ public class ELResolverPlugin {
 
     /**
      * Hook on BeanELResolver class and for each instance:
-     * - ensure this plugin is initialized
-     * - register the instance using registerBeanELResolver() method
+     * - ensure plugin is initialized
+     * - register instances using registerBeanELResolver() method
      */
     @OnClassLoadEvent(classNameRegexp = "javax.el.BeanELResolver")
     public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
@@ -58,13 +60,13 @@ public class ELResolverPlugin {
         boolean found = false;
         if (checkJuelEL(ctClass)) {
             found = true;
-            LOGGER.debug("JuelEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+            LOGGER.debug("JuelEL - javax.el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         } else if (checkApacheCommonsEL(ctClass)) {
             found = true;
-            LOGGER.debug("ApacheCommonsEL - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+            LOGGER.debug("ApacheCommonsEL - javax.el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         } else if (checkJBoss_3_0_EL(ctClass)) {
             found = true;
-            LOGGER.debug("JBossEL 3.0 - javax.el.BeanELResolver - added method " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+            LOGGER.debug("JBossEL 3.0 - javax.el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
 
         if (!found) {
@@ -76,10 +78,9 @@ public class ELResolverPlugin {
     private static boolean checkJuelEL(CtClass ctClass)
     {
         try {
-            // JUEL, JSF BeanELResolver[s]
+            // JUEL, (JSF BeanELResolver[s])
             // check if we have purgeBeanClasses method
             CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
-//            purgeMeth.setModifiers(org.hotswap.agent.javassist.Modifier.PUBLIC);
             ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
                     "   java.beans.Introspector.flushCaches(); " +
                     "   purgeBeanClasses(classLoader); " +
@@ -95,7 +96,7 @@ public class ELResolverPlugin {
     private static boolean checkApacheCommonsEL(CtClass ctClass)
     {
         try {
-            // Apache Commons BeanELResolver
+            // Apache Commons BeanELResolver (has cache property)
             ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
                             "   java.beans.Introspector.flushCaches(); " +
                             "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
@@ -107,16 +108,61 @@ public class ELResolverPlugin {
     }
 
     private static boolean checkJBoss_3_0_EL(CtClass ctClass) {
+
+        // JBoss EL Resolver - is recognized by "javax.el.BeanELResolver.properties" property
         try {
-            // JBoss (system) EL Resolver
-            ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                            "   java.beans.Introspector.flushCaches(); " +
-                            "   javax.el.BeanELResolver.properties.get(\"\");" +
-                            "}", ctClass));
+            CtField field = ctClass.getField("properties");
+            if ((field.getModifiers() & Modifier.STATIC) != 0) {
+                field.setModifiers(Modifier.STATIC);
+                patchJBossEl(ctClass);
+            }
             return true;
-        } catch (CannotCompileException e) {
+        } catch (NotFoundException e1) {
+            // do nothing
         }
         return false;
+
+    }
+
+    /*
+     * JBossEL has weak reference cache. Values are stored in ThreadGroupContext cache, that must be flushed from appropriate thread.
+     * Therefore we must create request for cleanup cache in PURGE_CLASS_CACHE_METHOD and own cleanup is executed indirectly when
+     * application calls getBeanProperty(...).
+     */
+    private static void patchJBossEl(CtClass ctClass) {
+        try {
+            ctClass.addField(new CtField(CtClass.booleanType, "__purgeRequested", ctClass), CtField.Initializer.constant(false));
+
+            ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                    "   __purgeRequested=true;" +
+                    "}", ctClass));
+            try {
+                CtMethod mGetBeanProperty = ctClass.getDeclaredMethod("getBeanProperty");
+                mGetBeanProperty.insertBefore(
+                    "   if(__purgeRequested) {" +
+                    "       __purgeRequested=false;" +
+                    "       java.beans.Introspector.flushCaches(); " +
+                    "       java.lang.reflect.Method meth = javax.el.BeanELResolver.SoftConcurrentHashMap.class.getDeclaredMethod(\"__createNewInstance\", null);" +
+                    "       properties = (javax.el.BeanELResolver.SoftConcurrentHashMap) meth.invoke(properties, null);" +
+                    "   }");
+            } catch (NotFoundException e) {
+                LOGGER.debug("FIXME : checkJBoss_3_0_EL() 'getBeanProperty(...)' not found in javax.el.BeanELResolver.");
+            }
+
+        } catch (CannotCompileException e) {
+            LOGGER.error("patchJBossEl() exception {}", e.getMessage());
+        }
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "javax.el.BeanELResolver\\$SoftConcurrentHashMap")
+    public static void patchJbossElSoftConcurrentHashMap(CtClass ctClass) throws CannotCompileException {
+        try {
+            ctClass.addMethod(CtNewMethod.make("public javax.el.BeanELResolver.SoftConcurrentHashMap __createNewInstance() {" +
+                    "   return new javax.el.BeanELResolver.SoftConcurrentHashMap();" +
+                    "}", ctClass));
+        } catch (CannotCompileException e) {
+            LOGGER.error("patchJbossElSoftConcurrentHashMap() exception {}", e.getMessage());
+        }
     }
 
     public void registerBeanELResolver(Object beanELResolver) {
