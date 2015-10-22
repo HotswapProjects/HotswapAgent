@@ -57,6 +57,9 @@ public class URLClassLoaderHelper {
      * @param extraClassPath path to prepend
      */
     public static void prependClassPath(URLClassLoader classLoader, URL[] extraClassPath) {
+	// TomcatPlugin já faz tudo que é necessário
+	if (classLoader.getClass().getSuperclass().getName().equals("org.apache.catalina.loader.WebappClassLoaderBase"))
+	    return;
 
         synchronized (classLoader) {
 

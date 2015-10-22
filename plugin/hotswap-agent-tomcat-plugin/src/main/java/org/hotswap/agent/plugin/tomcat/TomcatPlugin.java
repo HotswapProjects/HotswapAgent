@@ -141,7 +141,18 @@ public class TomcatPlugin {
         for (int i = 0; i < currentRepositories.length; i++) {
             repositories[i+newRepositories.length] = currentRepositories[i];
         }
-        ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "repositories", repositories);
+	Class<?> superLoader = appClassLoader.getClass().getSuperclass();
+	if (superLoader.getName().equals("org.apache.catalina.loader.WebappClassLoaderBase")) {
+	    for (int i = 0; i < newRepositories.length; i++) {
+		ReflectionHelper.invoke(appClassLoader, superLoader, "addRepository", new Class[]{String.class}, newRepositories[i].toString());
+	    }
+	    ReflectionHelper.invoke(appClassLoader, superLoader, "setSearchExternalFirst", new Class[]{boolean.class}, true);
+
+	    URLClassPath ucp = (URLClassPath) ReflectionHelper.get(appClassLoader, URLClassLoader.class, "ucp");
+	    ReflectionHelper.set(appClassLoader, URLClassLoader.class, "ucp", new BlacklistClassPath(ucp));
+	} else {
+            ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "repositories", repositories);
+	}
 
         File[] files = (File[]) ReflectionHelper.get(appClassLoader, "files");
         File[] result2 = new File[files.length + newRepositories.length];
@@ -164,7 +175,9 @@ public class TomcatPlugin {
         for (int i = 0; i < files.length; i++) {
             result2[i+newRepositories.length] = files[i];
         }
-        ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "files", result2);
+	if (!superLoader.getName().equals("org.apache.catalina.loader.WebappClassLoaderBase")) {
+            ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "files", result2);
+        }
     }
 
     private static Map<String, ClassLoader> getExtraRepositories(ClassLoader appClassLoader) {
