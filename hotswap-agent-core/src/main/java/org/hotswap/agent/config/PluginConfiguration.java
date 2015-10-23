@@ -255,6 +255,10 @@ public class PluginConfiguration {
         return convertToURL(getProperty("watchResources"));
     }
 
+    public URL[] getExtraWebappContext() {
+        return convertToURL(getProperty("extraWebappContext"));
+    }
+
     /**
      * Converts watchResources property to URL array. Invalid URLs will be skipped and logged as error.
      */

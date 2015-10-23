@@ -101,6 +101,19 @@ public class TomcatPlugin {
 
                 getExtraRepositories(appClassLoader).put("/", webappDirClassLoader);
             }
+            List<File> webappDirs = new ArrayList<File>();
+            for (URL url : pluginConfiguration.getExtraWebappContext()) {
+                try {
+                    File dir = new File(url.toURI());
+                    if (!dir.exists() || !dir.isDirectory()) {
+                        LOGGER.error("Invalid directory: " + url.toString());
+                    }
+                    webappDirs.add(dir);
+                } catch (URISyntaxException e) {
+                    LOGGER.error("Invalid directory: " + url.toString(), e);
+                }
+            }
+            extraWebappContext = webappDirs;
         }
 
         Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
@@ -261,6 +274,17 @@ public class TomcatPlugin {
         return null;
     }
 
+    private volatile static List<File> extraWebappContext = Collections.emptyList();
+
+    public static File getExtraWebappResource(String name) {
+        for (File dir : extraWebappContext) {
+            File jsp = new File(dir, name.startsWith("/") ? name.substring(1) : name);
+            if (jsp.exists()) {
+                return jsp;
+            }
+        }
+        return null;
+    }
 
     /**
      * Resolve the server version from ServerInfo class.
