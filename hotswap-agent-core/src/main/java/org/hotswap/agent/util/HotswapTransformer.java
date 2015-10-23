@@ -37,7 +37,7 @@ public class HotswapTransformer implements ClassFileTransformer {
      * Exclude these classLoaders from initialization (system classloaders). Note that
      */
     private static final Set<String> excludedClassLoaders = new HashSet<String>(Arrays.asList(
-            "sun.reflect.DelegatingClassLoader",
+            "sun.reflect.DelegatingClassLoader", "org.apache.jasper.servlet.JasperLoader",
             "org.apache.felix.framework.BundleWiringImpl$BundleClassLoader", // delegating ClassLoader in GlassFish
             "org.apache.felix.framework.BundleWiringImpl$BundleClassLoaderJava5" // delegating ClassLoader in_GlassFish
     ));
