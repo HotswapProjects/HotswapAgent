@@ -113,7 +113,8 @@ public class TomcatPlugin {
                     LOGGER.error("Invalid directory: " + url.toString(), e);
                 }
             }
-            extraWebappContext = webappDirs;
+            Object fileDirContext = ReflectionHelper.get(resource, "dirContext");
+            EXTRA_WEB_APP_CONTEXT.put(fileDirContext, webappDirs);
         }
 
         Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
@@ -274,13 +275,19 @@ public class TomcatPlugin {
         return null;
     }
 
-    private volatile static List<File> extraWebappContext = Collections.emptyList();
+    private static final Map<Object, List<File>> EXTRA_WEB_APP_CONTEXT = new ConcurrentHashMap<Object, List<File>>(16, 0.75f, 1);
 
-    public static File getExtraWebappResource(String name) {
-        for (File dir : extraWebappContext) {
-            File jsp = new File(dir, name.startsWith("/") ? name.substring(1) : name);
-            if (jsp.exists()) {
-                return jsp;
+    public static File getExtraWebappResource(Object ctx, String name) {
+        if ("".equals(name) || name.endsWith(".class")) {
+            return null;
+        }
+        List<File> dirs = EXTRA_WEB_APP_CONTEXT.get(ctx);
+        if (dirs != null) {
+            for (File dir : dirs) {
+                File resource = new File(dir, name);
+                if (resource.exists()) {
+                    return resource;
+                }
             }
         }
         return null;
