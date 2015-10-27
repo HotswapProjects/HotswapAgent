@@ -278,7 +278,7 @@ public class TomcatPlugin {
     private static final Map<Object, List<File>> EXTRA_WEB_APP_CONTEXT = new ConcurrentHashMap<Object, List<File>>(16, 0.75f, 1);
 
     public static File getExtraWebappResource(Object ctx, String name) {
-        if ("".equals(name) || name.endsWith(".class")) {
+        if ("".equals(name) || name.endsWith(".class") || name.endsWith(".xml")) {
             return null;
         }
         List<File> dirs = EXTRA_WEB_APP_CONTEXT.get(ctx);
