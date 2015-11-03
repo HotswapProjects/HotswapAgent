@@ -41,7 +41,7 @@ public class PluginConfiguration {
 
     public PluginConfiguration(ClassLoader classLoader) {
         this.classLoader = classLoader;
-        configurationURL = classLoader.getResource(PLUGIN_CONFIGURATION);
+        configurationURL = classLoader == null ? ClassLoader.getSystemResource(PLUGIN_CONFIGURATION) : classLoader.getResource(PLUGIN_CONFIGURATION);
 
         try {
             if (configurationURL != null) {
@@ -61,14 +61,15 @@ public class PluginConfiguration {
         // search for resources not known by parent classloader (defined in THIS classloader exclusively)
         // this is necessary in case of parent classloader precedence
         try {
-            Enumeration<URL> urls = classLoader.getResources(PLUGIN_CONFIGURATION);
+            Enumeration<URL> urls = classLoader == null ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION) : classLoader.getResources(PLUGIN_CONFIGURATION);
             while (urls.hasMoreElements()) {
                 URL url = urls.nextElement();
 
                 boolean found = false;
 
                 if (parent != null) {
-                    Enumeration<URL> parentUrls = parent.getClassLoader().getResources(PLUGIN_CONFIGURATION);
+                    ClassLoader parentClassLoader = parent.getClassLoader();
+                    Enumeration<URL> parentUrls = parentClassLoader == null ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION) : parentClassLoader.getResources(PLUGIN_CONFIGURATION);
                     while (parentUrls.hasMoreElements()) {
                         if (url.equals(parentUrls.nextElement()))
                             found = true;

@@ -136,7 +136,8 @@ public class PluginManager {
             return;
 
         // parent of current classloader (system/bootstrap)
-        if (classLoader.equals(getClass().getClassLoader().getParent()))
+        if (getClass().getClassLoader() != null &&
+            classLoader.equals(getClass().getClassLoader().getParent()))
             return;
 
         // synchronize ClassLoader patching - multiple classloaders may be patched at the same time
