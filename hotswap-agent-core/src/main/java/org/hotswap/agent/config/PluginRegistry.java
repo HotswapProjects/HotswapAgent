@@ -91,6 +91,7 @@ public class PluginRegistry {
 
                 if (pluginAnnotation == null) {
                     LOGGER.error("Scanner discovered plugin class {} which does not contain @Plugin annotation.", pluginClass);
+                    continue;
                 }
                 String pluginName = pluginAnnotation.name();
 

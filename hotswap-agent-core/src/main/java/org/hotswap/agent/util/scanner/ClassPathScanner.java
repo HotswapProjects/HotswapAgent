@@ -31,9 +31,8 @@ public class ClassPathScanner implements Scanner {
     @Override
     public void scan(ClassLoader classLoader, String path, ScannerVisitor visitor) throws IOException {
         LOGGER.trace("Scanning path {}", path);
-
         // find all directories - classpath directory or JAR
-        Enumeration<URL> en = classLoader.getResources(path);
+        Enumeration<URL> en = classLoader == null ? ClassLoader.getSystemResources(path) : classLoader.getResources(path);
         while (en.hasMoreElements()) {
             URL pluginDirURL = en.nextElement();
             File pluginDir = new File(pluginDirURL.getFile());

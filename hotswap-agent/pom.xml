@@ -154,6 +154,7 @@
                                     <Implementation-Title>${project.build.finalName}</Implementation-Title>
                                     <Implementation-Version>${project.version}</Implementation-Version>
                                     <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
+                                    <Boot-Class-Path>hotswap-agent.jar</Boot-Class-Path>
                                     <Can-Redefine-Classes>true</Can-Redefine-Classes>
                                     <Can-Retransform-Classes>true</Can-Retransform-Classes>
                                 </manifestEntries>
