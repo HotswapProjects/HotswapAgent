@@ -182,17 +182,18 @@ public class WeldPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl")
     public static void transformJbossBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
         StringBuilder src = new StringBuilder("{");
-        src.append("if (beanArchiveType!=null && \"EXPLICIT\".equals(beanArchiveType.toString())){");
-        src.append("  String beanXml = \"META-INF/beans.xml\";");
-        src.append("  java.util.List resList = module.getClassLoader().loadResourceLocal(beanXml);");
-        src.append("  if(resList.size() == 1) {");
+        src.append("if (beansXml!=null&& beanArchiveType!=null && \"EXPLICIT\".equals(beanArchiveType.toString())){");
+        src.append("  String beansXmlPath = beansXml.getUrl().getPath();");
+        src.append("  String archPath = null;");
+        src.append("  if(beansXmlPath.endsWith(\"META-INF/beans.xml\")) {");
+        src.append("    archPath = beansXmlPath.substring(0, beansXmlPath.length()-\"META-INF/beans.xml\".length()-1);"); /* -1 ~ eat "/" at the end of path */
+        src.append("  } else if (beansXmlPath.endsWith(\"WEB-INF/beans.xml\")) {");
+        src.append("    archPath = beansXmlPath.substring(0, beansXmlPath.length()-\"beans.xml\".length()) + \"classes\";");
+        src.append("  }");
+        src.append("  if(archPath != null) {");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
         src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldPlugin.class, "initInJBossAS"));
-        src.append("    org.jboss.modules.Resource res = (org.jboss.modules.Resource) resList.get(0);");
-        src.append("    String archPath = res.getURL().getPath();");
-        src.append("    archPath = archPath.substring(0, archPath.length()-beanXml.length()-1);"); /* -1 ~ eat "/" at the end of path */
         src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent\", true, module.getClassLoader());");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
         src.append("    agM.invoke(null, new Object[] { module.getClassLoader(),this,archPath });");
