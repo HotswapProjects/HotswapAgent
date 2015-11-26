@@ -1,16 +1,22 @@
 package org.hotswap.agent.config;
 
-import org.hotswap.agent.HotswapAgent;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Properties;
+import java.util.StringTokenizer;
+
+import org.hotswap.agent.HotswapAgent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
+import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
 
 /**
  * Plugin configuration.
@@ -129,6 +135,8 @@ public class PluginConfiguration {
         if (extraClassPath.length > 0) {
             if (classLoader instanceof URLClassLoader) {
                 URLClassLoaderHelper.prependClassPath((URLClassLoader) classLoader, extraClassPath);
+            } else if (classLoader instanceof HotswapAgentClassLoaderExt) {
+                ((HotswapAgentClassLoaderExt) classLoader).setExtraClassPath(extraClassPath);
             } else {
                 LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. " +
                         "Only URLClassLoader is supported.\n" +
