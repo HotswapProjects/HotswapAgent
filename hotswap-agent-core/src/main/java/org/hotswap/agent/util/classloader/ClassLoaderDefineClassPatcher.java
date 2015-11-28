@@ -1,15 +1,21 @@
 package org.hotswap.agent.util.classloader;
 
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.javassist.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.scanner.ClassPathScanner;
 import org.hotswap.agent.util.scanner.Scanner;
 import org.hotswap.agent.util.scanner.ScannerVisitor;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.ProtectionDomain;
 
 /**
  * Classloader patch which will redefine each patch via Javassist in the target classloader.
@@ -29,52 +35,82 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassLoaderDefineClassPatcher.class);
 
+    private static List<byte[]> classCache = new ArrayList<>();
+
     @Override
     public void patch(final ClassLoader classLoaderFrom, final String pluginPath,
                       final ClassLoader classLoaderTo, final ProtectionDomain protectionDomain) {
 
+        fillPluginClassCache(classLoaderFrom, pluginPath);
+
         final ClassPool cp = new ClassPool();
         cp.appendClassPath(new LoaderClassPath(getClass().getClassLoader()));
 
-        Scanner scanner = new ClassPathScanner();
-
-        try {
-            scanner.scan(classLoaderFrom, pluginPath, new ScannerVisitor() {
-                @Override
-                public void visit(InputStream file) throws IOException {
-                    try {
-                        CtClass patchClass = cp.makeClass(file);
-
-                        // skip plugin classes
-                        // TODO this should be skipped only in patching application classloader. To copy
-                         // classes into agent classloader, Plugin class must be copied as well
-//                        if (patchClass.hasAnnotation(Plugin.class)) {
-//                            LOGGER.trace("Skipping plugin class: " + patchClass.getName());
-//                            return;
-//                        }
-
-                        try {
-                            // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
-                            // is parent of classLoaderFrom, after definition in classLoaderTo will classLoaderFrom return
-                            // class from parent classloader instead own definition (hence change of behaviour).
-                            classLoaderFrom.loadClass(patchClass.getName());
-                            // and load the class in classLoaderTo as well. NOw the class is defined in BOTH classloaders.
-                            patchClass.toClass(classLoaderTo, protectionDomain);
-                        } catch (CannotCompileException e) {
-                            LOGGER.trace("Skipping class definition in {} in app classloader {} - " +
-                                    "class is probably already defined.", patchClass.getName(), classLoaderTo);
-                        }
-                    } catch (Throwable e) {
-                        LOGGER.trace("Skipping class definition app classloader {} - " +
-                                "unknown error.", e, classLoaderTo);
-                    }
+        for (byte[] pluginBytes: classCache) {
+            try {
+                CtClass pluginClass = null;
+                try {
+                    // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
+                    // is parent of classLoaderFrom, after definition in classLoaderTo will classLoaderFrom return
+                    // class from parent classloader instead own definition (hence change of behaviour).
+                    InputStream is = new ByteArrayInputStream(pluginBytes);
+                    pluginClass = cp.makeClass(is);
+                    classLoaderFrom.loadClass(pluginClass.getName());
+                    // and load the class in classLoaderTo as well. NOw the class is defined in BOTH classloaders.
+                    pluginClass.toClass(classLoaderTo, protectionDomain);
+                } catch (CannotCompileException e) {
+                    LOGGER.trace("Skipping class definition in {} in app classloader {} - " +
+                            "class is probably already defined.", pluginClass.getName(), classLoaderTo);
                 }
-            });
-        } catch (IOException e) {
-            LOGGER.error("Exception while scanning 'org/hotswap/agent/plugin'", e);
+            } catch (Throwable e) {
+                LOGGER.trace("Skipping class definition app classloader {} - " +
+                        "unknown error.", e, classLoaderTo);
+            }
         }
 
         LOGGER.debug("Classloader {} patched with plugin classes from agent classloader {}.", classLoaderTo, classLoaderFrom);
+
+    }
+
+    private void fillPluginClassCache(final ClassLoader classLoaderFrom, final String pluginPath) {
+        synchronized(classCache) {
+            if (classCache.isEmpty()) {
+
+                classCache = new ArrayList<byte[]>();
+                Scanner scanner = new ClassPathScanner();
+
+                try {
+                    scanner.scan(classLoaderFrom, pluginPath, new ScannerVisitor() {
+                        @Override
+                        public void visit(InputStream file) throws IOException {
+
+                            // skip plugin classes
+                            // TODO this should be skipped only in patching application classloader. To copy
+                             // classes into agent classloader, Plugin class must be copied as well
+    //                        if (patchClass.hasAnnotation(Plugin.class)) {
+    //                            LOGGER.trace("Skipping plugin class: " + patchClass.getName());
+    //                            return;
+    //                        }
+
+                            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+                            int readBytes;
+                            byte[] data = new byte[16384];
+
+                            while ((readBytes = file.read(data, 0, data.length)) != -1) {
+                                buffer.write(data, 0, readBytes);
+                            }
+
+                            buffer.flush();
+                            classCache.add(buffer.toByteArray());
+                        }
+
+                    });
+                } catch (IOException e) {
+                    LOGGER.error("Exception while scanning 'org/hotswap/agent/plugin'", e);
+                }
+            }
+        }
 
     }
 
