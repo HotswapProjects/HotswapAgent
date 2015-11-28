@@ -66,6 +66,19 @@ public class JBossModulesPlugin {
                 pathsGetter = ".get()";
             }
 
+            CtClass objectClass = classPool.get(Object.class.getName());
+            CtField ctField = new CtField(objectClass, "__prepend", ctClass);
+            ctClass.addField(ctField);
+
+            ctClass.addMethod(CtNewMethod.make(
+                    "private void __setupPrepend() {" +
+                    "       Class clPaths = Class.forName(\"org.jboss.modules.Paths\", true, this.getClass().getClassLoader());" +
+                    "       java.lang.reflect.Method spM  = clPaths.getDeclaredMethod(\"setPrepend\", new Class[] {java.lang.Object.class});" +
+                    "       spM.invoke(this.paths" + pathsGetter + ", new java.lang.Object[] { __prepend });"+
+                    "}", ctClass)
+            );
+
+            // Implementation of HotswapAgentClassLoaderExt.setExtraClassPath(...)
             ctClass.addMethod(CtNewMethod.make(
                     "public void setExtraClassPath(java.net.URL[] extraClassPath) {" +
                     "   try {" +
@@ -80,21 +93,21 @@ public class JBossModulesPlugin {
                     "           " + JBossModulesPlugin.class.getName() + ".logSetExtraClassPathException(e);" +
                     "           }" +
                     "       }" +
-                    "       Class clPaths = Class.forName(\"org.jboss.modules.Paths\", true, this.getClass().getClassLoader());" +
-                    "       java.lang.reflect.Method spM  = clPaths.getDeclaredMethod(\"setPrepend\", new Class[] {java.lang.Object.class});" +
-                    "       spM.invoke(this.paths" + pathsGetter + ", new java.lang.Object[] { resLoaderList });"+
+                    "       this.__prepend = resLoaderList;" +
+                    "       __setupPrepend();" +
                     "   } catch (java.lang.Exception e) {" +
                     "       " + JBossModulesPlugin.class.getName() + ".logSetExtraClassPathException(e);" +
                     "   }" +
                     "}", ctClass)
             );
 
-
             CtMethod methRecalculate = ctClass.getDeclaredMethod("recalculate");
             methRecalculate.setBody(
                     "{" +
-                    "   org.jboss.modules.Paths paths = this.paths" + pathsGetter + ";" +
-                    "   return setResourceLoaders(paths, (org.jboss.modules.ResourceLoaderSpec[]) paths.getSourceList(NO_RESOURCE_LOADERS));" +
+                    "   final org.jboss.modules.Paths p = this.paths" + pathsGetter + ";" +
+                    "   boolean ret = setResourceLoaders(p, (org.jboss.modules.ResourceLoaderSpec[])p.getSourceList(NO_RESOURCE_LOADERS));" +
+                    "   __setupPrepend();" +
+                    "   return ret;" +
                     "}"
             );
 
@@ -103,7 +116,9 @@ public class JBossModulesPlugin {
             CtMethod methResourceLoaders = ctClass.getDeclaredMethod("setResourceLoaders", new CtClass[] { ctResLoadClass });
             methResourceLoaders.setBody(
                     "{" +
-                    "   return setResourceLoaders(paths" + pathsGetter + ", (org.jboss.modules.ResourceLoaderSpec[]) $1);" +
+                    "   boolean ret = setResourceLoaders(this.paths" + pathsGetter + ", $1);" +
+                    "   __setupPrepend();" +
+                    "   return ret;" +
                     "}"
             );
 
