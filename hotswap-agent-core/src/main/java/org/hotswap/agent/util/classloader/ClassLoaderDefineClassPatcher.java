@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
@@ -35,36 +37,39 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassLoaderDefineClassPatcher.class);
 
-    private static List<byte[]> classCache = new ArrayList<>();
+    private static Map<String, List<byte[]>> pluginClassCache = new HashMap<String, List<byte[]>>();
 
     @Override
     public void patch(final ClassLoader classLoaderFrom, final String pluginPath,
                       final ClassLoader classLoaderTo, final ProtectionDomain protectionDomain) {
 
-        fillPluginClassCache(classLoaderFrom, pluginPath);
+        List<byte[]> cache = getPluginCache(classLoaderFrom, pluginPath);
 
-        final ClassPool cp = new ClassPool();
-        cp.appendClassPath(new LoaderClassPath(getClass().getClassLoader()));
+        if (cache != null) {
 
-        for (byte[] pluginBytes: classCache) {
-            try {
-                CtClass pluginClass = null;
+            final ClassPool cp = new ClassPool();
+            cp.appendClassPath(new LoaderClassPath(getClass().getClassLoader()));
+
+            for (byte[] pluginBytes: cache) {
                 try {
-                    // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
-                    // is parent of classLoaderFrom, after definition in classLoaderTo will classLoaderFrom return
-                    // class from parent classloader instead own definition (hence change of behaviour).
-                    InputStream is = new ByteArrayInputStream(pluginBytes);
-                    pluginClass = cp.makeClass(is);
-                    classLoaderFrom.loadClass(pluginClass.getName());
-                    // and load the class in classLoaderTo as well. NOw the class is defined in BOTH classloaders.
-                    pluginClass.toClass(classLoaderTo, protectionDomain);
-                } catch (CannotCompileException e) {
-                    LOGGER.trace("Skipping class definition in {} in app classloader {} - " +
-                            "class is probably already defined.", pluginClass.getName(), classLoaderTo);
+                    CtClass pluginClass = null;
+                    try {
+                        // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
+                        // is parent of classLoaderFrom, after definition in classLoaderTo will classLoaderFrom return
+                        // class from parent classloader instead own definition (hence change of behaviour).
+                        InputStream is = new ByteArrayInputStream(pluginBytes);
+                        pluginClass = cp.makeClass(is);
+                        classLoaderFrom.loadClass(pluginClass.getName());
+                        // and load the class in classLoaderTo as well. NOw the class is defined in BOTH classloaders.
+                        pluginClass.toClass(classLoaderTo, protectionDomain);
+                    } catch (CannotCompileException e) {
+                        LOGGER.trace("Skipping class definition in {} in app classloader {} - " +
+                                "class is probably already defined.", pluginClass.getName(), classLoaderTo);
+                    }
+                } catch (Throwable e) {
+                    LOGGER.trace("Skipping class definition app classloader {} - " +
+                            "unknown error.", e, classLoaderTo);
                 }
-            } catch (Throwable e) {
-                LOGGER.trace("Skipping class definition app classloader {} - " +
-                        "unknown error.", e, classLoaderTo);
             }
         }
 
@@ -72,13 +77,13 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
 
     }
 
-    private void fillPluginClassCache(final ClassLoader classLoaderFrom, final String pluginPath) {
-        synchronized(classCache) {
-            if (classCache.isEmpty()) {
-
-                classCache = new ArrayList<byte[]>();
+    private List<byte[]> getPluginCache(final ClassLoader classLoaderFrom, final String pluginPath) {
+        List<byte[]> ret = null;
+        synchronized(pluginClassCache) {
+            ret = pluginClassCache.get(pluginPath);
+            if (ret == null) {
+                final List<byte[]> retList = new ArrayList<byte[]>();
                 Scanner scanner = new ClassPathScanner();
-
                 try {
                     scanner.scan(classLoaderFrom, pluginPath, new ScannerVisitor() {
                         @Override
@@ -102,16 +107,18 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
                             }
 
                             buffer.flush();
-                            classCache.add(buffer.toByteArray());
+                            retList.add(buffer.toByteArray());
                         }
 
                     });
                 } catch (IOException e) {
                     LOGGER.error("Exception while scanning 'org/hotswap/agent/plugin'", e);
                 }
+                ret = retList;
+                pluginClassCache.put(pluginPath, ret);
             }
         }
-
+        return ret;
     }
 
     @Override
