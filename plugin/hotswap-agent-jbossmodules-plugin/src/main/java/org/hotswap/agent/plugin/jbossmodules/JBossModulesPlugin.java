@@ -40,7 +40,12 @@ public class JBossModulesPlugin {
                     "return $_;"
                 );
 
+        ctClass.getDeclaredMethod("unloadModuleLocal", new CtClass[]{classPool.get("org.jboss.modules.Module")}).insertBefore(
+                    "if(!$1.getIdentifier().getName().matches(\"" + SKIP_MODULES_REGEXP + "\")) {" +
+                        PluginManagerInvoker.buildCallCloseClassLoader("$1.getClassLoaderPrivate()") +
+                    "}"
+                );
+
         LOGGER.debug("Class 'org.jboss.modules.Module' patched.");
     }
-
 }
