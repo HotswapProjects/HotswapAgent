@@ -87,7 +87,7 @@ public class ELResolverPlugin {
                     "}", ctClass));
             return true;
         } catch (NotFoundException | CannotCompileException e) {
-            // do nothing
+            // purgeBeanClasses method not found -do nothing
         }
         return false;
 

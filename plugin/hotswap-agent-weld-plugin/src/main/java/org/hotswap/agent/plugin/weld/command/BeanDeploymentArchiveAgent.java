@@ -150,6 +150,8 @@ public class BeanDeploymentArchiveAgent {
      */
     public void reloadBean(ClassLoader classLoader, String beanClassName) {
 
+        ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
+
         try {
 
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -204,6 +206,8 @@ public class BeanDeploymentArchiveAgent {
             }
         } catch (ClassNotFoundException e) {
             LOGGER.warning("Class load exception : {}", e.getMessage());
+        } finally {
+            Thread.currentThread().setContextClassLoader(oldContextClassLoader);
         }
     }
 

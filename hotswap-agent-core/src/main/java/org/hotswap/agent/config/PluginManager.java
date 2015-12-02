@@ -75,6 +75,18 @@ public class PluginManager {
         return pluginRegistry.getPlugin(clazz, classLoader);
     }
 
+    /**
+     * Check if plugin is initialized in classLoader.
+     *
+     * @param pluginClass type of the plugin
+     * @param classLoader classloader of the plugin
+     * @param checkParent for parent classloaders as well?
+     * @return true/false
+     */
+    public boolean isPluginInitialized(String pluginClassName, ClassLoader classLoader) {
+        Class<Object> pluginClass = pluginRegistry.getPluginClass(pluginClassName);
+        return pluginClass != null && pluginRegistry.hasPlugin(pluginClass, classLoader, false);
+    }
 
     /**
      * Initialize the singleton plugin manager.

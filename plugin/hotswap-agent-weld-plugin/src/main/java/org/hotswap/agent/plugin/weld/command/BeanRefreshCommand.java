@@ -14,12 +14,13 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
- * ClassPathBeanRefreshCommand
+ * BeanRefreshCommand. When a bean class is redefined object of ClassPathBeanRefreshCommand is created and after
+ * timeout executed. It calls bean reload logic in BeanDepoymentArchiveAagent internally
  *
  * @author Vladimir Dvorak
  */
-public class ClassPathBeanRefreshCommand extends MergeableCommand {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ClassPathBeanRefreshCommand.class);
+public class BeanRefreshCommand extends MergeableCommand {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanRefreshCommand.class);
 
     ClassLoader classLoader;
 
@@ -30,13 +31,13 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     // either event or classDefinition is set by constructor (watcher or transformer)
     WatchFileEvent event;
 
-    public ClassPathBeanRefreshCommand(ClassLoader classLoader, String archivePath, String className) {
+    public BeanRefreshCommand(ClassLoader classLoader, String archivePath, String className) {
         this.classLoader = classLoader;
         this.archivePath = archivePath;
         this.className = className;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader classLoader, String archivePath, WatchFileEvent event) {
+    public BeanRefreshCommand(ClassLoader classLoader, String archivePath, WatchFileEvent event) {
         this.classLoader = classLoader;
         this.archivePath = archivePath;
         this.event = event;
@@ -85,15 +86,15 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
      */
     private boolean isDeleteEvent() {
         // for all merged commands including this command
-        List<ClassPathBeanRefreshCommand> mergedCommands = new ArrayList<ClassPathBeanRefreshCommand>();
+        List<BeanRefreshCommand> mergedCommands = new ArrayList<BeanRefreshCommand>();
         for (Command command : getMergedCommands()) {
-            mergedCommands.add((ClassPathBeanRefreshCommand) command);
+            mergedCommands.add((BeanRefreshCommand) command);
         }
         mergedCommands.add(this);
 
         boolean createFound = false;
         boolean deleteFound = false;
-        for (ClassPathBeanRefreshCommand command : mergedCommands) {
+        for (BeanRefreshCommand command : mergedCommands) {
             if (command.event != null) {
                 if (command.event.getEventType().equals(FileEvent.DELETE))
                     deleteFound = true;
@@ -111,7 +112,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ClassPathBeanRefreshCommand that = (ClassPathBeanRefreshCommand) o;
+        BeanRefreshCommand that = (BeanRefreshCommand) o;
 
         if (!classLoader.equals(that.classLoader)) return false;
         if (!className.equals(that.className)) return false;
