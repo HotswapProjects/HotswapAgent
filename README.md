@@ -244,6 +244,7 @@ Credits
 Hotswap agent:
 
 * Jiri Bubnik - project coordinator, initial implementation
+* Erki Ehtla - Spring plugin, Proxy plugin
 * Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld plugins implementation
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin

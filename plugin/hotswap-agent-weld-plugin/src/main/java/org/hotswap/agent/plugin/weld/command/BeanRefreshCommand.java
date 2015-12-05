@@ -64,9 +64,9 @@ public class BeanRefreshCommand extends MergeableCommand {
         }
 
         try {
-            LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshClass('{}')", className);
+            LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshBean('{}')", className);
             Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, classLoader);
-            Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshClass", new Class[] {ClassLoader.class, String.class, String.class});
+            Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshBean", new Class[] {ClassLoader.class, String.class, String.class});
             bdaMethod.invoke(null, classLoader, archivePath, className);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);

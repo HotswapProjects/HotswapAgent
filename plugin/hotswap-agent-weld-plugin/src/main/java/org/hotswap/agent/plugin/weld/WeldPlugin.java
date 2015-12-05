@@ -15,9 +15,11 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
 import org.hotswap.agent.plugin.weld.command.BeanRefreshCommand;
+import org.hotswap.agent.plugin.weld.command.ProxyRefreshCommand;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
@@ -149,34 +151,48 @@ public class WeldPlugin {
         return false;
     }
 
-    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
-        if (!isSyntheticWeldClass(ctClass.getName()) && original != null) {
-            try {
-                String classFilePath = ctClass.getURL().getPath();
-                String className = ctClass.getName().replace(".", "/");
-                // archive path ends with '/' therefore we set end position before the '/' (-1)
-                String archivePath = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
-                archivePath = new File(archivePath).toPath().toString();
-                if (isBdaRegistered(appClassLoader, archivePath)) {
-                    scheduler.scheduleCommand(new BeanRefreshCommand(classLoader, archivePath, original.getName()), WAIT_ON_CREATE);
-                }
-            } catch (Exception e) {
-                LOGGER.error("classReload() exception {}.", e.getMessage());
-            }
-        }
-//        if (!registeredProxiedBeans.isEmpty()) {
-//            RecreateProxyClassCommand recreateProxyFactoryCommand = new RecreateProxyClassCommand(
-//                    appClassLoader, registeredProxiedBeans, ctClass.getName());
-//            scheduler.scheduleCommand(recreateProxyFactoryCommand);
-//        }
-    }
-
     public void registerProxyFactory(Object proxyFactory, Object bean, ClassLoader classLoader) {
         synchronized(registeredProxiedBeans) {
             registeredProxiedBeans.put(bean, proxyFactory);
         }
         LOGGER.debug("Registering ProxyFactory : " + proxyFactory.getClass().getName());
+    }
+
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
+    public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
+        try {
+            String archivePath = getArchivePath(ctClass);
+            if (archivePath != null) {
+                // doReloadProxy(archivePath, classLoader, ctClass, original);
+                doReloadBean(archivePath, classLoader, ctClass, original);
+            }
+        } catch (Exception e) {
+            LOGGER.error("classReload() exception {}.", e.getMessage());
+        }
+    }
+
+    private String getArchivePath(CtClass ctClass) throws NotFoundException {
+        String classFilePath = ctClass.getURL().getPath();
+        String className = ctClass.getName().replace(".", "/");
+        // archive path ends with '/' therefore we set end position before the '/' (-1)
+        String archivePath = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
+        return (new File(archivePath)).toPath().toString();
+    }
+
+    private void doReloadBean(String archivePath, ClassLoader classLoader, CtClass ctClass, Class original) {
+        if (!isSyntheticWeldClass(ctClass.getName()) && original != null) {
+            if (isBdaRegistered(classLoader, archivePath)) {
+                scheduler.scheduleCommand(new BeanRefreshCommand(classLoader, archivePath, original.getName()), WAIT_ON_CREATE);
+            }
+        }
+    }
+
+    private void doReloadProxy(String archivePath, ClassLoader classLoader, CtClass ctClass, Class original) {
+        if (!registeredProxiedBeans.isEmpty()) {
+            ProxyRefreshCommand recreateProxyFactoryCommand = new ProxyRefreshCommand(
+                    classLoader, archivePath, registeredProxiedBeans, ctClass.getName());
+            scheduler.scheduleCommand(recreateProxyFactoryCommand, 100);
+        }
     }
 
     private boolean isSyntheticWeldClass(String className) {

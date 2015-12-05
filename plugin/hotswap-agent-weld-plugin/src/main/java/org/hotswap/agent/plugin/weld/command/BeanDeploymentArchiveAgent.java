@@ -3,9 +3,12 @@ package org.hotswap.agent.plugin.weld.command;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.Bean;
@@ -124,14 +127,14 @@ public class BeanDeploymentArchiveAgent {
     }
 
     /**
-     * Called by a reflection command from WeldPlugin transformer.
+     * Called by a reflection command from BeanRefreshCommand transformer.
      *
      * @param classLoader
      * @param archivePath
      * @param beanClassName
      * @throws IOException error working with classDefinition
      */
-    public static void refreshClass(ClassLoader classLoader, String archivePath, String beanClassName) throws IOException {
+    public static void refreshBean(ClassLoader classLoader, String archivePath, String beanClassName) throws IOException {
         BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
         if (bdaAgent == null) {
             LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
@@ -148,7 +151,7 @@ public class BeanDeploymentArchiveAgent {
      * @param bdaId the Bean Deployment Archive ID
      * @param beanClassName
      */
-    public void reloadBean(ClassLoader classLoader, String beanClassName) {
+    private void reloadBean(ClassLoader classLoader, String beanClassName) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -220,6 +223,46 @@ public class BeanDeploymentArchiveAgent {
 
         EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
         return eat;
+    }
+
+    public static void refreshProxy(ClassLoader classLoader, String archivePath, Map registeredBeans, String beanClassName)
+    {
+        BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
+        if (bdaAgent == null) {
+            LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
+            return;
+        }
+        bdaAgent.doRefreshProxy(classLoader, registeredBeans, beanClassName);
+    }
+
+    private void doRefreshProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, String className) {
+        ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
+
+        try {
+            Thread.currentThread().setContextClassLoader(classLoader);
+
+            // load class to avoid class not found exception
+            Class<?> cls = classLoader.loadClass(className);
+
+            for (Entry<Object, Object> entry : registeredBeans.entrySet()) {
+                Bean<?> bean = (Bean<?>) entry.getKey();
+                Set<Type> types = bean.getTypes();
+                if (types.contains(cls)) {
+                    Class<?> proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
+                    Object proxyFactory = entry.getValue();
+                    LOGGER.debug("Recreate proxyClass {} for bean class {}.", cls.getName(), bean.getClass());
+                    ReflectionHelper.invoke(proxyFactory,
+                            proxyFactoryClass, "__recreateProxyClass",
+                            new Class[] {});
+                }
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("recreateProxyFactory() exception {}.", e.getMessage());
+            e.printStackTrace();
+        } finally {
+            Thread.currentThread().setContextClassLoader(oldContextClassLoader);
+        }
     }
 
 }
