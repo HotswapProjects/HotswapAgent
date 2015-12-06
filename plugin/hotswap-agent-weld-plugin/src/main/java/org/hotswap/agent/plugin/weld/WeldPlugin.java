@@ -160,14 +160,16 @@ public class WeldPlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
-        try {
-            String archivePath = getArchivePath(ctClass);
-            if (archivePath != null) {
-                // doReloadProxy(archivePath, classLoader, ctClass, original);
-                doReloadBean(archivePath, classLoader, ctClass, original);
+        if (!isSyntheticWeldClass(ctClass.getName()) && original != null) {
+            try {
+                String archivePath = getArchivePath(ctClass);
+                if (archivePath != null) {
+                    doReloadProxy(archivePath, classLoader, ctClass, original);
+                    doReloadBean(archivePath, classLoader, ctClass, original);
+                }
+            } catch (Exception e) {
+                LOGGER.error("classReload() exception {}.", e.getMessage());
             }
-        } catch (Exception e) {
-            LOGGER.error("classReload() exception {}.", e.getMessage());
         }
     }
 
@@ -180,10 +182,8 @@ public class WeldPlugin {
     }
 
     private void doReloadBean(String archivePath, ClassLoader classLoader, CtClass ctClass, Class original) {
-        if (!isSyntheticWeldClass(ctClass.getName()) && original != null) {
-            if (isBdaRegistered(classLoader, archivePath)) {
-                scheduler.scheduleCommand(new BeanRefreshCommand(classLoader, archivePath, original.getName()), WAIT_ON_CREATE);
-            }
+        if (isBdaRegistered(classLoader, archivePath)) {
+            scheduler.scheduleCommand(new BeanRefreshCommand(classLoader, archivePath, original.getName()), WAIT_ON_CREATE);
         }
     }
 
@@ -196,7 +196,7 @@ public class WeldPlugin {
     }
 
     private boolean isSyntheticWeldClass(String className) {
-        return className.contains("_$$_Weld") || className.contains("$$$");
+        return className.contains("$Proxy$") || className.contains("$$$");
     }
 
 }

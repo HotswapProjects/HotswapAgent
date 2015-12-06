@@ -171,10 +171,8 @@ public class BeanDeploymentArchiveAgent {
                         EnhancedAnnotatedType eat = getEnhancedAnnotatedType(getBdaId(), beanClass);
                         if (bean instanceof ManagedBean) {
                             final ManagedBean managedBean = (ManagedBean) bean;
+                            managedBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false));
 
-                            managedBean.setProducer(
-                                    beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false)
-                            );
                             try {
                                 Object get = beanManager.getContext(bean.getScope()).get(bean);
                                 if (get != null) {
@@ -184,6 +182,7 @@ public class BeanDeploymentArchiveAgent {
                             } catch (org.jboss.weld.context.ContextNotActiveException e) {
                                 LOGGER.warning("No active contexts for {}", beanClass.getName());
                             }
+
                         } else {
                            LOGGER.warning("reloadBean() : reloading for class '{}' is not implemented.", bean.getClass().getName());
                         }
@@ -239,8 +238,7 @@ public class BeanDeploymentArchiveAgent {
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
-            Thread.currentThread().setContextClassLoader(classLoader);
-
+            // Reflection must be used since current ProxyClassLoadingDelegate.class != ProxyClassLoadingDelegate for Proxy factory
             // load class to avoid class not found exception
             Class<?> cls = classLoader.loadClass(className);
 
@@ -248,12 +246,11 @@ public class BeanDeploymentArchiveAgent {
                 Bean<?> bean = (Bean<?>) entry.getKey();
                 Set<Type> types = bean.getTypes();
                 if (types.contains(cls)) {
+                    Thread.currentThread().setContextClassLoader(bean.getBeanClass().getClassLoader());
                     Class<?> proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
                     Object proxyFactory = entry.getValue();
                     LOGGER.debug("Recreate proxyClass {} for bean class {}.", cls.getName(), bean.getClass());
-                    ReflectionHelper.invoke(proxyFactory,
-                            proxyFactoryClass, "__recreateProxyClass",
-                            new Class[] {});
+                    ReflectionHelper.invoke(proxyFactory, proxyFactoryClass, "__recreateProxyClass", new Class[] {});
                 }
             }
 

@@ -9,7 +9,9 @@ import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.javassist.expr.ExprEditor;
+import org.hotswap.agent.javassist.expr.MethodCall;
+import org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
@@ -20,13 +22,11 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  */
 public class ProxyFactoryTransformer {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyFactoryTransformer.class);
-
     /**
      * Patch ProxyFactory class.
-     *   - add factory registration into constructors
+     *   - add factory registration into constructor
      *   - add recreateProxyClass method
-     *
+     *   - changes call ClassFileUtils.toClass() in createProxyClass() to ProxyClassLoadingDelegate.loadClass(...)
      * @param ctClass the ProxyFactory class
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.bean.proxy.ProxyFactory")
@@ -42,35 +42,47 @@ public class ProxyFactoryTransformer {
 
         CtConstructor declaredConstructor = ctClass.getDeclaredConstructor(constructorParams);
 
-        if (declaredConstructor != null) {
-            declaredConstructor.insertAfter(
-                "if (" + PluginManager.class.getName() + ".getInstance().isPluginInitialized(\"" + WeldPlugin.class.getName() + "\", this.classLoader)) {" +
-                    PluginManagerInvoker.buildCallPluginMethod("this.classLoader", WeldPlugin.class, "registerProxyFactory",
-                            "this", "java.lang.Object",
-                            "bean", "java.lang.Object",
-                            "this.classLoader", "java.lang.ClassLoader"
-                            ) +
+        // TODO : we should find constructor without this() call and put registration only into this one
+        declaredConstructor.insertAfter(
+            "if (" + PluginManager.class.getName() + ".getInstance().isPluginInitialized(\"" + WeldPlugin.class.getName() + "\", this.classLoader)) {" +
+                PluginManagerInvoker.buildCallPluginMethod("this.classLoader", WeldPlugin.class, "registerProxyFactory",
+                        "this", "java.lang.Object",
+                        "bean", "java.lang.Object",
+                        "this.classLoader", "java.lang.ClassLoader"
+                        ) +
+            "}"
+        );
+
+        CtMethod recreateMethod = CtNewMethod.make(
+                "public void __recreateProxyClass() {" +
+                "   String suffix = \"_$$_Weld\" + getProxyNameSuffix();" +
+                "   String proxyClassName = getBaseProxyName();"+
+                "   if (!proxyClassName.endsWith(suffix)) {" +
+                "       proxyClassName = proxyClassName + suffix;" +
+                "   }"+
+                "   if (proxyClassName.startsWith(JAVA)) {" +
+                "       proxyClassName = proxyClassName.replaceFirst(JAVA, \"org.jboss.weld\");"+
+                "   }"+
+                "   try {" +
+                "       " + ProxyClassLoadingDelegate.class.getName() + ".beginProxyRegeneration();" +
+                "       createProxyClass(proxyClassName);"+
+                "   } finally {" +
+                "       " + ProxyClassLoadingDelegate.class.getName() + ".endProxyRegeneration();" +
+                "   }" +
                 "}"
-            );
+                , ctClass);
 
-            CtMethod recreateMethod = CtNewMethod.make(
-                    "public void __recreateProxyClass() {" +
-                    "   String suffix = \"_$$_Weld\" + getProxyNameSuffix();" +
-                    "   String proxyClassName = getBaseProxyName();"+
-                    "   if (!proxyClassName.endsWith(suffix)) {" +
-                    "       proxyClassName = proxyClassName + suffix;" +
-                    "   }"+
-                    "   if (proxyClassName.startsWith(JAVA)) {" +
-                    "       proxyClassName = proxyClassName.replaceFirst(JAVA, \"org.jboss.weld\");"+
-                    "   }"+
-                    "   createProxyClass(proxyClassName);"+
-                    "}"
-                    , ctClass);
+        ctClass.addMethod(recreateMethod);
 
-            ctClass.addMethod(recreateMethod);
-        } else {
-            LOGGER.warning("ProxyFactory(String, Class, Set, Bean, boolean) not found");
-        }
+        CtMethod createProxyClassMethod = ctClass.getDeclaredMethod("createProxyClass");
+        createProxyClassMethod.instrument(
+                new ExprEditor() {
+                    public void edit(MethodCall m) throws CannotCompileException
+                    {
+                        if (m.getClassName().equals("org.jboss.weld.util.bytecode.ClassFileUtils") && m.getMethodName().equals("toClass"))
+                            m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.toClass($$); }");
+                    }
+                });
     }
 
 }
