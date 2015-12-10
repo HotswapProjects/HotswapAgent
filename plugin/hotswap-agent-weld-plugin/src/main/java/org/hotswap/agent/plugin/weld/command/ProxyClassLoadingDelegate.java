@@ -19,7 +19,6 @@
  */
 package org.hotswap.agent.plugin.weld.command;
 
-import java.io.ByteArrayOutputStream;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,6 +50,13 @@ public class ProxyClassLoadingDelegate {
 
     public static final void endProxyRegeneration() {
         MAGIC_IN_PROGRESS.remove();
+    }
+
+    public static Class<?> loadClass(final ClassLoader classLoader, final String className) throws ClassNotFoundException {
+        if (MAGIC_IN_PROGRESS.get()) {
+            throw new ClassNotFoundException("HotswapAgent");
+        }
+        return classLoader.loadClass(className);
     }
 
     public static Class toClass(ClassFile ct, ClassLoader loader, ProtectionDomain domain) {

@@ -53,26 +53,15 @@ public class ProxyFactoryTransformer {
             "}"
         );
 
-        CtMethod recreateMethod = CtNewMethod.make(
-                "public void __recreateProxyClass() {" +
-                "   String suffix = \"_$$_Weld\" + getProxyNameSuffix();" +
-                "   String proxyClassName = getBaseProxyName();"+
-                "   if (!proxyClassName.endsWith(suffix)) {" +
-                "       proxyClassName = proxyClassName + suffix;" +
-                "   }"+
-                "   if (proxyClassName.startsWith(JAVA)) {" +
-                "       proxyClassName = proxyClassName.replaceFirst(JAVA, \"org.jboss.weld\");"+
-                "   }"+
-                "   try {" +
-                "       " + ProxyClassLoadingDelegate.class.getName() + ".beginProxyRegeneration();" +
-                "       createProxyClass(proxyClassName);"+
-                "   } finally {" +
-                "       " + ProxyClassLoadingDelegate.class.getName() + ".endProxyRegeneration();" +
-                "   }" +
-                "}"
-                , ctClass);
-
-        ctClass.addMethod(recreateMethod);
+        CtMethod getProxyClassMethod = ctClass.getDeclaredMethod("getProxyClass");
+        getProxyClassMethod.instrument(
+                new ExprEditor() {
+                    public void edit(MethodCall m) throws CannotCompileException
+                    {
+                        if (m.getClassName().equals(ClassLoader.class.getName()) && m.getMethodName().equals("loadClass"))
+                            m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.loadClass(this.classLoader,$1); }");
+                    }
+                });
 
         CtMethod createProxyClassMethod = ctClass.getDeclaredMethod("createProxyClass");
         createProxyClassMethod.instrument(

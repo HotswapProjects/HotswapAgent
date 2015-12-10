@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.Command;
@@ -14,13 +15,13 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
- * BeanRefreshCommand. When a bean class is redefined object of ClassPathBeanRefreshCommand is created and after
- * timeout executed. It calls bean reload logic in BeanDepoymentArchiveAagent internally
+ * BeanClassRefreshCommand. When a bean class is redefined object of BeanClassRefreshCommand is created and after
+ * timeout executed. It calls bean reload logic in BeanDepoymentArchiveAgent internally
  *
  * @author Vladimir Dvorak
  */
-public class BeanRefreshCommand extends MergeableCommand {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanRefreshCommand.class);
+public class BeanClassRefreshCommand extends MergeableCommand {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshCommand.class);
 
     ClassLoader classLoader;
 
@@ -28,16 +29,19 @@ public class BeanRefreshCommand extends MergeableCommand {
 
     String className;
 
+    Map<Object, Object> registeredProxiedBeans;
+
     // either event or classDefinition is set by constructor (watcher or transformer)
     WatchFileEvent event;
 
-    public BeanRefreshCommand(ClassLoader classLoader, String archivePath, String className) {
+    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, Map<Object, Object> registeredProxiedBeans, String className) {
         this.classLoader = classLoader;
         this.archivePath = archivePath;
+        this.registeredProxiedBeans = registeredProxiedBeans;
         this.className = className;
     }
 
-    public BeanRefreshCommand(ClassLoader classLoader, String archivePath, WatchFileEvent event) {
+    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, WatchFileEvent event) {
         this.classLoader = classLoader;
         this.archivePath = archivePath;
         this.event = event;
@@ -57,17 +61,16 @@ public class BeanRefreshCommand extends MergeableCommand {
 
     @Override
     public void executeCommand() {
-
         if (isDeleteEvent()) {
             LOGGER.trace("Skip Weld reload for delete event on class '{}'", className);
             return;
         }
 
         try {
-            LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshBean('{}')", className);
+            LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshBeanClass('{}')", className);
             Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, classLoader);
-            Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshBean", new Class[] {ClassLoader.class, String.class, String.class});
-            bdaMethod.invoke(null, classLoader, archivePath, className);
+            Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshBeanClass", new Class[] {ClassLoader.class, String.class, Map.class, String.class});
+            bdaMethod.invoke(null, classLoader, archivePath, registeredProxiedBeans, className);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
@@ -86,15 +89,15 @@ public class BeanRefreshCommand extends MergeableCommand {
      */
     private boolean isDeleteEvent() {
         // for all merged commands including this command
-        List<BeanRefreshCommand> mergedCommands = new ArrayList<BeanRefreshCommand>();
+        List<BeanClassRefreshCommand> mergedCommands = new ArrayList<BeanClassRefreshCommand>();
         for (Command command : getMergedCommands()) {
-            mergedCommands.add((BeanRefreshCommand) command);
+            mergedCommands.add((BeanClassRefreshCommand) command);
         }
         mergedCommands.add(this);
 
         boolean createFound = false;
         boolean deleteFound = false;
-        for (BeanRefreshCommand command : mergedCommands) {
+        for (BeanClassRefreshCommand command : mergedCommands) {
             if (command.event != null) {
                 if (command.event.getEventType().equals(FileEvent.DELETE))
                     deleteFound = true;
@@ -112,7 +115,7 @@ public class BeanRefreshCommand extends MergeableCommand {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        BeanRefreshCommand that = (BeanRefreshCommand) o;
+        BeanClassRefreshCommand that = (BeanClassRefreshCommand) o;
 
         if (!classLoader.equals(that.classLoader)) return false;
         if (!className.equals(that.className)) return false;
@@ -129,7 +132,7 @@ public class BeanRefreshCommand extends MergeableCommand {
 
     @Override
     public String toString() {
-        return "ClassPathBeanRefreshCommand{" +
+        return "BeanClassRefreshCommand{" +
                 "classLoader=" + classLoader +
                 ", archivePath='" + archivePath + '\'' +
                 ", className='" + className + '\'' +

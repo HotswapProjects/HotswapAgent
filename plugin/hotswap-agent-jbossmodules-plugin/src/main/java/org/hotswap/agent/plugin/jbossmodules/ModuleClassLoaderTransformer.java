@@ -11,6 +11,11 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
 
+/**
+ * ModuleClassLoaderTransformer
+ *
+ * @author Vladimir Dvorak
+ */
 public class ModuleClassLoaderTransformer {
 
     protected static AgentLogger LOGGER = AgentLogger.getLogger(ModuleClassLoaderTransformer.class);

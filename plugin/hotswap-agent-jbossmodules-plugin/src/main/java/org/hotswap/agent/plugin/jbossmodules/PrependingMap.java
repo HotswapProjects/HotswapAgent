@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * PrependingMap
+ *
+ * @author Vladimir Dvorak
+ */
 @SuppressWarnings("rawtypes")
 public class PrependingMap implements Map {
 

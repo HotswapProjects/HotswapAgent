@@ -134,12 +134,18 @@ public class BeanDeploymentArchiveAgent {
      * @param beanClassName
      * @throws IOException error working with classDefinition
      */
-    public static void refreshBean(ClassLoader classLoader, String archivePath, String beanClassName) throws IOException {
+    public static void refreshBeanClass(ClassLoader classLoader, String archivePath,
+            Map registeredProxiedBeans, String beanClassName) throws IOException {
         BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
         if (bdaAgent == null) {
             LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
             return;
         }
+
+        if (registeredProxiedBeans != null) {
+            bdaAgent.doRefreshProxy(classLoader, registeredProxiedBeans, beanClassName);
+        }
+
         bdaAgent.reloadBean(classLoader, beanClassName);
 
         reloadFlag = false;
@@ -224,16 +230,6 @@ public class BeanDeploymentArchiveAgent {
         return eat;
     }
 
-    public static void refreshProxy(ClassLoader classLoader, String archivePath, Map registeredBeans, String beanClassName)
-    {
-        BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
-        if (bdaAgent == null) {
-            LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
-            return;
-        }
-        bdaAgent.doRefreshProxy(classLoader, registeredBeans, beanClassName);
-    }
-
     private void doRefreshProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, String className) {
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -241,6 +237,8 @@ public class BeanDeploymentArchiveAgent {
             // Reflection must be used since current ProxyClassLoadingDelegate.class != ProxyClassLoadingDelegate for Proxy factory
             // load class to avoid class not found exception
             Class<?> cls = classLoader.loadClass(className);
+
+//            boolean recreated = false;
 
             for (Entry<Object, Object> entry : registeredBeans.entrySet()) {
                 Bean<?> bean = (Bean<?>) entry.getKey();
@@ -250,9 +248,17 @@ public class BeanDeploymentArchiveAgent {
                     Class<?> proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
                     Object proxyFactory = entry.getValue();
                     LOGGER.debug("Recreate proxyClass {} for bean class {}.", cls.getName(), bean.getClass());
-                    ReflectionHelper.invoke(proxyFactory, proxyFactoryClass, "__recreateProxyClass", new Class[] {});
+                    ReflectionHelper.invoke(proxyFactory, proxyFactoryClass, "getProxyClass", new Class[] {});
+//                    recreated = true;
                 }
             }
+
+//            if (recreated) {
+//                ReflectionCache reflectionCache = deploymentArchive.getServices().get(ReflectionCache.class);
+//                if (reflectionCache != null) {
+//                    reflectionCache.cleanup();
+//                }
+//            }
 
         } catch (Exception e) {
             LOGGER.error("recreateProxyFactory() exception {}.", e.getMessage());
