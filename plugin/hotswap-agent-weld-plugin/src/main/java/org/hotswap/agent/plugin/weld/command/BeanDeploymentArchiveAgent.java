@@ -143,7 +143,11 @@ public class BeanDeploymentArchiveAgent {
         }
 
         if (registeredProxiedBeans != null) {
-            bdaAgent.doRefreshProxy(classLoader, registeredProxiedBeans, beanClassName);
+            synchronized (registeredProxiedBeans) {
+                if (!registeredProxiedBeans.isEmpty()) {
+                    bdaAgent.doRefreshProxy(classLoader, registeredProxiedBeans, beanClassName);
+                }
+            }
         }
 
         bdaAgent.reloadBean(classLoader, beanClassName);
