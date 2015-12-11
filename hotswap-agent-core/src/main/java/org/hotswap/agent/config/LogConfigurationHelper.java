@@ -2,8 +2,11 @@ package org.hotswap.agent.config;
 
 import org.hotswap.agent.logging.AgentLogger;
 
+import static java.lang.Boolean.parseBoolean;
+
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Properties;
 
@@ -15,6 +18,7 @@ public class LogConfigurationHelper {
 
     public static final String LOGGER_PREFIX = "LOGGER";
     private static final String LOGFILE = "LOGFILE";
+    private static final String LOGFILE_APPEND = "LOGFILE.append";
 
     /**
      * Search properties for prefix LOGGER and set level for package in format:
@@ -36,8 +40,10 @@ public class LogConfigurationHelper {
                 }
             } else if (property.equals(LOGFILE)) {
                 String logfile = properties.getProperty(LOGFILE);
+                boolean append = parseBoolean(properties.getProperty(LOGFILE_APPEND, "false"));
                 try {
-                    AgentLogger.getHandler().setPrintStream(new PrintStream(new File(logfile)));
+                PrintStream ps = new PrintStream(new FileOutputStream(new File(logfile), append));
+                	AgentLogger.getHandler().setPrintStream(ps);
                 } catch (FileNotFoundException e) {
                     LOGGER.error("Invalid configuration property {} value '{}'. Unable to create/open the file.",
                             e, LOGFILE, logfile);
