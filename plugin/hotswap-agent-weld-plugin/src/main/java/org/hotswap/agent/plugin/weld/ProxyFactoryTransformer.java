@@ -7,16 +7,14 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
-import org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
  * Hook into ProxyFactory constructors to register proxy factory into WeldPlugin. If WeldPlugin is not initialized in proxy factory
- * moduleClassLoader then proxy factory is not registered. It happens most likely for system proxy factories.
+ * classLoader (ModuleClassLoader) then the proxy factory is not registered - it happens most likely for proxy factories of system beans.
  *
  * @author Vladimir Dvorak
  */
@@ -25,9 +23,13 @@ public class ProxyFactoryTransformer {
     /**
      * Patch ProxyFactory class.
      *   - add factory registration into constructor
-     *   - add recreateProxyClass method
+     *   - changes call classLoader.loadClass(...) in getProxyClass() to ProxyClassLoadingDelegate.loadClass(classLoader, ...)
      *   - changes call ClassFileUtils.toClass() in createProxyClass() to ProxyClassLoadingDelegate.loadClass(...)
+     *
      * @param ctClass the ProxyFactory class
+     * @param classPool the class pool
+     * @throws NotFoundException the not found exception
+     * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.bean.proxy.ProxyFactory")
     public static void patchProxyFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {

@@ -10,7 +10,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
- * Hook into WeldBeanDeploymentArchive or BeanDeploymentArchiveImpl constructors to initialize WeldPlugin
+ * Hook into WeldBeanDeploymentArchive or BeanDeploymentArchiveImpl(WildFly) constructors to initialize WeldPlugin
  *
  * @author Vladimir Dvorak
  */

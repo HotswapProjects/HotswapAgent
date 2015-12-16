@@ -27,6 +27,7 @@ public class JBossModulesPlugin {
 
     // TODO : Skip system packages, it should be in config file
     private static final String SKIP_MODULES_REGEXP = "sun\\.jdk.*|ibm\\.jdk.*|javax\\..*|org\\.jboss\\..*";
+    private static final String USE_MODULES_REGEXP = "deployment\\..*";
 
     @Init
     ClassLoader moduleClassLoader;
@@ -34,7 +35,7 @@ public class JBossModulesPlugin {
     @OnClassLoadEvent(classNameRegexp = "org.jboss.modules.ModuleLoader")
     public static void transformModule(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
         ctClass.getDeclaredMethod("loadModule", new CtClass[]{classPool.get("org.jboss.modules.ModuleIdentifier")}).insertAfter(
-                    "if(!identifier.getName().matches(\"" + SKIP_MODULES_REGEXP + "\")) {" +
+                    "if (identifier.getName().matches(\"" + USE_MODULES_REGEXP + "\")) {" +
                         PluginManagerInvoker.buildInitializePlugin(JBossModulesPlugin.class, "$_.getClassLoaderPrivate()") +
                     "}" +
                     "return $_;"

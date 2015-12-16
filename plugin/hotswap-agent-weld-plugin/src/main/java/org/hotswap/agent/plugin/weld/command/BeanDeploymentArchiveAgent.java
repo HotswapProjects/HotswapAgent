@@ -21,6 +21,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.jboss.weld.annotated.enhanced.EnhancedAnnotatedType;
 import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
+import org.jboss.weld.annotated.slim.SlimAnnotatedType;
 import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
 import org.jboss.weld.bean.ManagedBean;
 import org.jboss.weld.bean.attributes.BeanAttributesFactory;
@@ -32,6 +33,7 @@ import org.jboss.weld.resources.ClassTransformer;
 import org.jboss.weld.resources.ReflectionCache;
 import org.jboss.weld.resources.ReflectionCacheFactory;
 import org.jboss.weld.resources.SharedObjectCache;
+import org.jboss.weld.util.Beans;
 
 /**
  * Handles creating/redefinition of bean classes in BeanDeploymentArchive
@@ -61,6 +63,7 @@ public class BeanDeploymentArchiveAgent {
      * @param beanArchive
      * @param archivePath
      */
+    @SuppressWarnings("unused")
     public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String archivePath) {
         BeanDeploymentArchiveAgent bdaAgent = null;
         try {
@@ -134,6 +137,7 @@ public class BeanDeploymentArchiveAgent {
      * @param beanClassName
      * @throws IOException error working with classDefinition
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void refreshBeanClass(ClassLoader classLoader, String archivePath,
             Map registeredProxiedBeans, String beanClassName) throws IOException {
         BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
@@ -161,12 +165,12 @@ public class BeanDeploymentArchiveAgent {
      * @param bdaId the Bean Deployment Archive ID
      * @param beanClassName
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void reloadBean(ClassLoader classLoader, String beanClassName) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
-
             Thread.currentThread().setContextClassLoader(classLoader);
 
             Class<?> beanClass = this.getClass().getClassLoader().loadClass(beanClassName);
@@ -178,39 +182,28 @@ public class BeanDeploymentArchiveAgent {
 
                 if (beans != null && !beans.isEmpty()) {
                     for (Bean<?> bean : beans) {
-                        EnhancedAnnotatedType eat = getEnhancedAnnotatedType(getBdaId(), beanClass);
                         if (bean instanceof ManagedBean) {
-                            final ManagedBean managedBean = (ManagedBean) bean;
-                            managedBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false));
-
-                            try {
-                                Object get = beanManager.getContext(bean.getScope()).get(bean);
-                                if (get != null) {
-                                    LOGGER.debug("Bean injections point reinitialize '{}'", beanClassName);
-                                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(bean));
-                                }
-                            } catch (org.jboss.weld.context.ContextNotActiveException e) {
-                                LOGGER.warning("No active contexts for {}", beanClass.getName());
-                            }
-
+                            reloadManagedBean(beanManager, beanClass, (ManagedBean) bean);
                         } else {
-                           LOGGER.warning("reloadBean() : reloading for class '{}' is not implemented.", bean.getClass().getName());
+                           LOGGER.warning("reloadBean() : class '{}' reloading is not implemented.", bean.getClass().getName());
                         }
                     }
                     LOGGER.debug("Bean reloaded '{}'", beanClassName);
                 } else {
                     try {
-                        EnhancedAnnotatedType eat = getEnhancedAnnotatedType(getBdaId(), beanClass);
-                        BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
-                        ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
-                        Field field = beanManager.getClass().getDeclaredField("beanSet");
-                        field.setAccessible(true);
-                        field.set(beanManager, Collections.synchronizedSet(new HashSet<Bean<?>>()));
-                        // TODO:
-                        beanManager.addBean(bean);
-                        beanManager.getBeanResolver().clear();
-//                        beanManager.cleanupAfterBoot();
-                        LOGGER.debug("Bean defined '{}'", beanClassName);
+                        ClassTransformer classTransformer = getClassTransformer();
+                        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
+                        boolean managedBeanOrDecorator = Beans.isTypeManagedBeanOrDecoratorOrInterceptor(annotatedType);
+
+                        if (managedBeanOrDecorator) {
+                            EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+                            defineManagedBean(beanManager, eat);
+                            // define managed bean
+    //                        beanManager.cleanupAfterBoot();
+                            LOGGER.debug("Bean defined '{}'", beanClassName);
+                        } else {
+                            // TODO : define session bean
+                        }
                     } catch (Exception e) {
                         LOGGER.debug("Bean definition failed", e);
                     }
@@ -223,15 +216,50 @@ public class BeanDeploymentArchiveAgent {
         }
     }
 
-    private EnhancedAnnotatedType getEnhancedAnnotatedType(String bdaId, Class<?> beanClass) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void reloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+        ClassTransformer classTransformer = getClassTransformer();
+        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
+        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+
+        managedBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, managedBean, false));
+
+        try {
+            Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
+            if (get != null) {
+                LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
+                managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+            }
+        } catch (org.jboss.weld.context.ContextNotActiveException e) {
+            LOGGER.warning("No active contexts for {}", beanClass.getName());
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void defineManagedBean(BeanManagerImpl beanManager, EnhancedAnnotatedType eat) throws Exception {
+        BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
+        ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
+        Field field = beanManager.getClass().getDeclaredField("beanSet");
+        field.setAccessible(true);
+        field.set(beanManager, Collections.synchronizedSet(new HashSet<Bean<?>>()));
+        // TODO:
+        beanManager.addBean(bean);
+        beanManager.getBeanResolver().clear();
+        bean.initializeAfterBeanDiscovery();
+    }
+
+    private ClassTransformer getClassTransformer() {
         TypeStore store = new TypeStore();
         SharedObjectCache cache = new SharedObjectCache();
         ReflectionCache reflectionCache = ReflectionCacheFactory.newInstance(store);
         ClassTransformer classTransformer = new ClassTransformer(store, cache, reflectionCache, "STATIC_INSTANCE");
-        BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, beanClass, bdaId);
+        return classTransformer;
+    }
 
-        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
-        return eat;
+    @SuppressWarnings("rawtypes")
+    private SlimAnnotatedType getAnnotatedType(String bdaId, ClassTransformer classTransformer, Class<?> beanClass) {
+        BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, beanClass, bdaId);
+        return annotatedType;
     }
 
     private void doRefreshProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, String className) {
@@ -242,27 +270,21 @@ public class BeanDeploymentArchiveAgent {
             // load class to avoid class not found exception
             Class<?> cls = classLoader.loadClass(className);
 
-//            boolean recreated = false;
+            Class<?> proxyFactoryClass = null;
 
             for (Entry<Object, Object> entry : registeredBeans.entrySet()) {
                 Bean<?> bean = (Bean<?>) entry.getKey();
                 Set<Type> types = bean.getTypes();
                 if (types.contains(cls)) {
                     Thread.currentThread().setContextClassLoader(bean.getBeanClass().getClassLoader());
-                    Class<?> proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
+                    if (proxyFactoryClass == null) {
+                        proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
+                    }
                     Object proxyFactory = entry.getValue();
                     LOGGER.debug("Recreate proxyClass {} for bean class {}.", cls.getName(), bean.getClass());
                     ReflectionHelper.invoke(proxyFactory, proxyFactoryClass, "getProxyClass", new Class[] {});
-//                    recreated = true;
                 }
             }
-
-//            if (recreated) {
-//                ReflectionCache reflectionCache = deploymentArchive.getServices().get(ReflectionCache.class);
-//                if (reflectionCache != null) {
-//                    reflectionCache.cleanup();
-//                }
-//            }
 
         } catch (Exception e) {
             LOGGER.error("recreateProxyFactory() exception {}.", e.getMessage());

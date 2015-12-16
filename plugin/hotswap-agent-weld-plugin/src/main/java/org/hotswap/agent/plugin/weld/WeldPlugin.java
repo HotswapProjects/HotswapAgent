@@ -32,7 +32,7 @@ import org.hotswap.agent.watch.Watcher;
  * @author Vladimir Dvorak
  */
 @Plugin(name = "Weld",
-        description = "Weld framework(http://weld.cdi-spec.org/). Support hotswapping for Jboss Weld/CDI.",
+        description = "Weld framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"2.2.6"},
         expectedVersions = {"All between 2.0 - 2.2"},
         supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class})
@@ -114,6 +114,7 @@ public class WeldPlugin {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
                                 if (isBdaRegistered(appClassLoader, archivePath)) {
+                                    // TODO : Create proxy factory ?
                                     scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
                                 }
                             }
@@ -160,6 +161,13 @@ public class WeldPlugin {
         LOGGER.debug("Registering ProxyFactory : " + proxyFactory.getClass().getName());
     }
 
+    /**
+     * If bda archive is defined for given class than new BeanClassRefreshCommand is created
+     *
+     * @param classLoader
+     * @param ctClass
+     * @param original
+     */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
         if (!isSyntheticWeldClass(ctClass.getName()) && original != null) {
