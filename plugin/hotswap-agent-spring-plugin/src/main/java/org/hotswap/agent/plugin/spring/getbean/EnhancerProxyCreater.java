@@ -93,8 +93,7 @@ public class EnhancerProxyCreater {
 	}
 	
 	private Method getProxyCreationMethod(Object bean) throws CannotCompileException, NotFoundException {
-		String beanClassName = bean.getClass().getName();
-		if (beanClassName.contains("$$EnhancerBySpringCGLIB")) {
+		if (getCp(loader).find("org.springframework.cglib.proxy.MethodInterceptor") != null) {
 			if (createSpringProxy == null) {
 				synchronized (springLock) {
 					if (createSpringProxy == null) {
@@ -107,7 +106,7 @@ public class EnhancerProxyCreater {
 				}
 			}
 			return createSpringProxy;
-		} else if (beanClassName.contains("$$EnhancerByCGLIB")) {
+		} else if (getCp(loader).find("net.sf.cglib.proxy.MethodInterceptor") != null) {
 			if (createCglibProxy == null) {
 				synchronized (cglibLock) {
 					if (createCglibProxy == null) {
