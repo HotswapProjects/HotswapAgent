@@ -96,13 +96,23 @@ public class ELResolverPlugin {
     private static boolean checkApacheCommonsEL(CtClass ctClass)
     {
         try {
+            CtField field = ctClass.getField("cache");
             // Apache Commons BeanELResolver (has cache property)
+            ctClass.addField(new CtField(CtClass.booleanType, "__purgeRequested", ctClass), CtField.Initializer.constant(false));
+
             ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                            "   java.beans.Introspector.flushCaches(); " +
-                            "   this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-                            "}", ctClass));
+                    "   __purgeRequested=true;" +
+                    "}", ctClass));
+            CtMethod mGetBeanProperty = ctClass.getDeclaredMethod("property");
+            mGetBeanProperty.insertBefore(
+                "   if(__purgeRequested) {" +
+                "       __purgeRequested=false;" +
+                "       java.beans.Introspector.flushCaches(); " +
+                "       this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                "   }");
             return true;
-        } catch (CannotCompileException e) {
+        } catch(NotFoundException e1) {
+        } catch (CannotCompileException e2) {
         }
         return false;
     }
