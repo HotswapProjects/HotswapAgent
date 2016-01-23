@@ -1,13 +1,16 @@
 package org.hotswap.agent.plugin.hibernate;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.hibernate.proxy.SessionFactoryProxy;
+import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
  * Static transformers for Hibernate plugin.
@@ -88,4 +91,42 @@ public class HibernateTransformers {
             return false;
         }
     }
+
+    @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.BeanMetaDataManager")
+    public static void beanMetaDataManagerRegisterVariable(CtClass ctClass) throws CannotCompileException {
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(HibernatePlugin.class, "registerBeanMetaDataManager",
+                "this", "java.lang.Object"));
+        src.append("}");
+        for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
+            constructor.insertAfter(src.toString());
+        }
+
+        ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
+                "   this.beanMetaDataCache.clear(); " +
+                "}", ctClass));
+
+        LOGGER.debug("org.hibernate.validator.internal.metadata.BeanMetaDataManager - added method __resetCache().");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider")
+    public static void annotationMetaDataProviderRegisterVariable(CtClass ctClass) throws CannotCompileException {
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(HibernatePlugin.class, "registerAnnotationMetaDataProvider",
+                "this", "java.lang.Object"));
+        src.append("}");
+        for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
+            constructor.insertAfter(src.toString());
+        }
+
+        ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
+                "   this.configuredBeans.clear(); " +
+                "}", ctClass));
+
+        LOGGER.debug("org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider - added method __resetCache().");
+    }
+
+
 }
