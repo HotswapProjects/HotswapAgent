@@ -3,7 +3,7 @@ EL-Resolver plugin
 Clear `javax.el.BeanELResolver` cache after any class is redefined.
 Following implementations supported :
 * JuelEL,
-* ApacheCommons EL
+* ApacheEL (tomcat-el-api)
 * JBossEL.
 
 #### Implementation notes:
