@@ -265,7 +265,10 @@ public class BeanDeploymentArchiveAgent {
     private void doRefreshProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, String className) {
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
+        ProxyClassLoadingDelegate.beginProxyRegeneration();
+
         try {
+
             // Reflection must be used since current ProxyClassLoadingDelegate.class != ProxyClassLoadingDelegate for Proxy factory
             // load class to avoid class not found exception
             Class<?> cls = classLoader.loadClass(className);
@@ -291,6 +294,7 @@ public class BeanDeploymentArchiveAgent {
             e.printStackTrace();
         } finally {
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
+            ProxyClassLoadingDelegate.endProxyRegeneration();
         }
     }
 
