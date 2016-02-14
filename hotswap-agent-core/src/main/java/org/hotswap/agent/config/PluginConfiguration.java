@@ -130,6 +130,12 @@ public class PluginConfiguration {
                 LOGGER.debug("Classloader contains 'hotswap-agent.properties' at location '{}'", configurationURL);
                 containsPropertyFileDirectly = true;
             }
+            try {
+                if (configurationURL != null)
+                    properties.load(configurationURL.openStream());
+            } catch (Exception e) {
+                LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
+            }
         }
     }
 
