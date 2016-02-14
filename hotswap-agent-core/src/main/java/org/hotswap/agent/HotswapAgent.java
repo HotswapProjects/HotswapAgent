@@ -34,6 +34,11 @@ public class HotswapAgent {
      */
     private static boolean autoHotswap = false;
 
+    /**
+     * Path for an external properties file `hotswap-agent.properties`
+     */
+    private static String propertiesFilePath;
+
     public static void premain(String args, Instrumentation inst) {
 
         LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
@@ -56,14 +61,24 @@ public class HotswapAgent {
 
             String option = val[0];
             String optionValue = val[1];
+
             if ("disablePlugin".equals(option)) {
                 disabledPlugins.add(optionValue.toLowerCase());
             } else if ("autoHotswap".equals(option)) {
                 autoHotswap = Boolean.valueOf(optionValue);
+            } else if ("propertiesFilePath".equals(option)) {
+                propertiesFilePath = optionValue;
             } else {
                 LOGGER.warning("Invalid javaagent option '{}'. Argument '{}' is ignored.", option, arg);
             }
         }
+    }
+
+    /**
+     * @return the path for the hotswap-agent.properties external file
+     */
+    public static String getExternalPropertiesFile() {
+        return propertiesFilePath;
     }
 
 

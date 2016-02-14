@@ -1,5 +1,11 @@
 package org.hotswap.agent.config;
 
+import org.hotswap.agent.HotswapAgent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
+import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -11,12 +17,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
-
-import org.hotswap.agent.HotswapAgent;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
-import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
 
 /**
  * Plugin configuration.
@@ -46,67 +46,93 @@ public class PluginConfiguration {
 
 
     public PluginConfiguration(ClassLoader classLoader) {
-        this.classLoader = classLoader;
-        configurationURL = classLoader == null ? ClassLoader.getSystemResource(PLUGIN_CONFIGURATION) : classLoader.getResource(PLUGIN_CONFIGURATION);
-
-        try {
-            if (configurationURL != null) {
-                containsPropertyFileDirectly = true;
-                properties.load(configurationURL.openStream());
-                init();
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error while loading 'hotswap-agent.properties' from base URL " + configurationURL, e);
-        }
+        this(null, classLoader);
     }
 
     public PluginConfiguration(PluginConfiguration parent, ClassLoader classLoader) {
         this.parent = parent;
         this.classLoader = classLoader;
 
-        // search for resources not known by parent classloader (defined in THIS classloader exclusively)
-        // this is necessary in case of parent classloader precedence
+        loadConfigurationFile();
+        init();
+    }
+
+    private void loadConfigurationFile() {
+
         try {
-            Enumeration<URL> urls = classLoader == null ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION) : classLoader.getResources(PLUGIN_CONFIGURATION);
-            while (urls.hasMoreElements()) {
-                URL url = urls.nextElement();
+            String externalPropertiesFile = HotswapAgent.getExternalPropertiesFile();
 
-                boolean found = false;
+            if (externalPropertiesFile != null) {
+                configurationURL = resourceNameToURL(externalPropertiesFile);
+                properties.load(configurationURL.openStream());
+                return;
+            }
 
-                if (parent != null) {
-                    ClassLoader parentClassLoader = parent.getClassLoader();
-                    Enumeration<URL> parentUrls = parentClassLoader == null ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION) : parentClassLoader.getResources(PLUGIN_CONFIGURATION);
-                    while (parentUrls.hasMoreElements()) {
-                        if (url.equals(parentUrls.nextElement()))
-                            found = true;
+        } catch (Exception e) {
+            LOGGER.error("Error while loading external properties file " + configurationURL, e);
+        }
+
+        if (parent == null) {
+            configurationURL = classLoader == null
+                    ? ClassLoader.getSystemResource(PLUGIN_CONFIGURATION)
+                    : classLoader.getResource(PLUGIN_CONFIGURATION);
+
+            try {
+                if (configurationURL != null) {
+                    containsPropertyFileDirectly = true;
+                    properties.load(configurationURL.openStream());
+
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error while loading 'hotswap-agent.properties' from base URL " + configurationURL, e);
+            }
+
+        } else {
+            // search for resources not known by parent classloader (defined in THIS classloader exclusively)
+            // this is necessary in case of parent classloader precedence
+            try {
+                Enumeration<URL> urls = classLoader == null
+                        ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION)
+                        : classLoader.getResources(PLUGIN_CONFIGURATION);
+
+                while (urls.hasMoreElements()) {
+                    URL url = urls.nextElement();
+
+                    boolean found = false;
+
+                    if (parent != null) {
+                        ClassLoader parentClassLoader = parent.getClassLoader();
+                        Enumeration<URL> parentUrls = parentClassLoader == null
+                                ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION)
+                                : parentClassLoader.getResources(PLUGIN_CONFIGURATION);
+
+                        while (parentUrls.hasMoreElements()) {
+                            if (url.equals(parentUrls.nextElement()))
+                                found = true;
+                        }
+                    }
+
+                    if (!found) {
+                        configurationURL = url;
+                        break;
                     }
                 }
-
-                if (!found) {
-                    configurationURL = url;
-                    break;
-                }
+            } catch (IOException e) {
+                LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
             }
-        } catch (IOException e) {
-            LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
-        }
 
-        if (configurationURL == null && parent != null) {
-            configurationURL = parent.configurationURL;
-            LOGGER.debug("Classloader does not contain 'hotswap-agent.properties', using parent file '{}'", parent.configurationURL);
-        } else {
-            LOGGER.debug("Classloader contains 'hotswap-agent.properties' at location '{}'", configurationURL);
-            containsPropertyFileDirectly = true;
-        }
+            if (configurationURL == null) {
+                configurationURL = parent.configurationURL;
+                LOGGER.debug("Classloader does not contain 'hotswap-agent.properties', using parent file '{}'"
+                        , parent.configurationURL);
 
-        try {
-            if (configurationURL != null)
-                properties.load(configurationURL.openStream());
-            init();
-        } catch (Exception e) {
-            LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
+            } else {
+                LOGGER.debug("Classloader contains 'hotswap-agent.properties' at location '{}'", configurationURL);
+                containsPropertyFileDirectly = true;
+            }
         }
     }
+
 
     /**
      * Initialize the configuration.
