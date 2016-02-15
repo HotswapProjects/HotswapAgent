@@ -36,6 +36,9 @@ public class EntityManagerFactoryProxy {
     PersistenceUnitInfo info;
     Map properties;
 
+    // builder object to create properties
+    Object builder;
+
     /**
      * Create new wrapper for persistenceUnitName and hold it's instance for future use.
      *
@@ -61,11 +64,16 @@ public class EntityManagerFactoryProxy {
             LOGGER.warning("Unable to resolve hibernate version '{}'", version);
         }
 
-        for (EntityManagerFactoryProxy wrapper : proxiedFactories.values())
+        for (EntityManagerFactoryProxy wrapper : proxiedFactories.values()) {
+            String persistenceClassName = wrapper.properties == null ? null :
+                    (String) wrapper.properties.get("PERSISTENCE_CLASS_NAME");
+
             try {
                 // lock proxy execution during reload
                 synchronized (wrapper.reloadLock) {
-                    if (version43OrGreater) {
+                    if ("org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider".equals(persistenceClassName)) {
+                        wrapper.refreshProxiedFactorySpring();
+                    } else if (version43OrGreater) {
                         wrapper.refreshProxiedFactoryVersion43OrGreater();
                     } else {
                         wrapper.refreshProxiedFactory();
@@ -74,6 +82,18 @@ public class EntityManagerFactoryProxy {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void refreshProxiedFactorySpring() {
+        try {
+            currentInstance = (EntityManagerFactory) ReflectionHelper.invoke(builder, builder.getClass(),
+                    "createContainerEntityManagerFactory",
+                    new Class[]{PersistenceUnitInfo.class, Map.class}, info, properties);
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOGGER.error("Unable to reload persistence unit {}", info, e);
+        }
     }
 
     public void refreshProxiedFactoryVersion43OrGreater() {
@@ -151,8 +171,9 @@ public class EntityManagerFactoryProxy {
      * @param properties properties to cache for factory reload
      * @return the proxy
      */
-    public EntityManagerFactory proxy(EntityManagerFactory factory, String persistenceUnitName,
+    public EntityManagerFactory proxy(Object builder, EntityManagerFactory factory, String persistenceUnitName,
                                       PersistenceUnitInfo info, Map properties) {
+        this.builder = builder;
         this.currentInstance = factory;
         this.persistenceUnitName = persistenceUnitName;
         this.info = info;

@@ -30,7 +30,7 @@ public class HibernatePersistenceHelper {
      * @param original   entity manager factory
      * @return proxy of entity manager
      */
-    public static EntityManagerFactory createContainerEntityManagerFactoryProxy(PersistenceUnitInfo info, Map properties,
+    public static EntityManagerFactory createContainerEntityManagerFactoryProxy(Object builder, PersistenceUnitInfo info, Map properties,
                                                                                 EntityManagerFactory original) {
         // ensure only once
         if (wrappedPersistenceUnitNames.contains(info.getPersistenceUnitName()))
@@ -38,7 +38,7 @@ public class HibernatePersistenceHelper {
         wrappedPersistenceUnitNames.add(info.getPersistenceUnitName());
 
         EntityManagerFactoryProxy wrapper = EntityManagerFactoryProxy.getWrapper(info.getPersistenceUnitName());
-        EntityManagerFactory proxy = wrapper.proxy(original, info.getPersistenceUnitName(), info, properties);
+        EntityManagerFactory proxy = wrapper.proxy(builder, original, info.getPersistenceUnitName(), info, properties);
 
         initPlugin(original);
 
@@ -52,7 +52,7 @@ public class HibernatePersistenceHelper {
      * @param original            entity manager factory
      * @return proxy of entity manager
      */
-    public static EntityManagerFactory createEntityManagerFactoryProxy(String persistenceUnitName, Map properties,
+    public static EntityManagerFactory createEntityManagerFactoryProxy(Object builder, String persistenceUnitName, Map properties,
                                                                        EntityManagerFactory original) {
         // ensure only once
         if (wrappedPersistenceUnitNames.contains(persistenceUnitName))
@@ -60,7 +60,7 @@ public class HibernatePersistenceHelper {
         wrappedPersistenceUnitNames.add(persistenceUnitName);
 
         EntityManagerFactoryProxy wrapper = EntityManagerFactoryProxy.getWrapper(persistenceUnitName);
-        EntityManagerFactory proxy = wrapper.proxy(original, persistenceUnitName, null, properties);
+        EntityManagerFactory proxy = wrapper.proxy(builder, original, persistenceUnitName, null, properties);
 
         initPlugin(original);
 
