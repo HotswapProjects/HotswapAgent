@@ -1,12 +1,7 @@
 package org.hotswap.agent.plugin.hibernate;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewMethod;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.hibernate.proxy.SessionFactoryProxy;
@@ -27,7 +22,7 @@ public class HibernateTransformers {
      * <p/>
      * After the entity manager factory and it's proxy are instantiated, plugin init method is invoked.
      */
-    @OnClassLoadEvent(classNameRegexp = "(org.hibernate.ejb.HibernatePersistence)|(org.hibernate.jpa.HibernatePersistenceProvider)")
+    @OnClassLoadEvent(classNameRegexp = "(org.hibernate.ejb.HibernatePersistence)|(org.hibernate.jpa.HibernatePersistenceProvider)|(org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider)")
     public static void proxyHibernatePersistence(CtClass clazz) throws Exception {
         LOGGER.debug("Override org.hibernate.ejb.HibernatePersistence#createContainerEntityManagerFactory and createEntityManagerFactory to create a EntityManagerFactoryProxy proxy.");
 
@@ -36,21 +31,26 @@ public class HibernateTransformers {
         CtMethod newMethod = CtNewMethod.make(
                 "public javax.persistence.EntityManagerFactory createContainerEntityManagerFactory(" +
                         "           javax.persistence.spi.PersistenceUnitInfo info, java.util.Map properties) {" +
+                        "  properties.put(\"PERSISTENCE_CLASS_NAME\", \"" + clazz.getName() + "\");" +
                         "  return " + HibernatePersistenceHelper.class.getName() + ".createContainerEntityManagerFactoryProxy(" +
-                        "      info, properties, _createContainerEntityManagerFactory" + clazz.getSimpleName() + "(info, properties)); " +
+                        "      this, info, properties, _createContainerEntityManagerFactory" + clazz.getSimpleName() + "(info, properties)); " +
                         "}", clazz);
         clazz.addMethod(newMethod);
 
-        oldMethod = clazz.getDeclaredMethod("createEntityManagerFactory");
-        oldMethod.setName("_createEntityManagerFactory" + clazz.getSimpleName());
+        try {
+            oldMethod = clazz.getDeclaredMethod("createEntityManagerFactory");
+            oldMethod.setName("_createEntityManagerFactory" + clazz.getSimpleName());
 
-        newMethod = CtNewMethod.make(
-                "public javax.persistence.EntityManagerFactory createEntityManagerFactory(" +
-                        "           String persistenceUnitName, java.util.Map properties) {" +
-                        "  return " + HibernatePersistenceHelper.class.getName() + ".createEntityManagerFactoryProxy(" +
-                        "      persistenceUnitName, properties, _createEntityManagerFactory" + clazz.getSimpleName() + "(persistenceUnitName, properties)); " +
-                        "}", clazz);
-        clazz.addMethod(newMethod);
+            newMethod = CtNewMethod.make(
+                    "public javax.persistence.EntityManagerFactory createEntityManagerFactory(" +
+                            "           String persistenceUnitName, java.util.Map properties) {" +
+                            "  return " + HibernatePersistenceHelper.class.getName() + ".createEntityManagerFactoryProxy(" +
+                            "      this, persistenceUnitName, properties, _createEntityManagerFactory" + clazz.getSimpleName() + "(persistenceUnitName, properties)); " +
+                            "}", clazz);
+            clazz.addMethod(newMethod);
+        } catch (NotFoundException e) {
+            LOGGER.trace("Method createEntityManagerFactory not found on " + clazz.getName() + ". Is Ok for Spring implementation...", e);
+        }
     }
 
     /**
