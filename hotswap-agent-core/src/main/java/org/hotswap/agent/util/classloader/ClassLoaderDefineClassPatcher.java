@@ -127,6 +127,6 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
         // exclude synthetic classloader where it does not make any sense
 
         // sun.reflect.DelegatingClassLoader - created automatically by JVM to optimize reflection calls
-        return !classLoader.getClass().getName().equals("sun.reflect.DelegatingClassLoader");
+        return classLoader != null && !classLoader.getClass().getName().equals("sun.reflect.DelegatingClassLoader");
     }
 }

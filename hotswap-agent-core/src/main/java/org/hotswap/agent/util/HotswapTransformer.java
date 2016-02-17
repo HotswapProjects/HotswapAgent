@@ -154,20 +154,25 @@ public class HotswapTransformer implements ClassFileTransformer {
         if (!seenClassLoaders.containsKey(classLoader)) {
             seenClassLoaders.put(classLoader, null);
 
-            // ensure the classloader should not be excluded
-            if (!excludedClassLoaders.contains(classLoader.getClass().getName())) {
-                // schedule the excecution
-                PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
-                    @Override
-                    public void executeCommand() {
-                        PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
-                    }
+            if (classLoader == null) {
+                // directly init null (bootstrap) classloader
+                PluginManager.getInstance().initClassLoader(null, protectionDomain);
+            } else {
+                // ensure the classloader should not be excluded
+                if (!excludedClassLoaders.contains(classLoader.getClass().getName())) {
+                    // schedule the excecution
+                    PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
+                        @Override
+                        public void executeCommand() {
+                            PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
+                        }
 
-                    @Override
-                    public String toString() {
-                        return "executeCommand: initClassLoader(" + classLoader + ")";
-                    }
-                }, 1000);
+                        @Override
+                        public String toString() {
+                            return "executeCommand: initClassLoader(" + classLoader + ")";
+                        }
+                    }, 1000);
+                }
             }
         }
     }

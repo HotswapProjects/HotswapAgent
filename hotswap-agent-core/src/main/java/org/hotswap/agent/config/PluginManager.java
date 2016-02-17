@@ -149,6 +149,7 @@ public class PluginManager {
 
         // parent of current classloader (system/bootstrap)
         if (getClass().getClassLoader() != null &&
+            classLoader != null &&
             classLoader.equals(getClass().getClassLoader().getParent()))
             return;
 
@@ -159,7 +160,7 @@ public class PluginManager {
                 return;
 
             // transformation
-            if (classLoaderPatcher.isPatchAvailable(classLoader)) {
+            if (classLoader != null && classLoaderPatcher.isPatchAvailable(classLoader)) {
                 classLoaderPatcher.patch(getClass().getClassLoader(), PLUGIN_PACKAGE.replace(".", "/"),
                         classLoader, protectionDomain);
             }
