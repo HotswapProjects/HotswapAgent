@@ -24,7 +24,9 @@ public class FlushIntrospectorCommand extends MergeableCommand {
         LOGGER.debug("Clearing java.beans.ThreadGroupContext cache.");
         try {
             final Class<?> threadGroupCtxClazz = Class.forName("java.beans.ThreadGroupContext", true, classLoader);
-            Field fldDeclaredMethodCache = java.beans.Introspector.class.getDeclaredField("declaredMethodCache");
+            final Class<?> introspectorClazz = Class.forName("java.beans.Introspector", true, classLoader);
+            Field fldDeclaredMethodCache = introspectorClazz.getDeclaredField("declaredMethodCache");
+
             fldDeclaredMethodCache.setAccessible(true);
             Object declaredMethodCache = fldDeclaredMethodCache.get(null);
 
