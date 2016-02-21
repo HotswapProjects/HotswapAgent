@@ -100,16 +100,14 @@ public class PluginConfiguration {
 
                     boolean found = false;
 
-                    if (parent != null) {
-                        ClassLoader parentClassLoader = parent.getClassLoader();
-                        Enumeration<URL> parentUrls = parentClassLoader == null
-                                ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION)
-                                : parentClassLoader.getResources(PLUGIN_CONFIGURATION);
+                    ClassLoader parentClassLoader = parent.getClassLoader();
+                    Enumeration<URL> parentUrls = parentClassLoader == null
+                            ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION)
+                            : parentClassLoader.getResources(PLUGIN_CONFIGURATION);
 
-                        while (parentUrls.hasMoreElements()) {
-                            if (url.equals(parentUrls.nextElement()))
-                                found = true;
-                        }
+                    while (parentUrls.hasMoreElements()) {
+                        if (url.equals(parentUrls.nextElement()))
+                            found = true;
                     }
 
                     if (!found) {
