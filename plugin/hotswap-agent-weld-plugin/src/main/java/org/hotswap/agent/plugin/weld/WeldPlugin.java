@@ -170,7 +170,7 @@ public class WeldPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
-        if (!isSyntheticWeldClass(ctClass.getName()) && original != null) {
+        if (!isSyntheticCdiClass(ctClass.getName()) && original != null) {
             try {
                 String archivePath = getArchivePath(ctClass);
                 if (isBdaRegistered(classLoader, archivePath)) {
@@ -191,8 +191,11 @@ public class WeldPlugin {
         return (new File(archivePath)).toPath().toString();
     }
 
-    private boolean isSyntheticWeldClass(String className) {
-        return className.contains("$Proxy$") || className.contains("$$$");
+    // Return true if class is CDI synthetic class.
+    // Weld proxies contains $Proxy$ and $$$
+    // DeltaSpike's proxies contains "$$"
+    private boolean isSyntheticCdiClass(String className) {
+        return className.contains("$Proxy$") || className.contains("$$");
     }
 
 }
