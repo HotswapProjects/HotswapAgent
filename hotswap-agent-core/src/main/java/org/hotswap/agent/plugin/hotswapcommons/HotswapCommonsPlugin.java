@@ -27,12 +27,15 @@ public class HotswapCommonsPlugin {
     @Init
     Scheduler scheduler;
 
+    @Init
+    ClassLoader appClassLoader;
+
     private boolean flushIntrospector;
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(CtClass clazz, Class original, ClassLoader classLoader) {
+    public void classReload(CtClass clazz, Class original) {
         if (flushIntrospector) {
-            scheduler.scheduleCommand(new FlushIntrospectorCommand(classLoader), 500);
+            scheduler.scheduleCommand(new FlushIntrospectorCommand(appClassLoader), 1000);
         }
     }
 
