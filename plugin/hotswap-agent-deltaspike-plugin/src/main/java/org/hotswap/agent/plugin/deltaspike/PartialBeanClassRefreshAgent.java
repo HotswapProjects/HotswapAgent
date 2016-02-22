@@ -2,9 +2,7 @@ package org.hotswap.agent.plugin.deltaspike;
 
 import java.lang.reflect.InvocationHandler;
 
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.CDI;
-
+import org.apache.deltaspike.core.api.provider.BeanManagerProvider;
 import org.apache.deltaspike.partialbean.impl.PartialBeanProxyFactory;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -24,8 +22,7 @@ public class PartialBeanClassRefreshAgent {
                 Class<? extends InvocationHandler> delegateInvocationHandlerClass = (Class) ReflectionHelper.get(lifecycle, "delegateInvocationHandlerClass");
                 Class<?> targetClass = (Class) ReflectionHelper.get(lifecycle, "targetClass");
                 PartialBeanProxyFactory proxyFactory = PartialBeanProxyFactory.getInstance();
-                BeanManager beanManager = CDI.current().getBeanManager();
-                proxyFactory.getProxyClass(beanManager, targetClass, delegateInvocationHandlerClass);
+                proxyFactory.getProxyClass(BeanManagerProvider.getInstance().getBeanManager(), targetClass, delegateInvocationHandlerClass);
             }
         } catch (Exception e) {
             LOGGER.error("Deltaspike proxy redefinition failed", e);

@@ -11,7 +11,6 @@
 
     <properties>
         <deltaspike.version>1.5.0</deltaspike.version>
-        <org.jboss.weld.version>2.2.6.Final</org.jboss.weld.version>
     </properties>
 
     <artifactId>hotswap-agent-deltaspike-plugin</artifactId>
@@ -24,9 +23,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.weld.se</groupId>
-            <artifactId>weld-se</artifactId>
-            <version>${org.jboss.weld.version}</version>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+            <version>1.0-SP4</version>
         </dependency>
 
         <dependency>

@@ -28,6 +28,8 @@ public class DeltaSpikePlugin {
 
     private static final String REPOSITORY_ANNOTATION = "org.apache.deltaspike.data.api.Repository";
 
+    private static final int WAIT_ON_REDEFINE = 500;
+
     @Init
     ClassLoader appClassLoader;
 
@@ -63,7 +65,7 @@ public class DeltaSpikePlugin {
                 }
             }
 
-            scheduler.scheduleCommand(cmd, 500);
+            scheduler.scheduleCommand(cmd, WAIT_ON_REDEFINE);
         }
     }
 
