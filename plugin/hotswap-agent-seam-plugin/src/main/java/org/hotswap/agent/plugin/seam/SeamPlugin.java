@@ -10,6 +10,7 @@ import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
+import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
@@ -17,7 +18,6 @@ import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.hotswapcommons.HotswapCommonsPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 @Plugin(name = "Seam",
@@ -27,7 +27,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 public class SeamPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SeamPlugin.class);
 
-//    ReflectionCommand flushBeanIntrospectors = new ReflectionCommand(this, "java.beans.Introspector", "flushCaches");
+    ReflectionCommand flushBeanIntrospectors = new ReflectionCommand(this, "java.beans.Introspector", "flushCaches");
 
     @Init
     Scheduler scheduler;
@@ -43,17 +43,17 @@ public class SeamPlugin {
         init.insertBefore(
                 "{" +
                     PluginManagerInvoker.buildInitializePlugin(SeamPlugin.class) +
-                    PluginManagerInvoker.buildInitializePlugin(HotswapCommonsPlugin.class) +
-                    PluginManagerInvoker.buildCallPluginMethod(HotswapCommonsPlugin.class, "registerFlushIntrospector") +
+//                    PluginManagerInvoker.buildInitializePlugin(HotswapCommonsPlugin.class) +
+//                    PluginManagerInvoker.buildCallPluginMethod(HotswapCommonsPlugin.class, "registerFlushIntrospector") +
                 "}"
         );
         LOGGER.debug("org.jboss.seam.init.Initialization enhanced with plugin initialization.");
     }
 
-//    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-//    public void flushBeanIntrospectorsCaches() throws Exception {
-//        scheduler.scheduleCommand(flushBeanIntrospectors);
-//    }
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
+    public void flushBeanIntrospectorsCaches() throws Exception {
+        scheduler.scheduleCommand(flushBeanIntrospectors);
+    }
 
     public void registerJbossReferenceCache(Object referenceCache) {
         registeredJbossReferenceCaches.add(referenceCache);

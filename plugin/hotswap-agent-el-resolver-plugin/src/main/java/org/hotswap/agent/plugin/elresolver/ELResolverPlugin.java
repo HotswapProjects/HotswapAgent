@@ -18,7 +18,6 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.hotswapcommons.HotswapCommonsPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
@@ -50,15 +49,15 @@ public class ELResolverPlugin {
     public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
 
         String initPlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class);
-        String initHotswapCommonsPlugin = PluginManagerInvoker.buildInitializePlugin(HotswapCommonsPlugin.class);
-        String registerFlushIntrospector = PluginManagerInvoker.buildCallPluginMethod(HotswapCommonsPlugin.class, "registerFlushIntrospector");
+//        String initHotswapCommonsPlugin = PluginManagerInvoker.buildInitializePlugin(HotswapCommonsPlugin.class);
+//        String registerFlushIntrospector = PluginManagerInvoker.buildCallPluginMethod(HotswapCommonsPlugin.class, "registerFlushIntrospector");
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(ELResolverPlugin.class, "registerBeanELResolver",
                 "this", "java.lang.Object");
 
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             constructor.insertAfter(initPlugin);
-            constructor.insertAfter(initHotswapCommonsPlugin);
-            constructor.insertAfter(registerFlushIntrospector);
+//            constructor.insertAfter(initHotswapCommonsPlugin);
+//            constructor.insertAfter(registerFlushIntrospector);
             constructor.insertAfter(registerThis);
         }
 
@@ -87,7 +86,7 @@ public class ELResolverPlugin {
             // check if we have purgeBeanClasses method
             CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
             ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-//                    "   java.beans.Introspector.flushCaches(); " +
+                    "   java.beans.Introspector.flushCaches(); " +
                     "   purgeBeanClasses(classLoader); " +
                     "}", ctClass));
             return true;
@@ -112,7 +111,7 @@ public class ELResolverPlugin {
             mGetBeanProperty.insertBefore(
                 "   if(__purgeRequested) {" +
                 "       __purgeRequested=false;" +
-//                "       java.beans.Introspector.flushCaches(); " +
+                "       java.beans.Introspector.flushCaches(); " +
                 "       this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
                 "   }");
             return true;
@@ -156,7 +155,7 @@ public class ELResolverPlugin {
                 mGetBeanProperty.insertBefore(
                     "   if(__purgeRequested) {" +
                     "       __purgeRequested=false;" +
-//                    "       java.beans.Introspector.flushCaches(); " +
+                    "       java.beans.Introspector.flushCaches(); " +
                     "       java.lang.reflect.Method meth = javax.el.BeanELResolver.SoftConcurrentHashMap.class.getDeclaredMethod(\"__createNewInstance\", null);" +
                     "       properties = (javax.el.BeanELResolver.SoftConcurrentHashMap) meth.invoke(properties, null);" +
                     "   }");
