@@ -4,7 +4,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.signature.ClassfileSignatureComparer;
+import org.hotswap.agent.plugin.spring.signature.ClassSignatureComparer;
 
 /**
  * Determines if a full Spring reload is needed. Changes to synthetic and known generated classes are ignored. For other
@@ -40,7 +40,7 @@ public class SpringChangesAnalyzer {
         CtClass makeClass = null;
         try {
             makeClass = cp.makeClass(new java.io.ByteArrayInputStream(classfileBuffer));
-            return ClassfileSignatureComparer.isPoolClassDifferent(classBeingRedefined, cp);
+            return ClassSignatureComparer.isPoolClassDifferent(classBeingRedefined, cp);
         } catch (Exception e) {
             LOGGER.error("Error analyzing class {} for reload necessity. Defaulting to yes.", e,
                     classBeingRedefined.getName());

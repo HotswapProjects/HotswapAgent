@@ -2,17 +2,17 @@ package org.hotswap.agent.plugin.spring.signature;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.util.signature.ClassSignatureElement;
-import org.hotswap.agent.util.signature.ClassfileSignatureComparerHelper;
+import org.hotswap.agent.util.signature.ClassSignatureComparerHelper;
 
 /**
  * Checks if a Signature of a Class has changed enough to necessitate a Spring reload.
  *
- * @author Erki Ehtla
+ * @author Erki Ehtla, Vladimir Dvorak
  *
  */
-public class ClassfileSignatureComparer extends ClassfileSignatureComparerHelper {
+public class ClassSignatureComparer {
 
-    private static ClassSignatureElement[] SIGNATURE_ELEMENTS=  {
+    private static final ClassSignatureElement[] SIGNATURE_ELEMENTS=  {
             ClassSignatureElement.SUPER_CLASS,
             ClassSignatureElement.INTERFACES,
             ClassSignatureElement.CLASS_ANNOTATION,
@@ -28,6 +28,6 @@ public class ClassfileSignatureComparer extends ClassfileSignatureComparerHelper
     };
 
     public static boolean isPoolClassDifferent(Class<?> classBeingRedefined, ClassPool cp) {
-        return ClassfileSignatureComparerHelper.isPoolClassDifferent(classBeingRedefined, cp, SIGNATURE_ELEMENTS);
+        return ClassSignatureComparerHelper.isPoolClassDifferent(classBeingRedefined, cp, SIGNATURE_ELEMENTS);
     }
 }
