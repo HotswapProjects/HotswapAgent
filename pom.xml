@@ -33,6 +33,7 @@
         <module>plugin/hotswap-agent-resteasy-plugin</module>
         <module>plugin/hotswap-agent-gae-plugin</module>
         <module>plugin/hotswap-agent-deltaspike-plugin</module>
+        <module>plugin/hotswap-agent-javabeans-plugin</module>
         <module>hotswap-agent</module>
     </modules>
 
