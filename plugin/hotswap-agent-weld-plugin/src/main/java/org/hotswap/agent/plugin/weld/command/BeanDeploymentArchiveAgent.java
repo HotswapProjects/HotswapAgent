@@ -150,7 +150,8 @@ public class BeanDeploymentArchiveAgent {
         }
 
         try {
-            // BeanClass is loaded via bdaAgent.getClass().getClassLoader() to support Wildfly/EAR deployments
+            // BDA classLoader can be different then appClassLoader for Wildfly/EAR deployment
+            // therefore we use class loader from BdaAgent class which is class loader for BDA
             Class<?> beanClass = bdaAgent.getClass().getClassLoader().loadClass(beanClassName);
 
             bdaAgent.refreshProxy(classLoader, registeredProxiedBeans, beanClass, oldClassSignature);

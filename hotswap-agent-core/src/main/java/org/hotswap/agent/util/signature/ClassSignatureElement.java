@@ -14,9 +14,9 @@ public enum ClassSignatureElement {
     METHOD,
     METHOD_PRIVATE, // private methods are used if METHOD && METHOD_PRIVATE are set
     METHOD_STATIC,  // static methods are used if METHOD && METHOD_STATIC are set
-    METHOD_ANNOTATION,
-    METHOD_PARAM_ANNOTATION,
-    METHOD_EXCEPTION,
+    METHOD_ANNOTATION, // applies to constructors as well
+    METHOD_PARAM_ANNOTATION, // applies to constructors as well
+    METHOD_EXCEPTION, // applies to constructors as well
     FIELD,
     FIELD_STATIC,  // static fields are used if FIELD && FIELD_STATIC are set
     FIELD_ANNOTATION

@@ -14,7 +14,6 @@ import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
@@ -116,7 +115,7 @@ public class WeldPlugin {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
                                 if (isBdaRegistered(appClassLoader, archivePath)) {
-                                    // TODO : Create proxy factory ?
+                                    // TODO : Create proxy factory
                                     scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
                                 }
                             }
@@ -171,7 +170,7 @@ public class WeldPlugin {
      * @param original
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(ClassPool classPool, ClassLoader classLoader, CtClass ctClass, Class original) {
+    public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
         if (!isSyntheticCdiClass(ctClass.getName()) && original != null) {
             try {
                 String archivePath = getArchivePath(ctClass);
