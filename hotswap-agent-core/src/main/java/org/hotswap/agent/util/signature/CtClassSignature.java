@@ -31,7 +31,7 @@ public class CtClassSignature extends ClassSignatureBase {
     }
 
     @Override
-    public ClassSignatureValue getValue() throws Exception {
+    public String getValue() throws Exception {
         List<String> strings = new ArrayList<>();
 
         if (hasElement(ClassSignatureElement.METHOD)) {
@@ -89,7 +89,7 @@ public class CtClassSignature extends ClassSignatureBase {
         for (String methodString : strings) {
             strBuilder.append(methodString);
         }
-        return new ClassSignatureValue(strBuilder.toString());
+        return strBuilder.toString();
     }
 
     private String getName(CtClass ctClass) {

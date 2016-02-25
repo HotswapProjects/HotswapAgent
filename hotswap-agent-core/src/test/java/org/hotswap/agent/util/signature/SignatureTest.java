@@ -240,8 +240,8 @@ public class SignatureTest {
     @Test
     public void testInterfaceSignature() throws Exception {
         CtClass makeClass = ClassPool.getDefault().get(TestSignatures.class.getName());
-        ClassSignatureValue expected = ClassSignatureComparerHelper.getJavaClassSignature(TestSignatures.class, SIGNATURE_ELEMENTS);
-        ClassSignatureValue actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
+        String expected = ClassSignatureComparerHelper.getJavaClassSignature(TestSignatures.class, SIGNATURE_ELEMENTS);
+        String actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
         assertEquals("Signatures not equal", expected, actual);
     }
 
@@ -249,14 +249,14 @@ public class SignatureTest {
     public void testClassSignature() throws Exception {
         {
             CtClass makeClass = ClassPool.getDefault().get(A.class.getName());
-            ClassSignatureValue expected = ClassSignatureComparerHelper.getJavaClassSignature(A.class, SIGNATURE_ELEMENTS);
-            ClassSignatureValue actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
+            String expected = ClassSignatureComparerHelper.getJavaClassSignature(A.class, SIGNATURE_ELEMENTS);
+            String actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
             assertEquals("Signatures not equal", expected, actual);
         }
         {
             CtClass makeClass = ClassPool.getDefault().get(C.class.getName());
-            ClassSignatureValue expected = ClassSignatureComparerHelper.getJavaClassSignature(C.class, SIGNATURE_ELEMENTS);
-            ClassSignatureValue actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
+            String expected = ClassSignatureComparerHelper.getJavaClassSignature(C.class, SIGNATURE_ELEMENTS);
+            String actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
             assertEquals("Signatures not equal", expected, actual);
         }
     }
@@ -264,16 +264,16 @@ public class SignatureTest {
     @Test
     public void testAbstractClassSignature() throws Exception {
         CtClass makeClass = ClassPool.getDefault().get(B.class.getName());
-        ClassSignatureValue expected = ClassSignatureComparerHelper.getJavaClassSignature(B.class, SIGNATURE_ELEMENTS);
-        ClassSignatureValue actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
+        String expected = ClassSignatureComparerHelper.getJavaClassSignature(B.class, SIGNATURE_ELEMENTS);
+        String actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
         assertEquals("Signatures not equal", expected, actual);
     }
 
     @Test
     public void testOne() throws Exception {
         CtClass makeClass = ClassPool.getDefault().get(OneMethod.class.getName());
-        ClassSignatureValue expected = ClassSignatureComparerHelper.getJavaClassSignature(OneMethod.class, SIGNATURE_ELEMENTS);
-        ClassSignatureValue actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
+        String expected = ClassSignatureComparerHelper.getJavaClassSignature(OneMethod.class, SIGNATURE_ELEMENTS);
+        String actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
         assertEquals("Signatures not equal", expected, actual);
     }
 }

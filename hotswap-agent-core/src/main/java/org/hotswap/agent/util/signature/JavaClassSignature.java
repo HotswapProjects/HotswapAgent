@@ -26,7 +26,7 @@ public class JavaClassSignature extends ClassSignatureBase {
     }
 
     @Override
-    public ClassSignatureValue getValue() throws Exception {
+    public String getValue() throws Exception {
         List<String> strings = new ArrayList<>();
 
         if (hasElement(ClassSignatureElement.METHOD)) {
@@ -86,7 +86,7 @@ public class JavaClassSignature extends ClassSignatureBase {
             strBuilder.append(methodString);
         }
 
-        return new ClassSignatureValue(strBuilder.toString());
+        return strBuilder.toString();
     }
 
     private String getConstructorString(Constructor<?> method) {

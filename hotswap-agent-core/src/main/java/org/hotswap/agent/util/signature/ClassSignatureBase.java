@@ -19,14 +19,31 @@ public abstract class ClassSignatureBase {
 
     private final Set<ClassSignatureElement> elements = new HashSet<>();
 
-    public abstract ClassSignatureValue getValue() throws Exception;
+    /**
+     * Evaluate and return signature value
+     *
+     * @return the signature value
+     * @throws Exception
+     */
+    public abstract String getValue() throws Exception;
 
+    /**
+     * Adds the signature elements to set of used signature elements
+     *
+     * @param elems
+     */
     public void addSignatureElements(ClassSignatureElement elems[]) {
         for (ClassSignatureElement element : elems) {
             elements.add(element);
         }
     }
 
+    /**
+     * Check if given signature element is set.
+     *
+     * @param element
+     * @return true, if has given element
+     */
     public boolean hasElement(ClassSignatureElement element) {
         return elements.contains(element);
     }
@@ -81,14 +98,12 @@ public abstract class ClassSignatureBase {
     }
 
     private <T> T[] sort(T[] a) {
-
         a = Arrays.copyOf(a, a.length);
         Arrays.sort(a, ToStringComparator.INSTANCE);
         return a;
     }
 
     private <T> T[][] sort(T[][] a) {
-
         a = Arrays.copyOf(a, a.length);
         Arrays.sort(a, ToStringComparator.INSTANCE);
         for (Object[] objects : a) {
@@ -98,25 +113,32 @@ public abstract class ClassSignatureBase {
     }
 
     private Object getAnnotationValue(Annotation annotation, String attributeName) {
+        Method method = null;
+        boolean acessibleSet = false;
         try {
-            Method method = annotation.annotationType().getDeclaredMethod(attributeName);
-            makeAccessible(method);
+            method = annotation.annotationType().getDeclaredMethod(attributeName);
+            acessibleSet = makeAccessible(method);
             return method.invoke(annotation);
         } catch (Exception ex) {
             return null;
+        } finally {
+            if (method != null && acessibleSet) {
+                method.setAccessible(false);
+            }
         }
     }
 
-    public void makeAccessible(Method method) {
+    private boolean makeAccessible(Method method) {
         if ((!Modifier.isPublic(method.getModifiers()) || !Modifier.isPublic(method.getDeclaringClass().getModifiers()))
                 && !method.isAccessible()) {
             method.setAccessible(true);
+            return true;
         }
+        return false;
     }
 
     protected static class ToStringComparator implements Comparator<Object> {
         public static final ToStringComparator INSTANCE = new ToStringComparator();
-
         @Override
         public int compare(Object o1, Object o2) {
             return o1.toString().compareTo(o2.toString());

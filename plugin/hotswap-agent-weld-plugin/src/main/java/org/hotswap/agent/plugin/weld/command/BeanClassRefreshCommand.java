@@ -29,16 +29,20 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
     String className;
 
+    String classSignature;
+
     Map<Object, Object> registeredProxiedBeans;
 
     // either event or classDefinition is set by constructor (watcher or transformer)
     WatchFileEvent event;
 
-    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, Map<Object, Object> registeredProxiedBeans, String className) {
+    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath,
+            Map<Object, Object> registeredProxiedBeans, String className, String classSignature) {
         this.classLoader = classLoader;
         this.archivePath = archivePath;
         this.registeredProxiedBeans = registeredProxiedBeans;
         this.className = className;
+        this.classSignature = classSignature;
     }
 
     public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, WatchFileEvent event) {
@@ -69,8 +73,9 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         try {
             LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshBeanClass('{}')", className);
             Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, classLoader);
-            Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshBeanClass", new Class[] {ClassLoader.class, String.class, Map.class, String.class});
-            bdaMethod.invoke(null, classLoader, archivePath, registeredProxiedBeans, className);
+            Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshBeanClass",
+                    new Class[] {ClassLoader.class, String.class, Map.class, String.class, String.class});
+            bdaMethod.invoke(null, classLoader, archivePath, registeredProxiedBeans, className, classSignature);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {

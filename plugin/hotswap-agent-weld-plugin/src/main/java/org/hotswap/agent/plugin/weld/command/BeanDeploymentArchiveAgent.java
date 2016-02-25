@@ -16,6 +16,7 @@ import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.weld.ProxyClassSignatureHelper;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -58,7 +59,7 @@ public class BeanDeploymentArchiveAgent {
     boolean registered = false;
 
     /**
-     * Register bean archive with appropriate bean archive path
+     * Register bean archive with appropriate bean archive path.
      *
      * @param beanArchive
      * @param archivePath
@@ -138,25 +139,28 @@ public class BeanDeploymentArchiveAgent {
      * @throws IOException error working with classDefinition
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static void refreshBeanClass(ClassLoader classLoader, String archivePath,
-            Map registeredProxiedBeans, String beanClassName) throws IOException {
+    public static void refreshBeanClass(ClassLoader classLoader, String archivePath, Map registeredProxiedBeans,
+            String beanClassName, String oldClassSignature) throws IOException {
+
         BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
+
         if (bdaAgent == null) {
             LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
             return;
         }
 
-        if (registeredProxiedBeans != null) {
-            synchronized (registeredProxiedBeans) {
-                if (!registeredProxiedBeans.isEmpty()) {
-                    bdaAgent.doRefreshProxy(classLoader, registeredProxiedBeans, beanClassName);
-                }
-            }
+        try {
+            Class<?> beanClass = classLoader.loadClass(beanClassName);
+
+            bdaAgent.refreshProxy(classLoader, registeredProxiedBeans, beanClass, oldClassSignature);
+            // Reload bean
+            bdaAgent.reloadBean(classLoader, beanClass);
+
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("Bean class not found.", e);
+        } finally {
+            reloadFlag = false;
         }
-
-        bdaAgent.reloadBean(classLoader, beanClassName);
-
-        reloadFlag = false;
     }
 
     /**
@@ -166,14 +170,13 @@ public class BeanDeploymentArchiveAgent {
      * @param beanClassName
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void reloadBean(ClassLoader classLoader, String beanClassName) {
+    private void reloadBean(ClassLoader classLoader, Class<?> beanClass) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
 
-            Class<?> beanClass = this.getClass().getClassLoader().loadClass(beanClassName);
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {
                 BeanManagerImpl beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
@@ -188,7 +191,7 @@ public class BeanDeploymentArchiveAgent {
                            LOGGER.warning("reloadBean() : class '{}' reloading is not implemented.", bean.getClass().getName());
                         }
                     }
-                    LOGGER.debug("Bean reloaded '{}'", beanClassName);
+                    LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
                 } else {
                     try {
                         ClassTransformer classTransformer = getClassTransformer();
@@ -200,7 +203,7 @@ public class BeanDeploymentArchiveAgent {
                             defineManagedBean(beanManager, eat);
                             // define managed bean
     //                        beanManager.cleanupAfterBoot();
-                            LOGGER.debug("Bean defined '{}'", beanClassName);
+                            LOGGER.debug("Bean defined '{}'", beanClass.getName());
                         } else {
                             // TODO : define session bean
                         }
@@ -209,8 +212,6 @@ public class BeanDeploymentArchiveAgent {
                     }
                 }
             }
-        } catch (ClassNotFoundException e) {
-            LOGGER.warning("Class load exception : {}", e.getMessage());
         } finally {
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
         }
@@ -262,29 +263,37 @@ public class BeanDeploymentArchiveAgent {
         return annotatedType;
     }
 
-    private void doRefreshProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, String className) {
+    private void refreshProxy(ClassLoader classLoader, Map<Object, Object> registeredProxiedBeans, Class<?> beanClass, String oldClassSignature) {
+        if (oldClassSignature != null && registeredProxiedBeans != null) {
+            String newClassSignature = ProxyClassSignatureHelper.getJavaClassSignature(beanClass);
+            if (newClassSignature != null && !newClassSignature.equals(oldClassSignature)) {
+                synchronized (registeredProxiedBeans) {
+                    if (!registeredProxiedBeans.isEmpty()) {
+                        doRefreshProxy(classLoader, registeredProxiedBeans, beanClass);
+                    }
+                }
+            }
+        }
+    }
+
+    private void doRefreshProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, Class<?> proxyClass) {
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         ProxyClassLoadingDelegate.beginProxyRegeneration();
 
         try {
-
-            // Reflection must be used since current ProxyClassLoadingDelegate.class != ProxyClassLoadingDelegate for Proxy factory
-            // load class to avoid class not found exception
-            Class<?> cls = classLoader.loadClass(className);
-
             Class<?> proxyFactoryClass = null;
 
             for (Entry<Object, Object> entry : registeredBeans.entrySet()) {
                 Bean<?> bean = (Bean<?>) entry.getKey();
                 Set<Type> types = bean.getTypes();
-                if (types.contains(cls)) {
+                if (types.contains(proxyClass)) {
                     Thread.currentThread().setContextClassLoader(bean.getBeanClass().getClassLoader());
                     if (proxyFactoryClass == null) {
                         proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
                     }
                     Object proxyFactory = entry.getValue();
-                    LOGGER.debug("Recreate proxyClass {} for bean class {}.", cls.getName(), bean.getClass());
+                    LOGGER.debug("Recreate proxyClass {} for bean class {}.", proxyClass.getName(), bean.getClass());
                     ReflectionHelper.invoke(proxyFactory, proxyFactoryClass, "getProxyClass", new Class[] {});
                 }
             }

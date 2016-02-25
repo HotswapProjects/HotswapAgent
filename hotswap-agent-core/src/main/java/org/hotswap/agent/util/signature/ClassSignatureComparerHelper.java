@@ -8,20 +8,20 @@ import org.hotswap.agent.logging.AgentLogger;
 /**
  * Checks if a Signature of a Class has changed
  *
- * @author Erki Ehtla
+ * @author Erki Ehtla, Vladimir Dvorak
  *
  */
 public class ClassSignatureComparerHelper {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassSignatureComparerHelper.class);
 
-    public static ClassSignatureValue getCtClassSignature(CtClass ctClass, ClassSignatureElement[] signatureElements) throws Exception {
+    public static String getCtClassSignature(CtClass ctClass, ClassSignatureElement[] signatureElements) throws Exception {
         CtClassSignature signature = new CtClassSignature(ctClass);
         signature.addSignatureElements(signatureElements);
         return signature.getValue();
     }
 
-    public static ClassSignatureValue getJavaClassSignature(Class<?> clazz, ClassSignatureElement[] signatureElements) throws Exception  {
+    public static String getJavaClassSignature(Class<?> clazz, ClassSignatureElement[] signatureElements) throws Exception  {
         JavaClassSignature signature = new JavaClassSignature(clazz);
         signature.addSignatureElements(signatureElements);
         return signature.getValue();
@@ -34,8 +34,8 @@ public class ClassSignatureComparerHelper {
      */
     public static boolean isDifferent(CtClass ctClass, Class<?> clazz, ClassSignatureElement[] signatureElements) {
         try {
-            ClassSignatureValue newSignature = getCtClassSignature(ctClass, signatureElements);
-            ClassSignatureValue oldSignatue = getJavaClassSignature(clazz, signatureElements);
+            String newSignature = getCtClassSignature(ctClass, signatureElements);
+            String oldSignatue = getJavaClassSignature(clazz, signatureElements);
             return !newSignature.equals(oldSignatue);
         } catch (Exception e) {
             LOGGER.error("Error reading siganture", e);

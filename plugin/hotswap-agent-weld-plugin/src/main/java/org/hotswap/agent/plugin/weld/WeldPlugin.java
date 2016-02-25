@@ -14,6 +14,7 @@ import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
@@ -49,6 +50,7 @@ public class WeldPlugin {
      * Wait for this this timeout(milliseconds) after class file event before ClassPathBeanRefreshCommand
      */
     private static final int WAIT_ON_CREATE = 600;
+    private static final int WAIT_ON_REDEFINE = 600;
 
     @Init
     Watcher watcher;
@@ -169,13 +171,14 @@ public class WeldPlugin {
      * @param original
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
+    public void classReload(ClassPool classPool, ClassLoader classLoader, CtClass ctClass, Class original) {
         if (!isSyntheticCdiClass(ctClass.getName()) && original != null) {
             try {
                 String archivePath = getArchivePath(ctClass);
                 if (isBdaRegistered(classLoader, archivePath)) {
+                    String oldSignature = ProxyClassSignatureHelper.getJavaClassSignature(original);
                     scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath,
-                            registeredProxiedBeans, original.getName()), WAIT_ON_CREATE);
+                            registeredProxiedBeans, original.getName(), oldSignature), WAIT_ON_REDEFINE);
                 }
             } catch (Exception e) {
                 LOGGER.error("classReload() exception {}.", e.getMessage());
