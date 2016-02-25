@@ -150,10 +150,10 @@ public class BeanDeploymentArchiveAgent {
         }
 
         try {
-            Class<?> beanClass = classLoader.loadClass(beanClassName);
+            // BeanClass is loaded via bdaAgent.getClass().getClassLoader() to support Wildfly/EAR deployments
+            Class<?> beanClass = bdaAgent.getClass().getClassLoader().loadClass(beanClassName);
 
             bdaAgent.refreshProxy(classLoader, registeredProxiedBeans, beanClass, oldClassSignature);
-            // Reload bean
             bdaAgent.reloadBean(classLoader, beanClass);
 
         } catch (ClassNotFoundException e) {
