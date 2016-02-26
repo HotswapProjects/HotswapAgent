@@ -21,6 +21,13 @@ public class JavaBeansPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(JavaBeansPlugin.class);
 
+    /**
+     * Flag to check reload status. In unit test we need to wait for reload
+     * finish before the test can continue. Set flag to true in the test class
+     * and wait until the flag is false again.
+     */
+    public static boolean reloadFlag;
+
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public static void flushBeanIntrospectorsCaches(ClassLoader classLoader, CtClass ctClass) {
         try {
@@ -55,6 +62,8 @@ public class JavaBeansPlugin {
             }
         } catch (Exception e) {
             LOGGER.error("classReload() exception {}.", e.getMessage());
+        } finally {
+            reloadFlag = false;
         }
     }
 }
