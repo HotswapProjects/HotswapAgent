@@ -153,9 +153,11 @@ bean resolver cache.
 * AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
 * ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
+* JBossModules - add extra class path to JBoss's module class loader.
 * JSF (mojarra 2.1, 2.2) - support for application resource bundle files change (properties files).
 * OsgiEquinox - Hotswap support for Eclipse plugin or Eclipse platform development.
-* CDI/Weld - reload bean class definition after class change.
+* RESTEasy (2.x, 3.x) - reload @Path annotated classes on class create/change
+* CDI/Weld - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition after proxied class change. EAR support.
 * WebObjects - Clear key value coding, component, action and validation caches after class change.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
