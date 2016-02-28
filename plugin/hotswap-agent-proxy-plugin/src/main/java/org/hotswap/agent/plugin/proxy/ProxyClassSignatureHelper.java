@@ -29,10 +29,14 @@ public class ProxyClassSignatureHelper {
             ClassSignatureElement.METHOD_EXCEPTION,
     };
 
+    public static String getJavaClassSignature(Class<?> clazz) throws Exception {
+        return ClassSignatureComparerHelper.getJavaClassSignature(clazz, SIGNATURE_WITH_ANNO_ELEMENTS);
+    }
+
     private static void addSignaturesToMap(Class<?> clazz, Map<String, String> signatureMap) {
         if (clazz != null && clazz != Object.class) {
             try {
-                String signature = ClassSignatureComparerHelper.getJavaClassSignature(clazz, SIGNATURE_WITH_ANNO_ELEMENTS);
+                String signature = getJavaClassSignature(clazz);
                 signatureMap.put(clazz.getName(), signature);
             } catch (Exception e) {
                 LOGGER.error("Error reading signature", e);

@@ -25,92 +25,100 @@ package org.hotswap.agent.plugin.proxy.test.util;
 
 import org.hotswap.agent.plugin.proxy.HotSwapTool;
 import org.hotswap.agent.plugin.proxy.MultistepProxyTransformer;
+import org.hotswap.agent.plugin.proxy.ProxyPlugin;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.java.JavaProxyTransformer;
 import org.hotswap.agent.util.test.WaitHelper;
 
 /**
  * Shortcut methods for testing. Methods are named this way to make them more visible in the test code.
- * 
+ *
  * @author Ivan Dubrov
  */
 public class HotSwapTestHelper {
-	/**
-	 * Returns the current version of the inner classes of an outer class.
-	 * <p/>
-	 * Caller class is used as an outer class.
-	 * 
-	 * @return the version of the inner classes of the outer class
-	 */
-	public static int __version__() {
-		return HotSwapTool.getCurrentVersion(determineOuter(0));
-	}
-	
-	/**
-	 * Redefines all inner classes of a outer class to a specified version. Inner classes who do not have a particular
-	 * representation for a version remain unchanged.
-	 * <p/>
-	 * Caller class is used as an outer class.
-	 * 
-	 * @param versionNumber
-	 *            the target version number
-	 */
-	public static void __toVersion__Delayed(int versionNumber, Class<?>... extra) {
-		MultistepProxyTransformer.addThirdStep = true;
-		HotSwapTool.toVersion(determineOuter(0), versionNumber, extra);
-		// allow time for multiple redefinitions
-		WaitHelper.waitForCommand(new WaitHelper.Command() {
-			@Override
-			public boolean result() throws Exception {
-				return !CglibProxyTransformer.isReloadingInProgress() && !JavaProxyTransformer.isReloadingInProgress();
-			}
-		});
-		// try {
-		// Thread.sleep(1000);
-		// } catch (InterruptedException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		MultistepProxyTransformer.addThirdStep = false;
-	}
-	
-	/**
-	 * Redefines all inner classes of a outer class to a specified version. Inner classes who do not have a particular
-	 * representation for a version remain unchanged.
-	 * <p/>
-	 * Caller class is used as an outer class.
-	 * 
-	 * @param versionNumber
-	 *            the target version number
-	 */
-	public static void __toVersion__(int versionNumber, Class<?>... extra) {
-		HotSwapTool.toVersion(determineOuter(0), versionNumber, extra);
-	}
-	
-	/**
-	 * Helper method to determine caller outer class.
-	 * <p/>
-	 * Takes caller class and finds its top enclosing class (which is supposed to be test class).
-	 * 
-	 * @param level
-	 *            on which level this call is being made. 0 - call is made immediately in the method of HotSwapTool.
-	 * @return outer class reference
-	 */
-	private static Class<?> determineOuter(int level) {
-		StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-		ClassLoader cl = Thread.currentThread().getContextClassLoader();
-		// one for Thread#getStackTrace
-		// one for #determineOuter
-		// one for the caller
-		String callerName = stack[level + 3].getClassName();
-		try {
-			Class<?> clazz = cl.loadClass(callerName);
-			while (clazz.getEnclosingClass() != null) {
-				clazz = clazz.getEnclosingClass();
-			}
-			return clazz;
-		} catch (ClassNotFoundException e) {
-			throw new IllegalArgumentException("Cannot find caller class: " + callerName, e);
-		}
-	}
+    /**
+     * Returns the current version of the inner classes of an outer class.
+     * <p/>
+     * Caller class is used as an outer class.
+     *
+     * @return the version of the inner classes of the outer class
+     */
+    public static int __version__() {
+        return HotSwapTool.getCurrentVersion(determineOuter(0));
+    }
+
+    /**
+     * Redefines all inner classes of a outer class to a specified version. Inner classes who do not have a particular
+     * representation for a version remain unchanged.
+     * <p/>
+     * Caller class is used as an outer class.
+     *
+     * @param versionNumber
+     *            the target version number
+     */
+    public static void __toVersion__Delayed(int versionNumber, Class<?>... extra) {
+        MultistepProxyTransformer.addThirdStep = true;
+        HotSwapTool.toVersion(determineOuter(0), versionNumber, extra);
+        // allow time for multiple redefinitions
+        WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return !CglibProxyTransformer.isReloadingInProgress() && !JavaProxyTransformer.isReloadingInProgress();
+            }
+        });
+        MultistepProxyTransformer.addThirdStep = false;
+    }
+
+    public static void __toVersion__Delayed_JavaProxy(int versionNumber, Class<?>... extra) {
+        ProxyPlugin.reloadFlag = true;
+        HotSwapTool.toVersion(determineOuter(0), versionNumber, extra);
+        // allow time for multiple redefinitions
+        WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return !ProxyPlugin.reloadFlag;
+            }
+        });
+        ProxyPlugin.reloadFlag = false;
+    }
+
+    /**
+     * Redefines all inner classes of a outer class to a specified version. Inner classes who do not have a particular
+     * representation for a version remain unchanged.
+     * <p/>
+     * Caller class is used as an outer class.
+     *
+     * @param versionNumber
+     *            the target version number
+     */
+    public static void __toVersion__(int versionNumber, Class<?>... extra) {
+        HotSwapTool.toVersion(determineOuter(0), versionNumber, extra);
+    }
+
+    /**
+     * Helper method to determine caller outer class.
+     * <p/>
+     * Takes caller class and finds its top enclosing class (which is supposed to be test class).
+     *
+     * @param level
+     *            on which level this call is being made. 0 - call is made immediately in the method of HotSwapTool.
+     * @return outer class reference
+     */
+    private static Class<?> determineOuter(int level) {
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        // one for Thread#getStackTrace
+        // one for #determineOuter
+        // one for the caller
+        String callerName = stack[level + 3].getClassName();
+        try {
+            Class<?> clazz = cl.loadClass(callerName);
+            while (clazz.getEnclosingClass() != null) {
+                clazz = clazz.getEnclosingClass();
+            }
+            return clazz;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Cannot find caller class: " + callerName, e);
+        }
+    }
 }

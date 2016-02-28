@@ -15,25 +15,20 @@ import org.hotswap.agent.plugin.proxy.ProxyTransformer;
 public class JavassistProxyTransformer implements ProxyTransformer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(JavassistProxyTransformer.class);
     private final Class<?> classBeingRedefined;
-    private final byte[] classfileBuffer;
     private final CtClass cc;
     private final ClassPool cp;
 
     /**
+     * Instantiates a new javassist proxy transformer.
      *
-     * @param classBeingRedefined
-     * @param classfileBuffer
-     *            new definition of Class<?>
-     * @param cc
-     *            CtClass from classfileBuffer
-     * @param cp
-     *            Classpool of the classloader
+     * @param classBeingRedefined the class being redefined
+     * @param cc            CtClass from classfileBuffer
+     * @param cp            Classpool of the classloader
      * @return classfileBuffer or new Proxy defition if there are signature changes
      */
-    public JavassistProxyTransformer(Class<?> classBeingRedefined, byte[] classfileBuffer, CtClass cc, ClassPool cp) {
+    public JavassistProxyTransformer(Class<?> classBeingRedefined, CtClass cc, ClassPool cp) {
         super();
         this.classBeingRedefined = classBeingRedefined;
-        this.classfileBuffer = classfileBuffer;
         this.cc = cc;
         this.cp = cp;
     }
@@ -50,24 +45,19 @@ public class JavassistProxyTransformer implements ProxyTransformer {
      * @return classfileBuffer or new Proxy defition if there are signature changes
      * @throws Exception
      */
-    public static byte[] transform(final Class<?> classBeingRedefined, byte[] classfileBuffer, CtClass cc, ClassPool cp)
-            throws Exception {
-        return new JavassistProxyTransformer(classBeingRedefined, classfileBuffer, cc, cp).transformRedefine();
+    public static byte[] transform(final Class<?> classBeingRedefined, CtClass cc, ClassPool cp) throws Exception {
+        return new JavassistProxyTransformer(classBeingRedefined, cc, cp).transformRedefine();
     }
 
     @Override
     public byte[] transformRedefine() throws Exception {
         try {
-            if (!ProxyClassSignatureHelper.isNonSyntheticPoolClassOrParentDifferent(classBeingRedefined, cp)) {
-                return classfileBuffer;
-            }
-            byte[] generateProxyClass = CtClassJavaProxyGenerator.generateProxyClass(classBeingRedefined.getName(),
-                    cc.getInterfaces(), cp);
+            byte[] generateProxyClass = CtClassJavaProxyGenerator.generateProxyClass(classBeingRedefined.getName(), cc.getInterfaces(), cp);
             LOGGER.reload("Class '{}' has been reloaded.", classBeingRedefined.getName());
             return generateProxyClass;
         } catch (Exception e) {
             LOGGER.error("Error transforming a Java reflect Proxy", e);
-            return classfileBuffer;
         }
+        return null;
     }
 }
