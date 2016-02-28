@@ -56,7 +56,7 @@ public class CtClassSignature extends ClassSignatureBase {
         }
 
         if (hasElement(ClassSignatureElement.CLASS_ANNOTATION)) {
-            strings.add(annotationToString(ctClass.getAnnotations()));
+            strings.add(annotationToString(ctClass.getAvailableAnnotations()));
         }
 
         if (hasElement(ClassSignatureElement.INTERFACES)) {
@@ -78,7 +78,7 @@ public class CtClassSignature extends ClassSignatureBase {
                     continue;
                 String fieldSignature = field.getType().getName() + " " + field.getName();
                 if (useFieldAnnotation) {
-                    fieldSignature += annotationToString(field.getAnnotations());
+                    fieldSignature += annotationToString(field.getAvailableAnnotations());
                 }
 
                 strings.add(fieldSignature + ";");
@@ -102,9 +102,9 @@ public class CtClassSignature extends ClassSignatureBase {
         strBuilder.append(method.getDeclaringClass().getName());
         strBuilder.append(getParams(method.getParameterTypes()));
         if (hasElement(ClassSignatureElement.METHOD_ANNOTATION))
-            strBuilder.append(annotationToString(method.getAnnotations()));
+            strBuilder.append(annotationToString(method.getAvailableAnnotations()));
         if (hasElement(ClassSignatureElement.METHOD_PARAM_ANNOTATION))
-            strBuilder.append(annotationToString(method.getParameterAnnotations()));
+            strBuilder.append(annotationToString(method.getAvailableParameterAnnotations()));
         if (hasElement(ClassSignatureElement.METHOD_EXCEPTION))
             strBuilder.append(toStringException(method.getExceptionTypes()));
         strBuilder.append(";");
@@ -117,9 +117,9 @@ public class CtClassSignature extends ClassSignatureBase {
         strBuilder.append(getName(method.getReturnType()) + " " + method.getName());
         strBuilder.append(getParams(method.getParameterTypes()));
         if (hasElement(ClassSignatureElement.METHOD_ANNOTATION))
-            strBuilder.append(annotationToString(method.getAnnotations()));
+            strBuilder.append(annotationToString(method.getAvailableAnnotations()));
         if (hasElement(ClassSignatureElement.METHOD_PARAM_ANNOTATION))
-            strBuilder.append(annotationToString(method.getParameterAnnotations()));
+            strBuilder.append(annotationToString(method.getAvailableParameterAnnotations()));
         if (hasElement(ClassSignatureElement.METHOD_EXCEPTION))
             strBuilder.append(toStringException(method.getExceptionTypes()));
         strBuilder.append(";");
