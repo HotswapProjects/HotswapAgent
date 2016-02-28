@@ -34,12 +34,23 @@ public class ClassSignatureComparerHelper {
      */
     public static boolean isDifferent(CtClass ctClass, Class<?> clazz, ClassSignatureElement[] signatureElements) {
         try {
-            String newSignature = getCtClassSignature(ctClass, signatureElements);
-            String oldSignatue = getJavaClassSignature(clazz, signatureElements);
-            return !newSignature.equals(oldSignatue);
+            String sig1 = getCtClassSignature(ctClass, signatureElements);
+            String sig2 = getJavaClassSignature(clazz, signatureElements);
+            return !sig1.equals(sig2);
         } catch (Exception e) {
             LOGGER.error("Error reading siganture", e);
-            return true;
+            return false;
+        }
+    }
+
+    public static boolean isDifferent(Class<?> clazz1, Class<?> clazz2, ClassSignatureElement[] signatureElements) {
+        try {
+            String sig1 = getJavaClassSignature(clazz1, signatureElements);
+            String sig2 = getJavaClassSignature(clazz2, signatureElements);
+            return !sig1.equals(sig2);
+        } catch (Exception e) {
+            LOGGER.error("Error reading siganture", e);
+            return false;
         }
     }
 
@@ -53,7 +64,7 @@ public class ClassSignatureComparerHelper {
             return isDifferent(cp.get(clazz.getName()), clazz, signatureElements);
         } catch (NotFoundException e) {
             LOGGER.error("Class not found ", e);
-            return true;
+            return false;
         }
     }
 
