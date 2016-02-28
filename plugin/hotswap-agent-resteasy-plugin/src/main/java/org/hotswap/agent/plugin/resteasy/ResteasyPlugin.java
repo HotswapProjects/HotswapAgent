@@ -133,7 +133,7 @@ public class ResteasyPlugin {
                 || AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)
                 ) {
             LOGGER.debug("Reload @Path annotated class {}, original classloader {}", clazz.getName(), original.getClassLoader());
-            refresh(classLoader, 500);
+            refresh(classLoader, 100);
         }
     }
 

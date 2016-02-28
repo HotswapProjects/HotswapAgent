@@ -10,8 +10,8 @@ import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
+import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -29,6 +29,9 @@ public class HotswapWebObjectsPlugin {
     // Agent logger is a very simple custom logging mechanism. Do not use any common logging framework
     // to avoid compatibility and classloading issues.
     private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapWebObjectsPlugin.class);
+
+    @Init
+    Scheduler scheduler;
 
     private Method kvcDefaultImplementation_flushCaches;
     private Method kvcReflectionKeyBindingCreation_flushCaches;
@@ -95,17 +98,17 @@ public class HotswapWebObjectsPlugin {
     public void reloadClass(CtClass ctClass) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, CannotCompileException {
         LOGGER.debug("Class "+ctClass.getSimpleName()+" redefined.");
 
-        PluginManager.getInstance().getScheduler().scheduleCommand(clearKVCCacheCommand);
+        scheduler.scheduleCommand(clearKVCCacheCommand);
 
         woApplication_removeComponentDefinitionCacheContents.invoke(woApplicationObject);
         if (ctClass.subclassOf(woComponentCtClass)) {
-            PluginManager.getInstance().getScheduler().scheduleCommand(clearComponentCacheCommand);
+            scheduler.scheduleCommand(clearComponentCacheCommand);
         }
         if (ctClass.subclassOf(woActionCtClass)) {
-            PluginManager.getInstance().getScheduler().scheduleCommand(clearActionCacheCommand);
+            scheduler.scheduleCommand(clearActionCacheCommand);
         }
         if (ctClass.subclassOf(nsValidationCtClass)) {
-            PluginManager.getInstance().getScheduler().scheduleCommand(clearValidationCacheCommand);
+            scheduler.scheduleCommand(clearValidationCacheCommand);
         }
     }
 

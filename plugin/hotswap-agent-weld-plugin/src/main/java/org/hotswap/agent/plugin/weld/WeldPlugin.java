@@ -48,8 +48,8 @@ public class WeldPlugin {
      * ClassPathBeanRefreshCommand tries to merge these events into single command.
      * Wait for this this timeout(milliseconds) after class file event before ClassPathBeanRefreshCommand
      */
-    private static final int WAIT_ON_CREATE = 600;
-    private static final int WAIT_ON_REDEFINE = 600;
+    private static final int WAIT_ON_CREATE = 500;
+    private static final int WAIT_ON_REDEFINE = 200;
 
     @Init
     Watcher watcher;
