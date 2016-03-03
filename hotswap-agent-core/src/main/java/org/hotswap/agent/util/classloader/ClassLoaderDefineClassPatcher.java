@@ -51,21 +51,27 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
             cp.appendClassPath(new LoaderClassPath(getClass().getClassLoader()));
 
             for (byte[] pluginBytes: cache) {
+                CtClass pluginClass = null;
                 try {
-                    CtClass pluginClass = null;
+                    // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
+                    // is parent of classLoaderFrom, after definition in classLoaderTo will classLoaderFrom return
+                    // class from parent classloader instead own definition (hence change of behaviour).
+                    InputStream is = new ByteArrayInputStream(pluginBytes);
+                    pluginClass = cp.makeClass(is);
                     try {
-                        // force to load class in classLoaderFrom (it may not yet be loaded) and if the classLoaderTo
-                        // is parent of classLoaderFrom, after definition in classLoaderTo will classLoaderFrom return
-                        // class from parent classloader instead own definition (hence change of behaviour).
-                        InputStream is = new ByteArrayInputStream(pluginBytes);
-                        pluginClass = cp.makeClass(is);
                         classLoaderFrom.loadClass(pluginClass.getName());
-                        // and load the class in classLoaderTo as well. NOw the class is defined in BOTH classloaders.
-                        pluginClass.toClass(classLoaderTo, protectionDomain);
-                    } catch (CannotCompileException e) {
-                        LOGGER.trace("Skipping class definition in {} in app classloader {} - " +
-                                "class is probably already defined.", pluginClass.getName(), classLoaderTo);
+                    } catch (NoClassDefFoundError e) {
+                        LOGGER.trace("Skipping class loading {} in classloader {} - " +
+                                "class has probably unresolvable dependency.", pluginClass.getName(), classLoaderTo);
                     }
+                    // and load the class in classLoaderTo as well. NOw the class is defined in BOTH classloaders.
+                    pluginClass.toClass(classLoaderTo, protectionDomain);
+                } catch (CannotCompileException e) {
+                    LOGGER.trace("Skipping class definition {} in app classloader {} - " +
+                            "class is probably already defined.", pluginClass.getName(), classLoaderTo);
+                } catch (NoClassDefFoundError e) {
+                    LOGGER.trace("Skipping class definition {} in app classloader {} - " +
+                            "class has probably unresolvable dependency.", pluginClass.getName(), classLoaderTo);
                 } catch (Throwable e) {
                     LOGGER.trace("Skipping class definition app classloader {} - " +
                             "unknown error.", e, classLoaderTo);
