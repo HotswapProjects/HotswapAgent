@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.deltaspike;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
@@ -11,6 +12,8 @@ import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.deltaspike.jsf.ViewConfigReloadCommand;
+import org.hotswap.agent.plugin.deltaspike.proxy.PartialBeanClassRefreshCommand;
 import org.hotswap.agent.util.AnnotationHelper;
 
 /**
@@ -28,7 +31,7 @@ public class DeltaSpikePlugin {
 
     private static final String REPOSITORY_ANNOTATION = "org.apache.deltaspike.data.api.Repository";
 
-    private static final int WAIT_ON_REDEFINE = 500;
+    private static final int WAIT_ON_REDEFINE = 100;
 
     @Init
     ClassLoader appClassLoader;
@@ -38,6 +41,7 @@ public class DeltaSpikePlugin {
 
     Map<Object, String> registeredRepoComponents = new WeakHashMap<Object, String>();
     Map<Object, String> registeredPartialBeans = new WeakHashMap<Object, String>();
+    Map<Object, String> registeredViewConfExtRootClasses = new WeakHashMap<Object, String>();
 
     public void registerRepoComponent(Object repoComponent, Class<?> repositoryClass) {
         registeredRepoComponents.put(repoComponent, repositoryClass.getName());
@@ -53,6 +57,11 @@ public class DeltaSpikePlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(CtClass clazz, Class original) {
+        checkRefreshPartialBean(clazz, original);
+        checkRefreshViewConfigExtension(clazz, original);
+    }
+
+    private void checkRefreshPartialBean(CtClass clazz, Class original) {
         Object partialBean = getObjectByName(registeredPartialBeans, clazz.getName());
         if (partialBean != null) {
 
@@ -76,6 +85,28 @@ public class DeltaSpikePlugin {
            }
         }
         return null;
+    }
+
+    private void checkRefreshViewConfigExtension(CtClass clazz, Class original) {
+        String className = original.getName();
+        int index = className.indexOf("$");
+        String rootClassName = (index!=-1) ? className.substring(0, index) : className;
+        for (Entry<Object, String> entry: registeredViewConfExtRootClasses.entrySet()) {
+            if (entry.getValue().equals(rootClassName)) {
+                scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), rootClassName), WAIT_ON_REDEFINE);
+                return;
+            }
+        }
+    }
+
+    public void registerViewConfigRootClasses(Object viewConfigExtension, List rootClassList) {
+        if (rootClassList != null ) {
+            for (Object viewConfigClassObj : rootClassList) {
+                Class<?> viewConfigClass = (Class<?>) viewConfigClassObj;
+                registeredViewConfExtRootClasses.put(viewConfigExtension, viewConfigClass.getName());
+                LOGGER.debug("Registering ViewConfigRoot class : " + viewConfigClass.getName());
+            }
+        }
     }
 
 }

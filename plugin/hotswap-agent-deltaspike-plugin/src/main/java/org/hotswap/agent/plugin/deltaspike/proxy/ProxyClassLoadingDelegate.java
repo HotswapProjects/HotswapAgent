@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.deltaspike;
+package org.hotswap.agent.plugin.deltaspike.proxy;
 
 import java.security.ProtectionDomain;
 import java.util.HashMap;
