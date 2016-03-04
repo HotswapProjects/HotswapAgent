@@ -58,8 +58,7 @@ public class ProxyFactoryTransformer {
         CtMethod getProxyClassMethod = ctClass.getDeclaredMethod("getProxyClass");
         getProxyClassMethod.instrument(
                 new ExprEditor() {
-                    public void edit(MethodCall m) throws CannotCompileException
-                    {
+                    public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getClassName().equals(ClassLoader.class.getName()) && m.getMethodName().equals("loadClass"))
                             m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.loadClass(this.classLoader,$1); }");
                     }
@@ -68,8 +67,7 @@ public class ProxyFactoryTransformer {
         CtMethod createProxyClassMethod = ctClass.getDeclaredMethod("createProxyClass");
         createProxyClassMethod.instrument(
                 new ExprEditor() {
-                    public void edit(MethodCall m) throws CannotCompileException
-                    {
+                    public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getClassName().equals("org.jboss.weld.util.bytecode.ClassFileUtils") && m.getMethodName().equals("toClass"))
                             m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.toClass($$); }");
                     }

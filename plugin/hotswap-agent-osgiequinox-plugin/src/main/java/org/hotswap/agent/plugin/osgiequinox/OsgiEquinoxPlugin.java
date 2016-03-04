@@ -213,7 +213,7 @@ public class OsgiEquinoxPlugin {
             for (ClassLoader classLoader: registeredEquinoxClassLoaders) {
                 if (ClassLoaderHelper.isClassLoaded(classLoader, ctClass.getName())) {
                     if (ret == null)
-                        ret = new ArrayList<>();
+                        ret = new ArrayList<ClassLoader>();
                     ret.add(classLoader);
                 }
             }
