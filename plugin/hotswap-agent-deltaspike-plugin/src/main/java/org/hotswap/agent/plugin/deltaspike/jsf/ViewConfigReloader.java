@@ -1,5 +1,7 @@
 package org.hotswap.agent.plugin.deltaspike.jsf;
 
+import java.util.List;
+
 import org.apache.deltaspike.core.api.config.view.ViewConfig;
 import org.apache.deltaspike.jsf.impl.config.view.ViewConfigExtension;
 import org.apache.deltaspike.jsf.impl.util.ViewConfigUtils;
@@ -13,13 +15,17 @@ public class ViewConfigReloader {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ViewConfigReloader.class);
 
-    public static void reloadViewConfig(ClassLoader classLoader, Object viewConfigExtensionObj, String resolverRootClassName) {
+    public static void reloadViewConfig(ClassLoader classLoader, Object viewConfigExtensionObj, List rootClassNameList) {
         try {
-            Class<?> resolverRootClass = classLoader.loadClass(resolverRootClassName);
             ViewConfigExtension viewConfigExtension = (ViewConfigExtension) viewConfigExtensionObj;
             viewConfigExtension.freeViewConfigCache(null);
             ReflectionHelper.invoke(viewConfigExtension, viewConfigExtension.getClass(), "resetRootNode", null);
-            doAddPageDefinition(viewConfigExtension, resolverRootClass);
+            for (Object oClass : rootClassNameList) {
+                Class<?> viewConfigRootClass = classLoader.loadClass((String)oClass);
+                if (viewConfigRootClass != null) {
+                    doAddPageDefinition(viewConfigExtension, viewConfigRootClass);
+                }
+            }
             viewConfigExtension.buildViewConfig(null);
         } catch (ClassNotFoundException e) {
             LOGGER.error("Deltaspike view config reloading failed", e);

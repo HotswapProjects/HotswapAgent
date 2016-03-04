@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.deltaspike.jsf;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
@@ -12,25 +13,25 @@ public class ViewConfigReloadCommand extends MergeableCommand {
 
     ClassLoader classLoader;
     Object viewConfigExtension;
-    String viewConfigRootClassName;
+    List<String> rootClassNameList;
 
-    public ViewConfigReloadCommand(ClassLoader classLoader, Object viewConfigExtension, String resolverRootClassName) {
+    public ViewConfigReloadCommand(ClassLoader classLoader, Object viewConfigExtension, List<String> rootClassNameList) {
         this.classLoader = classLoader;
         this.viewConfigExtension = viewConfigExtension;
-        this.viewConfigRootClassName = resolverRootClassName;
+        this.rootClassNameList = rootClassNameList;
     }
 
     @Override
     public void executeCommand() {
         try {
-            LOGGER.debug("Executing ViewConfigReloader.reloadViewConfig('{}')", viewConfigRootClassName);
+            LOGGER.debug("Executing ViewConfigReloader.reloadViewConfig('{}')", rootClassNameList);
             Class<?> reloaderClazz = classLoader.loadClass(ViewConfigReloader.class.getName());
-            Method m  = reloaderClazz.getDeclaredMethod("reloadViewConfig", new Class[] {ClassLoader.class, Object.class, String.class});
-            m.invoke(null, classLoader, viewConfigExtension, viewConfigRootClassName);
+            Method m  = reloaderClazz.getDeclaredMethod("reloadViewConfig", new Class[] {ClassLoader.class, Object.class, java.util.List.class});
+            m.invoke(null, classLoader, viewConfigExtension, rootClassNameList);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
-            LOGGER.error("Error refreshing class {} in classLoader {}", e, viewConfigRootClassName, classLoader);
+            LOGGER.error("Error refreshing classes {} in classLoader {}", e, rootClassNameList, classLoader);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Plugin error, illegal access", e);
         } catch (ClassNotFoundException e) {
@@ -47,7 +48,7 @@ public class ViewConfigReloadCommand extends MergeableCommand {
 
         if (!classLoader.equals(that.classLoader)) return false;
         if (!viewConfigExtension.equals(that.viewConfigExtension)) return false;
-        if (!viewConfigRootClassName.equals(that.viewConfigRootClassName)) return false;
+        if (!rootClassNameList.equals(that.rootClassNameList)) return false;
 
         return true;
     }
@@ -55,7 +56,7 @@ public class ViewConfigReloadCommand extends MergeableCommand {
     @Override
     public int hashCode() {
         int result = classLoader.hashCode();
-        result = 31 * result + (viewConfigRootClassName != null ? viewConfigRootClassName.hashCode() : 0);
+        result = 31 * result + (rootClassNameList != null ? rootClassNameList.hashCode() : 0);
         return result;
     }
 
@@ -63,7 +64,7 @@ public class ViewConfigReloadCommand extends MergeableCommand {
     public String toString() {
         return "ViewConfigExtensionRefreshCommand{" +
                 "classLoader=" + classLoader +
-                ", resolverRootClassName='" + viewConfigRootClassName + '\'' +
+                ", viewConfigRootClassNames='" + rootClassNameList + '\'' +
                 '}';
     }
 }

@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.deltaspike;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,7 +42,7 @@ public class DeltaSpikePlugin {
 
     Map<Object, String> registeredRepoComponents = new WeakHashMap<Object, String>();
     Map<Object, String> registeredPartialBeans = new WeakHashMap<Object, String>();
-    Map<Object, String> registeredViewConfExtRootClasses = new WeakHashMap<Object, String>();
+    Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<Object, List<String>>();
 
     public void registerRepoComponent(Object repoComponent, Class<?> repositoryClass) {
         registeredRepoComponents.put(repoComponent, repositoryClass.getName());
@@ -91,21 +92,26 @@ public class DeltaSpikePlugin {
         String className = original.getName();
         int index = className.indexOf("$");
         String rootClassName = (index!=-1) ? className.substring(0, index) : className;
-        for (Entry<Object, String> entry: registeredViewConfExtRootClasses.entrySet()) {
-            if (entry.getValue().equals(rootClassName)) {
-                scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), rootClassName), WAIT_ON_REDEFINE);
-                return;
+        for (Entry<Object, List<String>> entry: registeredViewConfExtRootClasses.entrySet()) {
+            List<String> rootClassNameList = entry.getValue();
+            for (String viewConfigClassName: rootClassNameList) {
+                if (viewConfigClassName.equals(rootClassName)) {
+                    scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), entry.getValue()), WAIT_ON_REDEFINE);
+                    return;
+                }
             }
         }
     }
 
     public void registerViewConfigRootClasses(Object viewConfigExtension, List rootClassList) {
         if (rootClassList != null ) {
+            List<String> rootClassNameList = new ArrayList<String>();
             for (Object viewConfigClassObj : rootClassList) {
                 Class<?> viewConfigClass = (Class<?>) viewConfigClassObj;
-                registeredViewConfExtRootClasses.put(viewConfigExtension, viewConfigClass.getName());
                 LOGGER.debug("Registering ViewConfigRoot class : " + viewConfigClass.getName());
+                rootClassNameList.add(viewConfigClass.getName());
             }
+            registeredViewConfExtRootClasses.put(viewConfigExtension, rootClassNameList);
         }
     }
 
