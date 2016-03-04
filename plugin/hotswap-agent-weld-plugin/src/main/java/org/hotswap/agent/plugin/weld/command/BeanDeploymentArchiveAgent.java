@@ -224,16 +224,17 @@ public class BeanDeploymentArchiveAgent {
         SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
         EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
 
-        managedBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, managedBean, false));
-
-        try {
-            Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
-            if (get != null) {
-                LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+        if (!eat.isAbstract() || !eat.getJavaClass().isInterface()) { // injectionTargetCannotBeCreatedForInterface
+            managedBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, managedBean, false));
+            try {
+                Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
+                if (get != null) {
+                    LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
+                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                }
+            } catch (org.jboss.weld.context.ContextNotActiveException e) {
+                LOGGER.warning("No active contexts for {}", beanClass.getName());
             }
-        } catch (org.jboss.weld.context.ContextNotActiveException e) {
-            LOGGER.warning("No active contexts for {}", beanClass.getName());
         }
     }
 
