@@ -25,7 +25,7 @@ public class ViewConfigReloadCommand extends MergeableCommand {
     public void executeCommand() {
         try {
             LOGGER.debug("Executing ViewConfigReloader.reloadViewConfig('{}')", rootClassNameList);
-            Class<?> reloaderClazz = classLoader.loadClass(ViewConfigReloader.class.getName());
+            Class<?> reloaderClazz = Class.forName(ViewConfigReloader.class.getName(), true, classLoader);
             Method m  = reloaderClazz.getDeclaredMethod("reloadViewConfig", new Class[] {ClassLoader.class, Object.class, java.util.List.class});
             m.invoke(null, classLoader, viewConfigExtension, rootClassNameList);
         } catch (NoSuchMethodException e) {

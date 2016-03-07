@@ -21,9 +21,9 @@ public class ViewConfigReloader {
             viewConfigExtension.freeViewConfigCache(null);
             ReflectionHelper.invoke(viewConfigExtension, viewConfigExtension.getClass(), "resetRootNode", null);
             for (Object oClass : rootClassNameList) {
-                Class<?> viewConfigRootClass = classLoader.loadClass((String)oClass);
+                Class<?> viewConfigRootClass = Class.forName((String)oClass, true, classLoader);
                 if (viewConfigRootClass != null) {
-                    doAddPageDefinition(viewConfigExtension, viewConfigRootClass);
+                    doAddPageDefinition(classLoader, viewConfigExtension, viewConfigRootClass);
                 }
             }
             viewConfigExtension.buildViewConfig(null);
@@ -32,14 +32,22 @@ public class ViewConfigReloader {
         }
     }
 
-    private static void doAddPageDefinition(ViewConfigExtension viewConfigExtension, Class<?> viewConfigClass) {
+    private static void doAddPageDefinition(ClassLoader classLoader, ViewConfigExtension viewConfigExtension, Class<?> viewConfigClass) {
         if (ViewConfigUtils.isFolderConfig(viewConfigClass)) {
             viewConfigExtension.addFolderDefinition(viewConfigClass);
         } else if (ViewConfig.class.isAssignableFrom(viewConfigClass)){
             viewConfigExtension.addPageDefinition((Class<? extends ViewConfig>) viewConfigClass);
         }
-        for (Class<?> subclass: viewConfigClass.getDeclaredClasses()) {
-            doAddPageDefinition(viewConfigExtension, subclass);
+        for (Class<?> subClass: viewConfigClass.getDeclaredClasses()) {
+            Class<?> reloadedSubclass;
+            try {
+                reloadedSubclass = Class.forName(subClass.getName(), true, classLoader);
+                if (reloadedSubclass != null) {
+                    doAddPageDefinition(classLoader, viewConfigExtension, reloadedSubclass);
+                }
+            } catch (ClassNotFoundException e) {
+                LOGGER.debug("ViewConfig subclass removed {} ", subClass.getName());
+            }
         }
     }
 }
