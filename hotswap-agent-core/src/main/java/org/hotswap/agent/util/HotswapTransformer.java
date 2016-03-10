@@ -1,14 +1,22 @@
 package org.hotswap.agent.util;
 
-import org.hotswap.agent.command.Command;
-import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.logging.AgentLogger;
-
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.regex.Pattern;
+
+import org.hotswap.agent.command.Command;
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
 
 /**
  * Java instrumentation transformer.
@@ -29,7 +37,12 @@ public class HotswapTransformer implements ClassFileTransformer {
             "sun.reflect.DelegatingClassLoader"
     ));
 
-    protected Map<Pattern, List<ClassFileTransformer>> registeredTransformers = new HashMap<Pattern, List<ClassFileTransformer>>();
+    private static class RegisteredTransformersRecord {
+        Pattern pattern;
+        List<ClassFileTransformer> transformerList = new LinkedList<ClassFileTransformer>();
+    }
+
+    protected Map<String, RegisteredTransformersRecord> registeredTransformers = new HashMap<String, RegisteredTransformersRecord>();
 
     // keep track about which classloader requested which transformer
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new HashMap<ClassFileTransformer, ClassLoader>();
@@ -50,15 +63,14 @@ public class HotswapTransformer implements ClassFileTransformer {
     public void registerTransformer(ClassLoader classLoader, String classNameRegexp, ClassFileTransformer transformer) {
         LOGGER.debug("Registering transformer for class regexp '{}'.", classNameRegexp);
 
-        Pattern pattern = Pattern.compile(normalizeTypeRegexp(classNameRegexp));
-
-        // register pattern
-        List<ClassFileTransformer> transformerList = registeredTransformers.get(pattern);
-        if (transformerList == null) {
-            transformerList = new LinkedList<ClassFileTransformer>();
-            registeredTransformers.put(pattern, transformerList);
+        String normalizeRegexp = normalizeTypeRegexp(classNameRegexp);
+        RegisteredTransformersRecord transformerRecord = registeredTransformers.get(normalizeRegexp);
+        if (transformerRecord == null) {
+            transformerRecord = new RegisteredTransformersRecord();
+            transformerRecord.pattern = Pattern.compile(normalizeRegexp);
+            registeredTransformers.put(normalizeRegexp, transformerRecord);
         }
-        transformerList.add(transformer);
+        transformerRecord.transformerList.add(transformer);
 
         // register classloader association to allow classloader unregistration
         if (classLoader != null) {
@@ -73,11 +85,10 @@ public class HotswapTransformer implements ClassFileTransformer {
      * @param transformer     currently registered transformer
      */
     public void removeTransformer(String classNameRegexp, ClassFileTransformer transformer) {
-        Pattern pattern = Pattern.compile(normalizeTypeRegexp(classNameRegexp));
-
-        List<ClassFileTransformer> transformerList = registeredTransformers.get(pattern);
-        if (transformerList != null) {
-            transformerList.remove(transformer);
+        String normalizeRegexp = normalizeTypeRegexp(classNameRegexp);
+        RegisteredTransformersRecord transformerRecord = registeredTransformers.get(normalizeRegexp);
+        if (transformerRecord != null) {
+            transformerRecord.transformerList.remove(transformer);
         }
     }
 
@@ -91,8 +102,8 @@ public class HotswapTransformer implements ClassFileTransformer {
             Map.Entry<ClassFileTransformer, ClassLoader> entry = entryIterator.next();
             if (entry.getValue().equals(classLoader)) {
                 entryIterator.remove();
-                for (List<ClassFileTransformer> transformerList : registeredTransformers.values())
-                    transformerList.remove(entry.getKey());
+                for (RegisteredTransformersRecord transformerRecord : registeredTransformers.values())
+                    transformerRecord.transformerList.remove(entry.getKey());
             }
         }
 
@@ -120,10 +131,10 @@ public class HotswapTransformer implements ClassFileTransformer {
         byte[] result = bytes;
         try {
             // call transform on all registered transformers
-            for (Pattern pattern : new LinkedList<Pattern>(registeredTransformers.keySet())) {
-                if ((className != null && pattern.matcher(className).matches()) ||
-                        (redefiningClass != null && pattern.matcher(redefiningClass.getName()).matches())) {
-                    for (ClassFileTransformer transformer : new LinkedList<ClassFileTransformer>(registeredTransformers.get(pattern))) {
+            for (RegisteredTransformersRecord transformerRecord : new LinkedList<RegisteredTransformersRecord>(registeredTransformers.values())) {
+                if ((className != null && transformerRecord.pattern.matcher(className).matches()) ||
+                        (redefiningClass != null && transformerRecord.pattern.matcher(redefiningClass.getName()).matches())) {
+                    for (ClassFileTransformer transformer : new LinkedList<ClassFileTransformer>(transformerRecord.transformerList)) {
                         LOGGER.trace("Transforming class '" + className +
                                 "' with transformer '" + transformer + "' " + "@ClassLoader" + classLoader + ".");
                         result = transformer.transform(classLoader, className, redefiningClass, protectionDomain, result);
