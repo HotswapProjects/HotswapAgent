@@ -1,7 +1,12 @@
 package org.hotswap.agent.plugin.tomcat;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtPrimitiveType;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -10,6 +15,8 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  */
 public class WebappLoaderTransformer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(WebappLoaderTransformer.class);
+
+    private static boolean webappClassLoaderPatched = false;
 
     /**
      * Init the plugin from start method.
@@ -29,7 +36,6 @@ public class WebappLoaderTransformer {
             try {
                 // fail for older tomcat version, which does not contain context
                 ctClass.getDeclaredMethod("getContext");
-
                 ctClass.getDeclaredMethod("startInternal").insertAfter(
                         TomcatPlugin.class.getName() + ".init(getClassLoader(), getContext().getResources());"
                 );
@@ -103,23 +109,37 @@ public class WebappLoaderTransformer {
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.webresources.StandardRoot")
     public static void patchStandardRoot(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
+        CtClass ctFileResource = classPool.get("org.apache.catalina.webresources.FileResource");
+        CtConstructor ctFileResourceConstructor = ctFileResource.getConstructors()[0];
+        CtClass[] constructorTypes = ctFileResourceConstructor.getParameterTypes();
+        String constrParams;
+
+        if (constructorTypes.length == 4)
+            constrParams = "this, path, file, false";
+        else if (constructorTypes.length == 5)
+            constrParams = "this, path, file, false, null";
+        else {
+            LOGGER.warning("org.apache.catalina.webresources.FileResource unknown constructor. Tomcat plugin will not work properly.");
+            return;
+        }
+
         try {
             ctClass.getDeclaredMethod("getResourceInternal", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertBefore(
                     "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, path);" +
-                            "if (file != null) return new org.apache.catalina.webresources.FileResource(this, path, file, false);"
+                            "if (file != null) return new org.apache.catalina.webresources.FileResource(" + constrParams + ");"
             );
         } catch (NotFoundException e) {
             LOGGER.warning("org.apache.catalina.webresources.StandardRoot does not contain getResourceInternal method. Tomcat plugin will not work properly.");
             return;
         }
 
-        // if getResources() should conain extraClasspath, expand the original returned array and prepend extraClasspath result
+        // if getResources() should contain extraClasspath, expand the original returned array and prepend extraClasspath result
         try {
             ctClass.getDeclaredMethod("getResources", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertAfter(
                     "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, path);" +
                     "if (file != null) {" +
                             "org.apache.catalina.WebResource[] ret = new org.apache.catalina.WebResource[$_.length + 1];" +
-                            "ret[0] = new org.apache.catalina.webresources.FileResource(this, path, file, false);" +
+                            "ret[0] = new org.apache.catalina.webresources.FileResource(" + constrParams + ");" +
                             "java.lang.System.arraycopy($_, 0, ret, 1, $_.length);" +
                             "return ret;" +
                     "} else {return $_;}"
@@ -162,7 +182,7 @@ public class WebappLoaderTransformer {
     }
 
     /**
-     * Disable loader caches - Tomact 7x,8x.
+     * Disable loader caches - Tomcat 7x
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.core.StandardContext")
     public static void patchStandardContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException, ClassNotFoundException {
@@ -170,9 +190,8 @@ public class WebappLoaderTransformer {
             // force disable caching
             ctClass.getDeclaredMethod("isCachingAllowed").setBody("return false;");
         } catch (NotFoundException e) {
-            LOGGER.debug("org.apache.catalina.core.StandardContext does not contain isCachingAllowed() method (pre 7x version).");
+            LOGGER.debug("org.apache.catalina.core.StandardContext does not contain isCachingAllowed() method (not 7x version).");
         }
-
 
         // Tomcat version
         // this.getServletContext().getServerInfo()
@@ -180,18 +199,25 @@ public class WebappLoaderTransformer {
 
     /**
      * Brute force clear caches before any resource is loaded.
+     * WebappClassLoader - Tomcat 7x
+     * WebappClassLoaderBase - Tomcat 8x
      */
-    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.loader.WebappClassLoader")
+    @OnClassLoadEvent(classNameRegexp = "(org.apache.catalina.loader.WebappClassLoader)|(org.apache.catalina.loader.WebappClassLoaderBase)")
     public static void patchWebappClassLoader(ClassPool classPool,CtClass ctClass) throws CannotCompileException, NotFoundException {
-
-        // clear classloader cache
-        ctClass.getDeclaredMethod("getResource", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
-                "resourceEntries.clear();"
-        );
-
-        ctClass.getDeclaredMethod("getResourceAsStream", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
-                "resourceEntries.clear();"
-        );
+        if (!webappClassLoaderPatched) {
+            try {
+                // clear classloader cache
+                ctClass.getDeclaredMethod("getResource", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
+                        "resourceEntries.clear();"
+                );
+                ctClass.getDeclaredMethod("getResourceAsStream", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
+                        "resourceEntries.clear();"
+                );
+                webappClassLoaderPatched = true;
+            } catch (NotFoundException e) {
+                LOGGER.trace("WebappClassLoader does not contain getResource(), getResourceAsStream method.");
+            }
+        }
     }
 
 }

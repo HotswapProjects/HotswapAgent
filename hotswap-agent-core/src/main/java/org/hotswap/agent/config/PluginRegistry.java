@@ -91,6 +91,7 @@ public class PluginRegistry {
 
                 if (pluginAnnotation == null) {
                     LOGGER.error("Scanner discovered plugin class {} which does not contain @Plugin annotation.", pluginClass);
+                    continue;
                 }
                 String pluginName = pluginAnnotation.name();
 
@@ -238,7 +239,7 @@ public class PluginRegistry {
 
     // resolve class in this classloader - plugin class should be always only in the same classloader
     // as the plugin manager.
-    private Class<Object> getPluginClass(String pluginClass) {
+    protected Class<Object> getPluginClass(String pluginClass) {
         try {
             // noinspection unchecked
             return (Class<Object>) getClass().getClassLoader().loadClass(pluginClass);

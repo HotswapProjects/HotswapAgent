@@ -1,26 +1,30 @@
 package org.hotswap.agent.plugin.seam;
 
-import org.hotswap.agent.annotation.*;
-import org.hotswap.agent.command.Command;
-import org.hotswap.agent.command.ReflectionCommand;
-import org.hotswap.agent.command.Scheduler;
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.PluginManagerInvoker;
-
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.command.Command;
+import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.PluginManagerInvoker;
+
 @Plugin(name = "Seam",
-        description = "Seam framework maintains message and bean retrospection cache.",
+        description = "Seam framework (http://seamframework.org/). Clears java.beans.Introspector cache and org.jboss.el.util.ReferenceCache on any class redefinition.",
         testedVersions = {"2.3.1"},
         expectedVersions = {"2.2", "2.3"})
 public class SeamPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SeamPlugin.class);
-
-    ReflectionCommand flushBeanIntrospectors = new ReflectionCommand(this, "java.beans.Introspector", "flushCaches");
 
     @Init
     Scheduler scheduler;
@@ -33,13 +37,12 @@ public class SeamPlugin {
     @OnClassLoadEvent(classNameRegexp = "org.jboss.seam.init.Initialization")
     public static void seamServletCallInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("init");
-        init.insertBefore(PluginManagerInvoker.buildInitializePlugin(SeamPlugin.class));
+        init.insertBefore(
+                "{" +
+                    PluginManagerInvoker.buildInitializePlugin(SeamPlugin.class) +
+                "}"
+        );
         LOGGER.debug("org.jboss.seam.init.Initialization enhanced with plugin initialization.");
-    }
-
-    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void flushBeanIntrospectorsCaches() throws Exception {
-        scheduler.scheduleCommand(flushBeanIntrospectors);
     }
 
     public void registerJbossReferenceCache(Object referenceCache) {

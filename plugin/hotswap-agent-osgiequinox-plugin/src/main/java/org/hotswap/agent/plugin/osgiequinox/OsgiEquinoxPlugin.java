@@ -48,9 +48,6 @@ public class OsgiEquinoxPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(OsgiEquinoxPlugin.class);
 
     @Init
-    ClassLoader appClassLoader;
-
-    @Init
     Scheduler scheduler;
 
     @Init
@@ -74,7 +71,7 @@ public class OsgiEquinoxPlugin {
 
     private String extraClasspath;
 
-	private boolean isDebugMode;
+    private boolean isDebugMode;
 
     @OnClassLoadEvent(classNameRegexp = "org.eclipse.osgi.launch.Equinox")
     public static void patchEquinox(CtClass ctClass) throws CannotCompileException {
@@ -88,8 +85,8 @@ public class OsgiEquinoxPlugin {
     }
 
     public void initOsgiEquinox() {
-    	if (hotswapCommand != null)
-    		return;
+        if (hotswapCommand != null)
+            return;
 
         LOGGER.debug("Init OsgiEquinoxPlugin.");
 
@@ -128,9 +125,9 @@ public class OsgiEquinoxPlugin {
                         }
                     };
                 }
-        	}
+            }
 
-    	}
+        }
 
     }
 
@@ -150,25 +147,25 @@ public class OsgiEquinoxPlugin {
 
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(CtClass ctClass, Class original) {
+    public void classReload(CtClass ctClass) {
 
-    	// Hotswap is realized by event listener in the RUNTIME mode
-    	if (!isDebugMode)
-    		return;
+        // Hotswap is realized by event listener in the RUNTIME mode
+        if (!isDebugMode)
+            return;
 
-    	try {
+        try {
             URL url = ctClass.getURL();
             // Write content of class to extraClasspath, so classLoader.loadClass can load actual class
             ctClass.writeFile(extraClasspath);
             loadClassToTargetClassLoaders(ctClass, url.toURI(), false);
-		} catch (Exception e) {
+        } catch (Exception e) {
             LOGGER.warning("classReload() exception : {}",  e.getMessage());
-		}
+        }
     }
 
-	private void scheduleHotswapCommand() {
+    private void scheduleHotswapCommand() {
         scheduler.scheduleCommand(hotswapCommand, 100, Scheduler.DuplicateSheduleBehaviour.SKIP);
-	}
+    }
 
     private boolean loadClassToTargetClassLoaders(CtClass ctClass, URI uri, boolean putToReloadMap) {
         List<ClassLoader> targetClassLoaders = getTargetLoaders(ctClass);
@@ -187,12 +184,11 @@ public class OsgiEquinoxPlugin {
             byte[] bytecode = ctClass.toBytecode();
 
             for (int i=0; i < targetClassLoaders.size(); i++) {
-            	classLoader = targetClassLoaders.get(i);
+                classLoader = targetClassLoaders.get(i);
 
                 Class clazz  = classLoader.loadClass(ctClass.getName());
 
-                if (putToReloadMap)
-                {
+                if (putToReloadMap) {
                     synchronized (reloadMap) {
                         reloadMap.put(clazz, bytecode);
                     }
@@ -217,7 +213,7 @@ public class OsgiEquinoxPlugin {
             for (ClassLoader classLoader: registeredEquinoxClassLoaders) {
                 if (ClassLoaderHelper.isClassLoaded(classLoader, ctClass.getName())) {
                     if (ret == null)
-                        ret = new ArrayList<>();
+                        ret = new ArrayList<ClassLoader>();
                     ret.add(classLoader);
                 }
             }
@@ -273,7 +269,7 @@ public class OsgiEquinoxPlugin {
             }
 
             if (doHotswap)
-            	equinoxPlugin.scheduleHotswapCommand();
+                equinoxPlugin.scheduleHotswapCommand();
         }
 
     }

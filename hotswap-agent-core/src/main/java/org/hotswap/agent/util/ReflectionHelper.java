@@ -1,13 +1,11 @@
 package org.hotswap.agent.util;
 
-import org.hotswap.agent.logging.AgentLogger;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.WeakHashMap;
+
+import org.hotswap.agent.logging.AgentLogger;
 
 /**
  * Convenience methods on java reflection API.

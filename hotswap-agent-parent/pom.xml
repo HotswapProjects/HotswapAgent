@@ -5,7 +5,7 @@
     <groupId>org.hotswap.agent</groupId>
     <artifactId>hotswap-agent-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.2</version>
+    <version>0.3.0-SNAPSHOT</version>
     <issueManagement>
         <system>git</system>
         <url>https://github.com/HotswapProjects/HotswapAgent/issues</url>
@@ -101,7 +101,14 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswap.agent:hotswap-agent-core:jar}</argLine>
+	                <useSystemClassLoader>true</useSystemClassLoader>
+	                <useManifestOnlyJar>false</useManifestOnlyJar>
+	                <!--
+	                <useSystemClassLoader>true</useSystemClassLoader>
+	                <useManifestOnlyJar>false</useManifestOnlyJar>
+                    <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswap.agent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswap.agent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
+                     -->
+	                <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswap.agent:hotswap-agent-core:jar}</argLine>
                 </configuration>
             </plugin>
         </plugins>

@@ -41,10 +41,6 @@ public class PluginManager {
     private PluginManager() {
         hotswapTransformer = new HotswapTransformer();
         pluginRegistry = new PluginRegistry(this, classLoaderPatcher);
-
-        // create default configuration from this classloader
-        ClassLoader classLoader = getClass().getClassLoader();
-        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
     }
 
     // the instrumentation API
@@ -79,6 +75,18 @@ public class PluginManager {
         return pluginRegistry.getPlugin(clazz, classLoader);
     }
 
+    /**
+     * Check if plugin is initialized in classLoader.
+     *
+     * @param pluginClass type of the plugin
+     * @param classLoader classloader of the plugin
+     * @param checkParent for parent classloaders as well?
+     * @return true/false
+     */
+    public boolean isPluginInitialized(String pluginClassName, ClassLoader classLoader) {
+        Class<Object> pluginClass = pluginRegistry.getPluginClass(pluginClassName);
+        return pluginClass != null && pluginRegistry.hasPlugin(pluginClass, classLoader, false);
+    }
 
     /**
      * Initialize the singleton plugin manager.
@@ -93,6 +101,11 @@ public class PluginManager {
      */
     public void init(Instrumentation instrumentation) {
         this.instrumentation = instrumentation;
+
+        // create default configuration from this classloader
+        ClassLoader classLoader = getClass().getClassLoader();
+        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
+
         if (watcher == null) {
             try {
                 watcher = new WatcherFactory().getWatcher();
@@ -135,7 +148,9 @@ public class PluginManager {
             return;
 
         // parent of current classloader (system/bootstrap)
-        if (classLoader.equals(getClass().getClassLoader().getParent()))
+        if (getClass().getClassLoader() != null &&
+            classLoader != null &&
+            classLoader.equals(getClass().getClassLoader().getParent()))
             return;
 
         // synchronize ClassLoader patching - multiple classloaders may be patched at the same time
@@ -145,7 +160,7 @@ public class PluginManager {
                 return;
 
             // transformation
-            if (classLoaderPatcher.isPatchAvailable(classLoader)) {
+            if (classLoader != null && classLoaderPatcher.isPatchAvailable(classLoader)) {
                 classLoaderPatcher.patch(getClass().getClassLoader(), PLUGIN_PACKAGE.replace(".", "/"),
                         classLoader, protectionDomain);
             }
@@ -258,5 +273,12 @@ public class PluginManager {
             }
             reloadMap.clear();
         }
+    }
+
+    /**
+     * @return the instrumentation
+     */
+    public Instrumentation getInstrumentation() {
+        return instrumentation;
     }
 }
