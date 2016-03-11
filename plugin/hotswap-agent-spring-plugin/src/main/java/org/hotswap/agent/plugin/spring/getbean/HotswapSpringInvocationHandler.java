@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.getbean;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
@@ -35,11 +36,19 @@ public class HotswapSpringInvocationHandler extends DetachableBeanHolder impleme
 						.equals("org.springframework.core.InfrastructureProxy")) {
 			for (Class<?> beanInterface : getBean().getClass().getInterfaces()) {
 				if (beanInterface.getName().equals("org.springframework.core.InfrastructureProxy")) {
-					return method.invoke(getBean(), args);
+					return doInvoke(method, args);
 				}
 			}
 			return getBean();
 		}
-		return method.invoke(getBean(), args);
+		return doInvoke(method, args);
+	}
+
+	private Object doInvoke(Method method, Object[] args) throws Throwable {
+		try {
+			return method.invoke(getBean(), args);
+		} catch (InvocationTargetException e) {
+			throw e.getCause();
+		}
 	}
 }
