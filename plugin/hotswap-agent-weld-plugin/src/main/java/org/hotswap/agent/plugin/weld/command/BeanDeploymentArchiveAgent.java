@@ -1,6 +1,5 @@
 package org.hotswap.agent.plugin.weld.command;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -16,6 +15,7 @@ import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.weld.ArchivePathHelper;
 import org.hotswap.agent.plugin.weld.ProxyClassSignatureHelper;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -59,26 +59,28 @@ public class BeanDeploymentArchiveAgent {
     boolean registered = false;
 
     /**
-     * Register bean archive with appropriate bean archive path.
+     * Register bean archive into BdaAgentRegistry and into WeldPlugin
      *
-     * @param beanArchive
-     * @param archivePath
+     * @param classLoader the class loader
+     * @param beanArchive the bean archive to be registered
+     * @param bdaIdPath - bdaId or archive path (WildFly)
      */
-    @SuppressWarnings("unused")
-    public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String archivePath) {
+    public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String bdaIdPath) {
         BeanDeploymentArchiveAgent bdaAgent = null;
         try {
-            // check that it is regular file
-            // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
-            File path = new File(archivePath);
-            boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                    "contains", new Class[] {String.class}, archivePath);
-            if (!contain) {
-                bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
-                ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                    "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
+            String normalizedArchivePath = ArchivePathHelper.getNormalizedArchivePath(classLoader, bdaIdPath);
+            if (normalizedArchivePath == null) {
+                LOGGER.warning("Unable to resolve archive {}'", bdaIdPath);
+            } else {
+                boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+                        "contains", new Class[] {String.class}, normalizedArchivePath);
+                if (!contain) {
+                    bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, normalizedArchivePath);
+                    ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+                        "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, normalizedArchivePath, bdaAgent);
+                }
+                bdaAgent.register();
             }
-            bdaAgent.register();
         } catch (IllegalArgumentException e) {
             LOGGER.warning("Unable to watch BeanDeploymentArchive with id={}", beanArchive.getId());
         }

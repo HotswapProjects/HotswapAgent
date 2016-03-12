@@ -15,7 +15,6 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
 import org.hotswap.agent.plugin.weld.command.BeanClassRefreshCommand;
@@ -33,7 +32,7 @@ import org.hotswap.agent.watch.Watcher;
  */
 @Plugin(name = "Weld",
         description = "Weld framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"2.2.6"},
+        testedVersions = {"2.2.6, 2.2.16"},
         expectedVersions = {"All between 2.0 - 2.2"},
         supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class})
 public class WeldPlugin {
@@ -82,20 +81,20 @@ public class WeldPlugin {
     }
 
     /**
-     * Register BeanDeploymentArchive by bdaId to watcher. In case of new class the class file is not known
+     * Register BeanDeploymentArchive's normalizedArchivePath to watcher. In case of new class the class file is not known
      * to JVM hence no hotswap is called and therefore it must be handled by watcher.
      *
      * @param bdaId the BeanDeploymentArchive ID
      */
-    public synchronized void registerBeanDeplArchivePath(final String archivePath) {
-        LOGGER.info("Registering archive path {}", archivePath);
+    public synchronized void registerBeanDeplArchivePath(final String normalizedArchivePath) {
+        LOGGER.info("Registering archive path {}", normalizedArchivePath);
 
         URL resource = null;
         try {
-            resource = resourceNameToURL(archivePath);
+            resource = resourceNameToURL(normalizedArchivePath);
             URI uri = resource.toURI();
             if (!IOUtils.isFileURL(uri.toURL())) {
-                LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
+                LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", normalizedArchivePath);
                 return;
             } else {
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
@@ -114,9 +113,9 @@ public class WeldPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                if (isBdaRegistered(appClassLoader, archivePath)) {
+                                if (isBdaRegistered(appClassLoader, normalizedArchivePath)) {
                                     // TODO : Create proxy factory
-                                    scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
+                                    scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, normalizedArchivePath, event), WAIT_ON_CREATE);
                                 }
                             }
                         }
@@ -127,19 +126,6 @@ public class WeldPlugin {
             LOGGER.error("Unable to watch path '{}' for changes.", e, resource);
         } catch (Exception e) {
             LOGGER.warning("registerBeanDeplArchivePath() exception : {}",  e.getMessage());
-        }
-    }
-
-    private URL resourceNameToURL(String resource) throws Exception {
-        try {
-            // Try to format as a URL?
-            return new URL(resource);
-        } catch (MalformedURLException e) {
-            // try to locate a file
-            if (resource.startsWith("./"))
-                resource = resource.substring(2);
-            File file = new File(resource).getCanonicalFile();
-            return file.toURI().toURL();
         }
     }
 
@@ -173,7 +159,7 @@ public class WeldPlugin {
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
         if (!isSyntheticCdiClass(ctClass.getName()) && original != null) {
             try {
-                String archivePath = getArchivePath(ctClass);
+                String archivePath = ArchivePathHelper.getArchivePath(ctClass);
                 if (isBdaRegistered(classLoader, archivePath)) {
                     String oldSignature = ProxyClassSignatureHelper.getJavaClassSignature(original);
                     scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath,
@@ -185,14 +171,6 @@ public class WeldPlugin {
         }
     }
 
-    private String getArchivePath(CtClass ctClass) throws NotFoundException {
-        String classFilePath = ctClass.getURL().getPath();
-        String className = ctClass.getName().replace(".", "/");
-        // archive path ends with '/' therefore we set end position before the '/' (-1)
-        String archivePath = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
-        return (new File(archivePath)).toPath().toString();
-    }
-
     // Return true if class is CDI synthetic class.
     // Weld proxies contains $Proxy$ and $$$
     // DeltaSpike's proxies contains "$$"
@@ -200,4 +178,16 @@ public class WeldPlugin {
         return className.contains("$Proxy$") || className.contains("$$");
     }
 
+    public URL resourceNameToURL(String resource) throws Exception {
+        try {
+            // Try to format as a URL?
+            return new URL(resource);
+        } catch (MalformedURLException e) {
+            // try to locate a file
+            if (resource.startsWith("./"))
+                resource = resource.substring(2);
+            File file = new File(resource).getCanonicalFile();
+            return file.toURI().toURL();
+        }
+    }
 }
