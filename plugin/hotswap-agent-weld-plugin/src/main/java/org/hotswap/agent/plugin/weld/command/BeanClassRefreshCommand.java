@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.weld.command;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,23 +46,28 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         this.classSignature = classSignature;
     }
 
-    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, WatchFileEvent event) {
+    public BeanClassRefreshCommand(ClassLoader classLoader, String normalizedArchivePath, WatchFileEvent event) {
         this.classLoader = classLoader;
-        this.archivePath = archivePath;
+        this.archivePath = normalizedArchivePath;
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
-        String classFullPath = Paths.get(event.getURI()).toString();
-        int index = classFullPath.indexOf(archivePath);
-        if (index == 0) {
-            String classPath = classFullPath.substring(archivePath.length());
-            classPath = classPath.substring(0, classPath.indexOf(".class"));
-            if (classPath.startsWith(File.separator)) {
-                classPath = classPath.substring(1);
+        try {
+            String classFullPath = event.getURI().toURL().getFile();
+            int index = classFullPath.indexOf(normalizedArchivePath);
+            if (index == 0) {
+                String classPath = classFullPath.substring(normalizedArchivePath.length());
+                classPath = classPath.substring(0, classPath.indexOf(".class"));
+                if (classPath.startsWith("/")) {
+                    classPath = classPath.substring(1);
+                }
+                this.className = classPath.replace("/", ".");
+            } else {
+                LOGGER.error("Archive path '{}' doesn't match with classFullPath '{}'", normalizedArchivePath, classFullPath);
             }
-            this.className = classPath.replace(File.separator, ".");
-        } else {
-            LOGGER.error("Archive path '{}' doesn't match with classFullPath '{}'", archivePath, classFullPath);
+        } catch (MalformedURLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
 

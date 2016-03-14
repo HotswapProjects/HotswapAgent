@@ -2,25 +2,22 @@ package org.hotswap.agent.plugin.weld;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.IOUtils;
 
 public class ArchivePathHelper {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ArchivePathHelper.class);
 
-    public static String getArchivePath(CtClass ctClass) throws NotFoundException {
-        String classFilePath = ctClass.getURL().getPath();
+    public static String getNormalizedArchivePath(CtClass ctClass) throws NotFoundException {
+        String classFilePath = ctClass.getURL().getFile();
         String className = ctClass.getName().replace(".", "/");
         // archive path ends with '/' therefore we set end position before the '/' (-1)
-        String archivePath = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
-        return (new File(archivePath)).toPath().toString();
+        return classFilePath.substring(0, classFilePath.indexOf(className) - 1);
     }
 
     /**
@@ -31,33 +28,28 @@ public class ArchivePathHelper {
      * @return the normalized archive path
      */
     public static String getNormalizedArchivePath(ClassLoader classLoader, String archiveId) {
-        String result = null;
         URL archiveURL = archivePathToURL(classLoader, archiveId);
         if (archiveURL != null) {
-            URI archiveURI;
             try {
-                archiveURI = archiveURL.toURI();
-                if (IOUtils.isFileURL(archiveURI.toURL())) {
-                    result = archiveURL.getFile();
-                    // Strip trailing "/" from normalized archive path
-                    while (result.endsWith("/")) {
-                        result = result.substring(0, result.length() -1);
-                    }
+                String result = archiveURL.getFile();
+                // Strip trailing "/" from normalized archive path
+                while (result.endsWith("/")) {
+                    result = result.substring(0, result.length() -1);
                 }
+                return result;
             } catch (Exception e) {
                 LOGGER.error("getNormalizedArchivePath() exception {}.", e.getMessage());
             }
         }
-        return result;
+        return null;
     }
 
     private static URL archivePathToURL(ClassLoader classLoader, String archiveId) {
         URL result = archiveFilePathToURL(archiveId);
         if (result == null) {
-            String archivePath = archiveId;
             // File doesn't exists, try to resolve it using appClassLoader
             if (classLoader instanceof URLClassLoader) {
-                result = archivePathToURLViaURLClassLoader((URLClassLoader) classLoader, archivePath);
+                result = archivePathToURLViaURLClassLoader((URLClassLoader) classLoader, archiveId);
             }
         }
         return result;
@@ -68,7 +60,7 @@ public class ArchivePathHelper {
         if (urls != null) {
             for (URL url: urls) {
                 String fileName = url.getFile();
-                String checkedArchivePath = fileName.endsWith("/") && !archivePath.endsWith("/") ? archivePath + "/" : archivePath;
+                String checkedArchivePath = (fileName.endsWith("/") && !archivePath.endsWith("/")) ? (archivePath + "/") : archivePath;
                 if (fileName.endsWith(checkedArchivePath)) {
                     return archiveFilePathToURL(fileName);
                 }

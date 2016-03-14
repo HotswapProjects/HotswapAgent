@@ -159,7 +159,7 @@ public class WeldPlugin {
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
         if (!isSyntheticCdiClass(ctClass.getName()) && original != null) {
             try {
-                String archivePath = ArchivePathHelper.getArchivePath(ctClass);
+                String archivePath = ArchivePathHelper.getNormalizedArchivePath(ctClass);
                 if (isBdaRegistered(classLoader, archivePath)) {
                     String oldSignature = ProxyClassSignatureHelper.getJavaClassSignature(original);
                     scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath,
