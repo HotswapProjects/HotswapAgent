@@ -148,7 +148,7 @@ public class AnonymousClassPatchPlugin {
      * Define new synthetic classes for not compatible changes.
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public static byte[] patchMainClass(String className, ClassPool classPool,
+    public static byte[] patchMainClass(String className, ClassPool classPool, CtClass ctClass,
                                         ClassLoader classLoader, ProtectionDomain protectionDomain) throws IOException, CannotCompileException, NotFoundException {
         String javaClassName = className.replaceAll("/", ".");
 
@@ -188,7 +188,9 @@ public class AnonymousClassPatchPlugin {
         }
 
         // rename all class names according to the map
-        CtClass ctClass = classPool.get(javaClassName);
+
+        // TODO: it could be done via classPool but it doesn't work
+//        CtClass ctClass = classPool.get(javaClassName);
         ctClass.replaceClassName(replaceClassNameMap);
 
         LOGGER.reload("Class '{}' has been enhanced with anonymous classes for hotswap.", className);
