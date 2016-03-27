@@ -32,7 +32,7 @@ public class DeltaSpikePlugin {
 
     private static final String REPOSITORY_ANNOTATION = "org.apache.deltaspike.data.api.Repository";
 
-    private static final int WAIT_ON_REDEFINE = 100;
+    private static final int WAIT_ON_REDEFINE = 1000;
 
     @Init
     ClassLoader appClassLoader;
