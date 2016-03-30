@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.weld;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,6 +16,7 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
 import org.hotswap.agent.plugin.weld.command.BeanClassRefreshCommand;
@@ -32,8 +34,8 @@ import org.hotswap.agent.watch.Watcher;
  */
 @Plugin(name = "Weld",
         description = "Weld framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"2.2.6, 2.2.16"},
-        expectedVersions = {"All between 2.0 - 2.2"},
+        testedVersions = {"2.2.6, 2.2.16, 2.3.2"},
+        expectedVersions = {"All between 2.0 - 2.3"},
         supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class})
 public class WeldPlugin {
 
@@ -86,15 +88,15 @@ public class WeldPlugin {
      *
      * @param bdaId the BeanDeploymentArchive ID
      */
-    public synchronized void registerBeanDeplArchivePath(final String normalizedArchivePath) {
-        LOGGER.info("Registering archive path {}", normalizedArchivePath);
+    public synchronized void registerBeanDeplArchivePath(final String archivePath) {
+        LOGGER.info("Registering archive path {}", archivePath);
 
         URL resource = null;
         try {
-            resource = resourceNameToURL(normalizedArchivePath);
+            resource = resourceNameToURL(archivePath);
             URI uri = resource.toURI();
-            if (!IOUtils.isFileURL(uri.toURL())) {
-                LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", normalizedArchivePath);
+            if (!IOUtils.isDirectoryURL(uri.toURL())) {
+                LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
                 return;
             } else {
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
@@ -113,15 +115,16 @@ public class WeldPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                if (isBdaRegistered(appClassLoader, normalizedArchivePath)) {
+                                if (isBdaRegistered(appClassLoader, archivePath)) {
                                     // TODO : Create proxy factory
-                                    scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, normalizedArchivePath, event), WAIT_ON_CREATE);
+                                    scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
                                 }
                             }
                         }
                     }
                 });
             }
+            LOGGER.info("Registered  watch for path '{}' for changes.", resource);
         } catch (URISyntaxException e) {
             LOGGER.error("Unable to watch path '{}' for changes.", e, resource);
         } catch (Exception e) {
@@ -132,8 +135,7 @@ public class WeldPlugin {
     private static boolean isBdaRegistered(ClassLoader classLoader, String archivePath) {
         if (archivePath != null) {
             try {
-                return (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                        "contains", new Class[] {String.class}, archivePath);
+                return (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader), "contains", new Class[] {String.class}, archivePath);
             } catch (ClassNotFoundException e) {
                 LOGGER.error("isBdaRegistered() exception {}.", e.getMessage());
             }
@@ -156,26 +158,34 @@ public class WeldPlugin {
      * @param original
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(ClassLoader classLoader, CtClass ctClass, Class original) {
-        if (!isSyntheticCdiClass(ctClass.getName()) && original != null) {
+    public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
+        if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             try {
-                String archivePath = ArchivePathHelper.getNormalizedArchivePath(ctClass);
+                String archivePath = getArchivePath(classLoader, ctClass, original.getName());
+                LOGGER.info("Class {} redefined for archive {} ", original.getName(), archivePath);
                 if (isBdaRegistered(classLoader, archivePath)) {
                     String oldSignature = ProxyClassSignatureHelper.getJavaClassSignature(original);
                     scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath,
                             registeredProxiedBeans, original.getName(), oldSignature), WAIT_ON_REDEFINE);
                 }
             } catch (Exception e) {
-                LOGGER.error("classReload() exception {}.", e.getMessage());
+                LOGGER.error("classReload() exception {}.", e, e.getMessage());
             }
         }
     }
 
-    // Return true if class is CDI synthetic class.
-    // Weld proxies contains $Proxy$ and $$$
-    // DeltaSpike's proxies contains "$$"
-    private boolean isSyntheticCdiClass(String className) {
-        return className.contains("$Proxy$") || className.contains("$$");
+    private String getArchivePath(ClassLoader classLoader, CtClass ctClass, String knownClassName) throws NotFoundException {
+         try {
+             return (String) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader), "getArchiveByClassName", new Class[] {String.class}, knownClassName);
+         } catch (ClassNotFoundException e) {
+             LOGGER.error("getArchivePath() exception {}.", e.getMessage());
+         }
+
+        String classFilePath = ctClass.getURL().getPath();
+        String className = ctClass.getName().replace(".", "/");
+        // archive path ends with '/' therefore we set end position before the '/' (-1)
+        String archivePath = classFilePath.substring(0, classFilePath.indexOf(className) - 1);
+        return (new File(archivePath)).toPath().toString();
     }
 
     public URL resourceNameToURL(String resource) throws Exception {
@@ -190,4 +200,32 @@ public class WeldPlugin {
             return file.toURI().toURL();
         }
     }
+
+    // Return true if class is CDI synthetic class.
+    // Weld proxies contains $Proxy$ and $$$
+    // DeltaSpike's proxies contains "$$"
+    private boolean isSyntheticCdiClass(String className) {
+        return className.contains("$Proxy$") || className.contains("$$");
+    }
+
+    // Non static inner class is not allowed to be bean class
+    private boolean isInnerNonPublicStaticClass(CtClass ctClass) {
+        try {
+            CtClass declaringClass = ctClass.getDeclaringClass();
+            if (declaringClass != null) {
+                System.out.println("Declaring" + declaringClass.getName() + " " + ctClass.getModifiers());
+            }
+            if (declaringClass != null && (
+                    (ctClass.getModifiers() & Modifier.STATIC) == 0 ||
+                    (ctClass.getModifiers() & Modifier.PUBLIC) == 0)) {
+                System.out.println("Static" + ctClass.getName());
+                return true;
+            }
+        } catch (NotFoundException e) {
+            // swallow exception
+        }
+        System.out.println("Non Static " + ctClass.getName());
+        return false;
+    }
+
 }

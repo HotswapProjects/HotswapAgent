@@ -39,7 +39,7 @@ public class BeanDeploymentArchiveTransformer {
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
-        src.append("org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(getClass().getClassLoader(), this, this.getId());");
+        src.append("org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent.registerArchive(getClass().getClassLoader(), this, null);");
         src.append("}");
 
         CtConstructor declaredConstructor = clazz.getDeclaredConstructor(constructorParams);
@@ -49,6 +49,10 @@ public class BeanDeploymentArchiveTransformer {
     }
 
     /**
+     * Should be moved to a separate module just for wildfly. Note that cdi 1.1+
+     * can scan an archive and consider it as a cdi deployment even without a
+     * beans.xml (implicit)
+     *
      * Jboss BeanDeploymentArchiveImpl transformation.
      *
      * @param clazz
@@ -59,21 +63,12 @@ public class BeanDeploymentArchiveTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl")
     public static void transformJbossBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
-        src.append("if (beansXml!=null&& beanArchiveType!=null && \"EXPLICIT\".equals(beanArchiveType.toString())){");
-        src.append("  String beansXmlPath = beansXml.getUrl().getPath();");
-        src.append("  String archPath = null;");
-        src.append("  if(beansXmlPath.endsWith(\"META-INF/beans.xml\")) {");
-        src.append("    archPath = beansXmlPath.substring(0, beansXmlPath.length()-\"META-INF/beans.xml\".length()-1);"); /* -1 ~ eat "/" at the end of path */
-        src.append("  } else if (beansXmlPath.endsWith(\"WEB-INF/beans.xml\")) {");
-        src.append("    archPath = beansXmlPath.substring(0, beansXmlPath.length()-\"beans.xml\".length()) + \"classes\";");
-        src.append("  }");
-        src.append("  if(archPath != null) {");
+        src.append("if (beansXml!=null&& beanArchiveType!=null && (\"EXPLICIT\".equals(beanArchiveType.toString()) || \"IMPLICIT\".equals(beanArchiveType.toString()))){");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
         src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldPlugin.class, "initInJBossAS"));
         src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent\", true, module.getClassLoader());");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
-        src.append("    agM.invoke(null, new Object[] { module.getClassLoader(),this,archPath });");
-        src.append("  }");
+        src.append("    agM.invoke(null, new Object[] { module.getClassLoader(),this, beanArchiveType.toString()});");
         src.append("}}");
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {

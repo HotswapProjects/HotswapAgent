@@ -1,12 +1,15 @@
 package org.hotswap.agent.util;
 
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.logging.AgentLogger;
-
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.logging.AgentLogger;
 
 /**
  * IO utils (similar to apache commons).
@@ -98,6 +101,23 @@ public class IOUtils {
     public static boolean isFileURL(URL url) {
         String protocol = url.getProtocol();
         return (URL_PROTOCOL_FILE.equals(protocol) || protocol.startsWith(URL_PROTOCOL_VFS));
+    }
+
+    /**
+     * Determine whether the given URL points to a directory in the file system
+     *
+     * @param url the URL to check
+     * @return whether the URL has been identified as a file system URL
+     */
+    public static boolean isDirectoryURL(URL url) {
+        try {
+            File f = new File(url.toURI());
+            if(f.exists() && f.isDirectory()) {
+                return true;
+            }
+        } catch (Exception e) {
+        }
+        return false;
     }
 
     /**

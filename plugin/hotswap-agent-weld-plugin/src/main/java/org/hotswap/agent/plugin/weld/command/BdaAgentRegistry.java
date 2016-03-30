@@ -35,4 +35,18 @@ public class BdaAgentRegistry {
         return INSTANCES.values();
     }
 
+    /**
+     * Iterate over agents and find the one containing the class by name
+     *
+     * @param className
+     * @return
+     */
+    public static String getArchiveByClassName(String className){
+        for(BeanDeploymentArchiveAgent agent: INSTANCES.values()) {
+            if(agent.getDeploymentArchive().getBeanClasses().contains(className)) {
+                return agent.getArchivePath();
+            }
+        }
+        return null;
+    }
 }
