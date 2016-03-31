@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.weld.command;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -15,7 +16,6 @@ import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.weld.ArchivePathHelper;
 import org.hotswap.agent.plugin.weld.ProxyClassSignatureHelper;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -28,6 +28,7 @@ import org.jboss.weld.bean.ManagedBean;
 import org.jboss.weld.bean.attributes.BeanAttributesFactory;
 import org.jboss.weld.bean.builtin.BeanManagerProxy;
 import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
+import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.manager.BeanManagerImpl;
 import org.jboss.weld.metadata.TypeStore;
 import org.jboss.weld.resources.ClassTransformer;
@@ -65,20 +66,33 @@ public class BeanDeploymentArchiveAgent {
      * @param beanArchive the bean archive to be registered
      * @param bdaIdPath - bdaId or archive path (WildFly)
      */
-    public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String bdaIdPath) {
+    public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String beanArchiveType) {
+        BeansXml beansXml = beanArchive.getBeansXml();
+        String archivePath = null;
+
+        if (beansXml != null && (beanArchiveType == null || "EXPLICIT".equals(beanArchiveType) || "IMPLICIT".equals(beanArchiveType))) {
+            String beansXmlPath = beansXml.getUrl().getPath();
+            if (beansXmlPath.endsWith("META-INF/beans.xml")) {
+                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xm".length() - 1);/* -1 ~ eat "/" at the end of path */
+            } else if (beansXmlPath.endsWith("WEB-INF/beans.xml")) {
+                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "beans.xml".length()) + "classes";
+            }
+            if (archivePath.endsWith(".jar!/")) {
+                archivePath = archivePath.substring(0, beansXmlPath.length() - "!/".length());
+            }
+        }
+
         BeanDeploymentArchiveAgent bdaAgent = null;
         try {
-            String normalizedArchivePath = ArchivePathHelper.getNormalizedArchivePath(classLoader, bdaIdPath);
-            if (normalizedArchivePath == null) {
-                LOGGER.warning("Unable to resolve archive {}'", bdaIdPath);
-            } else {
-                boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                        "contains", new Class[] {String.class}, normalizedArchivePath);
-                if (!contain) {
-                    bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, normalizedArchivePath);
-                    ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                        "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, normalizedArchivePath, bdaAgent);
-                }
+            LOGGER.debug("BeanDeploymentArchiveAgent registerArchive bdaId='{}' archivePath='{}'.", beanArchive.getId(), archivePath);
+            // check that it is regular file
+            // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
+            File path = new File(archivePath);
+            boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader), "contains", new Class[] {String.class}, archivePath);
+            if (!contain) {
+                bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
+                ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+                    "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
                 bdaAgent.register();
             }
         } catch (IllegalArgumentException e) {
@@ -110,7 +124,7 @@ public class BeanDeploymentArchiveAgent {
      *
      * @return the bdaId
      */
-    public String getBdaId(){
+    public String getBdaId() {
         return deploymentArchive.getId();
     }
 
@@ -123,12 +137,16 @@ public class BeanDeploymentArchiveAgent {
         return archivePath;
     }
 
+    public BeanDeploymentArchive getDeploymentArchive() {
+        return deploymentArchive;
+    }
+
     private void register() {
         if (!registered) {
             registered = true;
             PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
-                    "registerBeanDeplArchivePath", new Class[]{String.class}, new Object[]{archivePath});
-            LOGGER.debug("BeanDeploymentArchiveAgent registered bdaId='{}' archivePath='{}'.", getBdaId(), archivePath);
+                    "registerBeanDeplArchivePath", new Class[] { String.class }, new Object[] { archivePath });
+            LOGGER.info("BeanDeploymentArchiveAgent registered bdaId='{}' archivePath='{}'.", getBdaId(), archivePath);
         }
     }
 
@@ -191,7 +209,8 @@ public class BeanDeploymentArchiveAgent {
                         if (bean instanceof ManagedBean) {
                             reloadManagedBean(beanManager, beanClass, (ManagedBean) bean);
                         } else {
-                           LOGGER.warning("reloadBean() : class '{}' reloading is not implemented.", bean.getClass().getName());
+                            LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
+                                    bean.getClass().getName(), bean.getBeanClass());
                         }
                     }
                     LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
@@ -205,10 +224,11 @@ public class BeanDeploymentArchiveAgent {
                             EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
                             defineManagedBean(beanManager, eat);
                             // define managed bean
-    //                        beanManager.cleanupAfterBoot();
+                            // beanManager.cleanupAfterBoot();
                             LOGGER.debug("Bean defined '{}'", beanClass.getName());
                         } else {
                             // TODO : define session bean
+                            LOGGER.warning("Bean NOT? defined '{}', session bean?", beanClass.getName());
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Bean definition failed", e);
@@ -290,15 +310,18 @@ public class BeanDeploymentArchiveAgent {
 
             for (Entry<Object, Object> entry : registeredBeans.entrySet()) {
                 Bean<?> bean = (Bean<?>) entry.getKey();
-                Set<Type> types = bean.getTypes();
-                if (types.contains(proxyClass)) {
-                    Thread.currentThread().setContextClassLoader(bean.getBeanClass().getClassLoader());
-                    if (proxyFactoryClass == null) {
-                        proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
+
+                if (bean != null) {
+                    Set<Type> types = bean.getTypes();
+                    if (types.contains(proxyClass)) {
+                        Thread.currentThread().setContextClassLoader(bean.getBeanClass().getClassLoader());
+                        if (proxyFactoryClass == null) {
+                            proxyFactoryClass = classLoader.loadClass("org.jboss.weld.bean.proxy.ProxyFactory");
+                        }
+                        Object proxyFactory = entry.getValue();
+                        LOGGER.info("Recreate proxyClass {} for bean class {}.", proxyClass.getName(), bean.getClass());
+                        ReflectionHelper.invoke(proxyFactory, proxyFactoryClass, "getProxyClass", new Class[] {});
                     }
-                    Object proxyFactory = entry.getValue();
-                    LOGGER.debug("Recreate proxyClass {} for bean class {}.", proxyClass.getName(), bean.getClass());
-                    ReflectionHelper.invoke(proxyFactory, proxyFactoryClass, "getProxyClass", new Class[] {});
                 }
             }
 
