@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="org.hotswap.agent.plugin.hibernate3.en.Stock2" table="stock2">
+        <id name="stockId" type="java.lang.Integer">
+            <column name="STOCK_ID" />
+            <generator class="identity" />
+        </id>
+        <property name="stockCode" type="java.lang.String">
+            <column name="STOCK_CODE" length="10" not-null="true" unique="true" />
+        </property>
+        <property name="stockName" type="java.lang.String">
+            <column name="STOCK_NAME" length="20" not-null="true" unique="true" />
+        </property>
+    </class>
+</hibernate-mapping>

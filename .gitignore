@@ -1,4 +1,8 @@
-target/
+#Eclipse
+**/.settings
+**/.project
+**/.classpath
+**/target
 
 #IntelliJ
 *.idea
