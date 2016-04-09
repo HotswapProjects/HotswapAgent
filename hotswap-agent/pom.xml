@@ -30,6 +30,12 @@
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-hibernate3-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
             <artifactId>hotswap-agent-spring-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
