@@ -32,6 +32,7 @@
         <module>plugin/hotswap-agent-weld-plugin</module>
         <module>plugin/hotswap-agent-jbossmodules-plugin</module>
         <module>plugin/hotswap-agent-resteasy-plugin</module>
+        <module>plugin/hotswap-agent-resteasy-registry-plugin</module>
         <module>plugin/hotswap-agent-gae-plugin</module>
         <module>plugin/hotswap-agent-deltaspike-plugin</module>
         <module>plugin/hotswap-agent-javabeans-plugin</module>
