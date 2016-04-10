@@ -1,0 +1,16 @@
+sudo: false
+language: java
+notifications:
+  email:
+    - lada.dvorak7@gmail.com
+    
+jdk:
+  - oraclejdk8
+
+env:
+
+  matrix:
+    - WELD_VERSION=2.2.13.Final
+   
+
+script: "mvn clean install -DskipTests"
