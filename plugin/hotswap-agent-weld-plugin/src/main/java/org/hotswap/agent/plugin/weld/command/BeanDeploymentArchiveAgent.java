@@ -78,7 +78,7 @@ public class BeanDeploymentArchiveAgent {
                 archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "beans.xml".length()) + "classes";
             }
             if (archivePath.endsWith(".jar!/")) {
-                archivePath = archivePath.substring(0, beansXmlPath.length() - "!/".length());
+                archivePath = archivePath.substring(0, archivePath.length() - "!/".length());
             }
         }
 
