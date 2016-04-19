@@ -1,5 +1,8 @@
 Hotswap Agent
 =============
+
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/HotswapProjects/user)
+
 Java unlimited runtime class and resource redefinition.
 
 The main purpose of this project is to avoid infamous change->restart + *wait*->check development lifecycle.
