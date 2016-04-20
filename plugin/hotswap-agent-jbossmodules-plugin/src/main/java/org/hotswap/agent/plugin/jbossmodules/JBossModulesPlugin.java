@@ -17,7 +17,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  */
 @Plugin(name = "JBossModules",
         description = "JBossModules - Jboss modular class loading implementation. ",
-        testedVersions = {"1.4.4"},
+        testedVersions = {"1.4.4, 1.5.1"},
         expectedVersions = {"1.x"},
         supportClass={ModuleClassLoaderTransformer.class}
 )

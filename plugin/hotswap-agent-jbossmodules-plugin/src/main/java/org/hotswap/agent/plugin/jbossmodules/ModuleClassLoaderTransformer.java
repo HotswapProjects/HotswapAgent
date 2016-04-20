@@ -76,28 +76,31 @@ public class ModuleClassLoaderTransformer {
             );
 
             CtMethod methRecalculate = ctClass.getDeclaredMethod("recalculate");
-            methRecalculate.setBody(
-                    "{" +
-                    "   final org.jboss.modules.Paths p = this.paths" + pathsGetter + ";" +
-                    "   boolean ret = setResourceLoaders(p, (org.jboss.modules.ResourceLoaderSpec[])p.getSourceList(NO_RESOURCE_LOADERS));" +
+            methRecalculate.setName("_recalculate");
+
+            ctClass.addMethod(CtNewMethod.make(
+                    "boolean recalculate() {" +
+                    "   boolean ret = _recalculate();" +
                     "   __setupPrepend();" +
                     "   return ret;" +
-                    "}"
-            );
+                    "}",
+                    ctClass
+            ));
+
 
             CtClass ctResLoadClass = classPool.get("org.jboss.modules.ResourceLoaderSpec[]");
 
             CtMethod methResourceLoaders = ctClass.getDeclaredMethod("setResourceLoaders", new CtClass[] { ctResLoadClass });
             methResourceLoaders.setBody(
                     "{" +
-                    "   boolean ret = setResourceLoaders(this.paths" + pathsGetter + ", $1);" +
+                    "   boolean ret = setResourceLoaders((org.jboss.modules.Paths)this.paths" + pathsGetter + ", $1);" +
                     "   __setupPrepend();" +
                     "   return ret;" +
                     "}"
             );
 
         } catch (NotFoundException e) {
-            LOGGER.warning("Unable to find field \"paths\" in org.jboss.modules.ModuleClassLoader.");
+            LOGGER.warning("Unable to find field \"paths\" in org.jboss.modules.ModuleClassLoader.", e);
         }
     }
 
@@ -133,7 +136,7 @@ public class ModuleClassLoaderTransformer {
                     "}", ctClass)
             );
         } catch (NotFoundException e) {
-            LOGGER.warning("Unable to find methos \"getAllPaths()\" in org.jboss.modules.Paths.");
+            LOGGER.warning("Unable to find method \"getAllPaths()\" in org.jboss.modules.Paths.", e);
         }
     }
 
