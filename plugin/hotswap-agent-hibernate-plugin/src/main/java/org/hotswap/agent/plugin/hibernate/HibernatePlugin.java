@@ -8,9 +8,13 @@ import java.util.WeakHashMap;
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.Manifest;
 import org.hotswap.agent.annotation.OnClassFileEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.Versions;
+import org.hotswap.agent.annotation.Maven;
+import org.hotswap.agent.annotation.Name;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
@@ -27,6 +31,19 @@ import org.hotswap.agent.util.AnnotationHelper;
         testedVersions = {"All between 4.0.1 - 4.2.13"},
         expectedVersions = {"4.0.x", "4.1.x", "4.2.x"},
         supportClass = {HibernateTransformers.class})
+@Versions(maven = {
+            @Maven(value = "[4.0,5.0)", artifactId = "hibernate-core", groupId = "org.hibernate"),
+            @Maven(value = "[4.0,5.0)", artifactId = "hibernate-entitymanager", groupId = "org.hibernate"),
+        },
+        manifest= {
+                @Manifest(value="[4.0,5.0)", names= {
+                        @Name(key=Name.BundleSymbolicName,value="org.hibernate.entitymanager")
+                }),
+                @Manifest(value="[4.0,5.0)", names= {
+                        @Name(key=Name.BundleSymbolicName,value="org.hibernate.core")
+                }),                
+        }
+        )
 public class HibernatePlugin {
     private static final String ENTITY_ANNOTATION = "javax.persistence.Entity";
     private static AgentLogger LOGGER = AgentLogger.getLogger(HibernatePlugin.class);

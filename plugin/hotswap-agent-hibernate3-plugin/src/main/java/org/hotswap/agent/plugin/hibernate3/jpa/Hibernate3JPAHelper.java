@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.hotswap.agent.plugin.hibernate3.jpa;
 
 import org.hibernate.Version;
@@ -19,18 +34,20 @@ import java.util.Set;
  * @author Jiri Bubnik
  */
 public class Hibernate3JPAHelper {
+	
+	/** The logger. */
 	private static AgentLogger LOGGER = AgentLogger.getLogger(Hibernate3JPAHelper.class);
 
+	/** The wrapped persistence unit names. */
 	// each persistence unit should be wrapped only once
 	static Set<String> wrappedPersistenceUnitNames = new HashSet<String>();
 
 	/**
-	 * @param info
-	 *            persistent unit definition
-	 * @param properties
-	 *            properties to create entity manager factory
-	 * @param original
-	 *            entity manager factory
+	 * Creates the container entity manager factory proxy.
+	 *
+	 * @param info            persistent unit definition
+	 * @param properties            properties to create entity manager factory
+	 * @param original            entity manager factory
 	 * @return proxy of entity manager
 	 */
 	public static EntityManagerFactory createContainerEntityManagerFactoryProxy(PersistenceUnitInfo info,
@@ -52,12 +69,11 @@ public class Hibernate3JPAHelper {
 	}
 
 	/**
-	 * @param persistenceUnitName
-	 *            persistent unit name
-	 * @param properties
-	 *            properties to create entity manager factory
-	 * @param original
-	 *            entity manager factory
+	 * Creates the entity manager factory proxy.
+	 *
+	 * @param persistenceUnitName            persistent unit name
+	 * @param properties            properties to create entity manager factory
+	 * @param original            entity manager factory
 	 * @return proxy of entity manager
 	 */
 	public static EntityManagerFactory createEntityManagerFactoryProxy(String persistenceUnitName, Map<?,?> properties,
@@ -77,6 +93,11 @@ public class Hibernate3JPAHelper {
 		return proxy;
 	}
 
+	/**
+	 * Inits the plugin.
+	 *
+	 * @param original the original
+	 */
 	// call initializePlugin and setup version and EJB flag
 	private static void initPlugin(EntityManagerFactory original) {
 		ClassLoader appClassLoader = original.getClass().getClassLoader();

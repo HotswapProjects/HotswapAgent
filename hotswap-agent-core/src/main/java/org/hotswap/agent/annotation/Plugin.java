@@ -41,5 +41,5 @@ public @interface Plugin {
      * Split plugin definition into multiple class files. Annotations @OnClassLoadEvent and @OnResourceFileEvent will be scanned on
      * supporting class in addition to pluginClass itself.
      */
-    Class[] supportClass() default {};
+    Class<?>[] supportClass() default {};
 }

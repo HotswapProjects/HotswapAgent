@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.hotswap.agent.plugin.hibernate3.jpa;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -13,6 +28,8 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * Static transformers for Hibernate plugin.
  */
 public class Hibernate3JPATransformers {
+    
+    /** The logger. */
     private static AgentLogger LOGGER = AgentLogger.getLogger(Hibernate3JPATransformers.class);
 
     /**
@@ -23,6 +40,9 @@ public class Hibernate3JPATransformers {
      * Two variants covered - createContainerEntityManagerFactory and createEntityManagerFactory.
      * <p/>
      * After the entity manager factory and it's proxy are instantiated, plugin init method is invoked.
+     *
+     * @param clazz the clazz
+     * @throws Exception the exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.ejb.HibernatePersistence")
     public static void proxyHibernatePersistence(CtClass clazz) throws Exception {
@@ -49,6 +69,12 @@ public class Hibernate3JPATransformers {
         clazz.addMethod(newMethod);
     }
 
+    /**
+     * Bean meta data manager register variable.
+     *
+     * @param ctClass the ct class
+     * @throws CannotCompileException the cannot compile exception
+     */
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.BeanMetaDataManager")
     public static void beanMetaDataManagerRegisterVariable(CtClass ctClass) throws CannotCompileException {
         StringBuilder src = new StringBuilder("{");
@@ -67,6 +93,12 @@ public class Hibernate3JPATransformers {
         LOGGER.debug("org.hibernate.validator.internal.metadata.BeanMetaDataManager - added method __resetCache().");
     }
 
+    /**
+     * Annotation meta data provider register variable.
+     *
+     * @param ctClass the ct class
+     * @throws CannotCompileException the cannot compile exception
+     */
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider")
     public static void annotationMetaDataProviderRegisterVariable(CtClass ctClass) throws CannotCompileException {
         StringBuilder src = new StringBuilder("{");

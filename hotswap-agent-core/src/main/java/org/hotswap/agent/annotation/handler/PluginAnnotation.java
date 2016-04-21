@@ -3,6 +3,13 @@ package org.hotswap.agent.annotation.handler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.versions.DeploymentInfo;
+import org.hotswap.agent.versions.VersionMatchResult;
+import org.hotswap.agent.versions.matcher.MethodMatcher;
+import org.hotswap.agent.versions.matcher.PluginMatcher;
 
 /**
  * DTO for resolved plugin annotation properties.
@@ -12,8 +19,10 @@ import java.lang.reflect.Method;
  * @author Jiri Bubnik
  */
 public class PluginAnnotation<T extends Annotation> {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(PluginAnnotation.class);
+
     // the main plugin class
-    Class pluginClass;
+    Class<?> pluginClass;
 
     // target plugin object
     Object plugin;
@@ -27,24 +36,40 @@ public class PluginAnnotation<T extends Annotation> {
     // annotation is on a method (and field property is empty)
     Method method;
 
-    public PluginAnnotation(Class pluginClass, Object plugin, T annotation, Method method) {
+    // plugin matcher
+    final PluginMatcher pluginMatcher;
+    
+    // Method matcher
+    final MethodMatcher methodMatcher;
+    
+    public PluginAnnotation(Class<?> pluginClass, Object plugin, T annotation, Method method) {
         this.pluginClass = pluginClass;
         this.plugin = plugin;
         this.annotation = annotation;
         this.method = method;
+        
+        if(method != null && (Modifier.isStatic(method.getModifiers()))) {
+            this.pluginMatcher = new PluginMatcher(pluginClass);
+            this.methodMatcher= new MethodMatcher(method);
+        } else {
+            this.pluginMatcher = null;
+            this.methodMatcher = null;
+        }        
     }
 
-    public PluginAnnotation(Class pluginClass, Object plugin, T annotation, Field field) {
+    public PluginAnnotation(Class<?> pluginClass, Object plugin, T annotation, Field field) {
         this.pluginClass = pluginClass;
         this.plugin = plugin;
         this.annotation = annotation;
         this.field = field;
+        this.pluginMatcher = null;
+        this.methodMatcher = null;         
     }
 
     /**
      * Return plugin class (the plugin to which this annotation belongs - not necessarily declaring class.
      */
-    public Class getPluginClass() {
+    public Class<?> getPluginClass() {
         return pluginClass;
     }
 
@@ -63,13 +88,50 @@ public class PluginAnnotation<T extends Annotation> {
     public Field getField() {
         return field;
     }
-
+    
+    public boolean shouldCheckVersion() {
+        return //
+        (this.plugin == null)//
+                && //
+                (//
+                (pluginMatcher != null && pluginMatcher.isApply()) //
+                        || //
+                        (methodMatcher != null && methodMatcher.isApply())//
+        );//
+    }
+ 
+    /**
+     * Matches.
+     *
+     * @param deploymentInfo the deployment info
+     * @return true, if successful
+     */
+    public boolean matches(DeploymentInfo deploymentInfo){
+        if(deploymentInfo == null || (pluginMatcher == null && methodMatcher == null)) {
+            LOGGER.debug("No matchers, apply");
+            return true;
+        }
+        
+        if(pluginMatcher != null && pluginMatcher.isApply()) {
+            if(VersionMatchResult.REJECTED.equals(pluginMatcher.matches(deploymentInfo))){
+                LOGGER.debug("Plugin matcher rejected");
+                return false;
+            }
+        }
+        if(methodMatcher != null && methodMatcher.isApply()) {
+            if(VersionMatchResult.REJECTED.equals(methodMatcher.matches(deploymentInfo))){
+                LOGGER.debug("Method matcher rejected");
+                return false;
+            }
+        }
+        return true;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        PluginAnnotation that = (PluginAnnotation) o;
+        PluginAnnotation<?> that = (PluginAnnotation<?>) o;
 
         if (!annotation.equals(that.annotation)) return false;
         if (field != null ? !field.equals(that.field) : that.field != null) return false;

@@ -7,6 +7,7 @@ import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AppClassLoaderExecutor;
 import org.hotswap.agent.util.HotswapTransformer;
+import org.hotswap.agent.versions.DeploymentInfo;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -73,6 +74,13 @@ public class OnClassLoadedHandler implements PluginHandler<OnClassLoadEvent> {
                     return classfileBuffer;
                 }
 
+                if(pluginAnnotation.shouldCheckVersion()) {
+                    DeploymentInfo info = DeploymentInfo.fromClassLoader(loader);
+                    if(!pluginAnnotation.matches(info)) {
+                        LOGGER.debug("SKIPPING METHOD: {}, Deployment info: {}\n did not match with {}\n or {}", pluginAnnotation.method, info, pluginAnnotation.methodMatcher, pluginAnnotation.pluginMatcher);
+                        return classfileBuffer;
+                    }
+                }
                 return OnClassLoadedHandler.this.transform(pluginAnnotation, loader, className,
                         classBeingRedefined, protectionDomain, classfileBuffer);
             }
