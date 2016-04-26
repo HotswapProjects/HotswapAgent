@@ -42,6 +42,8 @@ import org.hotswap.agent.util.ReflectionHelper;
             @Maven(value = "[2.0,)", artifactId = "juel", groupId = "de.odysseus.juel")
         },
         manifest = {
+            // Seam jboss
+            @Manifest(value="[1.0)", versionName="JBoss-EL-Version", names ={@Name(key="JBoss-EL-Version", value=".*")}),
             // Tomcat bundled EL (6-9)
             @Manifest(value="[2.0,)", names={
                     @Name(key=Name.ImplementationTitle,value="javax.el"), 
