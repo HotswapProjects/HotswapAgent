@@ -35,6 +35,7 @@ import org.hotswap.agent.util.ReflectionHelper;
         testedVersions = {"2.2"},
         expectedVersions = {"2.2"})
 @Versions(
+        fallback = true,
         maven = {
             //Jboss el 2
             @Maven(value = "[1.0,)", artifactId = "jboss-el-api_2.2_spec", groupId = "org.jboss.spec.javax.el"),

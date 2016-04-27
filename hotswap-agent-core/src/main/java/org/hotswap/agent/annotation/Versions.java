@@ -39,6 +39,11 @@ import java.lang.annotation.Target;
 public @interface Versions {
 
     /**
+     * If no other plugin matches and fallback is set to true, then use this plugin
+     * @return
+     */
+    boolean fallback() default false;
+    /**
      * A list of maven coordinates to be matched.
      *
      * @return the maven[]

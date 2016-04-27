@@ -31,7 +31,9 @@ import org.hotswap.agent.util.AnnotationHelper;
         testedVersions = {"All between 4.0.1 - 4.2.13"},
         expectedVersions = {"4.0.x", "4.1.x", "4.2.x"},
         supportClass = {HibernateTransformers.class})
-@Versions(maven = {
+@Versions(
+        fallback = true,
+        maven = {
             @Maven(value = "[4.0,5.0)", artifactId = "hibernate-core", groupId = "org.hibernate"),
             @Maven(value = "[4.0,5.0)", artifactId = "hibernate-entitymanager", groupId = "org.hibernate"),
         },

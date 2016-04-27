@@ -114,7 +114,7 @@ public class AnnotationProcessor {
             for (Class<? extends Annotation> handlerAnnotation : handlers.keySet()) {
                 if (annotation.annotationType().equals(handlerAnnotation)) {
                     // initialize
-                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation(pluginClass, plugin, annotation, field);
+                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation<>(pluginClass, plugin, annotation, field);
                     if (!handlers.get(handlerAnnotation).initField(pluginAnnotation)) {
                         return false;
                     }
@@ -131,7 +131,7 @@ public class AnnotationProcessor {
             for (Class<? extends Annotation> handlerAnnotation : handlers.keySet()) {
                 if (annotation.annotationType().equals(handlerAnnotation)) {
                     // initialize
-                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation(pluginClass, plugin, annotation, method);
+                    PluginAnnotation<?> pluginAnnotation = new PluginAnnotation<>(pluginClass, plugin, annotation, method);
                     if (!handlers.get(handlerAnnotation).initMethod(pluginAnnotation)) {
                         return false;
                     }
