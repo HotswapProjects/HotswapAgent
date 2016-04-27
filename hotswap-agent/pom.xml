@@ -126,9 +126,16 @@
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-	    <artifactId>hotswap-agent-resteasy-plugin</artifactId>
+	    	<artifactId>hotswap-agent-resteasy-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+	    	<artifactId>hotswap-agent-resteasy-registry-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
