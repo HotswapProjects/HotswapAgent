@@ -40,13 +40,15 @@ import org.hotswap.agent.util.ReflectionHelper;
             //Jboss el 2
             @Maven(value = "[1.0,)", artifactId = "jboss-el-api_2.2_spec", groupId = "org.jboss.spec.javax.el"),
             //Juel
-            @Maven(value = "[2.0,)", artifactId = "juel", groupId = "de.odysseus.juel")
+            @Maven(value = "[2.0,)", artifactId = "juel", groupId = "de.odysseus.juel"),
+            //Jboss el 3.0
+            @Maven(value="[3.0,)", artifactId = "javax.el-api", groupId = "javax.el")
         },
         manifest = {
             // Seam jboss
             @Manifest(value="[1.0,)", versionName="JBoss-EL-Version", names ={@Name(key="JBoss-EL-Version", value=".*")}),
             // Tomcat bundled EL (6-9)
-            @Manifest(value="[2.0,)", names={
+            @Manifest(value="[2.0,)",versionName = Name.SpecificationVersion, names={
                     @Name(key=Name.ImplementationTitle,value="javax.el"), 
                     @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
             }),
