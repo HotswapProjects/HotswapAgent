@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.weld.command;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,22 +51,17 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
-        try {
-            String classFullPath = event.getURI().toURL().getFile();
-            int index = classFullPath.indexOf(normalizedArchivePath);
-            if (index == 0) {
-                String classPath = classFullPath.substring(normalizedArchivePath.length());
-                classPath = classPath.substring(0, classPath.indexOf(".class"));
-                if (classPath.startsWith("/")) {
-                    classPath = classPath.substring(1);
-                }
-                this.className = classPath.replace("/", ".");
-            } else {
-                LOGGER.error("Archive path '{}' doesn't match with classFullPath '{}'", normalizedArchivePath, classFullPath);
+        String classFullPath = event.getURI().getPath();
+        int index = classFullPath.indexOf(normalizedArchivePath);
+        if (index == 0) {
+            String classPath = classFullPath.substring(normalizedArchivePath.length());
+            classPath = classPath.substring(0, classPath.indexOf(".class"));
+            if (classPath.startsWith("/")) {
+                classPath = classPath.substring(1);
             }
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            this.className = classPath.replace("/", ".");
+        } else {
+            LOGGER.error("Archive path '{}' doesn't match with classFullPath '{}'", normalizedArchivePath, classFullPath);
         }
     }
 
