@@ -200,7 +200,12 @@ public class BeanDeploymentArchiveAgent {
 
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {
-                BeanManagerImpl beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
+                BeanManagerImpl beanManager;
+                if (CDI.current().getBeanManager() instanceof BeanManagerImpl) {
+                    beanManager = ((BeanManagerImpl) CDI.current().getBeanManager()).unwrap();
+                } else {
+                    beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
+                }
 
                 Set<Bean<?>> beans = beanManager.getBeans(beanClass);
 
