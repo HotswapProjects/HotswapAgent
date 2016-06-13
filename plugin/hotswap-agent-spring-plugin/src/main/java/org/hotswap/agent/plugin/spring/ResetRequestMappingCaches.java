@@ -3,11 +3,11 @@ package org.hotswap.agent.plugin.spring;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.hotswap.agent.logging.AgentLogger;
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.util.MultiValueMap;
 
 /**
  * Support for Spring MVC mapping caches.
@@ -41,12 +41,30 @@ public class ResetRequestMappingCaches {
 			for (Entry<String, ?> e : mappings.entrySet()) {
 				Object am = e.getValue();
 				LOGGER.info("Spring: clearing HandlerMapping for {}", am.getClass());
-				Field f = c.getDeclaredField("handlerMethods");
-				f.setAccessible(true);
-				((Map<?,?>)f.get(am)).clear();
-				f = c.getDeclaredField("urlMap");
-				f.setAccessible(true);
-				((Map<?,?>)f.get(am)).clear();
+				try {
+					Field f = c.getDeclaredField("handlerMethods");
+					f.setAccessible(true);
+					((Map<?,?>)f.get(am)).clear();
+					f = c.getDeclaredField("urlMap");
+					f.setAccessible(true);
+					((Map<?,?>)f.get(am)).clear();
+				} catch (NoSuchFieldException e1) {
+					// assume this is spring version 4.2+
+
+					Field mrField = c.getDeclaredField("mappingRegistry");
+					mrField.setAccessible(true);
+					Class mrClass = mrField.getType();
+					Object mrObject = mrField.get(am);
+
+					Field mappingLookup = mrClass.getDeclaredField("mappingLookup");
+					mappingLookup.setAccessible(true);
+					((Map<?,?>)mappingLookup.get(mrObject)).clear();
+
+					Field urlLookup = mrClass.getDeclaredField("urlLookup");
+					urlLookup.setAccessible(true);
+					((MultiValueMap<?,?>)urlLookup.get(mrObject)).clear();
+				}
+
 				if (am instanceof InitializingBean) {
 					((InitializingBean) am).afterPropertiesSet();
 				}
