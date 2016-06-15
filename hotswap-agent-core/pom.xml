@@ -113,6 +113,6 @@
         <dependency>
             <groupId>org.jmock</groupId>
             <artifactId>jmock-legacy</artifactId>
-        </dependency>
+        </dependency>    
     </dependencies>
 </project>

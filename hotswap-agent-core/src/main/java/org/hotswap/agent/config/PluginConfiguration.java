@@ -271,7 +271,7 @@ public class PluginConfiguration {
     /**
      * Check if the plugin is disabled (in this classloader)
      */
-    public boolean isDisabledPlugin(Class<Object> pluginClass) {
+    public boolean isDisabledPlugin(Class<?> pluginClass) {
         Plugin pluginAnnotation = pluginClass.getAnnotation(Plugin.class);
         return isDisabledPlugin(pluginAnnotation.name());
     }
