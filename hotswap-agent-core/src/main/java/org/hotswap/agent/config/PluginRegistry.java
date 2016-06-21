@@ -20,14 +20,15 @@ public class PluginRegistry {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PluginRegistry.class);
 
     // plugin class -> Map (ClassLoader -> Plugin instance)
-    protected Map<Class, Map<ClassLoader, Object>> registeredPlugins = Collections.synchronizedMap(new HashMap<Class, Map<ClassLoader, Object>>());
+    protected Map<Class<?>, Map<ClassLoader, Object>> registeredPlugins = Collections
+            .synchronizedMap(new HashMap<Class<?>, Map<ClassLoader, Object>>());
 
     /**
      * Returns map of all registered plugins.
      *
      * @return map plugin class -> Map (ClassLoader -> Plugin instance)
      */
-    public Map<Class, Map<ClassLoader, Object>> getRegisteredPlugins() {
+    public Map<Class<?>, Map<ClassLoader, Object>> getRegisteredPlugins() {
         return registeredPlugins;
     }
 
@@ -56,7 +57,7 @@ public class PluginRegistry {
     }
 
     /**
-     * Create an instanec of plugin registry and initialize scanner and processor.
+     * Create an instance of plugin registry and initialize scanner and processor.
      */
     public PluginRegistry(PluginManager pluginManager, ClassLoaderPatcher classLoaderPatcher) {
         this.pluginManager = pluginManager;
@@ -69,25 +70,28 @@ public class PluginRegistry {
      * Scan for plugins by @Plugin annotation on PLUGIN_PATH and process plugin annotations.
      *
      * @param classLoader   classloader to resolve plugin package. This will be used by annotation scanner.
-     * @param pluginPackage the package to be searched (e.g. org.agent.hotswap.plugin)
+     * @param pluginPackages the packages to be searched (e.g. org.agent.hotswap.plugin,my.happy.plugins)
      */
-    public void scanPlugins(ClassLoader classLoader, String pluginPackage) {
-        String pluginPath = pluginPackage.replace(".", "/");
+    public void scanPlugins(ClassLoader classLoader, List<String> pluginPackages) {
         ClassLoader agentClassLoader = getClass().getClassLoader();
 
         try {
-            List<String> discoveredPlugins = annotationScanner.scanPlugins(classLoader, pluginPath);
+            List<String> discoveredPlugins = new ArrayList<String>();
+            for (String pluginPackage : pluginPackages) {
+                String pluginPath = pluginPackage.replace(".", "/");
+                discoveredPlugins.addAll(annotationScanner.scanPlugins(classLoader, pluginPath));
+
+                // Plugin class must be always defined directly in the agent classloader, otherwise it will not be available
+                // to the instrumentation process. Copy the definition using patcher
+                if (discoveredPlugins.size() > 0 && agentClassLoader != classLoader) {
+                    classLoaderPatcher.patch(classLoader, pluginPath, agentClassLoader, null);
+                }
+            }
             List<String> discoveredPluginNames = new ArrayList<String>();
 
-            // Plugin class must be always defined directly in the agent classloader, otherwise it will not be available
-            // to the instrumentation process. Copy the definition using patcher
-            if (discoveredPlugins.size() > 0 && agentClassLoader != classLoader) {
-                classLoaderPatcher.patch(classLoader, pluginPath, agentClassLoader, null);
-            }
-
             for (String discoveredPlugin : discoveredPlugins) {
-                Class pluginClass = Class.forName(discoveredPlugin, true, agentClassLoader);
-                Plugin pluginAnnotation = (Plugin) pluginClass.getAnnotation(Plugin.class);
+                Class<?> pluginClass = Class.forName(discoveredPlugin, true, agentClassLoader);
+                Plugin pluginAnnotation = pluginClass.getAnnotation(Plugin.class);
 
                 if (pluginAnnotation == null) {
                     LOGGER.error("Scanner discovered plugin class {} which does not contain @Plugin annotation.", pluginClass);
@@ -120,7 +124,7 @@ public class PluginRegistry {
             LOGGER.info("Discovered plugins: " + Arrays.toString(discoveredPluginNames.toArray()));
 
         } catch (Exception e) {
-            LOGGER.error("Error in plugin initial processing for plugin package '{}'", e, pluginPackage);
+            LOGGER.error("Error in plugin initial processing for plugin packages '{}'", e, pluginPackages);
         }
     }
 
@@ -264,7 +268,7 @@ public class PluginRegistry {
      * @param plugin plugin class
      * @return new instance or null if instantiation fail.
      */
-    protected Object instantiate(Class<Object> plugin) {
+    protected Object instantiate(Class<?> plugin) {
         try {
             return plugin.newInstance();
         } catch (InstantiationException e) {

@@ -6,7 +6,10 @@ import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.util.Version;
 
 import java.lang.instrument.Instrumentation;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -30,6 +33,11 @@ public class HotswapAgent {
     private static Set<String> disabledPlugins = new HashSet<String>();
 
     /**
+     * Additional packages to be scanned for plugins.
+     */
+    private static String[] otherPluginPackages = new String[] {};
+
+    /**
      * Default value for autoHotswap property.
      */
     private static boolean autoHotswap = false;
@@ -44,7 +52,7 @@ public class HotswapAgent {
         LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         parseArgs(args);
         fixJboss7Modules();
-        PluginManager.getInstance().init(inst);
+        PluginManager.getInstance().init(inst, otherPluginPackages);
         LOGGER.debug("Hotswap agent inicialized.");
 
     }
@@ -68,6 +76,8 @@ public class HotswapAgent {
                 autoHotswap = Boolean.valueOf(optionValue);
             } else if ("propertiesFilePath".equals(option)) {
                 propertiesFilePath = optionValue;
+            } else if ("otherPluginPackages".equals(option)) {
+            	otherPluginPackages = optionValue.split(";");
             } else {
                 LOGGER.warning("Invalid javaagent option '{}'. Argument '{}' is ignored.", option, arg);
             }
@@ -103,7 +113,7 @@ public class HotswapAgent {
 
     /**
      * JBoss 7 use OSGI classloading and hence agent core classes are not available from application classloader
-     * (this is not the case with standard classloaders with parent delgation).
+     * (this is not the case with standard classloaders with parent delegation).
      *
      * Wee need to simulate command line attribute -Djboss.modules.system.pkgs=org.hotswap.agent to allow any
      * classloader to access agent libraries (OSGI default export). This method does it on behalf of the user.

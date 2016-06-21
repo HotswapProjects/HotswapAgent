@@ -93,13 +93,13 @@ public class PluginManager {
      * <ul>
      * <li>Create new resource watcher using WatcherFactory and start it in separate thread.</li>
      * <li>Create new scheduler and start it in separate thread.</li>
-     * <li>Scan for plugins</li>
+     * <li>Scan for plugins in the {@link #PLUGIN_PACKAGE} package first and then those specified with the {@code otherPluginPackages} argument</li>
      * <li>Register HotswapTransformer with the javaagent instrumentation class</li>
      * </ul>
      *
      * @param instrumentation javaagent instrumentation.
      */
-    public void init(Instrumentation instrumentation) {
+    public void init(Instrumentation instrumentation, String ... otherPluginPackages) {
         this.instrumentation = instrumentation;
 
         // create default configuration from this classloader
@@ -120,7 +120,10 @@ public class PluginManager {
         }
         scheduler.run();
 
-        pluginRegistry.scanPlugins(getClass().getClassLoader(), PLUGIN_PACKAGE);
+        List<String> pluginPackages = new ArrayList<String>(otherPluginPackages.length + 1);
+        pluginPackages.add(0, PLUGIN_PACKAGE);
+        pluginPackages.addAll(Arrays.asList(otherPluginPackages));
+        pluginRegistry.scanPlugins(getClass().getClassLoader(), pluginPackages);
 
         LOGGER.debug("Registering transformer ");
         instrumentation.addTransformer(hotswapTransformer);
