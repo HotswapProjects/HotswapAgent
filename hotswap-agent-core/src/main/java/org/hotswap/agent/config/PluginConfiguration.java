@@ -154,9 +154,7 @@ public class PluginConfiguration {
         if (properties.containsKey("pluginPackages")) {
             String pluginPackages = properties.getProperty("pluginPackages");
 
-            for (String pluginPackage : pluginPackages.split(",")) {
-                PluginManager.getInstance().getPluginRegistry().scanPlugins(getClassLoader(), pluginPackage);
-            }
+            PluginManager.getInstance().getPluginRegistry().scanPlugins(getClassLoader(), Arrays.asList(pluginPackages.split(",")));
         }
     }
 
