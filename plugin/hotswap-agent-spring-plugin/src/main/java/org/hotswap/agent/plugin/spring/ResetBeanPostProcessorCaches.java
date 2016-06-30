@@ -9,6 +9,7 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Map;
 
 /**
@@ -19,12 +20,32 @@ import java.util.Map;
 public class ResetBeanPostProcessorCaches {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ResetBeanPostProcessorCaches.class);
 
+	private static Class<?> getReflectionUtilsClassOrNull() {
+		try {
+			//This is probably a bad idea as Class.forName has lots of issues but this was easiest for now.
+			return Class.forName("org.springframework.util.ReflectionUtils");
+		} catch (ClassNotFoundException e) {
+			LOGGER.trace("Spring 4.1.x or below - ReflectionUtils class not found");
+			return null;
+		}
+	}
+
     /**
      * Reset all post processors associated with a bean factory.
      *
      * @param beanFactory beanFactory to use
      */
     public static void reset(DefaultListableBeanFactory beanFactory) {
+		Class<?> c = getReflectionUtilsClassOrNull();
+		if (c != null) {
+			try {
+				Method m = c.getDeclaredMethod("clearCache");
+				m.invoke(c);
+			} catch (Exception e) {
+				LOGGER.error("Failed to clear Spring 4.2+ internal method/field cache", e);
+			}
+			LOGGER.trace("Cleared Spring 4.2+ internal method/field cache.");
+		}
         for (BeanPostProcessor bpp : beanFactory.getBeanPostProcessors()) {
             if (bpp instanceof AutowiredAnnotationBeanPostProcessor) {
                 resetAutowiredAnnotationBeanPostProcessorCache((AutowiredAnnotationBeanPostProcessor)bpp);

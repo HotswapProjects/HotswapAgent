@@ -9,11 +9,10 @@
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
-
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
-        <org.springframework.version>4.0.5.RELEASE</org.springframework.version>
+        <org.springframework.version>4.2.6.RELEASE</org.springframework.version>
     </properties>
 
 
@@ -27,6 +26,12 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
+            <version>${org.springframework.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
             <version>${org.springframework.version}</version>
         </dependency>
 
