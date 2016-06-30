@@ -65,19 +65,12 @@ public class ResetRequestMappingCaches {
 					parameterTypes[0] = Object.class;
 					Method u = c.getDeclaredMethod("unregisterMapping", parameterTypes);
 					Map<?,?> unmodifiableHandlerMethods = (Map<?,?>) m.invoke(am);
-					Iterator<?> it = unmodifiableHandlerMethods.entrySet().iterator();
-					Map cloneHandlerMethods = new HashMap();
-					while (it.hasNext()) {
-						Map.Entry<?,?> pair = (Map.Entry<?,?>) it.next();
-						LOGGER.trace("Handler method {}={}", pair.getKey(), pair.getValue());
-						cloneHandlerMethods.put(pair.getKey(), pair.getValue());
-					}
+					Iterator<?> it = unmodifiableHandlerMethods.keySet().iterator();
 					unmodifiableHandlerMethods = null;
-					it = cloneHandlerMethods.entrySet().iterator();
 					while (it.hasNext()) {
-						Map.Entry<?,?> pair = (Map.Entry<?,?>) it.next();
-						LOGGER.trace("Unregistering handler method {}", pair.getKey());
-						u.invoke(am, pair.getKey());
+						Object key = (Object) it.next();
+						LOGGER.trace("Unregistering handler method {}", key);
+						u.invoke(am, key);
 					}
 				}
 				if (am instanceof InitializingBean) {
