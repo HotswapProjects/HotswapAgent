@@ -2,8 +2,6 @@ package org.hotswap.agent.plugin.spring;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -65,10 +63,9 @@ public class ResetRequestMappingCaches {
 					parameterTypes[0] = Object.class;
 					Method u = c.getDeclaredMethod("unregisterMapping", parameterTypes);
 					Map<?,?> unmodifiableHandlerMethods = (Map<?,?>) m.invoke(am);
-					Iterator<?> it = unmodifiableHandlerMethods.keySet().iterator();
+					Object[] keys = unmodifiableHandlerMethods.keySet().toArray();
 					unmodifiableHandlerMethods = null;
-					while (it.hasNext()) {
-						Object key = (Object) it.next();
+					for (Object key : keys) {
 						LOGGER.trace("Unregistering handler method {}", key);
 						u.invoke(am, key);
 					}
