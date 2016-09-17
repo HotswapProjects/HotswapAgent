@@ -99,6 +99,7 @@ public class HotswapWebObjectsPlugin {
         LOGGER.debug("Class "+ctClass.getSimpleName()+" redefined.");
 
         scheduler.scheduleCommand(clearKVCCacheCommand);
+        scheduler.scheduleCommand(clearValidationCacheCommand);
 
         woApplication_removeComponentDefinitionCacheContents.invoke(woApplicationObject);
         if (ctClass.subclassOf(woComponentCtClass)) {
@@ -106,9 +107,6 @@ public class HotswapWebObjectsPlugin {
         }
         if (ctClass.subclassOf(woActionCtClass)) {
             scheduler.scheduleCommand(clearActionCacheCommand);
-        }
-        if (ctClass.subclassOf(nsValidationCtClass)) {
-            scheduler.scheduleCommand(clearValidationCacheCommand);
         }
     }
 
