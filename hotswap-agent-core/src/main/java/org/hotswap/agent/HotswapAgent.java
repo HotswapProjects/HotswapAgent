@@ -121,12 +121,13 @@ public class HotswapAgent {
         System.setProperty(JBOSS_SYSTEM_MODULES_KEY, oldValue == null ? HOTSWAP_AGENT_EXPORT_PACKAGES : oldValue + "," + HOTSWAP_AGENT_EXPORT_PACKAGES);
     }
 
-    public static final String HOTSWAP_AGENT_EXPORT_PACKAGES =
-            "org.hotswap.agent.annotation," +
-                    "org.hotswap.agent.command," +
-                    "org.hotswap.agent.config," +
-                    "org.hotswap.agent.logging," +
-                    "org.hotswap.agent.plugin," +
-                    "org.hotswap.agent.util," +
-                    "org.hotswap.agent.watch";
+    public static final String HOTSWAP_AGENT_EXPORT_PACKAGES = //
+            "org.hotswap.agent.annotation,"//
+            + "org.hotswap.agent.command," //
+            + "org.hotswap.agent.config," //
+            + "org.hotswap.agent.logging,"
+            + "org.hotswap.agent.plugin," //
+            + "org.hotswap.agent.util," //
+            + "org.hotswap.agent.watch," //
+            + "org.hotswap.agent.javassist";
 }

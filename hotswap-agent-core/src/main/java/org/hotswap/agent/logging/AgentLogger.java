@@ -144,4 +144,12 @@ public class AgentLogger {
     public void trace(String message, Throwable throwable, Object... args) {
         log(Level.TRACE, message, throwable, args);
     }
+
+    public boolean isDebugEnabled() {
+        return isLevelEnabled(Level.DEBUG);
+    }
+
+    public boolean isWarnEnabled() {
+        return isLevelEnabled(Level.WARNING);
+    }
 }

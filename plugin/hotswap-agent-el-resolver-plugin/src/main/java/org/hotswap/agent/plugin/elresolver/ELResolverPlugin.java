@@ -7,8 +7,12 @@ import java.util.WeakHashMap;
 
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.Manifest;
+import org.hotswap.agent.annotation.Maven;
+import org.hotswap.agent.annotation.Name;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.Versions;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
@@ -30,6 +34,32 @@ import org.hotswap.agent.util.ReflectionHelper;
         description = "Purge BeanELResolver class cache on any class redefinition.",
         testedVersions = {"2.2"},
         expectedVersions = {"2.2"})
+@Versions(
+        fallback = true,
+        maven = {
+            //Jboss el 2
+            @Maven(value = "[1.0,)", artifactId = "jboss-el-api_2.2_spec", groupId = "org.jboss.spec.javax.el"),
+            //Juel
+            @Maven(value = "[2.0,)", artifactId = "juel", groupId = "de.odysseus.juel"),
+            //Jboss el 3.0
+            @Maven(value="[3.0,)", artifactId = "javax.el-api", groupId = "javax.el")
+        },
+        manifest = {
+            // Seam jboss
+            @Manifest(value="[1.0,)", versionName="JBoss-EL-Version", names ={@Name(key="JBoss-EL-Version", value=".*")}),
+            // Tomcat bundled EL (6-9)
+            @Manifest(value="[2.0,)",versionName = Name.SpecificationVersion, names={
+                    @Name(key=Name.ImplementationTitle,value="javax.el"), 
+                    @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
+            }),
+            //Jetty 7,8
+            @Manifest(value="[2.0,)", versionName={Name.BundleVersion}, names={@Name(key=Name.BundleSymbolicName,value="javax.el")}),   
+            //Jetty 9
+            @Manifest(value="[8.0,)", versionName={Name.BundleVersion}, names={
+                    @Name(key=Name.BundleSymbolicName,value="org.mortbay.jasper.apache-el"), 
+                    @Name(key="Bundle-Vendor",value="Webtide")})
+        }
+    )
 public class ELResolverPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ELResolverPlugin.class);

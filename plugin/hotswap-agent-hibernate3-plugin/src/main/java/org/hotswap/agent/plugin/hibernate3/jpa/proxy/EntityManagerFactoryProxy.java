@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.hotswap.agent.plugin.hibernate3.jpa.proxy;
 
 import java.lang.reflect.InvocationHandler;
@@ -25,16 +40,30 @@ import org.hotswap.agent.util.ReflectionHelper;
  * @author Jiri Bubnik
  */
 public class EntityManagerFactoryProxy {
+    
+    /** The logger. */
     private static AgentLogger LOGGER = AgentLogger.getLogger(EntityManagerFactoryProxy.class);
+    
+    /** The proxied factories. */
     // Map persistenceUnitName -> Wrapper instance
     private static Map<String, EntityManagerFactoryProxy> proxiedFactories = new HashMap<String, EntityManagerFactoryProxy>();
+    
+    /** The reload lock. */
     // hold lock during refresh. The lock is checked on each factory method call.
     final Object reloadLock = new Object();
+    
+    /** The current instance. */
     // current entity manager factory instance - this is the target this proxy delegates to
     EntityManagerFactory currentInstance;
+    
+    /** The persistence unit name. */
     // info and properties to use to build fresh instance of factory
     String persistenceUnitName;
+    
+    /** The info. */
     PersistenceUnitInfo info;
+    
+    /** The properties. */
     Map<?,?> properties;
 
     /**
@@ -77,6 +106,9 @@ public class EntityManagerFactoryProxy {
             }
     }
 
+    /**
+     * Refresh proxied factory version43 or greater.
+     */
     public void refreshProxiedFactoryVersion43OrGreater() {
         if (info == null) {
             currentInstance = Persistence.createEntityManagerFactory(persistenceUnitName, properties);
@@ -99,6 +131,11 @@ public class EntityManagerFactoryProxy {
 
     /**
      * Refresh a single persistence unit - replace the wrapped EntityManagerFactory with fresh instance.
+     *
+     * @throws NoSuchMethodException the no such method exception
+     * @throws InvocationTargetException the invocation target exception
+     * @throws IllegalAccessException the illegal access exception
+     * @throws NoSuchFieldException the no such field exception
      */
     public void refreshProxiedFactory() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException {
         // refresh registry
@@ -116,6 +153,9 @@ public class EntityManagerFactoryProxy {
     }
 
     // create factory from cached configuration
+    /**
+     * Builds the fresh entity manager factory.
+     */
     // from HibernatePersistence.createContainerEntityManagerFactory()
     private void buildFreshEntityManagerFactory() {
         try {
@@ -148,6 +188,7 @@ public class EntityManagerFactoryProxy {
      * Create a proxy for EntityManagerFactory.
      *
      * @param factory    initial factory to delegate method calls to.
+     * @param persistenceUnitName the persistence unit name
      * @param info       definition to cache for factory reload
      * @param properties properties to cache for factory reload
      * @return the proxy
@@ -172,6 +213,13 @@ public class EntityManagerFactoryProxy {
                 });
     }
 
+    /**
+     * Load class.
+     *
+     * @param name the name
+     * @return the class
+     * @throws ClassNotFoundException the class not found exception
+     */
     private Class<?> loadClass(String name) throws ClassNotFoundException {
         return getClass().getClassLoader().loadClass(name);
     }
