@@ -1,23 +1,25 @@
 /*
  * Copyright 2016 the original author or authors.
- * 
+ *
  * This file is part of HotswapAgent.
- * 
+ *
  * HotswapAgent is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 2 of the License, or (at your
  * option) any later version.
- * 
+ *
  * HotswapAgent is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
 package org.hotswap.agent.versions;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Attributes.Name;
 import java.util.jar.Manifest;
@@ -27,19 +29,21 @@ import org.hotswap.agent.util.spring.util.StringUtils;
 
 /**
  * The Class ManifestInfo.
- * 
+ *
  * @author alpapad@gmail.com
  */
 public class ManifestInfo {
 
     /** The mf. */
     private final Manifest mf;
-    
+
     /** The attr. */
     private final Attributes attr;
 
     /** The main. */
     private final Attributes main;
+
+    private final Map<String, Attributes> entries;
 
     /**
      * Instantiates a new manifest info.
@@ -51,9 +55,11 @@ public class ManifestInfo {
         if (mf != null) {
             attr = mf.getAttributes("");
             main = mf.getMainAttributes();
+            entries = mf.getEntries();
         } else {
             attr = null;
             main = null;
+            entries = null;
         }
     }
 
@@ -76,7 +82,7 @@ public class ManifestInfo {
         if (name == null || isEmpty()) {
             return null;
         }
-        return getAttribute(attr, main, name);
+        return getAttribute(attr, main, entries, name);
     }
 
     /**
@@ -90,7 +96,7 @@ public class ManifestInfo {
         if (name == null || isEmpty()) {
             return null;
         }
-        return getAttribute(StringUtils.isEmpty(path) ? attr : mf.getAttributes(path), main, name);
+        return getAttribute(StringUtils.isEmpty(path) ? attr : mf.getAttributes(path), main, entries, name);
     }
 
     /**
@@ -101,21 +107,38 @@ public class ManifestInfo {
      * @param names the names
      * @return the attribute
      */
-    private static String getAttribute(Attributes attr, Attributes main, Name... names) {
+    private static String getAttribute(Attributes attr, Attributes main, Map<String, Attributes> entries, Name... names) {
         if (names == null || names.length == 0) {
             return null;
         }
 
-        if (main != null) {
-            String value;
-            for (Name name : names) {
-                value = main.getValue(name);
-                if (value != null && !value.isEmpty()) {
-                    return value;
+        String ret = getAttributeByName(main, names);
+
+        if (ret != null) {
+            return ret;
+        }
+
+        ret = getAttributeByName(attr, names);
+
+        if (ret != null) {
+            return ret;
+        }
+
+        if (entries != null) {
+            for (Iterator<Map.Entry<String, Attributes>> it = entries.entrySet().iterator();it.hasNext();) {
+                Map.Entry<String, Attributes> entry = it.next();
+                ret = getAttributeByName(entry.getValue(), names);
+                if (ret != null) {
+                    return ret;
                 }
+
             }
         }
 
+        return null;
+    }
+
+    private static String getAttributeByName(Attributes attr, Name... names) {
         if (attr != null) {
             String value;
             for (Name name : names) {

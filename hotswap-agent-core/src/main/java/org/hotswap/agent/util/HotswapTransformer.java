@@ -129,7 +129,7 @@ public class HotswapTransformer implements ClassFileTransformer {
         LOGGER.trace("Transform on class '{}' @{} redefiningClass '{}'.", className, classLoader, redefiningClass);
 
         List<ClassFileTransformer> toApply = new LinkedList<>();
-        List<PluginClassFileTransformer> pulginTransformers = new LinkedList<>();
+        List<PluginClassFileTransformer> pluginTransformers = new LinkedList<>();
         try {
             // call transform on all registered transformers
             for (RegisteredTransformersRecord transformerRecord : new LinkedList<RegisteredTransformersRecord>(registeredTransformers.values())) {
@@ -140,7 +140,7 @@ public class HotswapTransformer implements ClassFileTransformer {
                         if(transformer instanceof PluginClassFileTransformer) {
                             PluginClassFileTransformer pcft = PluginClassFileTransformer.class.cast(transformer);
                             if(!pcft.isPluginDisabled(classLoader)) {
-                                pulginTransformers.add(pcft);
+                                pluginTransformers.add(pcft);
                             }
                         } else {
                             toApply.add(transformer);
@@ -152,42 +152,43 @@ public class HotswapTransformer implements ClassFileTransformer {
             LOGGER.error("Error transforming class '" + className + "'.", t);
         }
 
-        if(!pulginTransformers.isEmpty()) {
-            pulginTransformers =  reduce(classLoader, pulginTransformers, className);
+        if(!pluginTransformers.isEmpty()) {
+            pluginTransformers =  reduce(classLoader, pluginTransformers, className);
         }
 
-        if(toApply.isEmpty() && pulginTransformers.isEmpty()) {
+        if(toApply.isEmpty() && pluginTransformers.isEmpty()) {
             LOGGER.trace("No transformers defing for {} ", className);
             return bytes;
         }
 
         // ensure classloader initialized
        ensureClassLoaderInitialized(classLoader, protectionDomain);
-        try {
-            byte[] result = bytes;
 
-            for(ClassFileTransformer transformer: pulginTransformers) {
-                LOGGER.trace("Transforming class '" + className + "' with transformer '" + transformer + "' " + "@ClassLoader" + classLoader + ".");
-                result = transformer.transform(classLoader, className, redefiningClass, protectionDomain, result);
-            }
+       try {
+           byte[] result = bytes;
 
-            for(ClassFileTransformer transformer: toApply) {
-                LOGGER.trace("Transforming class '" + className + "' with transformer '" + transformer + "' " + "@ClassLoader" + classLoader + ".");
-                result = transformer.transform(classLoader, className, redefiningClass, protectionDomain, result);
-            }
-            return result;
-        } catch (Throwable t) {
-            LOGGER.error("Error transforming class '" + className + "'.", t);
-        }
-        return bytes;
+           for(ClassFileTransformer transformer: pluginTransformers) {
+               LOGGER.trace("Transforming class '" + className + "' with transformer '" + transformer + "' " + "@ClassLoader" + classLoader + ".");
+               result = transformer.transform(classLoader, className, redefiningClass, protectionDomain, result);
+           }
+
+           for(ClassFileTransformer transformer: toApply) {
+               LOGGER.trace("Transforming class '" + className + "' with transformer '" + transformer + "' " + "@ClassLoader" + classLoader + ".");
+               result = transformer.transform(classLoader, className, redefiningClass, protectionDomain, result);
+           }
+           return result;
+       } catch (Throwable t) {
+           LOGGER.error("Error transforming class '" + className + "'.", t);
+       }
+       return bytes;
     }
 
-    LinkedList<PluginClassFileTransformer> reduce(final ClassLoader classLoader, List<PluginClassFileTransformer> puginCalls, String className) {
+    LinkedList<PluginClassFileTransformer> reduce(final ClassLoader classLoader, List<PluginClassFileTransformer> pluginCalls, String className) {
         LinkedList<PluginClassFileTransformer> reduced = new LinkedList<>();
 
         PluginClassFileTransformer def = null;
 
-        for (PluginClassFileTransformer pcft : puginCalls) {
+        for (PluginClassFileTransformer pcft : pluginCalls) {
             try {
                 if(pcft.versionMatches(classLoader)){
                     reduced.add(pcft);

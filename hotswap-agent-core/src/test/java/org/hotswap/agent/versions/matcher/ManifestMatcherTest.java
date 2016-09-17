@@ -1,18 +1,18 @@
 /*
  * Copyright 2016 the original author or authors.
- * 
+ *
  * This file is part of HotswapAgent.
- * 
+ *
  * HotswapAgent is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 2 of the License, or (at your
  * option) any later version.
- * 
+ *
  * HotswapAgent is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
@@ -37,7 +37,7 @@ import org.junit.Test;
 
 public class ManifestMatcherTest {
 
-	/**
+    /**
 2016-04-19 10:50:30,770 ERROR [stderr] (MSC service thread 1-3) META-INF/maven/* /pom.properties FOUND:
 2016-04-19 10:50:30,770 ERROR [stderr] (MSC service thread 1-3) [class path resource [META-INF/maven/org.apache.myfaces.core/myfaces-impl/pom.properties], class path resource [META-INF/maven/org.apache.myfaces.core.internal/myfaces-impl-shared/pom.properties]]
 
@@ -50,101 +50,131 @@ public class ManifestMatcherTest {
 2016-04-19 10:50:30,773 ERROR [stderr] (MSC service thread 1-3) PLUGIN_INFO:FAILED ---> AbstractMatcher [matchers=[MavenMatcher [groupId=org.apache.myfaces.core, artifactId=myfaces-api, includes=VersionRange [recommendedVersion=null, restrictions=[[2.2,)]], excludes=null], MavenMatcher [groupId=org.apache.myfaces.core, artifactId=myfaces-impl, includes=VersionRange [recommendedVersion=null, restrictions=[[2.2,)]], excludes=null], ManifestMatcher [properties={Bundle-Version=jh}, includes=VersionRange [recommendedVersion=null, restrictions=[[2.2,)]], excludes=null]], shouldApply=true]
 
 201
-	 * @throws IOException 
-	 */
-	@Test
-	public void testMatches() throws IOException {
-		Set<MavenInfo> maven = new HashSet<MavenInfo>();
+     * @throws IOException
+     */
+    @Test
+    public void testMatches() throws IOException {
+        Set<MavenInfo> maven = new HashSet<MavenInfo>();
 
-		
-		ManifestInfo manifest = new ManifestInfo(new java.util.jar.Manifest(this.getClass().getResourceAsStream("/org/hotswap/agent/versions/matcher/TEST.MF")));
-		
-		DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
-		System.err.println(info);
-		PluginMatcher p = new PluginMatcher(MatchingPlugin.class);
-		System.err.println(p);
-		assertEquals("Matching",VersionMatchResult.MATCHED, p.matches(info));
-	}
 
-	
-	@Test
-	public void testFails() throws IOException {
-		Set<MavenInfo> maven = new HashSet<MavenInfo>();
+        ManifestInfo manifest = new ManifestInfo(new java.util.jar.Manifest(this.getClass().getResourceAsStream("/org/hotswap/agent/versions/matcher/TEST.MF")));
 
-		
-		ManifestInfo manifest = new ManifestInfo(new java.util.jar.Manifest(this.getClass().getResourceAsStream("/org/hotswap/agent/versions/matcher/TEST.MF")));
-		
-		DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
-		System.err.println(info);
+        DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
+        System.err.println(info);
+        PluginMatcher p = new PluginMatcher(MatchingPlugin.class);
+        System.err.println(p);
+        assertEquals("Matching",VersionMatchResult.MATCHED, p.matches(info));
+    }
 
-		
-		PluginMatcher p = new PluginMatcher(NotMatchingPlugin.class);
-		assertEquals("Not Matching",VersionMatchResult.REJECTED, p.matches(info));
 
-	}
-	
-	@Test
-	public void testFailedEmptyArtifactInfo() throws IOException {
-		Set<MavenInfo> maven = new HashSet<MavenInfo>();
-		ManifestInfo manifest = new ManifestInfo(null);
-		DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
-		System.err.println(info);
-		PluginMatcher p = new PluginMatcher(NotMatchingPlugin.class);
-		assertEquals("Failed Matching",VersionMatchResult.REJECTED, p.matches(info));
-	}
+    @Test
+    public void testMatchesManifestEmptyLine() throws IOException {
+        Set<MavenInfo> maven = new HashSet<MavenInfo>();
 
-	@Test
-	public void testSkippedEmpty2() throws IOException {
-		Set<MavenInfo> maven = new HashSet<MavenInfo>();
-		
-		ManifestInfo manifest = new ManifestInfo(null);
-		
-		DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
-		System.err.println(info);
 
-		
-		PluginMatcher p = new PluginMatcher(PluginMatcherTest.class);
+        ManifestInfo manifest = new ManifestInfo(new java.util.jar.Manifest(this.getClass().getResourceAsStream("/org/hotswap/agent/versions/matcher/TEST_EMPTYLINE.MF")));
 
-		assertEquals("Skipped Matching",VersionMatchResult.SKIPPED, p.matches(info));
-	}
-	
-	
-	@Test
-	public void testSkipped() throws IOException {
-		Set<MavenInfo> maven = new HashSet<MavenInfo>();
-		
-		ManifestInfo manifest = new ManifestInfo(new java.util.jar.Manifest(this.getClass().getResourceAsStream("/org/hotswap/agent/versions/matcher/TEST.MF")));
-		
-		DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
-		System.err.println(info);
-		
-		PluginMatcher p = new PluginMatcher(PluginMatcherTest.class);
+        DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
+        System.err.println(info);
+        PluginMatcher p = new PluginMatcher(MatchingPlugin2.class);
+        System.err.println(p);
+        assertEquals("Matching",VersionMatchResult.MATCHED, p.matches(info));
+    }
 
-		assertEquals("Skipped Matching",VersionMatchResult.SKIPPED, p.matches(info));
-	}
-	
-	@Versions(//
-	        maven = { //
-	                @Maven(value = "[2.2,)", artifactId = "myfaces-api", groupId = "org.apache.myfaces.core"), //
-	                @Maven(value = "[2.2,)", artifactId = "myfaces-impl", groupId = "org.apache.myfaces.core")//
-	        }, //
-	        manifest = { //
-	                @Manifest(names = { @Name(key = Name.BundleSymbolicName, value = "org.apache.myfaces.core.impl") }, value = "[2.2,)")//
-	        })
-	private static class MatchingPlugin {
-		
-	}
-	
-	@Versions(//
-	        maven = { //
-	                @Maven(value = "[3.2,)", artifactId = "myfaces-api", groupId = "org.apache.myfaces.core"), //
-	                @Maven(value = "[3.2,)", artifactId = "myfaces-impl", groupId = "org.apache.myfaces.core")//
-	        }, //
-	        manifest = { //
-	                @Manifest(names = { @Name(key = Name.BundleSymbolicName, value = " org.apache.myfaces.core.impl") }, value = "[3.2,)")//
-	        })
-	private static class NotMatchingPlugin {
-		
-	}
-	
+
+    @Test
+    public void testFails() throws IOException {
+        Set<MavenInfo> maven = new HashSet<MavenInfo>();
+
+
+        ManifestInfo manifest = new ManifestInfo(new java.util.jar.Manifest(this.getClass().getResourceAsStream("/org/hotswap/agent/versions/matcher/TEST.MF")));
+
+        DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
+        System.err.println(info);
+
+
+        PluginMatcher p = new PluginMatcher(NotMatchingPlugin.class);
+        assertEquals("Not Matching",VersionMatchResult.REJECTED, p.matches(info));
+
+    }
+
+    @Test
+    public void testFailedEmptyArtifactInfo() throws IOException {
+        Set<MavenInfo> maven = new HashSet<MavenInfo>();
+        ManifestInfo manifest = new ManifestInfo(null);
+        DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
+        System.err.println(info);
+        PluginMatcher p = new PluginMatcher(NotMatchingPlugin.class);
+        assertEquals("Failed Matching",VersionMatchResult.REJECTED, p.matches(info));
+    }
+
+    @Test
+    public void testSkippedEmpty2() throws IOException {
+        Set<MavenInfo> maven = new HashSet<MavenInfo>();
+
+        ManifestInfo manifest = new ManifestInfo(null);
+
+        DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
+        System.err.println(info);
+
+
+        PluginMatcher p = new PluginMatcher(PluginMatcherTest.class);
+
+        assertEquals("Skipped Matching",VersionMatchResult.SKIPPED, p.matches(info));
+    }
+
+
+    @Test
+    public void testSkipped() throws IOException {
+        Set<MavenInfo> maven = new HashSet<MavenInfo>();
+
+        ManifestInfo manifest = new ManifestInfo(new java.util.jar.Manifest(this.getClass().getResourceAsStream("/org/hotswap/agent/versions/matcher/TEST.MF")));
+
+        DeploymentInfo info = new DeploymentInfo(maven, Collections.singleton(manifest));
+        System.err.println(info);
+
+        PluginMatcher p = new PluginMatcher(PluginMatcherTest.class);
+
+        assertEquals("Skipped Matching",VersionMatchResult.SKIPPED, p.matches(info));
+    }
+
+    @Versions(//
+            maven = { //
+                    @Maven(value = "[2.2,)", artifactId = "myfaces-api", groupId = "org.apache.myfaces.core"), //
+                    @Maven(value = "[2.2,)", artifactId = "myfaces-impl", groupId = "org.apache.myfaces.core")//
+            }, //
+            manifest = { //
+                    @Manifest(names = {
+                            @Name(key = Name.BundleSymbolicName, value = "org.apache.myfaces.core.impl"),
+                            @Name(key=Name.ImplementationVendor, value="The.*Apache.*Software.*Foundation")
+                    }, value = "[2.2,)")//
+            })
+    private static class MatchingPlugin {
+
+    }
+
+@Versions(
+        manifest = {
+            @Manifest(value="[2.0,)",versionName = Name.SpecificationVersion, names={
+                    @Name(key=Name.ImplementationTitle,value="javax.el"),
+                    @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
+            })
+        }
+    )
+    private static class MatchingPlugin2 {
+
+    }
+
+    @Versions(//
+            maven = { //
+                    @Maven(value = "[3.2,)", artifactId = "myfaces-api", groupId = "org.apache.myfaces.core"), //
+                    @Maven(value = "[3.2,)", artifactId = "myfaces-impl", groupId = "org.apache.myfaces.core")//
+            }, //
+            manifest = { //
+                    @Manifest(names = { @Name(key = Name.BundleSymbolicName, value = " org.apache.myfaces.core.impl") }, value = "[3.2,)")//
+            })
+    private static class NotMatchingPlugin {
+
+    }
+
 }

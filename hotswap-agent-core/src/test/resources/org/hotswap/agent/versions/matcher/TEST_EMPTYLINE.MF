@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.9.6
+Created-By: 1.7.0_80-b15 (Oracle Corporation)
+X-Compile-Source-JDK: 1.7
+X-Compile-Target-JDK: 1.7
+
+Name: javax/el/
+Specification-Title: Expression Language
+Specification-Version: 3.0
+Specification-Vendor: Sun Microsystems, Inc.
+Implementation-Title: javax.el
+Implementation-Version: 3.0.FR
+Implementation-Vendor: Apache Software Foundation
+
