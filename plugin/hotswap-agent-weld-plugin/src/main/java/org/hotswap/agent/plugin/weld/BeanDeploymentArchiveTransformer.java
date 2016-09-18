@@ -45,7 +45,7 @@ public class BeanDeploymentArchiveTransformer {
         CtConstructor declaredConstructor = clazz.getDeclaredConstructor(constructorParams);
         declaredConstructor.insertAfter(src.toString());
 
-        LOGGER.debug("Class 'org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive' patched with BDA registration.");
+        LOGGER.debug("Class '{}' patched with BDA registration.", clazz.getName());
     }
 
     /**

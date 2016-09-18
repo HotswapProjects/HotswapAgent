@@ -25,6 +25,7 @@ import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
 import org.jboss.weld.annotated.slim.SlimAnnotatedType;
 import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
 import org.jboss.weld.bean.ManagedBean;
+import org.jboss.weld.bean.SessionBean;
 import org.jboss.weld.bean.attributes.BeanAttributesFactory;
 import org.jboss.weld.bean.builtin.BeanManagerProxy;
 import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
@@ -213,6 +214,8 @@ public class BeanDeploymentArchiveAgent {
                     for (Bean<?> bean : beans) {
                         if (bean instanceof ManagedBean) {
                             reloadManagedBean(beanManager, beanClass, (ManagedBean) bean);
+                        } else if (bean instanceof SessionBean) {
+                            reloadSessionBean(beanManager, beanClass, (SessionBean) bean);
                         } else {
                             LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
                                     bean.getClass().getName(), bean.getBeanClass());
@@ -263,6 +266,14 @@ public class BeanDeploymentArchiveAgent {
                 LOGGER.warning("No active contexts for {}", beanClass.getName());
             }
         }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void reloadSessionBean(BeanManagerImpl beanManager, Class<?> beanClass, SessionBean sessionBean) {
+        ClassTransformer classTransformer = getClassTransformer();
+        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
+        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+        sessionBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, sessionBean, false));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
