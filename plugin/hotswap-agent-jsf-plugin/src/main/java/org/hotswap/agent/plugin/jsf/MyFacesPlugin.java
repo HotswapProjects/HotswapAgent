@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.myfaces;
+package org.hotswap.agent.plugin.jsf;
 
 import java.lang.reflect.Method;
 

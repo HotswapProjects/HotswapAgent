@@ -20,12 +20,12 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
-@Plugin(name = "JSF",
+@Plugin(name = "Mojarra",
         description = "JSF/Mojarra. Clear resource bundle cache when *.properties files are changed.",
         testedVersions = {"2.1.23, 2.2.8"},
         expectedVersions = {"2.1", "2.2"})
-public class JsfPlugin {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(JsfPlugin.class);
+public class MojarraPlugin {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(MojarraPlugin.class);
 
     @Init
     Scheduler scheduler;
@@ -38,15 +38,15 @@ public class JsfPlugin {
     @OnClassLoadEvent(classNameRegexp = "com.sun.faces.config.ConfigManager")
     public static void facesConfigManagerInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod init = ctClass.getDeclaredMethod("initialize");
-        init.insertAfter(PluginManagerInvoker.buildInitializePlugin(JsfPlugin.class));
+        init.insertAfter(PluginManagerInvoker.buildInitializePlugin(MojarraPlugin.class));
         LOGGER.debug("com.sun.faces.config.ConfigManager enhanced with plugin initialization.");
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.sun.faces.application.ApplicationResourceBundle")
     public static void facesApplicationAssociateInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        String registerResourceBundle = PluginManagerInvoker.buildCallPluginMethod(JsfPlugin.class, "registerApplicationResourceBundle",
+        String registerResourceBundle = PluginManagerInvoker.buildCallPluginMethod(MojarraPlugin.class, "registerApplicationResourceBundle",
                 "baseName", "java.lang.String", "resources", "java.lang.Object");
-        String buildInitializePlugin = PluginManagerInvoker.buildInitializePlugin(JsfPlugin.class);
+        String buildInitializePlugin = PluginManagerInvoker.buildInitializePlugin(MojarraPlugin.class);
 
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             constructor.insertAfter(buildInitializePlugin);
