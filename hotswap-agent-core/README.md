@@ -6,7 +6,7 @@ Hotswap agent is a plugin container with plugin manager, plugin registry, and se
 
 Agent structure
 ---------------
-The agent is initialized as a javaagent (see META-INF/MANIFEST.MF registration of `HotswapAgent.premain()`). This in turn
+The agent is initialized as a javaagent (at JVM startup see META-INF/MANIFEST.MF registration of `HotswapAgent.premain()`, when JVM running see META-INF/MANIFEST.MF registration of `HotswapAgent.agentmain()`). This in turn
 initialize the singleton agent class `PluginManager`. You can always use `PluginManager.getInstance()` to access the agent,
 although it is usually better to use plugin custom "dependency injection" via @Init annotation to access agent services.
 

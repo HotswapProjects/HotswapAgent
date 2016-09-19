@@ -202,6 +202,7 @@
                                 <manifestEntries>
                                     <Implementation-Title>${project.build.finalName}</Implementation-Title>
                                     <Implementation-Version>${project.version}</Implementation-Version>
+                                    <Agent-Class>org.hotswap.agent.HotswapAgent</Agent-Class>
                                     <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
                                     <!-- <Boot-Class-Path>hotswap-agent.jar</Boot-Class-Path>  -->
                                     <Can-Redefine-Classes>true</Can-Redefine-Classes>

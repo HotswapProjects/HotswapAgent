@@ -13,6 +13,7 @@ import java.util.Set;
  * Register the agent and initialize plugin manager singleton instance.
  * <p/>
  * This class must be registered in META-INF/MANIFEST.MF:
+ * Agent-Class: org.hotswap.agent.HotswapAgent
  * Premain-Class: org.hotswap.agent.HotswapAgent
  * <p/>
  * Use with -javaagent agent.jar to use with an application.
@@ -39,13 +40,17 @@ public class HotswapAgent {
      */
     private static String propertiesFilePath;
 
+    public static void agentmain(String args, Instrumentation inst) {
+        premain(args, inst);
+    }
+
     public static void premain(String args, Instrumentation inst) {
 
         LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         parseArgs(args);
         fixJboss7Modules();
         PluginManager.getInstance().init(inst);
-        LOGGER.debug("Hotswap agent inicialized.");
+        LOGGER.debug("Hotswap agent initialized.");
 
     }
 

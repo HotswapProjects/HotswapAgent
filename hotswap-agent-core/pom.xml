@@ -75,6 +75,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
+                            <Agent-Class>org.hotswap.agent.HotswapAgent</Agent-Class>
                             <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
                             <Can-Redefine-Classes>true</Can-Redefine-Classes>
                             <Can-Retransform-Classes>true</Can-Retransform-Classes>
