@@ -13,8 +13,7 @@ This project is still in a beta version.
 ### Easy to start
 Download and install latest [DCEVM Java patch](https://github.com/dcevm/dcevm/releases) +
 [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) and launch your application server
-with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup.
-Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.
+with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup. You can attach [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) to the running JVM using the following example [code snippet](https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53). Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.
 
 ### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs special reloading mechanism to keep
@@ -41,7 +40,7 @@ unpack `hotswap-agent.jar` and put it anywhere on your disc. For example: `C:\ja
 1. add following command line java attributes: `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar` (you
 need to replace PATH_TO_AGENT with an actual) directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\hotswap-agent.jar YourApp`.
   See [IntelliJ IDEA](https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss)
-  and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides.
+  and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides. If your application is already running, you still can attach agent jar using the example [code snippet](https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53).
 1. (optional) create a file named "hotswap-agent.properties" inside your resources directory, see available properties and
   default values: <https://github.com/HotswapProjects/HotswapAgent/blob/master/hotswap-agent-core/src/main/resources/hotswap-agent.properties>
 1. start the application in debug mode, check that the agent and plugins are initialized correctly:
