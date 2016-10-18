@@ -2,8 +2,6 @@ package org.hotswap.agent.plugin.weld.command;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +10,7 @@ import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
 import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
@@ -29,20 +28,26 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
     String className;
 
-    String classSignature;
+    String classSignatureForProxyCheck;
+
+    String classSignatureByStrategy;
+
+    String strBeanReloadStrategy;
 
     Map<Object, Object> registeredProxiedBeans;
 
     // either event or classDefinition is set by constructor (watcher or transformer)
     WatchFileEvent event;
 
-    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath,
-            Map<Object, Object> registeredProxiedBeans, String className, String classSignature) {
+    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, Map<Object, Object> registeredProxiedBeans,
+            String className, String classSignaturForProxyCheck, String classSignatureByStrategy, BeanReloadStrategy beanReloadStrategy) {
         this.classLoader = classLoader;
         this.archivePath = archivePath;
         this.registeredProxiedBeans = registeredProxiedBeans;
         this.className = className;
-        this.classSignature = classSignature;
+        this.classSignatureForProxyCheck = classSignaturForProxyCheck;
+        this.classSignatureByStrategy = classSignatureByStrategy;
+        this.strBeanReloadStrategy = beanReloadStrategy != null ? beanReloadStrategy.toString() : null;
     }
 
     public BeanClassRefreshCommand(ClassLoader classLoader, String normalizedArchivePath, WatchFileEvent event) {
@@ -76,8 +81,24 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                 LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshBeanClass('{}')", className);
                 Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, classLoader);
                 Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshBeanClass",
-                        new Class[] {ClassLoader.class, String.class, Map.class, String.class, String.class});
-                bdaMethod.invoke(null, classLoader, archivePath, registeredProxiedBeans, className, classSignature);
+                        new Class[] { ClassLoader.class,
+                                      String.class,
+                                      Map.class,
+                                      String.class,
+                                      String.class,
+                                      String.class,
+                                      String.class
+                        }
+                );
+                bdaMethod.invoke(null,
+                        classLoader,
+                        archivePath,
+                        registeredProxiedBeans,
+                        className,
+                        classSignatureForProxyCheck,
+                        classSignatureByStrategy,
+                        strBeanReloadStrategy // passed as String since BeanDeploymentArchiveAgent has different classloader
+                );
             } catch (NoSuchMethodException e) {
                 throw new IllegalStateException("Plugin error, method not found", e);
             } catch (InvocationTargetException e) {

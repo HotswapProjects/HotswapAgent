@@ -38,6 +38,7 @@ public class ProxyFactoryTransformer {
             classPool.get("java.lang.String"),
             classPool.get("java.lang.Class"),
             classPool.get("java.util.Set"),
+            //classPool.get("java.lang.String"),
             classPool.get("javax.enterprise.inject.spi.Bean"),
             classPool.get("boolean")
         };
