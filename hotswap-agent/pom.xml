@@ -33,7 +33,7 @@
             <artifactId>hotswap-agent-hibernate3-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.hotswap.agent</groupId>
             <artifactId>hotswap-agent-spring-plugin</artifactId>
@@ -72,6 +72,12 @@
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-log4j2-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
             <artifactId>hotswap-agent-jsf-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -87,13 +93,13 @@
             <artifactId>hotswap-agent-el-resolver-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-			<artifactId>hotswap-agent-wildfly-el-plugin</artifactId>
-			<version>${project.version}</version>
+            <artifactId>hotswap-agent-wildfly-el-plugin</artifactId>
+            <version>${project.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.hotswap.agent</groupId>
             <artifactId>hotswap-agent-osgiequinox-plugin</artifactId>
@@ -126,32 +132,32 @@
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-	    	<artifactId>hotswap-agent-resteasy-plugin</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.hotswap.agent</groupId>
-	    	<artifactId>hotswap-agent-resteasy-registry-plugin</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.hotswap.agent</groupId>
-	    <artifactId>hotswap-agent-gae-plugin</artifactId>
+            <artifactId>hotswap-agent-resteasy-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-	    <artifactId>hotswap-agent-deltaspike-plugin</artifactId>
+            <artifactId>hotswap-agent-resteasy-registry-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-gae-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-	    <artifactId>hotswap-agent-javabeans-plugin</artifactId>
+            <artifactId>hotswap-agent-deltaspike-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-javabeans-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
