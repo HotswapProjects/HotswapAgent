@@ -145,9 +145,11 @@ uses agent services to:
 
 Packaged plugins:
 
-* Hibernate (4x) - Reload Hibernate configuration after entity create/change.
-* Spring (3x) - Reload Spring configuration after class definition/change.
+* Hibernate (3x,4x) - Reload Hibernate configuration after entity create/change.
+* Spring (3x, 4.x) - Reload Spring configuration after class definition/change.
 * Jetty - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
+* Tomcat (7.x, 8.x) configure Apache Tomcat with extraClasspath property.
+* Jersey
 * ZK (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and
 bean resolver cache.
 * Logback - Logback configuration reload
@@ -156,11 +158,14 @@ bean resolver cache.
 * ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
 * JBossModules - add extra class path to JBoss's module class loader.
-* JSF (mojarra 2.1, 2.2) - support for application resource bundle files change (properties files).
+* JSF (mojarra 2.1, 2.2, MyFaces 2.2) - support for application resource bundle changes (properties files).
 * OsgiEquinox - Hotswap support for Eclipse plugin or Eclipse platform development.
-* RESTEasy (2.x, 3.x) - reload @Path annotated classes on class create/change
-* CDI/Weld - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition after proxied class change. EAR support.
+* RestEasy (2.x, 3.x) - Implemented by ResteasyRegistry plugin. Cleanups and registers class redefinitions.
+* CDI/Weld - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition after proxied class change. EAR support. Bean reloading according strategy specified by parameter 'weld.beanReloadStrategy' in config file.
+* Deltaspike (1.x) - messages,ViewConfig, repository, proxy reloading.
 * WebObjects - Clear key value coding, component, action and validation caches after class change.
+* WildFlyELResolver - Clear BeanELResolver after any class redefinition.
+* Proxy (supported com.sun.proxy, CGlib) - redefines proxy classes that implement or extend changed interfaces or classes.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
 
@@ -248,8 +253,9 @@ Credits
 Hotswap agent:
 
 * Jiri Bubnik - project coordinator, initial implementation
+* Alexandros Papadakis - Maven Versioning, Weld, JSF, Hibernate3, RestEasy, WildFly plugins
 * Erki Ehtla - Spring plugin, Proxy plugin
-* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld plugins implementation
+* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld, Deltaspike, JavaBean, JBossModules  plugins
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
