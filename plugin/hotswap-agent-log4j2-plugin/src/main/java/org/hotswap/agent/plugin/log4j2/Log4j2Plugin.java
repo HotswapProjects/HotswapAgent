@@ -27,7 +27,7 @@ import java.util.Set;
  * @author Lukasz Warzecha
  */
 @Plugin(name = "Log4j2", description = "Log4j2 configuration reload.",
-        testedVersions = { "2.5" })
+        testedVersions = { "2.1", "2.5", "2.7" })
 public class Log4j2Plugin {
 
     private static final AgentLogger LOGGER = AgentLogger.getLogger(Log4j2Plugin.class);
@@ -42,33 +42,41 @@ public class Log4j2Plugin {
     Set<URI> registeredURIs = new HashSet<>();
 
     /**
-     * Callback method from org.apache.logging.log4j.core.LoggerContext.
-     * 
-     * @param configURI configuration file uri
+     * Callback method from
+     * org.apache.logging.log4j.core.LoggerContext.setConfiguration(Configuration)
+     *
+     * @param config the Log4j2 configuration object
      */
-    public void init(final URI configURI) {
-        if (configURI != null) {
-            final URI uri = Paths.get(configURI).getParent().toUri();
-            try {
-                // skip double registration on reload
-                if (registeredURIs.contains(uri)) {
-                    return;
-                }
+    public void init(final Object config) {
 
-                LOGGER.debug("Watching '{}' URI for Log4j2 configuration changes.", uri);
-                registeredURIs.add(uri);
-                watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
+        URI configURI = null;
 
-                    @Override
-                    public void onEvent(WatchFileEvent event) {
-                        if (event.getEventType() != FileEvent.DELETE && event.getURI().equals(configURI)) {
-                            reload(configURI);
-                        }
-                    }
-                });
-            } catch (Exception e) {
-                LOGGER.error("Exception initializing Log4j2 on uri {}.", e, uri);
+        try {
+            Class<?> configurationClass = appClassLoader.loadClass("org.apache.logging.log4j.core.config.Configuration");
+            Class<?> configurationSourceClass = appClassLoader.loadClass("org.apache.logging.log4j.core.config.ConfigurationSource");
+
+            Object configurationSource = configurationClass.getDeclaredMethod("getConfigurationSource").invoke(config);
+            String url = (String) configurationSourceClass.getDeclaredMethod("getLocation").invoke(configurationSource);
+            configURI = Paths.get(url).toUri();
+
+            if (registeredURIs.contains(configURI)) {
+                return;
             }
+
+            final URI parentUri = Paths.get(configURI).getParent().toUri();
+            LOGGER.debug("Watching '{}' URI for Log4j2 configuration changes.", configURI);
+            registeredURIs.add(configURI);
+            watcher.addEventListener(appClassLoader, parentUri, new WatchEventListener() {
+
+                @Override
+                public void onEvent(WatchFileEvent event) {
+                    if (event.getEventType() != FileEvent.DELETE && registeredURIs.contains(event.getURI())) {
+                        reload(event.getURI());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("Exception initializing Log4j2 on uri {}.", e, configURI);
         }
     }
 
@@ -87,10 +95,8 @@ public class Log4j2Plugin {
         }
 
         try {
-            ClassLoader classLoader = this.getClass().getClassLoader();
-
-            Class<?> logManagerClass = classLoader.loadClass("org.apache.logging.log4j.LogManager");
-            Class<?> contextClass = classLoader.loadClass("org.apache.logging.log4j.core.LoggerContext");
+            Class<?> logManagerClass = appClassLoader.loadClass("org.apache.logging.log4j.LogManager");
+            Class<?> contextClass = appClassLoader.loadClass("org.apache.logging.log4j.core.LoggerContext");
 
             Object context = logManagerClass.getDeclaredMethod("getContext", Boolean.TYPE).invoke(logManagerClass,
                     true);
@@ -104,17 +110,18 @@ public class Log4j2Plugin {
         }
     }
 
-    /**
-     * Transform configurator class to register log4j2 config URI.
-     */
     @OnClassLoadEvent(classNameRegexp = "org.apache.logging.log4j.core.LoggerContext")
     public static void registerConfigurator(ClassPool classPool, CtClass ctClass) throws NotFoundException,
             CannotCompileException {
-        CtMethod m = ctClass.getDeclaredMethod("reconfigure", new CtClass[] { classPool.get("java.net.URI") });
+
+        // fallback to the old version (<2.3) of Log4j2
+        CtMethod m = ctClass.getDeclaredMethod("setConfiguration",
+                new CtClass[] { classPool.get("org.apache.logging.log4j.core.config.Configuration") });
 
         m.insertAfter(PluginManagerInvoker.buildInitializePlugin(Log4j2Plugin.class));
         m.insertAfter(PluginManagerInvoker.buildCallPluginMethod(Log4j2Plugin.class, "init",
-                "configURI", "java.net.URI"));
+                "config", "java.lang.Object"));
+
     }
 
 }
