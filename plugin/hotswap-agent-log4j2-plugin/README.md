@@ -3,7 +3,7 @@
 Log4j2 configuration reload.
 
 #### Implementation notes:
-Plugin hooks into `org.apache.logging.log4j.core.LoggerContext.reconfigure(URL)` call. All configuration URL's are
+Plugin hooks into `org.apache.logging.log4j.core.LoggerContext.setConfiguration(Configuration)` call. All configuration URL's are
 registered and watched for change. After the file change, full reconfiguration via setConfigLocation(URI) method is executed.
 
 

@@ -151,6 +151,7 @@ Packaged plugins:
 * ZK (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and
 bean resolver cache.
 * Logback - Logback configuration reload
+* Log4j2 - Log4j2 configuration reload
 * Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
 * AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
 * ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
@@ -253,6 +254,7 @@ Hotswap agent:
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
+* Lukasz Warzecha - Log4j2 plugin
 
 DCEVM:
 

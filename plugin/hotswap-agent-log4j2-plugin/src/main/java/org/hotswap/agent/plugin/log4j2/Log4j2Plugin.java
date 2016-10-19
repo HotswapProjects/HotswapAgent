@@ -41,6 +41,8 @@ public class Log4j2Plugin {
     // ensure uri registered only once
     Set<URI> registeredURIs = new HashSet<>();
 
+    volatile boolean initialized;
+
     /**
      * Callback method from
      * org.apache.logging.log4j.core.LoggerContext.setConfiguration(Configuration)
@@ -75,6 +77,11 @@ public class Log4j2Plugin {
                     }
                 }
             });
+
+            if (!initialized) {
+                LOGGER.info("Log4j2 plugin initialized.");
+                initialized = true;
+            }
         } catch (Exception e) {
             LOGGER.error("Exception initializing Log4j2 on uri {}.", e, configURI);
         }
