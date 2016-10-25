@@ -107,6 +107,12 @@ public class HotswapperPlugin {
      */
     @Init
     public static void init(PluginConfiguration pluginConfiguration, ClassLoader appClassLoader) {
+
+        if (appClassLoader == null) {
+            LOGGER.debug("Bootstrap class loader is null, hotswapper skipped.");
+            return;
+        }
+
         LOGGER.debug("Init plugin at classLoader {}", appClassLoader);
 
         // init only if the classloader contains directly the property file (not in parent classloader)
