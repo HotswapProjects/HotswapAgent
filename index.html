@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Hotswapagent by HotswapProjects</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Hotswapagent</h1>
+        <h2>Java unlimited redefinition of classes at runtime.</h2>
+        <a href="https://github.com/HotswapProjects/HotswapAgent" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a id="hotswap-agent" class="anchor" href="#hotswap-agent" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Hotswap Agent</h1>
+
+<p><a href="https://gitter.im/HotswapProjects/user"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter"></a> <a href="https://travis-ci.org/HotswapProjects/HotswapAgent"><img src="https://travis-ci.org/HotswapProjects/HotswapAgent.svg?branch=master" alt="Build Status"></a></p>
+
+<p>Java unlimited runtime class and resource redefinition.</p>
+
+<p>The main purpose of this project is to avoid infamous change-&gt;restart + <em>wait</em>-&gt;check development lifecycle.
+Save&amp;Reload during development should be standard and many other languages (including C#) contain this feature.</p>
+
+<p>This project is still in a beta version.</p>
+
+<h3>
+<a id="easy-to-start" class="anchor" href="#easy-to-start" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Easy to start</h3>
+
+<p>Download and install latest <a href="https://github.com/dcevm/dcevm/releases">DCEVM Java patch</a> +
+<a href="https://github.com/HotswapProjects/HotswapAgent/releases">agent jar</a> and launch your application server
+with options <code>-XXaltjvm=dcevm -javaagent:hotswap-agent.jar</code> to get basic setup. You can attach <a href="https://github.com/HotswapProjects/HotswapAgent/releases">agent jar</a> to the running JVM using the following example <a href="https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53">code snippet</a>. Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.</p>
+
+<h3>
+<a id="plugins" class="anchor" href="#plugins" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plugins</h3>
+
+<p>Each application framework (Spring, Hibernate, Logback, ...) needs special reloading mechanism to keep
+up-to-date after class redefinition (e.g. Hibernate configuration reload after new entity class is introduced).
+Hotswap agent works as a plugin system and ships preconfigured with all major framework plugins. It is easy
+to write your custom plugin even as part of your application.</p>
+
+<h3>
+<a id="contribute" class="anchor" href="#contribute" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contribute</h3>
+
+<p>This project is very complex due to lot of supported frameworks and various versions. Community contribution
+is mandatory to keep it alive. You can start by creating a plugin inside your application or by writing an
+example/integration test. There is always need for documentation improvement :-). Thank you for any help!</p>
+
+<h1>
+<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick start:</h1>
+
+<h3>
+<a id="install" class="anchor" href="#install" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Install</h3>
+
+<ol>
+<li>download <a href="https://github.com/dcevm/dcevm/releases">latest release of DCEVM Java patch</a> and launch the installer
+(e.g. <code>java -jar installer-light.jar</code>). Currently you need to select correct installer for Java major version (7/8).</li>
+<li>select java installation directory on your disc and press "Install DCEVM as altjvm" button. Java 1.7+ versions are supported.</li>
+<li>download <a href="https://github.com/HotswapProjects/HotswapAgent/releases">latest release of Hotswap agent jar</a>,
+unpack <code>hotswap-agent.jar</code> and put it anywhere on your disc. For example: <code>C:\java\hotswap-agent.jar</code>
+</li>
+</ol>
+
+<h3>
+<a id="run-your-application" class="anchor" href="#run-your-application" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Run your application</h3>
+
+<ol>
+<li>add following command line java attributes: <code>-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar</code> (you
+need to replace PATH_TO_AGENT with an actual) directory. For example <code>java -XXaltjvm=dcevm -javaagent:c:\java\hotswap-agent.jar YourApp</code>.
+See <a href="https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss">IntelliJ IDEA</a>
+and <a href="https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU">Netbeans</a> forum threads for IDE specific setup guides. If your application is already running, you still can attach agent jar using the example <a href="https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53">code snippet</a>.</li>
+<li>(optional) create a file named "hotswap-agent.properties" inside your resources directory, see available properties and
+default values: <a href="https://github.com/HotswapProjects/HotswapAgent/blob/master/hotswap-agent-core/src/main/resources/hotswap-agent.properties">https://github.com/HotswapProjects/HotswapAgent/blob/master/hotswap-agent-core/src/main/resources/hotswap-agent.properties</a>
+</li>
+<li>
+<p>start the application in debug mode, check that the agent and plugins are initialized correctly:</p>
+
+<pre><code>HOTSWAP AGENT: 9:49:29.548 INFO (org.hotswap.agent.HotswapAgent) - Loading Hotswap agent - unlimited runtime class redefinition.
+HOTSWAP AGENT: 9:49:29.725 INFO (org.hotswap.agent.config.PluginRegistry) - Discovered plugins: [org.hotswap.agent.plugin.hotswapper.HotswapperPlugin, org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin, org.hotswap.agent.plugin.hibernate.HibernatePlugin, org.hotswap.agent.plugin.spring.SpringPlugin, org.hotswap.agent.plugin.jetty.JettyPlugin, org.hotswap.agent.plugin.tomcat.TomcatPlugin, org.hotswap.agent.plugin.zk.ZkPlugin, org.hotswap.agent.plugin.logback.LogbackPlugin]
+...
+HOTSWAP AGENT: 9:49:38.700 INFO (org.hotswap.agent.plugin.spring.SpringPlugin) - Spring plugin initialized - Spring core version '3.2.3.RELEASE'
+</code></pre>
+</li>
+<li>save a changed resource and/or use the HotSwap feature of your IDE to reload changes</li>
+</ol>
+
+<h3>
+<a id="what-is-available" class="anchor" href="#what-is-available" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What is available?</h3>
+
+<ul>
+<li>Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
+is hierarchy change (change the superclass or remove an interface).
+
+<ul>
+<li>You can use standard Java Hotswap from IDE in debug mode to reload changed class</li>
+<li>or set autoHotswap property <code>-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar=autoHotswap=true</code> to reload
+changed classes after compilation. This setup allows even reload on production system without restart.</li>
+</ul>
+</li>
+<li>Automatic configuration - all local classes and resources known to the running Java application are automatically
+discovered and watched for reload (all files on local filesystem, not inside JAR file).</li>
+<li>Extra classpath - Need change a runtime class inside dependent JAR? Use extraClasspath property to add any directory
+as a classpath to watch for class files.</li>
+<li>Reload resource after a change - resources from webapp directory are usually reloaded by application server. But what about
+other resources like src/main/resources? Use watchResources property to add any directory to watch for a resource change.</li>
+<li>Framework support - through plugin system, many frameworks are supported. New plugins can be easily added.</li>
+<li>Fast - until the plugin is initialized, it does not consume any resources or slow down the application (see Runtime overhead for more information)</li>
+</ul>
+
+<p>Should you have any problems or questions, ask at <a href="https://groups.google.com/forum/#!forum/hotswapagent">HotswapAgent forum</a>.</p>
+
+<p>This project is similar to <a href="http://zeroturnaround.com/software/jrebel/">JRebel</a>. Main differences are:</p>
+
+<ul>
+<li>HotswapAgent (DCEVM) supports Java8!</li>
+<li>HotswapAgent does not need any additional configuration for basic project setup.</li>
+<li>JRebel is currently more mature and contains more plugins.</li>
+<li>JRebel is neither open source nor free.</li>
+<li>JRebel modifies bytecode of all classes on reload. You need special IDE plugin to fix debugging.</li>
+<li>HotswapAgent extraClasspath is similar to JRebel  configuration</li>
+<li>HotswapAgent adds watchResources configuration</li>
+</ul>
+
+<h3>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h3>
+
+<p>See <a href="https://github.com/HotswapProjects/HotswapAgentExamples">HotswapAgentExamples</a> GitHub project.
+The purpose of an example application is:</p>
+
+<ul>
+<li>complex automate integration tests (check various configurations before a release, see <code>run-tests.sh</code> script)</li>
+<li>to check "real world" plugin usage during plugin development (i.e. inside container)</li>
+<li>to provide working solution for typical application setups</li>
+<li>sandbox to simulate issues for existing or new setups</li>
+</ul>
+
+<p>Feel free to fork/branch and create an application for your setup (functional, but as simple as possible).
+General setups will be merged into the master.</p>
+
+<h3>
+<a id="ide-support" class="anchor" href="#ide-support" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>IDE support</h3>
+
+<p>None needed :) Really, all changes are transparent and all you need to do is to download patch+agent and
+setup your application / application server. Because we use standard java hotswap behaviour, your IDE will
+work as expected. However, we work on IDE plugins to help with download &amp; configuration.</p>
+
+<h1>
+<a id="configuration" class="anchor" href="#configuration" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Configuration</h1>
+
+<p>The basic configuration set to reload classes and resources from classpath known to the running application
+(classloader). If you need a different configuration, add hotswap-agent.properties file to the classpath root
+(e.g. <code>src/main/resources/hotswap-agent.properties</code>).</p>
+
+<p>Detail documentation of available properties and default values can be found in the <a href="https://github.com/HotswapProjects/HotswapAgent/blob/master/hotswap-agent-core/src/main/resources/hotswap-agent.properties">agent properties file</a></p>
+
+<h3>
+<a id="hotswap-agent-command-line-options" class="anchor" href="#hotswap-agent-command-line-options" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Hotswap agent command line options</h3>
+
+<p>Full syntax of command line options is:</p>
+
+<pre><code>-javaagent:[yourpath/]hotswap-agent.jar=[option1]=[value1],[option2]=[value2]
+</code></pre>
+
+<p>Hotswap agent accepts following options:</p>
+
+<ul>
+<li>autoHotswap=true - watch all .class files for change and automatically Hotswap the class in the running application
+(instead of running Hotswap from your IDE debugging session)</li>
+<li>disablePlugin=[pluginName] - disable a plugin. Note that this will completely forbid the plugin to load
+(opposite to disablePlugin option in hotswap-agent.properties, which will only disable the plugin for a classloader.
+You can repeat this option for every plugin to disable.</li>
+</ul>
+
+<h1>
+<a id="how-does-it-work" class="anchor" href="#how-does-it-work" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How does it work?</h1>
+
+<h3>
+<a id="dcevm" class="anchor" href="#dcevm" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>DCEVM</h3>
+
+<p>Hotswap agent does the work of reloading resources and framework configuration (Spring, Hibernate, ...),
+but it depends on standard Java hotswap mechanism to actually reload classes. Standard Java hotswap allows
+only method body change , which makes it practically unusable. DCEVM is a JRE patch witch allows almost any
+structural class change on hotswap (with an exception of a hierarchy change). Although hotswap agent works
+even with standard java, we recommend to use DCEVM (and all tutorials use DCEVM as target JVM).</p>
+
+<h3>
+<a id="hotswap-agent-1" class="anchor" href="#hotswap-agent-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Hotswap agent</h3>
+
+<p>Hotswap agent is a plugin container with plugin manager, plugin registry, and several agent services
+(e.g. to watch for class/resource change). It helps with common tasks and classloading issues. It scans classpath
+for class annotated with <a href="https://github.com/Plugin" class="user-mention">@Plugin</a> annotation, injects agent services and registers reloading hooks. Runtime bytecode
+modification is provided by javaasist library.</p>
+
+<h3>
+<a id="plugins-1" class="anchor" href="#plugins-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plugins</h3>
+
+<p>Plugins administered by Hotswap agent are usually targeted towards a specific framework. For example Spring plugin
+uses agent services to:</p>
+
+<ul>
+<li>Modify root Spring classes to get Spring contexts and registered scan path</li>
+<li>Watch for any resource change on a scan path</li>
+<li>Watch for a hotswap of a class file within a scan path package</li>
+<li>Reload bean definition after a change</li>
+<li>... and many other</li>
+</ul>
+
+<p>Packaged plugins:</p>
+
+<ul>
+<li>Hibernate (3x,4x) - Reload Hibernate configuration after entity create/change.</li>
+<li>Spring (3x, 4.x) - Reload Spring configuration after class definition/change.</li>
+<li>Jetty - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.</li>
+<li>Tomcat (7.x, 8.x) configure Apache Tomcat with extraClasspath property.</li>
+<li>Jersey</li>
+<li>ZK (5x-7x) - ZK Framework (<a href="http://www.zkoss.org/">http://www.zkoss.org/</a>). Change library properties default values to disable caches, maintains Label cache and
+bean resolver cache.</li>
+<li>Logback - Logback configuration reload</li>
+<li>Log4j2 - Log4j2 configuration reload</li>
+<li>Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)</li>
+<li>AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.</li>
+<li>ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.</li>
+<li>Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])</li>
+<li>JBossModules - add extra class path to JBoss's module class loader.</li>
+<li>JSF (mojarra 2.1, 2.2, MyFaces 2.2) - support for application resource bundle changes (properties files).</li>
+<li>OsgiEquinox - Hotswap support for Eclipse plugin or Eclipse platform development.</li>
+<li>RestEasy (2.x, 3.x) - Implemented by ResteasyRegistry plugin. Cleanups and registers class redefinitions.</li>
+<li>CDI/Weld - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition after proxied class change. EAR support. Bean reloading according strategy specified by parameter 'weld.beanReloadStrategy' in config file.</li>
+<li>Deltaspike (1.x) - messages,ViewConfig, repository, proxy reloading.</li>
+<li>WebObjects - Clear key value coding, component, action and validation caches after class change.</li>
+<li>WildFlyELResolver - Clear BeanELResolver after any class redefinition.</li>
+<li>Proxy (supported com.sun.proxy, CGlib) - redefines proxy classes that implement or extend changed interfaces or classes.</li>
+</ul>
+
+<p>Find a detail documentation of each plugin in the plugin project main README.md file.</p>
+
+<h3>
+<a id="runtime-overhead" class="anchor" href="#runtime-overhead" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Runtime overhead</h3>
+
+<p>It really depends on how many frameworks you use and which caches are disabled. Example measurements
+for a large, real world enterprise application based on Spring + Hibernate, run on Jetty.</p>
+
+<table>
+<thead>
+<tr>
+<th>Setup</th>
+<th>Startup time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Run (plain Java)</td>
+<td>23s</td>
+</tr>
+<tr>
+<td>Debug (plain Java)</td>
+<td>24s</td>
+</tr>
+<tr>
+<td>Debug (plain DCEVM)</td>
+<td>28s</td>
+</tr>
+<tr>
+<td>Agent - disabled all plugins</td>
+<td>31s</td>
+</tr>
+<tr>
+<td>Agent - all plugins</td>
+<td>35s</td>
+</tr>
+</tbody>
+</table>
+
+<h1>
+<a id="how-to-write-a-plugin" class="anchor" href="#how-to-write-a-plugin" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to write a plugin</h1>
+
+<p>You can write plugin directly as a part of your application. Set <code>pluginPackages=your.plugin.package</code> inside
+your <code>hotswap-agent.properties</code> configuration to discover <code>@Plugin</code> annotated classes. You will also need
+agent JAR dependency to compile, but be careful NOT to add the JAR to your application, it must be loaded only
+as a javaagent. Maven dependency:</p>
+
+<pre><code>    &lt;dependency&gt;
+        &lt;groupId&gt;org.hotswap.agent&lt;/groupId&gt;
+        &lt;artifactId&gt;HotswapAgent&lt;/artifactId&gt;
+        &lt;version&gt;${project.version}&lt;/version&gt;
+        &lt;scope&gt;provided&lt;/scope&gt;
+    &lt;/dependency&gt;
+</code></pre>
+
+<p>(Note that the JAR is not yet in central maven repository - you need to build it from source first).</p>
+
+<p>See <a href="https://github.com/HotswapProjects/HotswapAgentExamples/blob/master/SpringHibernate/src/main/java/org/hotswap/agent/it/plugin/ExamplePlugin.java">ExamplePlugin</a>
+(part of TestApplication) to go through a commented simple plugin. Read <a href="https://github.com/HotswapProjects/HotswapAgent/blob/master/README.md">agent readme</a>
+ to understand agent concepts. Check existing plugins source code for more examples.</p>
+
+<h1>
+<a id="creating-release" class="anchor" href="#creating-release" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Creating Release</h1>
+
+<p>Launch <code>run-tests.sh</code> script in the main directory. Currently you have to setup JAVA_HOME location directory manually.
+At least Java 7 and Java 8 with DCEVM should be checked before a release. All automatic tests are set to fail
+the whole script in case of any single test failure.</p>
+
+<p>Go to directory representing repository root. In case DCEVM is named <code>dcevm</code></p>
+
+<pre><code>mvn release:prepare
+mvn release:perform
+</code></pre>
+
+<p>In case your DCEVM is named differently i.e. <code>server</code></p>
+
+<pre><code>mvn release:prepare -Darguments="-Ddcevm=server"
+mvn release:perform -Darguments="-Ddcevm=server"
+</code></pre>
+
+<h1>
+<a id="plugin-specific-settings" class="anchor" href="#plugin-specific-settings" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plugin specific settings</h1>
+
+<h3>
+<a id="osgiequinox--eclipse-rcp" class="anchor" href="#osgiequinox--eclipse-rcp" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>OsgiEquinox / Eclipse RCP</h3>
+
+<p>OsgiEquinox / Eclipse plugin provides hotswap support for Eclipse plugin or Eclipse platform development
+(Do not confuse it with common development in Eclipse!).</p>
+
+<p>Following options should be setup in eclipse.ini for debugee Eclipse instance:</p>
+
+<pre><code> # use application classloader for the framework
+-Dosgi.frameworkParentClassloader=app
+ # development classpath that is added to each plugin classpath
+-Dosgi.dev=[extra_classpath]
+ # use dcevm as JVM
+-XXaltjvm=dcevm
+ # enable hotswapagent
+-javaagent:PATH_TO_AGENT/hotswap-agent.jar
+ # enable remote debugging on port 8000
+-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
+</code></pre>
+
+<p>extra_classpath points to directory with compiled classes. When a new class is compiled it is sent by remote debugger to HotswapAgent. HotswapAgent
+stores this file into extra_classpath directory.</p>
+
+<p>It is also necessary to setup following hotswap-agent.properties:</p>
+
+<pre><code>extraClasspath=[extra_classpath]
+osgiEquinox.debugMode=true
+</code></pre>
+
+<p>then connect the IDE debugger (eclipse, netbeans or idea) to port 8000 and happy hotswapping!</p>
+
+<h1>
+<a id="credits" class="anchor" href="#credits" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits</h1>
+
+<p>Hotswap agent:</p>
+
+<ul>
+<li>Jiri Bubnik - project coordinator, initial implementation</li>
+<li>Alexandros Papadakis - Maven Versioning, Weld, JSF, Hibernate3, RestEasy, WildFly plugins</li>
+<li>Erki Ehtla - Spring plugin, Proxy plugin</li>
+<li>Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld, Deltaspike, JavaBean, JBossModules  plugins</li>
+<li>Sergey Lysenko - Weld plugin</li>
+<li>Samuel Pelletier - WebObjects plugin</li>
+<li>Jan Tecl - web design</li>
+<li>Lukasz Warzecha - Log4j2 plugin</li>
+</ul>
+
+<p>DCEVM:</p>
+
+<ul>
+<li>Ivan Dubrov - current project coordinator, update to Java7+Java8, patches, build system (Gradle)</li>
+<li>Thomas Würthinger - initial implementation.</li>
+<li>Kerstin Breitender – contributor.</li>
+<li>Christoph Wimberger – contributor.</li>
+</ul>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/HotswapProjects/HotswapAgent/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/HotswapProjects/HotswapAgent/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/HotswapProjects/HotswapAgent"></a> is maintained by <a href="https://github.com/HotswapProjects">HotswapProjects</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
