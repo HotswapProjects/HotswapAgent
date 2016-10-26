@@ -16,7 +16,7 @@ public class AgentLoggerHandler {
     // stream to receive the log
     PrintStream outputStream;
 
-    SimpleDateFormat sdf = new SimpleDateFormat("H:m:s.SSS");
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS");
 
     /**
      * Setup custom stream (default is System.out).
