@@ -44,6 +44,10 @@ public class AgentLogger {
         return handler;
     }
 
+    public static void setDateTimeFormat(String dateTimeFormat) {
+        handler.setDateTimeFormat(dateTimeFormat);
+    }
+
     /**
      * Standard logging levels.
      */

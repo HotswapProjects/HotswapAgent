@@ -16,7 +16,7 @@ public class AgentLoggerHandler {
     // stream to receive the log
     PrintStream outputStream;
 
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS");
+    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /**
      * Setup custom stream (default is System.out).
@@ -47,8 +47,6 @@ public class AgentLoggerHandler {
         }
 
         StringBuffer stringBuffer = new StringBuffer();
-//        stringBuffer.append(formatCurrentTime());
-//        stringBuffer.append(" ");
         stringBuffer.append(level);
         stringBuffer.append(" (");
         stringBuffer.append(clazz.getName());
@@ -69,9 +67,7 @@ public class AgentLoggerHandler {
         return errors.toString();
     }
 
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
-
-    protected String formatCurrentTime() {
-        return simpleDateFormat.format(new Date());
+    public void setDateTimeFormat(String dateTimeFormat) {
+        sdf = new SimpleDateFormat(dateTimeFormat);
     }
 }

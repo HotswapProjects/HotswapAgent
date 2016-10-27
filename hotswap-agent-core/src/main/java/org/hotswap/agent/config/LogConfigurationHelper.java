@@ -17,6 +17,7 @@ public class LogConfigurationHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(LogConfigurationHelper.class);
 
     public static final String LOGGER_PREFIX = "LOGGER";
+    public static final String DATETIME_FORMAT = "LOGGER_DATETIME_FORMAT";
     private static final String LOGFILE = "LOGFILE";
     private static final String LOGFILE_APPEND = "LOGFILE.append";
 
@@ -29,21 +30,28 @@ public class LogConfigurationHelper {
     public static void configureLog(Properties properties) {
         for (String property : properties.stringPropertyNames()) {
             if (property.startsWith(LOGGER_PREFIX)) {
-                String classPrefix = getClassPrefix(property);
-                AgentLogger.Level level = getLevel(property, properties.getProperty(property));
+                if (property.startsWith(DATETIME_FORMAT)) {
+                    String dateTimeFormat = properties.getProperty(DATETIME_FORMAT);
+                    if (dateTimeFormat != null && !dateTimeFormat.isEmpty()) {
+                        AgentLogger.setDateTimeFormat(dateTimeFormat);
+                    }
+                } else {
+                    String classPrefix = getClassPrefix(property);
+                    AgentLogger.Level level = getLevel(property, properties.getProperty(property));
 
-                if (level != null) {
-                    if (classPrefix == null)
-                        AgentLogger.setLevel(level);
-                    else
-                        AgentLogger.setLevel(classPrefix, level);
+                    if (level != null) {
+                        if (classPrefix == null)
+                            AgentLogger.setLevel(level);
+                        else
+                            AgentLogger.setLevel(classPrefix, level);
+                    }
                 }
             } else if (property.equals(LOGFILE)) {
                 String logfile = properties.getProperty(LOGFILE);
                 boolean append = parseBoolean(properties.getProperty(LOGFILE_APPEND, "false"));
                 try {
-                PrintStream ps = new PrintStream(new FileOutputStream(new File(logfile), append));
-                	AgentLogger.getHandler().setPrintStream(ps);
+                    PrintStream ps = new PrintStream(new FileOutputStream(new File(logfile), append));
+                    AgentLogger.getHandler().setPrintStream(ps);
                 } catch (FileNotFoundException e) {
                     LOGGER.error("Invalid configuration property {} value '{}'. Unable to create/open the file.",
                             e, LOGFILE, logfile);
