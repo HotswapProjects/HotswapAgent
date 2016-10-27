@@ -111,14 +111,14 @@ public class WeldPlugin {
     public synchronized void registerBeanDeplArchivePath(final String archivePath) {
         URL resource = null;
         try {
-            resource =
-                    resourceNameToURL(archivePath);
+            resource = resourceNameToURL(archivePath);
             URI uri = resource.toURI();
             if (!IOUtils.isDirectoryURL(uri.toURL())) {
                 LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
                 return;
             } else {
                 LOGGER.info("Registering archive path {}", archivePath);
+
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                     @Override
                     public void onEvent(WatchFileEvent event) {
@@ -182,7 +182,7 @@ public class WeldPlugin {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             try {
                 String archivePath = getArchivePath(classLoader, ctClass, original.getName());
-                LOGGER.info("Class {} redefined for archive {} ", original.getName(), archivePath);
+                LOGGER.debug("Class {} redefined for archive {} ", original.getName(), archivePath);
                 if (isBdaRegistered(classLoader, archivePath)) {
                     String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
                     String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
