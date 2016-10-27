@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.weld.beans;
 
 import java.lang.reflect.Field;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -21,7 +22,7 @@ public class ContextualReloadHelper {
     public static void reload(HotSwappingContext ctx) {
         Set<Contextual<Object>> beans = ctx.getBeans();
 
-        if (beans.size() > 0) {
+        if (beans != null && !beans.isEmpty()) {
             LOGGER.debug("Starting re-loading Contextuals in {}, {}", ctx, beans.size());
 
             Iterator<Contextual<Object>> it = beans.iterator();
@@ -48,8 +49,13 @@ public class ContextualReloadHelper {
     public static boolean addToReloadSet(Context ctx,  Contextual<Object> managedBean)  {
         try {
             LOGGER.debug("Adding bean in '{}' : {}", ctx.getClass(), managedBean);
-            Field toRedefine = ctx.getClass().getField("_toRelaod");
-            Set.class.cast(toRedefine.get(ctx)).add(managedBean);
+            Field toRedefine = ctx.getClass().getField("_toReload");
+            Set toReload = Set.class.cast(toRedefine.get(ctx));
+            if (toReload == null) {
+                toReload = new HashSet();
+                toRedefine.set(ctx, toReload);
+            }
+            toReload.add(managedBean);
             return true;
         } catch(Exception e) {
             LOGGER.warning("Context {} is not patched. Can not add {} to reload set", e, ctx, managedBean);

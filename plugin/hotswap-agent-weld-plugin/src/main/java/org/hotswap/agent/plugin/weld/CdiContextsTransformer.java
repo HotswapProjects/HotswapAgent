@@ -34,12 +34,21 @@ public class CdiContextsTransformer {
         LOGGER.debug("Adding interface {} to {}.", HotSwappingContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(HotSwappingContext.class.getName()));
 
-        clazz.addField(CtField.make("public java.util.Set _toRelaod = new java.util.HashSet();", clazz));
+        CtField toReloadFld = CtField.make("public java.util.Set _toReload = null;", clazz);
+        toReloadFld.setModifiers(toReloadFld.getModifiers() | Modifier.TRANSIENT );
+        clazz.addField(toReloadFld);
 
-        CtMethod addBean = CtMethod.make("public void addBean(javax.enterprise.context.spi.Contextual bean) {_toRelaod.add(bean);}", clazz);
+        CtMethod addBean = CtMethod.make(
+                "public void addBean(javax.enterprise.context.spi.Contextual bean) {" +
+                "    if (_toReload == null)" +
+                "        _toReload = new java.util.HashSet();" +
+                "    _toReload.add(bean);" +
+                "}",
+                clazz
+        );
         clazz.addMethod(addBean);
 
-        CtMethod getBeans = CtMethod.make("public java.util.Set getBeans(){return _toRelaod;}", clazz);
+        CtMethod getBeans = CtMethod.make("public java.util.Set getBeans(){return _toReload;}", clazz);
         clazz.addMethod(getBeans);
 
         CtMethod _reload = CtMethod.make("public void _reload() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
