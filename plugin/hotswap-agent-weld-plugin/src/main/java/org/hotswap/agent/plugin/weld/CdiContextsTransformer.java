@@ -1,7 +1,5 @@
 package org.hotswap.agent.plugin.weld;
 
-import java.lang.reflect.Modifier;
-
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
@@ -10,8 +8,8 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.weld.beans.HotSwappingContext;
 import org.hotswap.agent.plugin.weld.beans.ContextualReloadHelper;
+import org.hotswap.agent.plugin.weld.beans.HotSwappingContext;
 
 /**
  * The Class CdiContextsTransformer.
@@ -22,20 +20,13 @@ public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
 
-    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.manager.BeanManagerImpl")
-    public static void transformBeanManagerImpl(CtClass clazz, ClassPool classPool) throws NotFoundException {
-        CtField f = clazz.getField("contexts");
-        f.setModifiers(Modifier.PUBLIC);
-    }
-
     @OnClassLoadEvent(classNameRegexp = "(org.jboss.weld.context.AbstractManagedContext)|(org.jboss.weld.context.AbstractSharedContext)|(org.jboss.weld.util.ForwardingContext)|(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|(org.apache.myfaces.cdi.view.ViewScopeContextImpl)")
     public static void transformWeldContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
 
         LOGGER.debug("Adding interface {} to {}.", HotSwappingContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(HotSwappingContext.class.getName()));
 
-        CtField toReloadFld = CtField.make("public java.util.Set _toReload = null;", clazz);
-        toReloadFld.setModifiers(toReloadFld.getModifiers() | Modifier.TRANSIENT );
+        CtField toReloadFld = CtField.make("public transient java.util.Set _toReload = null;", clazz);
         clazz.addField(toReloadFld);
 
         CtMethod addBean = CtMethod.make(
