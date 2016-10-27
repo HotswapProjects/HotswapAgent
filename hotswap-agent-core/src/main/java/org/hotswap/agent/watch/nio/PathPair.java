@@ -1,18 +1,18 @@
 /*
  * Copyright 2016 the original author or authors.
- * 
+ *
  * This file is part of HotswapAgent.
- * 
+ *
  * HotswapAgent is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 2 of the License, or (at your
  * option) any later version.
- * 
+ *
  * HotswapAgent is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
@@ -33,11 +33,11 @@ import java.nio.file.Path;
  * This workaround, does not completely eliminate the locking problem. For
  * example, when working with maven projects one first needs to clean and then
  * build (two commands).
- * 
+ *
  * In eclipse, sometimes the m2e plugin complains that it can not access
  * generated files. This is usually fixed with a clean.
  * </p>
- * 
+ *
  * @author alpapad@gmail.com
  */
 public class PathPair {
@@ -132,7 +132,7 @@ public class PathPair {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#hashCode()
      */
     @Override
@@ -145,7 +145,7 @@ public class PathPair {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#equals(java.lang.Object)
      */
     @Override
@@ -170,9 +170,17 @@ public class PathPair {
         return true;
     }
 
+    public String getShortDescription() {
+        if (watched != null && watched.equals(target)) {
+            // short description for NIO2 implementation
+            return "PathPair [watched=" + watched + "]";
+        }
+        return "PathPair [target=" + target + ", watched=" + watched + "]";
+    }
+
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#toString()
      */
     @Override

@@ -1,18 +1,18 @@
 /*
  * Copyright 2016 the original author or authors.
- * 
+ *
  * This file is part of HotswapAgent.
- * 
+ *
  * HotswapAgent is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 2 of the License, or (at your
  * option) any later version.
- * 
+ *
  * HotswapAgent is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
@@ -39,41 +39,45 @@ import java.nio.file.attribute.BasicFileAttributes;
  */
 public class WatcherNIO2 extends AbstractNIO2Watcher {
     private final static WatchEvent.Modifier HIGH;
-    
+
     static {
-        HIGH =  getWatchEventModifier("com.sun.nio.file.SensitivityWatchEventModifier","HIGH"); 
+        HIGH =  getWatchEventModifier("com.sun.nio.file.SensitivityWatchEventModifier","HIGH");
     }
-    
-	public WatcherNIO2() throws IOException {
-		super();
-	}
+
+    public WatcherNIO2() throws IOException {
+        super();
+    }
 
 
-	/**
-	 * Register the given directory, and all its sub-directories, with the
-	 * WatchService.
-	 */
-	@Override
-	protected void registerAll(final Path parent, Path start) throws IOException {
-		// register directory and sub-directories
-		LOGGER.info("Registering directory  {} under parent {}", start, parent);
+    /**
+     * Register the given directory, and all its sub-directories, with the
+     * WatchService.
+     */
+    @Override
+    protected void registerAll(final Path parent, Path start) throws IOException {
+        // register directory and sub-directories
+        if (parent != null) {
+            LOGGER.debug("Registering directory  {} under parent {}", start, parent);
+        } else {
+            LOGGER.debug("Registering directory  {}", start);
+        }
 
-		Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
-			@Override
-			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				register(dir);
-				return FileVisitResult.CONTINUE;
-			}
-		});
-	}
+        Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                register(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
 
-	/**
-	 * Register the given directory with the WatchService
-	 */
-	private void register(Path dir) throws IOException {
-		// try to set high sensitivity
-		final WatchKey key = HIGH == null ? dir.register(watcher, KINDS) : dir.register(watcher, KINDS, HIGH);
-		
-		keys.put(key, PathPair.get(dir));
-	}
+    /**
+     * Register the given directory with the WatchService
+     */
+    private void register(Path dir) throws IOException {
+        // try to set high sensitivity
+        final WatchKey key = HIGH == null ? dir.register(watcher, KINDS) : dir.register(watcher, KINDS, HIGH);
+
+        keys.put(key, PathPair.get(dir));
+    }
 }
