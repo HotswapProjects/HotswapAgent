@@ -109,8 +109,6 @@ public class WeldPlugin {
      * @param bdaId the BeanDeploymentArchive ID
      */
     public synchronized void registerBeanDeplArchivePath(final String archivePath) {
-        LOGGER.info("Registering archive path {}", archivePath);
-
         URL resource = null;
         try {
             resource =
@@ -120,6 +118,7 @@ public class WeldPlugin {
                 LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
                 return;
             } else {
+                LOGGER.info("Registering archive path {}", archivePath);
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                     @Override
                     public void onEvent(WatchFileEvent event) {
