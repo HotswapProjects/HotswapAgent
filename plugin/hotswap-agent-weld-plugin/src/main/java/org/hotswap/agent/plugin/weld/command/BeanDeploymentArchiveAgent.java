@@ -154,7 +154,6 @@ public class BeanDeploymentArchiveAgent {
             registered = true;
             PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
                     "registerBeanDeplArchivePath", new Class[] { String.class }, new Object[] { archivePath });
-            LOGGER.info("BeanDeploymentArchiveAgent registered bdaId='{}' archivePath='{}'.", getBdaId(), archivePath);
         }
     }
 

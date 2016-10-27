@@ -45,15 +45,17 @@ public class DeltaSpikePlugin {
     Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<Object, List<String>>();
 
     public void registerRepoComponent(Object repoComponent, Class<?> repositoryClass) {
+        if (!registeredRepoComponents.containsKey(repoComponent)) {
+            LOGGER.debug("DeltaspikePlugin - Repository Component registered : {}", repositoryClass.getName());
+        }
         registeredRepoComponents.put(repoComponent, repositoryClass.getName());
-        LOGGER.debug("DeltaspikePlugin - Repository Component registered : " + repositoryClass.getName());
     }
 
     public void registerPartialBean(Object bean, Class<?> partialBeanClass) {
         synchronized(registeredPartialBeans) {
             registeredPartialBeans.put(bean, partialBeanClass.getName());
         }
-        LOGGER.debug("Registering partial bean : " + partialBeanClass.getName());
+        LOGGER.debug("Registering partial bean : {}", partialBeanClass.getName());
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
@@ -108,7 +110,7 @@ public class DeltaSpikePlugin {
             List<String> rootClassNameList = new ArrayList<String>();
             for (Object viewConfigClassObj : rootClassList) {
                 Class<?> viewConfigClass = (Class<?>) viewConfigClassObj;
-                LOGGER.debug("Registering ViewConfigRoot class : " + viewConfigClass.getName());
+                LOGGER.debug("Registering ViewConfigRoot class : {}", viewConfigClass.getName());
                 rootClassNameList.add(viewConfigClass.getName());
             }
             registeredViewConfExtRootClasses.put(viewConfigExtension, rootClassNameList);

@@ -51,7 +51,8 @@ public class ProxyFactoryTransformer {
                 PluginManagerInvoker.buildCallPluginMethod("this.classLoader", WeldPlugin.class, "registerProxyFactory",
                         "this", "java.lang.Object",
                         "bean", "java.lang.Object",
-                        "this.classLoader", "java.lang.ClassLoader"
+                        "this.classLoader", "java.lang.ClassLoader",
+                        "proxiedBeanType", "java.lang.Class"
                         ) +
             "}"
         );

@@ -114,7 +114,7 @@ public class WeldPlugin {
             resource = resourceNameToURL(archivePath);
             URI uri = resource.toURI();
             if (!IOUtils.isDirectoryURL(uri.toURL())) {
-                LOGGER.debug("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
+                LOGGER.trace("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
                 return;
             } else {
                 LOGGER.info("Registering archive path {}", archivePath);
@@ -163,11 +163,13 @@ public class WeldPlugin {
         return false;
     }
 
-    public void registerProxyFactory(Object proxyFactory, Object bean, ClassLoader classLoader) {
+    public void registerProxyFactory(Object proxyFactory, Object bean, ClassLoader classLoader, Class<?> proxiedBeanType) {
         synchronized(registeredProxiedBeans) {
+            if (!registeredProxiedBeans.containsKey(bean)) {
+                LOGGER.debug("ProxyFactory for {} registered.", proxiedBeanType.getName());
+            }
             registeredProxiedBeans.put(bean, proxyFactory);
         }
-        LOGGER.debug("Registering ProxyFactory : " + proxyFactory.getClass().getName());
     }
 
     /**

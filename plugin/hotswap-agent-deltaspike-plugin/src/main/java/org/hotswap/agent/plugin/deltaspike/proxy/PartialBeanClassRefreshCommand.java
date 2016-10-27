@@ -50,7 +50,7 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
                     Method reinitializeMethod = resolveClass("org.apache.deltaspike.data.impl.meta.RepositoryComponent").getDeclaredMethod("__reinitialize");
                     reinitializeMethod.invoke(repositoryComponent);
                 } catch (Exception e) {
-                    LOGGER.error("Error reinitializing repository " + className, e);
+                    LOGGER.error("Error reinitializing repository {}", e, className);
                 }
             }
         }
