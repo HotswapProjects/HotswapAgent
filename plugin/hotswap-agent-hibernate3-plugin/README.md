@@ -2,6 +2,7 @@ Hibernate plugin
 ================
 Reload Hibernate3 EntityManagerFactory / SessionFactory after entity class definition/change.
 
+#### Implementation notes:
 The plugin hooks for initialization into `org.hibernate.ejb.HibernatePersistence` (for EJB 3.0) or
 `org.hibernate.cfg.Configuration` (for plain Hibernate) to wrap `javax.persistence.EntityManagerFactory` or
 `org.hibernate.SessionFactory` with a proxy. All clients then obtain reference for the proxy only.
@@ -14,7 +15,6 @@ New `EnityManager`/`SessionFactory` instance is than obtained on next `EnityMana
 `EntityManager` created before reload remains unchanged.
 
 
-#### Implementation notes:
 `HibernateTransformers` registers static transformer for main Hibernate configuration class
 `org.hibernate.ejb.HibernatePersistence`. The methods `createEntityManagerFactory /
 createContainerEntityManagerFactory` are wrapped with a call to

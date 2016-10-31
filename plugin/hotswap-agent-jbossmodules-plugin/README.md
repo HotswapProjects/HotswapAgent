@@ -1,5 +1,7 @@
 [JBoss modules](http://)
 ========================================
+Add extraClassPath from hotswap-agent.properties to org.jboss.modules.ModuleClassLoader. Therefore
+extraClassPath can be used for all enviroments based on this jsboss's class loader (WildFly).
 
 Configuration
 -------------
@@ -13,17 +15,9 @@ Setup extraClasspath property in hotswap-agent.properties.
     # Note that there must be a plugin that will provide actual replacement such as JettyPlugin for Jetty servlet container.
     extraClasspath=
 
-
-
 #### Implementation notes:
-
-StandardContext (parsed web.xml configuration):
-* watchedResources
-
-ApplicationContext:
-* getResource(String path) - override webapp directory location
-* ClassLoader getClassLoader()  -> ClassLoader result = context.getLoader().getClassLoader();
+Plugin is initialized when `loadModule` of `org.jboss.modules.ModuleLoader'` is called. Plugin is unload when
+`unloadModule` is called.
 
 TODO
 ----
-* add 

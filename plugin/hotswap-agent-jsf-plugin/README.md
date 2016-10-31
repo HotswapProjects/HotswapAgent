@@ -1,6 +1,6 @@
 JSF plugin
 ==========
-Supported Mojarra, MyFaces implementation.  Clears resource bundle cache after any .properties file change.
+Supported Mojarra, MyFaces implementation. Clear resource bundle cache after any *.properties file is changed.
 
 #### Implementation notes:
 * Mojarra plugin initialization is triggered after com.sun.faces.config.ConfigManager.initialize() method in servlet classloader.

@@ -10,6 +10,14 @@ After anonymous class insertion/deletion the indexes are shifted producing not c
 This patch will create class state info before the change (from current ClassLoader via reflection) and
 after the change (from filesystem using javassist) find all compatible transitions.
 
+Known issues
+---------------
+For correct plugin functionality the modified class file must be uploaded to destination classloader before 
+redefinition is processed. It is no problem if application shares the same directory with target folder of
+IDE compiler. But it can be problem if someone debug application inside servlet container. In that case 
+application should publish modified classes before the redefinition is called via debugger. It can't be
+alway accomplished by IDE settingis, in that cases it is better to disable this plugin at all.
+
 Example
 -------
 For example if you exchange order the anonymous class appears in the source code, Transition may
@@ -39,3 +47,4 @@ contain code from the new MyClass$1 (class compatible with old MyClass$2). Note 
 a true hotswap, old existing instances of MyClass$1 are updated to an empty class, not the new one.
 When calling a method on this class, AbstractErrorMethod is thrown (this should be replaced to some
 more clear error in the future).
+

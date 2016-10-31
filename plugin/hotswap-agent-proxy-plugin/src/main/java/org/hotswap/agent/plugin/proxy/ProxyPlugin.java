@@ -45,8 +45,8 @@ public class ProxyPlugin {
 
     /*
      * We can't redefine proxy directly (and return new proxy class bytes) in this method since the classLoader contains
-     * OLD definition of proxie's interface. Therefore proxy is defined in deferred command so there is a delay between
-     * interface redefinition and proxy redefinition.
+     * OLD definition of proxie's interface. Therefore proxy is defined in deferred command after proxied interface is redefined
+     * in DCEVM. It follows that there must be a delay between interface redefinition and proxy redefinition.
      *
      */
         final String className = classBeingRedefined.getName();
@@ -125,8 +125,8 @@ public class ProxyPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
     public static byte[] transformCglibProxy(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
             final ClassLoader loader, final ClassPool cp) throws Exception {
-        GeneratorParams generatorParams = GeneratorParametersTransformer.getGeneratorParams(loader,
-                classBeingRedefined.getName());
+        GeneratorParams generatorParams = GeneratorParametersTransformer.getGeneratorParams(loader, classBeingRedefined.getName());
+
         if (generatorParams == null) {
             return classfileBuffer;
         }
@@ -136,8 +136,7 @@ public class ProxyPlugin {
 
         if (generatorParams.getParam().getClass().getName().endsWith(".Enhancer")) {
             try {
-                return CglibEnhancerProxyTransformer.transform(classBeingRedefined, cp, classfileBuffer, loader,
-                        generatorParams);
+                return CglibEnhancerProxyTransformer.transform(classBeingRedefined, cp, classfileBuffer, loader, generatorParams);
             } catch (Exception e) {
                 LOGGER.error("Error redifining Cglib Enhancer proxy {}", e, classBeingRedefined.getName());
             }
