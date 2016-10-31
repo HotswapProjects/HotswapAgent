@@ -30,7 +30,7 @@ public class WatchEventDTO {
         else
             throw new IllegalArgumentException("Invalid annotation type " + annotation);
     }
-    
+
     public WatchEventDTO(OnClassFileEvent annotation) {
         classFileEvent = true;
         timeout = annotation.timeout();
@@ -92,7 +92,9 @@ public class WatchEventDTO {
         }
 
         // load class files only from files named ".class"
-        if (isClassFileEvent() && !event.getURI().toString().endsWith(".class")) {
+        // Don't treat _jsp.class as a class file. JSP class files are compiled by application server, compilation
+        // has two phases that cause many problems with HA. Look at JSR45
+        if (isClassFileEvent() &&  (!event.getURI().toString().endsWith(".class") || event.getURI().toString().endsWith("_jsp.class"))) {
             return false;
         }
 
