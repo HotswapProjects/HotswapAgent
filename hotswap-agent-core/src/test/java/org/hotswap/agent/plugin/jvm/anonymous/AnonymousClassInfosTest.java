@@ -1,7 +1,9 @@
-package org.hotswap.agent.plugin.jvm;
+package org.hotswap.agent.plugin.jvm.anonymous;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.LoaderClassPath;
+import org.hotswap.agent.plugin.jvm.AnonymousClassInfo;
+import org.hotswap.agent.plugin.jvm.AnonymousClassInfos;
 import org.junit.Test;
 
 import java.util.Map;

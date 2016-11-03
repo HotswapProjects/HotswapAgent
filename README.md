@@ -155,6 +155,7 @@ bean resolver cache.
 * Logback - Logback configuration reload
 * Log4j2 - Log4j2 configuration reload
 * Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
+* ClassInit - initializes all new static members/enum values after class/enum redefinition and keeps all surviving static values. (Fix of known DCEVM)
 * AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
 * ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])

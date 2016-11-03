@@ -1,9 +1,10 @@
-package org.hotswap.agent.plugin.jvm;
+package org.hotswap.agent.plugin.jvm.anonymous;
 
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.plugin.jvm.AnonymousClassInfo;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ public class AnonymousClassInfoTest {
     @Test
     public void testGetFieldsSignature() throws Exception {
         // default field this
-        String fieldsSignature = "org.hotswap.agent.plugin.jvm.AnonymousTestClass1 this$0;";
+        String fieldsSignature = "org.hotswap.agent.plugin.jvm.anonymous.AnonymousTestClass1 this$0;";
         assertEquals(fieldsSignature, getAnonymousClassInfo().getFieldsSignature());
         assertEquals(fieldsSignature, getAnonymousCtClassInfo().getFieldsSignature());
     }

@@ -1,0 +1,123 @@
+package org.hotswap.agent.plugin.jvm;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.command.Command;
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.Modifier;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.expr.ExprEditor;
+import org.hotswap.agent.javassist.expr.FieldAccess;
+import org.hotswap.agent.logging.AgentLogger;
+
+@Plugin(name = "ClassInitPlugin",
+        description = "Initialize empty static fields (left by DCEVM) using code from <cinit> method.",
+        testedVersions = {"DCEVM"})
+public class ClassInitPlugin {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ClassInitPlugin.class);
+
+    private static final String HOTSWAP_AGENT_CINIT_METHOD = "__ha_cinit";
+
+    public static boolean reloadFlag;
+
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
+    public static void patch(final CtClass ctClass, final ClassLoader classLoader, final Class<?> originalClass) throws IOException, CannotCompileException, NotFoundException {
+
+        final String className = ctClass.getName();
+
+        CtConstructor cinit = ctClass.getClassInitializer();
+
+        if (cinit != null) {
+            LOGGER.debug("Adding __ha_cinit to class: {}", className);
+            CtConstructor haCinit = new CtConstructor(cinit, ctClass, null);
+            haCinit.getMethodInfo().setName(HOTSWAP_AGENT_CINIT_METHOD);
+            haCinit.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+            ctClass.addConstructor(haCinit);
+
+            final boolean reinitializeStatics[] = new boolean[] { false };
+
+            haCinit.instrument(
+                new ExprEditor() {
+                    public void edit(FieldAccess f) throws CannotCompileException {
+                        try {
+                            if (f.isStatic() && f.isWriter()) {
+                                Field originalField = null;
+                                try {
+                                    originalField = originalClass.getDeclaredField(f.getFieldName());
+                                } catch (NoSuchFieldException e) {
+                                    LOGGER.debug("New field will be initialized {}", f.getFieldName());
+                                    reinitializeStatics[0] = true;
+                                }
+                                if (originalField != null) {
+                                    // ENUM$VALUES is last in enumeration
+                                    if (originalClass.isEnum() && "ENUM$VALUES".equals(f.getFieldName())) {
+                                        if (reinitializeStatics[0]) {
+                                            LOGGER.debug("New field will be initialized {}", f.getFieldName());
+                                        } else {
+                                            reinitializeStatics[0] = checkOldEnumValues(ctClass, originalClass);
+                                        }
+                                    } else {
+                                        LOGGER.debug("Skipping old field {}", f.getFieldName());
+                                        f.replace("{}");
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            LOGGER.error("Patching __ha_cinit method failed.", e);
+                        }
+                    }
+
+                }
+            );
+
+            if (reinitializeStatics[0]) {
+                PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
+                    @Override
+                    public void executeCommand() {
+                        try {
+                            Class<?> clazz = classLoader.loadClass(className);
+                            Method m = clazz.getDeclaredMethod(HOTSWAP_AGENT_CINIT_METHOD, new Class[] {});
+                            if (m != null) {
+                                m.invoke(null, new Object[] {});
+                            }
+                        } catch (Exception e) {
+                            LOGGER.error("Error initializing redefined class {}", e, className);
+                        } finally {
+                            reloadFlag = false;
+                        }
+                    }
+                }, 100);
+            } else {
+                reloadFlag = false;
+            }
+        }
+    }
+
+    private static boolean checkOldEnumValues(CtClass ctClass, Class<?> originalClass) {
+        if (ctClass.isEnum()) {
+            // Check if some field from original enumeration was deleted
+            Enum<?>[] enumConstants = (Enum<?>[]) originalClass.getEnumConstants();
+            for (Enum<?> en : enumConstants) {
+                try {
+                    CtField existing = ctClass.getDeclaredField(en.toString());
+                } catch (NotFoundException e) {
+                    LOGGER.debug("Enum field deleted. ENUM$VALUES will be reinitialized {}", en.toString());
+                    return true;
+                }
+            }
+        } else {
+            LOGGER.error("Patching __ha_cinit method failed. Enum type expected {}", ctClass.getName());
+        }
+        return false;
+    }
+}

@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.jvm;
+package org.hotswap.agent.plugin.jvm.anonymous;
 
 /**
  * Change of enclosing method name.

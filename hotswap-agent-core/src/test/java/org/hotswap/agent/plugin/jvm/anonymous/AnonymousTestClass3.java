@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.jvm;
+package org.hotswap.agent.plugin.jvm.anonymous;
 
 /**
  * Insert class $2 before class $1.

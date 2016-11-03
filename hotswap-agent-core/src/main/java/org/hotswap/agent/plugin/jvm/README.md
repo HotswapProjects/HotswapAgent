@@ -2,9 +2,9 @@ AnonymousClassPatch
 ====================
 This is a patch to resolve issues with anonymous classes hotswap.
 
-If you reload a class MyClass with two anonymous classes, class names MyClass$1, MyClass$2 are created 
+If you reload a class MyClass with two anonymous classes, class names MyClass$1, MyClass$2 are created
 in the order as anonymous class appears in the source code.
-After anonymous class insertion/deletion the indexes are shifted producing not compatible hot swap 
+After anonymous class insertion/deletion the indexes are shifted producing not compatible hot swap
 (change of superclass).
 
 This patch will create class state info before the change (from current ClassLoader via reflection) and
@@ -12,9 +12,9 @@ after the change (from filesystem using javassist) find all compatible transitio
 
 Known issues
 ---------------
-For correct plugin functionality the modified class file must be uploaded to destination classloader before 
+For correct plugin functionality the modified class file must be uploaded to destination classloader before
 redefinition is processed. It is no problem if application shares the same directory with target folder of
-IDE compiler. But it can be problem if someone debug application inside servlet container. In that case 
+IDE compiler. But it can be problem if someone debug application inside servlet container. In that case
 application should publish modified classes before the redefinition is called via debugger. It can't be
 alway accomplished by IDE settingis, in that cases it is better to disable this plugin at all.
 
@@ -48,3 +48,20 @@ a true hotswap, old existing instances of MyClass$1 are updated to an empty clas
 When calling a method on this class, AbstractErrorMethod is thrown (this should be replaced to some
 more clear error in the future).
 
+ClassInit
+====================
+Initialize new static members. When a class is redefined, DCEVM copies values from all surviving static members
+to the new class, but it leaves all new static members uninitialized. That applies to enumerations as well. ClassInit
+plugin fixes this issue. After redefinition all surviving static values are kept and initialization is done
+only for new static members. After redefinition of an enumeration all surviving enumeration values are kept,
+so it is guaranteed that surviving enumeration value Enum.X' is identical to value before redefinition Enum.X.
+
+Known issues
+---------------
+Ordinal values of a redefined enumeration value X'.ordinal() values can be different than original one
+
+    X.ordinal() != X'.ordinal()
+
+#### Implementation notes:
+Content of '<cinit>' method is copied to '__ha_cinit'. Assignment to surviving members are removed using javassist.
+'__ha_cinit' method is called after class is redefined in JVM after timeout (100ms).
