@@ -13,6 +13,7 @@ import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
@@ -33,7 +34,18 @@ public class ClassInitPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public static void patch(final CtClass ctClass, final ClassLoader classLoader, final Class<?> originalClass) throws IOException, CannotCompileException, NotFoundException {
 
+        if (isSyntheticClass(originalClass)) {
+            return;
+        }
+
         final String className = ctClass.getName();
+
+        try {
+            CtMethod origMethod = ctClass.getDeclaredMethod(HOTSWAP_AGENT_CINIT_METHOD);
+            ctClass.removeMethod(origMethod);
+        } catch (org.hotswap.agent.javassist.NotFoundException ex) {
+            // swallow
+        }
 
         CtConstructor cinit = ctClass.getClassInitializer();
 
@@ -120,4 +132,11 @@ public class ClassInitPlugin {
         }
         return false;
     }
+
+    private static boolean isSyntheticClass(Class<?> classBeingRedefined) {
+        return classBeingRedefined.getSimpleName().contains("$$_javassist")
+                || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
+                || classBeingRedefined.getSimpleName().contains("$$");
+    }
+
 }
