@@ -5,7 +5,7 @@ notifications:
     - lada.dvorak7@gmail.com
     
 jdk:
-  - oraclejdk8
+  - oraclejdk7
 
 env:
 
