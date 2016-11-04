@@ -143,30 +143,36 @@ uses agent services to:
 * Reload bean definition after a change
 * ... and many other
 
-Packaged plugins:
+#### Java frameworks plugins:
 
-* Hibernate (3x,4x) - Reload Hibernate configuration after entity create/change.
-* Spring (3x, 4.x) - Reload Spring configuration after class definition/change.
-* Jetty - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
-* Tomcat (7.x, 8.x) configure Apache Tomcat with extraClasspath property.
-* Jersey
-* ZK (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and
-bean resolver cache.
-* Logback - Logback configuration reload
-* Log4j2 - Log4j2 configuration reload
-* Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
-* ClassInit - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM)
-* AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
+* Deltaspike (1.x) - messages, ViewConfig, repository, proxy reloading.
 * ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
-* Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
-* JBossModules - add extra class path to JBoss's module class loader.
+* Hibernate (3x,4x) - Reload Hibernate configuration after entity create/change.
+* Jersey
 * JSF (mojarra 2.1, 2.2, MyFaces 2.2) - support for application resource bundle changes (properties files).
+* Logback - Logback configuration reload.
+* Log4j2 - Log4j2 configuration reload.
 * OsgiEquinox - Hotswap support for Eclipse plugin or Eclipse platform development.
-* RestEasy (2.x, 3.x) - Implemented by ResteasyRegistry plugin. Cleanups and registers class redefinitions.
-* CDI/Weld - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition after proxied class change. EAR support. Bean reloading according strategy specified by parameter 'weld.beanReloadStrategy' in config file.
-* Deltaspike (1.x) - messages,ViewConfig, repository, proxy reloading.
+* RestEasy (2.x, 3.x) - Cleanups and registers class redefinitions.
+* Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
+* Spring (3x, 4.x) - Reload Spring configuration after class definition/change.
+* Weld (CDI) - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition. EAR support. Bean reloading according strategy.
 * WebObjects - Clear key value coding, component, action and validation caches after class change.
 * WildFlyELResolver - Clear BeanELResolver after any class redefinition.
+* ZK (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and
+bean resolver cache.
+
+#### Servlet containers and application servers plugins:
+
+* Tomcat (7.x, 8.x) configure Apache Tomcat with extraClasspath property.
+* Jetty - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
+* JBossModules - add extra class path to JBoss's module class loader. (Wildfly)
+
+#### JVM plugins - hotswapping enhancements:
+
+* AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
+* ClassInit - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM)
+* Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
 * Proxy (supported com.sun.proxy, CGlib) - redefines proxy classes that implement or extend changed interfaces or classes.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
@@ -227,7 +233,7 @@ Hotswap agent:
 * Jiri Bubnik - project coordinator, initial implementation
 * Alexandros Papadakis - Maven Versioning, Weld, JSF, Hibernate3, RestEasy, WildFly plugins
 * Erki Ehtla - Spring plugin, Proxy plugin
-* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld, Deltaspike, JavaBean, JBossModules  plugins
+* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld, Deltaspike, JavaBean, JBossModules, ClassInit
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
@@ -237,5 +243,5 @@ DCEVM:
 
 * Ivan Dubrov - current project coordinator, update to Java7+Java8, patches, build system (Gradle)
 * Thomas Würthinger - initial implementation.
-* Kerstin Breitender – contributor.
-* Christoph Wimberger – contributor.
+* Kerstin Breitender - contributor.
+* Christoph Wimberger - contributor.
