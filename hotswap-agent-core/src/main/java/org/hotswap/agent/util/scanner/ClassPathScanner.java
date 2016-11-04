@@ -25,6 +25,7 @@ public class ClassPathScanner implements Scanner {
     // scan for files inside JAR file - e.g. jar:file:\J:\HotswapAgent\target\HotswapAgent-1.0.jar!\org\hotswap\agent\plugin
     public static final String JAR_URL_SEPARATOR = "!/";
     public static final String JAR_URL_PREFIX = "jar:";
+    public static final String ZIP_URL_PREFIX = "zip:";
     public static final String FILE_URL_PREFIX = "file:";
 
 
@@ -47,8 +48,8 @@ public class ClassPathScanner implements Scanner {
                     throw new IOException("Illegal directory URI " + pluginDirURL, e);
                 }
 
-                if (uri.startsWith(JAR_URL_PREFIX)) {
-                    String jarFile = uri.substring(JAR_URL_PREFIX.length());
+                if (uri.startsWith(JAR_URL_PREFIX) || uri.startsWith(ZIP_URL_PREFIX)) {
+                    String jarFile = uri.substring(uri.indexOf(':') + 1); // remove the prefix
                     scanJar(jarFile, visitor);
                 } else {
                     LOGGER.warning("Unknown resource type of file " + uri);
