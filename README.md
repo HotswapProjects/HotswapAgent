@@ -155,7 +155,7 @@ bean resolver cache.
 * Logback - Logback configuration reload
 * Log4j2 - Log4j2 configuration reload
 * Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
-* ClassInit - initializes all new static members/enum values after class/enum redefinition and keeps all surviving static values. (Fix of known DCEVM)
+* ClassInit - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM)
 * AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
 * ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
@@ -219,36 +219,6 @@ In case your DCEVM is named differently i.e. `server`
 
     mvn release:prepare -Darguments="-Ddcevm=server"
     mvn release:perform -Darguments="-Ddcevm=server"
-
-Plugin specific settings
-========================
-
-### OsgiEquinox / Eclipse RCP
-OsgiEquinox / Eclipse plugin provides hotswap support for Eclipse plugin or Eclipse platform development
-(Do not confuse it with common development in Eclipse!).
-
-Following options should be setup in eclipse.ini for debugee Eclipse instance:
-
-     # use application classloader for the framework
-    -Dosgi.frameworkParentClassloader=app
-     # development classpath that is added to each plugin classpath
-    -Dosgi.dev=[extra_classpath]
-     # use dcevm as JVM
-    -XXaltjvm=dcevm
-     # enable hotswapagent
-    -javaagent:PATH_TO_AGENT/hotswap-agent.jar
-     # enable remote debugging on port 8000
-    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
-
-extra_classpath points to directory with compiled classes. When a new class is compiled it is sent by remote debugger to HotswapAgent. HotswapAgent
-stores this file into extra_classpath directory.
-
-It is also necessary to setup following hotswap-agent.properties:
-
-    extraClasspath=[extra_classpath]
-    osgiEquinox.debugMode=true
-
-then connect the IDE debugger (eclipse, netbeans or idea) to port 8000 and happy hotswapping!
 
 Credits
 =======

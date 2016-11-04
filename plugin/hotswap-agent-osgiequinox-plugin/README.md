@@ -18,7 +18,7 @@ Following options should be setup in eclipse.ini for debugee Eclipse instance:
      # enable remote debugging on port 8000
     -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
 
-Extra_classpath points to directory with compiled classes. When a new class is compiled it is sent by remote debugger to HotswapAgent. HotswapAgent
+extra_classpath points to directory with compiled classes. When a new class is compiled it is sent by remote debugger to HotswapAgent. HotswapAgent
 stores this file into extra_classpath directory.
 
 It is also necessary to setup following hotswap-agent.properties:
