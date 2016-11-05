@@ -145,35 +145,34 @@ uses agent services to:
 
 #### Java frameworks plugins:
 
-* Deltaspike (1.x) - messages, ViewConfig, repository, proxy reloading.
-* ELResolver 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
-* Hibernate (3x,4x) - Reload Hibernate configuration after entity create/change.
+* [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x) - messages, ViewConfig, repository, proxy reloading.
+* [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
+* [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3x,4x) - Reload Hibernate configuration after entity create/change.
 * Jersey
-* JSF (mojarra 2.1, 2.2, MyFaces 2.2) - support for application resource bundle changes (properties files).
-* Logback - Logback configuration reload.
-* Log4j2 - Log4j2 configuration reload.
-* OsgiEquinox - Hotswap support for Eclipse plugin or Eclipse platform development.
-* RestEasy (2.x, 3.x) - Cleanups and registers class redefinitions.
-* Seam (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
-* Spring (3x, 4.x) - Reload Spring configuration after class definition/change.
-* Weld (CDI) - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition. EAR support. Bean reloading according strategy.
-* WebObjects - Clear key value coding, component, action and validation caches after class change.
-* WildFlyELResolver - Clear BeanELResolver after any class redefinition.
-* ZK (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and
-bean resolver cache.
+* [JSF](plugin/hotswap-agent-jsf-plugin/README.md) (mojarra 2.1, 2.2, MyFaces 2.2) - support for application resource bundle changes (properties files).
+* [Logback](plugin/hotswap-agent-logback-plugin/README.md) - Logback configuration reload.
+* [Log4j2](plugin/hotswap-agent-log4j2-plugin/README.md) - Log4j2 configuration reload.
+* [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
+* [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
+* [Seam](plugin/hotswap-agent-seam-plugin/README.md) (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
+* [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3x, 4.x) - Reload Spring configuration after class definition/change.
+* [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
+* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) - reload bean class definition after class create(managed beans)/change. Proxy bean redefinition. EAR support. Bean reloading according strategy.
+* [WildFlyELResolver](plugin/hotswap-agent-wildfly-el-plugin/README.md) - Clear BeanELResolver after any class redefinition.
+* [ZK](plugin/hotswap-agent-zk-plugin/README.md) (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and bean resolver cache.
 
 #### Servlet containers and application servers plugins:
 
-* Tomcat (7.x, 8.x) configure Apache Tomcat with extraClasspath property.
-* Jetty - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
-* JBossModules - add extra class path to JBoss's module class loader. (Wildfly)
+* [JBossModules](plugin/ihotswap-agent-jbossmodules-plugin/README.md) - add extra class path to JBoss's module class loader. (Wildfly)
+* [Jetty](plugin/hotswap-agent-jetty-plugin/README.md) - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
+* [Tomcat](plugin/hotswap-agent-tomcat-plugin/README.md) (7.x, 8.x) configure Apache Tomcat with extraClasspath property.
 
 #### JVM plugins - hotswapping enhancements:
 
-* AnonymousClassPatch - Swap anonymous inner class names to avoid not compatible changes.
-* ClassInit - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM)
-* Hotswapper - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
-* Proxy (supported com.sun.proxy, CGlib) - redefines proxy classes that implement or extend changed interfaces or classes.
+* [AnonymousClassPatch](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - Swap anonymous inner class names to avoid not compatible changes.
+* [ClassInit](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM)
+* [Hotswapper](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/hotswapper/README.md) - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
+* [Proxy](plugin/hotswap-agent-proxy-plugin/README.md) (supported com.sun.proxy, CGlib) - redefines proxy classes that implement or extend changed interfaces or classes.
 
 Find a detail documentation of each plugin in the plugin project main README.md file.
 

@@ -63,5 +63,5 @@ Ordinal values of a redefined enumeration value X'.ordinal() values can be diffe
     X.ordinal() != X'.ordinal()
 
 #### Implementation notes:
-Content of '<cinit>' method is copied to '__ha_cinit'. Assignment to surviving members are removed using javassist.
-'__ha_cinit' method is called after class is redefined in JVM after timeout (100ms).
+Content of '<clinit>' method is copied to '__ha_clinit'. Assignment to surviving members are removed using javassist.
+'__ha_clinit' method is called after class is redefined in JVM after timeout (100ms).
