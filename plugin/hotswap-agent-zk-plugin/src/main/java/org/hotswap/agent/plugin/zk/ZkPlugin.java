@@ -81,7 +81,7 @@ public class ZkPlugin {
         m.insertAfter("if (_props.get(key) == null && \"" + setPropertyFalse + "\".equals(key)) return \"false\";");
     }
 
-    @OnResourceFileEvent(path = "/", filter = ".*.properites")
+    @OnResourceFileEvent(path = "/", filter = ".*.properties")
     public void refreshProperties() {
         // unable to tell if properties are ZK labels or not for custom label locator.
         // however Label refresh is very cheep, do it for any properties.
