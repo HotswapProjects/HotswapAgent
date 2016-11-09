@@ -29,11 +29,11 @@ public class ClassInitTest {
     public void testEnumAddRemove() throws Exception {
         Enum1 enum1 = Enum1.ITEM_1;
         ClassInitPlugin.reloadFlag = true;
-        int lenEnum2 = Enum2.values().length;
+        int lenEnum1 = Enum1.values().length;
 
         swapClasses(Enum1.class, Enum2.class.getName());
 
-        assertEquals(Enum1.values().length, lenEnum2);
+        assertEquals(enum1.values().length, Enum2.values().length);
 
         assertEquals(ReflectionHelper.get(enum1, "ITEM_1"), enum1); // new ITEM_1 is same instance like enum1
 

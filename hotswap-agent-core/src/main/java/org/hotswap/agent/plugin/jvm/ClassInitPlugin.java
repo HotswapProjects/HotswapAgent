@@ -20,14 +20,19 @@ import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.FieldAccess;
 import org.hotswap.agent.logging.AgentLogger;
 
+/**
+ * ClassInitPlugin initializes static (class) variables after class redefinition. Initializes new enumeration values.
+ *
+ * @author Vladimir Dvorak
+ */
 @Plugin(name = "ClassInitPlugin",
-        description = "Initialize empty static fields (left by DCEVM) using code from <cinit> method.",
+        description = "Initialize empty static fields (left by DCEVM) using code from <clinit> method.",
         testedVersions = {"DCEVM"})
 public class ClassInitPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassInitPlugin.class);
 
-    private static final String HOTSWAP_AGENT_CINIT_METHOD = "__ha_cinit";
+    private static final String HOTSWAP_AGENT_CLINIT_METHOD = "__ha_clinit";
 
     public static boolean reloadFlag;
 
@@ -41,24 +46,24 @@ public class ClassInitPlugin {
         final String className = ctClass.getName();
 
         try {
-            CtMethod origMethod = ctClass.getDeclaredMethod(HOTSWAP_AGENT_CINIT_METHOD);
+            CtMethod origMethod = ctClass.getDeclaredMethod(HOTSWAP_AGENT_CLINIT_METHOD);
             ctClass.removeMethod(origMethod);
         } catch (org.hotswap.agent.javassist.NotFoundException ex) {
             // swallow
         }
 
-        CtConstructor cinit = ctClass.getClassInitializer();
+        CtConstructor clinit = ctClass.getClassInitializer();
 
-        if (cinit != null) {
-            LOGGER.debug("Adding __ha_cinit to class: {}", className);
-            CtConstructor haCinit = new CtConstructor(cinit, ctClass, null);
-            haCinit.getMethodInfo().setName(HOTSWAP_AGENT_CINIT_METHOD);
-            haCinit.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-            ctClass.addConstructor(haCinit);
+        if (clinit != null) {
+            LOGGER.debug("Adding __ha_clinit to class: {}", className);
+            CtConstructor haClinit = new CtConstructor(clinit, ctClass, null);
+            haClinit.getMethodInfo().setName(HOTSWAP_AGENT_CLINIT_METHOD);
+            haClinit.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+            ctClass.addConstructor(haClinit);
 
             final boolean reinitializeStatics[] = new boolean[] { false };
 
-            haCinit.instrument(
+            haClinit.instrument(
                 new ExprEditor() {
                     public void edit(FieldAccess f) throws CannotCompileException {
                         try {
@@ -85,7 +90,7 @@ public class ClassInitPlugin {
                                 }
                             }
                         } catch (Exception e) {
-                            LOGGER.error("Patching __ha_cinit method failed.", e);
+                            LOGGER.error("Patching __ha_clinit method failed.", e);
                         }
                     }
 
@@ -98,7 +103,7 @@ public class ClassInitPlugin {
                     public void executeCommand() {
                         try {
                             Class<?> clazz = classLoader.loadClass(className);
-                            Method m = clazz.getDeclaredMethod(HOTSWAP_AGENT_CINIT_METHOD, new Class[] {});
+                            Method m = clazz.getDeclaredMethod(HOTSWAP_AGENT_CLINIT_METHOD, new Class[] {});
                             if (m != null) {
                                 m.invoke(null, new Object[] {});
                             }
@@ -128,7 +133,7 @@ public class ClassInitPlugin {
                 }
             }
         } else {
-            LOGGER.error("Patching __ha_cinit method failed. Enum type expected {}", ctClass.getName());
+            LOGGER.error("Patching __ha_clinit method failed. Enum type expected {}", ctClass.getName());
         }
         return false;
     }
