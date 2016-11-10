@@ -131,6 +131,10 @@ public class HotswapperPlugin {
         String port = pluginConfiguration.getProperty("autoHotswap.port");
 
         HotswapperPlugin plugin = PluginManagerInvoker.callInitializePlugin(HotswapperPlugin.class, appClassLoader);
-        plugin.initHotswapCommand(appClassLoader, port);
+        if (plugin != null) {
+            plugin.initHotswapCommand(appClassLoader, port);
+        } else {
+            LOGGER.debug("Hotswapper is disabled in {}", appClassLoader);
+        }
     }
 }

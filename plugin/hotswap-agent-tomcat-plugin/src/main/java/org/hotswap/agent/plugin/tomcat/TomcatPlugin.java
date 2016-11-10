@@ -89,7 +89,11 @@ public class TomcatPlugin {
         }
 
         Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
-        ReflectionHelper.invoke(plugin, plugin.getClass(), "init", new Class[]{String.class}, version);
+        if (plugin != null) {
+            ReflectionHelper.invoke(plugin, plugin.getClass(), "init", new Class[]{String.class}, version);
+        } else {
+            LOGGER.debug("TomcatPlugin is disabled in {}", appClassLoader);
+        }
     }
 
     /**
