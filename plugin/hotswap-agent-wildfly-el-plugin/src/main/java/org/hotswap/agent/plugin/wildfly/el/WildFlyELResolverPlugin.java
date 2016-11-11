@@ -39,7 +39,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
  * Clear javax.el.BeanELResolver cache after any class redefinition.
- * 
+ *
  * @author alpapad@gmail.com
  *
  */
@@ -158,22 +158,6 @@ public class WildFlyELResolverPlugin {
     public void invalidateClassCache(Class<?> original) throws Exception {
         LOGGER.trace("Running invalidateClassCache {}", appClassLoader);
         PurgeWildFlyBeanELResolverCacheCommand cmd = new PurgeWildFlyBeanELResolverCacheCommand(appClassLoader, original.getName());
-        scheduler.scheduleCommand(cmd, 250, DuplicateSheduleBehaviour.SKIP);
-    }
-
-    /**
-     * Refresh .propeties resource bundles.
-     *
-     * @param fileUrl
-     *            the file url
-     * @param evt
-     *            the evt
-     * @param appClassLoader
-     *            the app class loader
-     */
-    @OnResourceFileEvent(path = "/", filter = ".*\\.properties")
-    public void refreshJsfResourceBundles(URL fileUrl, FileEvent evt, ClassLoader appClassLoader) {
-        PurgeWildFlyBeanELResolverCacheCommand cmd = new PurgeWildFlyBeanELResolverCacheCommand(appClassLoader, null);
         scheduler.scheduleCommand(cmd, 250, DuplicateSheduleBehaviour.SKIP);
     }
 
