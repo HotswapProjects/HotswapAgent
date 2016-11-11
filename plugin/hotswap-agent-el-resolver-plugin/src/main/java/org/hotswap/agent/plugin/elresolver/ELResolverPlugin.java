@@ -49,14 +49,14 @@ import org.hotswap.agent.util.ReflectionHelper;
             @Manifest(value="[1.0,)", versionName="JBoss-EL-Version", names ={@Name(key="JBoss-EL-Version", value=".*")}),
             // Tomcat bundled EL (6-9)
             @Manifest(value="[2.0,)",versionName = Name.SpecificationVersion, names={
-                    @Name(key=Name.ImplementationTitle,value="javax.el"), 
+                    @Name(key=Name.ImplementationTitle,value="javax.el"),
                     @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
             }),
             //Jetty 7,8
-            @Manifest(value="[2.0,)", versionName={Name.BundleVersion}, names={@Name(key=Name.BundleSymbolicName,value="javax.el")}),   
+            @Manifest(value="[2.0,)", versionName={Name.BundleVersion}, names={@Name(key=Name.BundleSymbolicName,value="javax.el")}),
             //Jetty 9
             @Manifest(value="[8.0,)", versionName={Name.BundleVersion}, names={
-                    @Name(key=Name.BundleSymbolicName,value="org.mortbay.jasper.apache-el"), 
+                    @Name(key=Name.BundleSymbolicName,value="org.mortbay.jasper.apache-el"),
                     @Name(key="Bundle-Vendor",value="Webtide")})
         }
     )
@@ -235,20 +235,10 @@ public class ELResolverPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidateClassCache(ClassLoader appClassLoader, CtClass ctClass) throws Exception {
         if (jbossReflectionUtil) {
-            flushJbossReflectionUtil(appClassLoader);
+            PurgeJbossReflectionUtil jbossCleanCmd = new PurgeJbossReflectionUtil(appClassLoader);
+            scheduler.scheduleCommand(jbossCleanCmd);
         }
         PurgeBeanELResolverCacheCommand cmd = new PurgeBeanELResolverCacheCommand(appClassLoader, registeredBeanELResolvers);
         scheduler.scheduleCommand(cmd);
-    }
-
-    private void flushJbossReflectionUtil(ClassLoader classLoader) {
-        try {
-            LOGGER.debug("Flushing JbossReflectionUtil");
-            Class<?> reflectionUtilClass = classLoader.loadClass("org.jboss.el.util.ReflectionUtil");
-            Object cache = ReflectionHelper.get(null, reflectionUtilClass, "methodCache");
-            ReflectionHelper.invoke(cache, cache.getClass(), "clear", null);
-        } catch (Exception e) {
-            LOGGER.error("flushJbossReflectionUtilCache() exception {}.", e.getMessage());
-        }
     }
 }
