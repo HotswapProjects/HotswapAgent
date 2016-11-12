@@ -118,7 +118,7 @@ public class EnhancerProxyCreater {
 					}
 				}
 			}
-			return createSpringProxy;
+			return createCglibProxy;
 		} else {
 			LOGGER.error("Unable to determine the location of the Cglib package");
 			return null;
@@ -133,14 +133,11 @@ public class EnhancerProxyCreater {
 	 * 
 	 * @param cglibPackage
 	 *            Cglib Package name
-	 * @param cglibNamingPolicy2
-	 * @param cglibCallback2
 	 * @param callback
 	 *            Callback class used for Enhancer
 	 * @param namingPolicy
 	 *            NamingPolicy class used for Enhancer
 	 * @param cp
-	 * @param classLoader
 	 * @return Class that creates proxies via method "public static Object create(Object beanFactry, Object bean,
 	 *         Class[] classes, Object[] params)"
 	 * @throws CannotCompileException

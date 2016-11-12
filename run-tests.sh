@@ -6,7 +6,12 @@
 set -e
 
 function test {
-    echo "Running with Java $1"
+    echo "################################################################"
+    echo "################################################################"
+    echo "#####                 Running with Java $1"         ############"
+    echo "################################################################"
+    echo "################################################################"
+
     export JAVA_HOME=$1
 
     echo "Resolved version: " `"$JAVA_HOME/bin/java" -XXaltjvm=dcevm -version` || echo "$1 is not a valid Java installation with DCEVM."
@@ -20,5 +25,5 @@ function test {
     cd plugin/hotswap-agent-resteasy-registry-plugin; ./run-tests.sh; cd ../..
 }
 
-test "c:\Program Files\Java\jdk1.7.0_45"
-test "c:\Program Files\Java\jdk1.8.0_05"
+#test "c:\Program Files\Java\jdk1.7.0_45"
+test "c:\Program Files\Java\jdk1.8.0_51"

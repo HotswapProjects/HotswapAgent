@@ -1,13 +1,14 @@
 package org.hotswap.agent.plugin.spring;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.hotswap.agent.logging.AgentLogger;
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.util.MultiValueMap;
 
 /**
  * Support for Spring MVC mapping caches.
@@ -37,7 +38,7 @@ public class ResetRequestMappingCaches {
 		if (mappings.isEmpty()) {
 			LOGGER.trace("Spring: no HandlerMappings found");
 		}
-    	try {
+		try {
 			for (Entry<String, ?> e : mappings.entrySet()) {
 				Object am = e.getValue();
 				LOGGER.info("Spring: clearing HandlerMapping for {}", am.getClass());
@@ -48,23 +49,27 @@ public class ResetRequestMappingCaches {
 					f = c.getDeclaredField("urlMap");
 					f.setAccessible(true);
 					((Map<?,?>)f.get(am)).clear();
-				} catch (NoSuchFieldException e1) {
-					// assume this is spring version 4.2+
-
-					Field mrField = c.getDeclaredField("mappingRegistry");
-					mrField.setAccessible(true);
-					Class mrClass = mrField.getType();
-					Object mrObject = mrField.get(am);
-
-					Field mappingLookup = mrClass.getDeclaredField("mappingLookup");
-					mappingLookup.setAccessible(true);
-					((Map<?,?>)mappingLookup.get(mrObject)).clear();
-
-					Field urlLookup = mrClass.getDeclaredField("urlLookup");
-					urlLookup.setAccessible(true);
-					((MultiValueMap<?,?>)urlLookup.get(mrObject)).clear();
+					try {
+						f = c.getDeclaredField("nameMap");
+						f.setAccessible(true);
+						((Map<?,?>)f.get(am)).clear();
+					} catch(NoSuchFieldException nsfe) {
+						LOGGER.trace("Probably using Spring 4.0 or below", nsfe);
+					}
+				} catch(NoSuchFieldException nsfe) {
+					LOGGER.trace("Probably using Spring 4.2+", nsfe);
+					Method m = c.getDeclaredMethod("getHandlerMethods", new Class[0]);
+					Class<?>[] parameterTypes = new Class[1];
+					parameterTypes[0] = Object.class;
+					Method u = c.getDeclaredMethod("unregisterMapping", parameterTypes);
+					Map<?,?> unmodifiableHandlerMethods = (Map<?,?>) m.invoke(am);
+					Object[] keys = unmodifiableHandlerMethods.keySet().toArray();
+					unmodifiableHandlerMethods = null;
+					for (Object key : keys) {
+						LOGGER.trace("Unregistering handler method {}", key);
+						u.invoke(am, key);
+					}
 				}
-
 				if (am instanceof InitializingBean) {
 					((InitializingBean) am).afterPropertiesSet();
 				}

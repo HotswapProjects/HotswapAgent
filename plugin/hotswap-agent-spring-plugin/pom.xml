@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
-        <org.springframework.version>4.0.5.RELEASE</org.springframework.version>
+        <org.springframework.version>3.2.5.RELEASE</org.springframework.version>
     </properties>
 
 
@@ -69,6 +69,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <version>4.12</version>
         </dependency>
     </dependencies>
 
