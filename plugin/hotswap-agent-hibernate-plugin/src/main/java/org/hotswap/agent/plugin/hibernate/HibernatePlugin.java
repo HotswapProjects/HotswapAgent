@@ -39,11 +39,15 @@ import org.hotswap.agent.util.AnnotationHelper;
         },
         manifest= {
                 @Manifest(value="[4.0,5.0)", names= {
-                        @Name(key=Name.BundleSymbolicName,value="org.hibernate.entitymanager")
+                        @Name(key=Name.BundleSymbolicName, value="org.hibernate.entitymanager")
                 }),
                 @Manifest(value="[4.0,5.0)", names= {
-                        @Name(key=Name.BundleSymbolicName,value="org.hibernate.core")
-                }),                
+                        @Name(key=Name.BundleSymbolicName, value="org.hibernate.core")
+                }),
+                @Manifest(value="[4.0,5.0)", names= {
+                        @Name(key=Name.ImplementationUrl, value="http://hibernate.org"),
+                        @Name(key=Name.ImplementationVendorId, value="org.hibernate")
+                }),
         }
         )
 public class HibernatePlugin {
