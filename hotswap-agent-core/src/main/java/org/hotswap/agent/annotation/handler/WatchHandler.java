@@ -1,11 +1,5 @@
 package org.hotswap.agent.annotation.handler;
 
-import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.command.Command;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.watch.WatchFileEvent;
-import org.hotswap.agent.watch.WatchEventListener;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -15,6 +9,11 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
+
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.watch.WatchEventListener;
+import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
  * Watch method handler - handle @OnResourceFileEvent annotation on a method.
@@ -123,8 +122,8 @@ public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
         pluginManager.getWatcher().addEventListener(classLoader, uri, new WatchEventListener() {
             @Override
             public void onEvent(WatchFileEvent event) {
-                if (watchEventDTO.accept(event)) {
-                    Command command = new WatchEventCommand(pluginAnnotation, event, classLoader);
+                WatchEventCommand<T> command = WatchEventCommand.createCmdForEvent(pluginAnnotation, event, classLoader);
+                if (command != null) {
                     pluginManager.getScheduler().scheduleCommand(command, watchEventDTO.getTimeout());
                     LOGGER.trace("Resource changed {}", event);
                 }

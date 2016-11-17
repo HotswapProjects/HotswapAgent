@@ -1,17 +1,5 @@
 package org.hotswap.agent.annotation.handler;
 
-import org.hotswap.agent.annotation.FileEvent;
-import org.hotswap.agent.annotation.OnClassFileEvent;
-import org.hotswap.agent.annotation.OnResourceFileEvent;
-import org.hotswap.agent.command.MergeableCommand;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.LoaderClassPath;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.IOUtils;
-import org.hotswap.agent.watch.WatchFileEvent;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -22,6 +10,16 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.hotswap.agent.annotation.FileEvent;
+import org.hotswap.agent.command.MergeableCommand;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.LoaderClassPath;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.IOUtils;
+import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
  * Command to schedule after resource change.
@@ -38,11 +36,42 @@ public class WatchEventCommand<T extends Annotation> extends MergeableCommand {
     private final WatchFileEvent event;
     private final ClassLoader classLoader;
 
-    public WatchEventCommand(PluginAnnotation<T> pluginAnnotation, WatchFileEvent event, ClassLoader classLoader) {
+    public static <T extends Annotation> WatchEventCommand<T> createCmdForEvent(PluginAnnotation<T> pluginAnnotation,
+            WatchFileEvent event, ClassLoader classLoader) {
+        WatchEventDTO watchEventDTO = WatchEventDTO.parse(pluginAnnotation.getAnnotation());
+
+        // Watch event is not supported.
+        if (!watchEventDTO.accept(event)) {
+            return null;
+        }
+
+        // regular files filter
+        if (watchEventDTO.isOnlyRegularFiles() && !event.isFile()) {
+            LOGGER.trace("Skipping URI {} because it is not a regular file.", event.getURI());
+            return null;
+        }
+
+        // watch type filter
+        if (!Arrays.asList(watchEventDTO.getEvents()).contains(event.getEventType())) {
+            LOGGER.trace("Skipping URI {} because it is not a requested event.", event.getURI());
+            return null;
+        }
+
+        // resource name filter regexp
+        if (watchEventDTO.getFilter() != null && watchEventDTO.getFilter().length() > 0) {
+            if (!event.getURI().toString().matches(watchEventDTO.getFilter())) {
+                LOGGER.trace("Skipping URI {} because it does not match filter.", event.getURI(), watchEventDTO.getFilter());
+                return null;
+            }
+        }
+        return new WatchEventCommand<>(pluginAnnotation, event, classLoader, watchEventDTO);
+    }
+
+    private WatchEventCommand(PluginAnnotation<T> pluginAnnotation, WatchFileEvent event, ClassLoader classLoader, WatchEventDTO watchEventDTO) {
         this.pluginAnnotation = pluginAnnotation;
-        this.watchEventDTO = WatchEventDTO.parse(pluginAnnotation.getAnnotation());
         this.event = event;
         this.classLoader = classLoader;
+        this.watchEventDTO = watchEventDTO;
     }
 
     @Override
@@ -89,26 +118,6 @@ public class WatchEventCommand<T extends Annotation> extends MergeableCommand {
     public void onWatchEvent(PluginAnnotation<T> pluginAnnotation, WatchFileEvent event, ClassLoader classLoader) {
         final T annot = pluginAnnotation.getAnnotation();
         Object plugin = pluginAnnotation.getPlugin();
-
-        // regular files filter
-        if (watchEventDTO.isOnlyRegularFiles() && !event.isFile()) {
-            LOGGER.trace("Skipping URI {} because it is not a regular file.", event.getURI());
-            return;
-        }
-
-        // watch type filter
-        if (!Arrays.asList(watchEventDTO.getEvents()).contains(event.getEventType())) {
-            LOGGER.trace("Skipping URI {} because it is not a requested event.", event.getURI());
-            return;
-        }
-
-        // resource name filter regexp
-        if (watchEventDTO.getFilter() != null && watchEventDTO.getFilter().length() > 0) {
-            if (!event.getURI().toString().matches(watchEventDTO.getFilter())) {
-                LOGGER.trace("Skipping URI {} because it does not match filter.", event.getURI(), watchEventDTO.getFilter());
-                return;
-            }
-        }
 
         //we may need to crate CtClass on behalf of the client and close it after invocation.
         CtClass ctClass = null;
