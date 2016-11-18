@@ -29,22 +29,22 @@ import org.hotswap.agent.util.AnnotationHelper;
  */
 @Plugin(name = "Hibernate", description = "Reload Hibernate configuration after entity create/change.",
         testedVersions = {"All between 4.0.1 - 4.2.13"},
-        expectedVersions = {"4.0.x", "4.1.x", "4.2.x"},
+        expectedVersions = {"4.0.x", "4.1.x", "4.2.x", "5.0.[0-4,7-x]", "5.1.x", "5.2.x" },
         supportClass = {HibernateTransformers.class})
 @Versions(
         fallback = true,
         maven = {
-            @Maven(value = "[4.0,5.0)", artifactId = "hibernate-core", groupId = "org.hibernate"),
-            @Maven(value = "[4.0,5.0)", artifactId = "hibernate-entitymanager", groupId = "org.hibernate"),
+            @Maven(value = "[4.0,6.0)", artifactId = "hibernate-core", groupId = "org.hibernate"),
+            @Maven(value = "[4.0,6.0)", artifactId = "hibernate-entitymanager", groupId = "org.hibernate"),
         },
         manifest= {
-                @Manifest(value="[4.0,5.0)", names= {
+                @Manifest(value="[4.0,6.0)", names= {
                         @Name(key=Name.BundleSymbolicName, value="org.hibernate.entitymanager")
                 }),
-                @Manifest(value="[4.0,5.0)", names= {
+                @Manifest(value="[4.0,6.0)", names= {
                         @Name(key=Name.BundleSymbolicName, value="org.hibernate.core")
                 }),
-                @Manifest(value="[4.0,5.0)", names= {
+                @Manifest(value="[4.0,6.0)", names= {
                         @Name(key=Name.ImplementationUrl, value="http://hibernate.org"),
                         @Name(key=Name.ImplementationVendorId, value="org.hibernate")
                 }),

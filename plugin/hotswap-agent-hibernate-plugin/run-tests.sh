@@ -13,6 +13,7 @@ function test {
 
 # test following Hibernate versions
 # test 4.0.0.Final
+
 test 4.0.1.Final
 test 4.1.0.Final
 test 4.1.1.Final
@@ -45,4 +46,29 @@ test 4.3.2.Final
 test 4.3.3.Final
 test 4.3.4.Final
 test 4.3.5.Final
+test 4.3.6.Final
+test 4.3.7.Final
+test 4.3.8.Final
+test 4.3.9.Final
+test 4.3.10.Final
+test 4.3.11.Final
+
+test 5.0.0.Final
+test 5.0.1.Final
+test 5.0.2.Final
+test 5.0.3.Final
+# test 5.0.4.Final
+# test 5.0.5.Final
+# test 5.0.6.Final
+test 5.0.7.Final
+test 5.0.8.Final
+test 5.0.9.Final
+test 5.0.10.Final
+test 5.0.11.Final
+test 5.1.0.Final
+test 5.1.1.Final
+test 5.2.1.Final
+test 5.2.2.Final
+test 5.2.3.Final
+test 5.2.4.Final
 

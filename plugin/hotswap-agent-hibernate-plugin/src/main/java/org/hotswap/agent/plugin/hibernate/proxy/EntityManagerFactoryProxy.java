@@ -59,7 +59,7 @@ public class EntityManagerFactoryProxy {
         String[] version = Version.getVersionString().split("\\.");
         boolean version43OrGreater = false;
         try {
-            version43OrGreater = Integer.valueOf(version[0]) >= 4 && Integer.valueOf(version[1]) >= 3;
+            version43OrGreater = Integer.valueOf(version[0]) >= 5 || (Integer.valueOf(version[0]) == 4 && Integer.valueOf(version[1]) >= 3);
         } catch (Exception e) {
             LOGGER.warning("Unable to resolve hibernate version '{}'", version);
         }
