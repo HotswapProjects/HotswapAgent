@@ -35,8 +35,8 @@ import org.hotswap.agent.watch.Watcher;
  */
 @Plugin(name = "Weld",
         description = "Weld framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"2.2.6, 2.2.16, 2.3.0-2.3.5"},
-        expectedVersions = {"All between 2.0 - 2.3"},
+        testedVersions = {"2.2.5-2.2.16, 2.3.x, 2.4.0"},
+        expectedVersions = {"All between 2.2.5 - 2.4.x"},
         supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class, AbstractClassBeanTransformer.class, CdiContextsTransformer.class})
 public class WeldPlugin {
 

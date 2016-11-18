@@ -387,7 +387,7 @@ public class BeanDeploymentArchiveAgent {
 
     @SuppressWarnings("rawtypes")
     private SlimAnnotatedType getAnnotatedType(String bdaId, ClassTransformer classTransformer, Class<?> beanClass) {
-        BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, beanClass, bdaId);
+        BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, bdaId);
         return annotatedType;
     }
 
