@@ -22,6 +22,7 @@ function test {
     cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..
     cd plugin/hotswap-agent-hibernate-plugin; ./run-tests.sh; cd ../..
     cd plugin/hotswap-agent-hibernate3-plugin; ./run-tests.sh; cd ../..
+    cd plugin/hotswap-agent-weld-plugin; ./run-tests.sh; cd ../..
     cd plugin/hotswap-agent-resteasy-registry-plugin; ./run-tests.sh; cd ../..
 }
 
