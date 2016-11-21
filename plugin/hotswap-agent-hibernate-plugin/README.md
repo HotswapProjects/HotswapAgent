@@ -1,6 +1,6 @@
 Hibernate plugin
 ================
-Reload Hibernate EntityManagerFactory / SessionFactory after entity class definition/change.
+Reload Hibernate EntityManagerFactory / SessionFactory after entity class definition/change. Clear Hibernate Validator reflection caches stored in `BeanMetaDataManager` and `AnnotationMetaDataProvider` classes.
 
 The plugin hooks for initialization into `org.hibernate.ejb.HibernatePersistence` (for EJB 3.0) or
 `org.hibernate.cfg.Configuration` (for plain Hibernate) to wrap `javax.persistence.EntityManagerFactory` or
