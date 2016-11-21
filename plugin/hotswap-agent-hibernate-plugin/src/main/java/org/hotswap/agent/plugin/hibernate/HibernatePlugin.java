@@ -39,6 +39,9 @@ import org.hotswap.agent.util.AnnotationHelper;
         },
         manifest= {
                 @Manifest(value="[4.0,6.0)", names= {
+                        @Name(key=Name.BundleSymbolicName, value="org.hibernate.validator")
+                }),
+                @Manifest(value="[4.0,6.0)", names= {
                         @Name(key=Name.BundleSymbolicName, value="org.hibernate.entitymanager")
                 }),
                 @Manifest(value="[4.0,6.0)", names= {
