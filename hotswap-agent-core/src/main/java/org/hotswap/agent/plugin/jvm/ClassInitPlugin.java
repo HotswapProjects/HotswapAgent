@@ -113,7 +113,10 @@ public class ClassInitPlugin {
                             reloadFlag = false;
                         }
                     }
-                }, 100);
+                }, 150); // Hack : init should be done after dependant class redefinition. Since the class can 
+                         // be proxied by syntetic proxy, the class init must be scheduled after proxy redefinition.
+                         // Currently proxy redefinition (in ProxyPlugin) is scheduled with 100ms delay, therefore 
+                         // the class init must be scheduled after it.
             } else {
                 reloadFlag = false;
             }
