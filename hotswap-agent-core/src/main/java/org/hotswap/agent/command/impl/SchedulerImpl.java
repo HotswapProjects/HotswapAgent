@@ -23,6 +23,10 @@ public class SchedulerImpl implements Scheduler {
 
     int DEFAULT_SCHEDULING_TIMEOUT = 100;
 
+    // TODO : Some commands must be executed in the order in which they are put to scheduler. Therefore
+    //        there could be a LinkedHashMap and CommandExecutor should be singleton for commands that
+    //        must be executed in order. There is an issue related to this problem
+    //        https://github.com/HotswapProjects/HotswapAgent/issues/39  which requires concurrent using
     final Map<Command, DuplicateScheduleConfig> scheduledCommands = new ConcurrentHashMap<Command, DuplicateScheduleConfig>();
     final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<Command>());
 

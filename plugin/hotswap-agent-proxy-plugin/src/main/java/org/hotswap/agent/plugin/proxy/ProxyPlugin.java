@@ -1,6 +1,5 @@
 package org.hotswap.agent.plugin.proxy;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -8,7 +7,6 @@ import java.util.Set;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.command.Command;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -17,7 +15,6 @@ import org.hotswap.agent.plugin.proxy.hscglib.CglibEnhancerProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParams;
-import org.hotswap.agent.plugin.proxy.java.ProxyGenerator;
 
 /**
  * Redefines proxy classes that implement or extend changed interfaces or classes. Currently it supports proxies created
@@ -62,27 +59,8 @@ public class ProxyPlugin {
 
         reloadFlag = true;
 
-        // Deferred hotswap
-        PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
-            @Override
-            public void executeCommand() {
-                try {
-                    Class<?> clazz = classLoader.loadClass(className);
-                    Map<String, String> signatureMap = ProxyClassSignatureHelper.getNonSyntheticSignatureMap(clazz);
-                    if (!signatureMap.equals(signatureMapOrig)) {
-                        byte[] generateProxyClass = ProxyGenerator.generateProxyClass(className, clazz.getInterfaces());
-                        Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
-                        reloadMap.put(clazz, generateProxyClass);
-                        PluginManager.getInstance().hotswap(reloadMap);
-                        LOGGER.reload("Class '{}' has been reloaded.", className);
-                    }
-                } catch (ClassNotFoundException e) {
-                    LOGGER.error("Error redefining java proxy {}", e, className);
-                } finally {
-                    reloadFlag = false;
-                }
-            }
-        }, 100);
+        // TODO: can be single command if scheduler guarantees the keeping execution order in the order of redefinition
+        PluginManager.getInstance().getScheduler().scheduleCommand(new ReloadJavaProxyCommand(classLoader, className, signatureMapOrig), 50);
     }
 
 //    @OnClassLoadEvent(classNameRegexp = "com/sun/proxy/\\$Proxy.*", events = LoadEvent.REDEFINE, skipSynthetic = false)
