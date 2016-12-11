@@ -1,6 +1,6 @@
 [Jersey](https://jersey.java.net/)
 ====================================
-Jersey2 reloading support for all root resource classes (classes annotated by `javax.ws.rs.Path`).
+Jersey2 reloading support for all root resource classes (classes annotated by `javax.ws.rs.Path`) and provider classes.
 
 #### Implementation notes:
 Hook into `org.glassfish.jersey.servlet.WebConfig` call. Register all *scanClasses* and *registeredClasses*

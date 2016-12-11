@@ -18,6 +18,7 @@
         <module>plugin/hotswap-agent-hibernate-plugin</module>
         <module>plugin/hotswap-agent-hibernate3-plugin</module>
         <module>plugin/hotswap-agent-spring-plugin</module>
+        <module>plugin/hotswap-agent-jersey1-plugin</module>
         <module>plugin/hotswap-agent-jersey2-plugin</module>
         <module>plugin/hotswap-agent-jetty-plugin</module>
         <module>plugin/hotswap-agent-tomcat-plugin</module>
