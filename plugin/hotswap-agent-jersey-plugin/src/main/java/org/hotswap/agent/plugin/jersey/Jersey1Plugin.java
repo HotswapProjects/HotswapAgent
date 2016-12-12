@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.jersey2;
+package org.hotswap.agent.plugin.jersey;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -20,13 +20,14 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.ReflectionHelper;
 
-@Plugin(name = "Jersey2",
-        description = "Jersey2 framework plugin - this does not handle HK2 changes",
-        testedVersions = {"2.10.1"},
-        expectedVersions = {"2.10.1"})
-public class Jersey2Plugin {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(Jersey2Plugin.class);
+@Plugin(name = "Jersey1",
+        description = "Jersey1 framework plugin - this does not handle HK2 changes",
+        testedVersions = {"1.18.3"},
+        expectedVersions = {"1.x"})
+public class Jersey1Plugin {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(Jersey1Plugin.class);
 
     @Init
     Scheduler scheduler;
@@ -43,28 +44,15 @@ public class Jersey2Plugin {
      *
      *  Also, add the ServletContainer to a list of registeredJerseyContainers so that we can call reload on it later when classes change
      */
-    @OnClassLoadEvent(classNameRegexp = "org.glassfish.jersey.servlet.ServletContainer")
+    @OnClassLoadEvent(classNameRegexp = "com.sun.jersey.spi.container.servlet.ServletContainer")
     public static void jerseyServletCallInitialized(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-        CtMethod init = ctClass.getDeclaredMethod("init", new CtClass[] { classPool.get("org.glassfish.jersey.servlet.WebConfig") });
-        init.insertBefore(PluginManagerInvoker.buildInitializePlugin(Jersey2Plugin.class));
-        LOGGER.info("org.glassfish.jersey.servlet.ServletContainer enhanced with plugin initialization.");
+        CtMethod init = ctClass.getDeclaredMethod("init", new CtClass[] { classPool.get("com.sun.jersey.spi.container.servlet.WebConfig") });
+        init.insertBefore(PluginManagerInvoker.buildInitializePlugin(Jersey1Plugin.class));
+        LOGGER.info("com.sun.jersey.spi.container.servlet.WebConfig enhanced with plugin initialization.");
 
-        String registerThis = PluginManagerInvoker.buildCallPluginMethod(Jersey2Plugin.class, "registerJerseyContainer", "this",
-                "java.lang.Object", "getConfiguration()", "java.lang.Object");
+        String registerThis = PluginManagerInvoker.buildCallPluginMethod(Jersey1Plugin.class, "registerJerseyContainer", "this",
+                "java.lang.Object", "this.webComponent.getResourceConfig()", "java.lang.Object");
         init.insertAfter(registerThis);
-
-        // Workaround a Jersey issue where ServletContainer cannot be reloaded since it is in an immutable state
-        CtMethod reload = ctClass.getDeclaredMethod("reload", new CtClass[] { classPool.get("org.glassfish.jersey.server.ResourceConfig") });
-        reload.insertBefore("$1 = new org.glassfish.jersey.server.ResourceConfig($1);");
-    }
-
-    /**
-     *  Fix a scanning issue with jersey pre-2.4 versions.  https://java.net/jira/browse/JERSEY-1936
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.glassfish.jersey.server.internal.scanning.AnnotationAcceptingListener")
-    public static void fixAnnoationAcceptingListener(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        CtMethod process = ctClass.getDeclaredMethod("process");
-        process.insertAfter("try { $2.close(); } catch (Exception e) {}");
     }
 
     /**
@@ -72,7 +60,7 @@ public class Jersey2Plugin {
      */
     public void registerJerseyContainer(Object jerseyContainer, Object resourceConfig) {
         try {
-            Class<?> resourceConfigClass = resolveClass("org.glassfish.jersey.server.ResourceConfig");
+            Class<?> resourceConfigClass = resolveClass("com.sun.jersey.api.core.ResourceConfig");
 
             LOGGER.info("registerJerseyContainer : " + jerseyContainer.getClass().getName());
 
@@ -93,19 +81,18 @@ public class Jersey2Plugin {
     private Set<Class<?>> getContainerClasses(Class<?> resourceConfigClass, Object resourceConfig)
                 throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
-        Method scanClassesMethod = resourceConfigClass.getDeclaredMethod("scanClasses");
-        scanClassesMethod.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        Set<Class<?>> scannedClasses = (Set<Class<?>>) scanClassesMethod.invoke(resourceConfig);
-
-        Method getRegisteredClassesMethod = resourceConfigClass.getDeclaredMethod("getRegisteredClasses");
-        getRegisteredClassesMethod.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        Set<Class<?>> registeredClasses = (Set<Class<?>>)getRegisteredClassesMethod.invoke(resourceConfig);
-
         Set<Class<?>> containerClasses = Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>());
-        containerClasses.addAll(scannedClasses);
-        containerClasses.addAll(registeredClasses);
+
+        Set<Class<?>> providerClasses = (Set<Class<?>>) ReflectionHelper.invoke(resourceConfig, resourceConfigClass, "getProviderClasses",  new Class[]{});
+        if (providerClasses != null) {
+            containerClasses.addAll(providerClasses);
+        }
+
+        Set<Class<?>> rootResourceClasses = (Set<Class<?>>) ReflectionHelper.invoke(resourceConfig, resourceConfigClass, "getRootResourceClasses",  new Class[]{});
+        if (rootResourceClasses != null) {
+            containerClasses.addAll(rootResourceClasses);
+        }
+
         return containerClasses;
     }
 
@@ -122,6 +109,7 @@ public class Jersey2Plugin {
             // here.  Is this a DCEVM issue?  Also, the Jersey Container  does not find the newly annotated class
             // during a reload called from reloadJerseyContainers, so this seems like the annotation is not being
             // added
+            // vd: it is wrong here, since original class is scanned for Path !
             if (AnnotationHelper.hasAnnotation(original, "javax.ws.rs.Path")
                     || AnnotationHelper.hasAnnotation(ctClass, "javax.ws.rs.Path")) {
                 allRegisteredClasses.add(original);
@@ -136,7 +124,7 @@ public class Jersey2Plugin {
     private Command reloadJerseyContainers = new Command() {
         public void executeCommand() {
             try {
-                Class<?> containerClass = resolveClass("org.glassfish.jersey.server.spi.Container");
+                Class<?> containerClass = resolveClass("com.sun.jersey.spi.container.servlet.ServletContainer");
                 Method reloadMethod = containerClass.getDeclaredMethod("reload");
 
                 for (Object jerseyContainer : registeredJerseyContainers) {
