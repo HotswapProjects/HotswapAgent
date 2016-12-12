@@ -9,7 +9,7 @@
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>hotswap-agent-jersey-plugin</artifactId>
+    <artifactId>hotswap-agent-jersey1-plugin</artifactId>
 
     <dependencies>
         <dependency>
