@@ -68,6 +68,16 @@ public class Jersey2Plugin {
     }
 
     /**
+     * Fix CDI CDI_MULTIPLE_LOCATORS_INTO_SIMPLE_APP exception on class redefinition
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.glassfish.jersey.ext.cdi1x.internal.SingleHk2LocatorManager")
+    public static void fixSingleHk2LocatorManager(CtClass ctClass) throws NotFoundException, CannotCompileException {
+        CtMethod process = ctClass.getDeclaredMethod("registerLocator");
+        process.insertBefore("if (this.locator != null) return;");
+        LOGGER.debug("SingleHk2LocatorManager : patched()");
+    }
+
+    /**
      * Register the jersey container and the classes involved in configuring the Jersey Application
      */
     public void registerJerseyContainer(Object jerseyContainer, Object resourceConfig) {
