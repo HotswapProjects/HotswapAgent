@@ -76,7 +76,8 @@ public abstract class ClassSignatureBase {
                 }
             }
             b.append(")");
-            b.append(object.annotationType().getName());
+            // TODO : sometimes for CtFile object.annotationType() is not known an it fails here
+            // b.append(object.annotationType().getName());
             if (i<a.length-1) {
                 b.append(",");
             }
