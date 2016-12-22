@@ -35,6 +35,7 @@ public class Jersey2Plugin {
     ClassLoader appClassLoader;
 
     Set<Object> registeredJerseyContainers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+//    Set<Object> registeredServiceLocators = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
     Set<Class<?>> allRegisteredClasses = Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>());
 
     /**
@@ -50,7 +51,7 @@ public class Jersey2Plugin {
         LOGGER.info("org.glassfish.jersey.servlet.ServletContainer enhanced with plugin initialization.");
 
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(Jersey2Plugin.class, "registerJerseyContainer", "this",
-                "java.lang.Object", "getConfiguration()", "java.lang.Object");
+                "java.lang.Object", "getConfiguration()", "java.lang.Object"/*, "getApplicationHandler().getServiceLocator()", "java.lang.Object"*/);
         init.insertAfter(registerThis);
 
         // Workaround a Jersey issue where ServletContainer cannot be reloaded since it is in an immutable state
@@ -80,7 +81,7 @@ public class Jersey2Plugin {
     /**
      * Register the jersey container and the classes involved in configuring the Jersey Application
      */
-    public void registerJerseyContainer(Object jerseyContainer, Object resourceConfig) {
+    public void registerJerseyContainer(Object jerseyContainer, Object resourceConfig/*, Object serviceLocator*/) {
         try {
             Class<?> resourceConfigClass = resolveClass("org.glassfish.jersey.server.ResourceConfig");
 
@@ -88,8 +89,13 @@ public class Jersey2Plugin {
 
             Set<Class<?>> containerClasses = getContainerClasses(resourceConfigClass, resourceConfig);
 
-               registeredJerseyContainers.add(jerseyContainer);
-               allRegisteredClasses.addAll(containerClasses);
+            registeredJerseyContainers.add(jerseyContainer);
+            allRegisteredClasses.addAll(containerClasses);
+            /*
+            if (serviceLocator != null) {
+                registeredServiceLocators.add(serviceLocator);
+            }
+            */
 
             LOGGER.debug("registerJerseyContainer : finished");
         } catch (Exception e) {
@@ -125,8 +131,10 @@ public class Jersey2Plugin {
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidate(CtClass ctClass, Class original) throws Exception {
+        boolean reloaded = false;
         if (allRegisteredClasses.contains(original)) {
             scheduler.scheduleCommand(reloadJerseyContainers);
+            reloaded = true;
         } else {
             // TODO: When a class is not annotated at startup, and is annotated during debug, it never gets found
             // here.  Is this a DCEVM issue?  Also, the Jersey Container  does not find the newly annotated class
@@ -136,6 +144,18 @@ public class Jersey2Plugin {
                     || AnnotationHelper.hasAnnotation(ctClass, "javax.ws.rs.Path")) {
                 allRegisteredClasses.add(original);
                 scheduler.scheduleCommand(reloadJerseyContainers);
+                reloaded = true;
+            }
+
+        }
+        if (!reloaded) {
+            // reload if HK2 Service class is changed
+            if (AnnotationHelper.hasAnnotation(original, "org.jvnet.hk2.annotations.Service")
+                    || AnnotationHelper.hasAnnotation(ctClass, "org.jvnet.hk2.annotations.Service")) {
+
+                scheduler.scheduleCommand(reloadJerseyContainers);
+                // TODO : reload SystemDescriptor in case of Service change?
+                // scheduler.scheduleCommand(disposeReflectionCaches);
             }
         }
     }
@@ -158,6 +178,27 @@ public class Jersey2Plugin {
             }
         }
     };
+
+    /**
+     * Dispose service locators reflection caches
+     */
+    /*
+    private Command disposeReflectionCaches = new Command() {
+        public void executeCommand() {
+            if (!registeredServiceLocators.isEmpty()) {
+                try {
+                    LOGGER.debug("Disposing reflection caches");
+                    for (Object serviceLocator : registeredServiceLocators) {
+                        ReflectionHelper.invoke(serviceLocator, serviceLocator.getClass(), "clearReflectionCache", new Class[]{});
+                    }
+                    LOGGER.info("Reflection caches disposed.");
+                } catch (Exception e) {
+                    LOGGER.error("executeCommand() exception {}.", e.getMessage());
+                }
+            }
+        }
+    };
+    */
 
     private Class<?> resolveClass(String name) throws ClassNotFoundException {
         return Class.forName(name, true, appClassLoader);
