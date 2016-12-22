@@ -3,11 +3,9 @@ package org.hotswap.agent.util.signature;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -16,6 +14,8 @@ import java.util.Set;
  * @author Erki Ehtla, Vladimir Dvorak
  */
 public abstract class ClassSignatureBase {
+
+    private static final String[] IGNORED_METHODS = new String[] { "annotationType", "equals", "hashCode", "toString" };
 
     private final Set<ClassSignatureElement> elements = new HashSet<>();
 
@@ -57,24 +57,32 @@ public abstract class ClassSignatureBase {
         a = sort(a);
         StringBuilder b = new StringBuilder();
         b.append('[');
-        for (int i = 0;; i++) {
+        for (int i = 0;i < a.length; i++) {
             Annotation object = (Annotation) a[i];
-            String[] ignore = new String[] { "annotationType", "equals", "hashCode", "toString" };
             Method[] declaredMethods = object.getClass().getDeclaredMethods();
-            List<String> values = new ArrayList<>();
+            b.append("(");
+            boolean printComma = false;
             for (Method method : declaredMethods) {
-                if (Arrays.binarySearch(ignore, method.getName()) < 0) {
+                if (Arrays.binarySearch(IGNORED_METHODS, method.getName()) < 0) {
                     Object value = getAnnotationValue(object, method.getName());
-                    if (value != null)
-                        values.add(method.getName() + "=" + value.getClass() + ":" + value);
+                    if (value != null) {
+                        if (printComma) {
+                            b.append(",");
+                        } else {
+                            printComma = true;
+                        }
+                        b.append(method.getName() + "=" + value.getClass() + ":" + value);
+                    }
                 }
             }
-            b.append(values);
-            // b.append(object.toString() + "()");
-            if (i == iMax)
-                return b.append(']').toString();
-            b.append(", ");
+            b.append(")");
+            b.append(object.annotationType().getName());
+            if (i<a.length-1) {
+                b.append(",");
+            }
         }
+        b.append(']');
+        return b.toString();
     }
 
     protected String annotationToString(Object[][] a) {
