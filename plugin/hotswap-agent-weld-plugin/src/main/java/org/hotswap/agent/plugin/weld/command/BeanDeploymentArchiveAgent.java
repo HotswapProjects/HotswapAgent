@@ -264,13 +264,9 @@ public class BeanDeploymentArchiveAgent {
     }
 
     private static Map<Class<? extends Annotation>, List<Context>> getContexts(BeanManagerImpl beanManager){
-
         try {
-            Field contextsField = BeanManagerImpl.class.getField("contexts");
-            contextsField.setAccessible(true);
-            Map<Class<? extends Annotation>, List<Context>> ctxs= Map.class.cast(contextsField.get(beanManager));
-            return ctxs;
-        } catch (IllegalAccessException |IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+            return Map.class.cast(ReflectionHelper.get(beanManager, "contexts"));
+        } catch (Exception e) {
             LOGGER.warning("BeanManagerImpl.contexts not accessible", e);
         }
         return Collections.emptyMap();
