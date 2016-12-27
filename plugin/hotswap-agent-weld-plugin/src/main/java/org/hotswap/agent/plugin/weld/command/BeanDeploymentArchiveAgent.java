@@ -81,7 +81,7 @@ public class BeanDeploymentArchiveAgent {
         if (beansXml != null && (beanArchiveType == null || "EXPLICIT".equals(beanArchiveType) || "IMPLICIT".equals(beanArchiveType))) {
             String beansXmlPath = beansXml.getUrl().getPath();
             if (beansXmlPath.endsWith("META-INF/beans.xml")) {
-                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xm".length() - 1);/* -1 ~ eat "/" at the end of path */
+                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xml".length());
             } else if (beansXmlPath.endsWith("WEB-INF/beans.xml")) {
                 archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "beans.xml".length()) + "classes";
             }
