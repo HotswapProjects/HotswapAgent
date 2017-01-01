@@ -14,8 +14,8 @@ import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
 import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
- * BeanClassRefreshCommand. When a bean class is redefined object of BeanClassRefreshCommand is created and after
- * timeout executed. It calls bean reload logic in BeanDepoymentArchiveAgent internally
+ * BeanClassRefreshCommand. If a bean class is redefined, an object of BeanClassRefreshCommand is created and after
+ *  a timeout executed. It calls bean reload logic in BeanDepoymentArchiveAgent internally
  *
  * @author Vladimir Dvorak
  */

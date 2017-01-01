@@ -49,7 +49,7 @@ public class ContextualReloadHelper {
     public static boolean addToReloadSet(Context ctx,  Contextual<Object> managedBean)  {
         try {
             LOGGER.debug("Adding bean in '{}' : {}", ctx.getClass(), managedBean);
-            Field toRedefine = ctx.getClass().getField("_toReload");
+            Field toRedefine = ctx.getClass().getDeclaredField("_toReload");
             Set toReload = Set.class.cast(toRedefine.get(ctx));
             if (toReload == null) {
                 toReload = new HashSet();

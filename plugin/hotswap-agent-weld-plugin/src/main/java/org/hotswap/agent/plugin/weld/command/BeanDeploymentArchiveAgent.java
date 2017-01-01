@@ -81,7 +81,7 @@ public class BeanDeploymentArchiveAgent {
         if (beansXml != null && (beanArchiveType == null || "EXPLICIT".equals(beanArchiveType) || "IMPLICIT".equals(beanArchiveType))) {
             String beansXmlPath = beansXml.getUrl().getPath();
             if (beansXmlPath.endsWith("META-INF/beans.xml")) {
-                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xm".length() - 1);/* -1 ~ eat "/" at the end of path */
+                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xml".length());
             } else if (beansXmlPath.endsWith("WEB-INF/beans.xml")) {
                 archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "beans.xml".length()) + "classes";
             }
@@ -264,13 +264,9 @@ public class BeanDeploymentArchiveAgent {
     }
 
     private static Map<Class<? extends Annotation>, List<Context>> getContexts(BeanManagerImpl beanManager){
-
         try {
-            Field contextsField = BeanManagerImpl.class.getField("contexts");
-            contextsField.setAccessible(true);
-            Map<Class<? extends Annotation>, List<Context>> ctxs= Map.class.cast(contextsField.get(beanManager));
-            return ctxs;
-        } catch (IllegalAccessException |IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+            return Map.class.cast(ReflectionHelper.get(beanManager, "contexts"));
+        } catch (Exception e) {
             LOGGER.warning("BeanManagerImpl.contexts not accessible", e);
         }
         return Collections.emptyMap();

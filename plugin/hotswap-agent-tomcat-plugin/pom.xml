@@ -5,11 +5,17 @@
     <parent>
         <groupId>org.hotswap.agent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>hotswap-agent-tomcat-plugin</artifactId>
+    
+    <properties>
+        <tomcat.version>6.0.36</tomcat.version>
+        <tomcat.artifact>catalina</tomcat.artifact> <!-- catalina if 6.x -->
+        <!-- <tomcat.artifact>tomcat-catalina</tomcat.artifact> --> <!-- tomcat-catalina if 7.x+ -->
+    </properties>
 
     <dependencies>
         <dependency>
@@ -21,10 +27,8 @@
         <!--Just to get Tomcat sources into IDE-->
         <dependency>
             <groupId>org.apache.tomcat</groupId>
-            <artifactId>catalina</artifactId>
-            <!--<version>7.0.47</version>-->
-            <!--<version>8.0.1</version>-->
-            <version>6.0.36</version> <!--(change artifcatId to catalina) -->
+            <artifactId>${tomcat.artifact}</artifactId>
+            <version>${tomcat.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
