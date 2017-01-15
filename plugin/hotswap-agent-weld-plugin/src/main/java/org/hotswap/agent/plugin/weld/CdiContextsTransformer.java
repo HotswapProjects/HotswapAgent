@@ -35,6 +35,9 @@ public class CdiContextsTransformer {
         CtField toReloadFld = CtField.make("public transient java.util.Set _toReload = null;", clazz);
         clazz.addField(toReloadFld);
 
+        CtField inReloadFld = CtField.make("public transient boolean _inReload = false;", clazz);
+        clazz.addField(inReloadFld);
+
         CtMethod addBean = CtMethod.make(
                 "public void addBean(javax.enterprise.context.spi.Contextual bean) {" +
                 "    if (_toReload == null)" +
@@ -55,7 +58,15 @@ public class CdiContextsTransformer {
         CtMethod _isActive = clazz.getDeclaredMethod("isActive");
         _isActive.setName("_isActive");
 
-        CtMethod isActive = CtMethod.make("public boolean isActive() {  boolean active = _isActive(); if(active){ _reload();} return active;}", clazz);
+        CtMethod isActive = CtMethod.make(
+                "public boolean isActive() {  " +
+                "    boolean active = _isActive(); " +
+                "    if(active && !_inReload ) { " +
+                "        _inReload = true;" +
+                "        _reload();" +
+                "        _inReload = false;" +
+                "    } return active;" +
+                "}", clazz);
 
         clazz.addMethod(isActive);
 
