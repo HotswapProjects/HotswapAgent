@@ -20,7 +20,13 @@ public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
 
-    @OnClassLoadEvent(classNameRegexp = "(org.jboss.weld.context.AbstractManagedContext)|(org.jboss.weld.context.AbstractSharedContext)|(org.jboss.weld.util.ForwardingContext)|(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|(org.apache.myfaces.cdi.view.ViewScopeContextImpl)")
+    @OnClassLoadEvent(classNameRegexp = "(org.jboss.weld.context.AbstractManagedContext)|" +
+                                        "(org.jboss.weld.context.AbstractSharedContext)|" +
+                                        "(org.jboss.weld.context.unbound.DependentContextImpl)|" +
+                                        "(org.jboss.weld.util.ForwardingContext)|" +
+                                        "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
+                                        "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)"
+                                        )
     public static void transformWeldContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
 
         LOGGER.debug("Adding interface {} to {}.", HotSwappingContext.class.getName(), clazz.getName());
