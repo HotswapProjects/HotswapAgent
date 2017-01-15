@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.weld.beans;
+package org.hotswap.agent.plugin.owb.beans;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
@@ -8,8 +8,9 @@ import java.util.Set;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 
+import org.apache.webbeans.component.ManagedBean;
+import org.apache.webbeans.context.creational.CreationalContextImpl;
 import org.hotswap.agent.logging.AgentLogger;
-import org.jboss.weld.bean.ManagedBean;
 
 /**
  * The Class ContextualReloadHelper.
@@ -17,11 +18,10 @@ import org.jboss.weld.bean.ManagedBean;
  * @author alpapad@gmail.com
  */
 public class ContextualReloadHelper {
-
     private static AgentLogger LOGGER = AgentLogger.getLogger(ContextualReloadHelper.class);
 
-    public static void reload(WeldHotswapContext ctx) {
-        Set<Contextual<Object>> beans = ctx._getBeansToReloadWeld();
+    public static void reload(OwbHotswapContext ctx) {
+        Set<Contextual<Object>> beans = ctx._getBeansToReloadOwb();
 
         if (beans != null && !beans.isEmpty()) {
             LOGGER.debug("Starting re-loading Contextuals in {}, {}", ctx, beans.size());
@@ -43,10 +43,11 @@ public class ContextualReloadHelper {
      * @param managedBean
      * @return
      */
-    public static boolean addToReloadSet(Context ctx,  Contextual<Object> managedBean)  {
+    @SuppressWarnings("unchecked")
+    public static boolean addToReloadSet(Context ctx,  Contextual<?> managedBean)  {
         try {
             LOGGER.debug("Adding bean in '{}' : {}", ctx.getClass(), managedBean);
-            Field toRedefine = ctx.getClass().getDeclaredField("_toReloadWeld");
+            Field toRedefine = ctx.getClass().getField("_toReloadOwb");
             Set toReload = Set.class.cast(toRedefine.get(ctx));
             if (toReload == null) {
                 toReload = new HashSet();
@@ -66,7 +67,7 @@ public class ContextualReloadHelper {
      * @param ctx
      * @param managedBean
      */
-    public static void destroy(WeldHotswapContext ctx, Contextual<?> managedBean ) {
+    static void destroy(OwbHotswapContext ctx, Contextual<?> managedBean ) {
         try {
             LOGGER.debug("Removing Contextual from Context........ {},: {}", managedBean, ctx);
             Object get = ctx.get(managedBean);
@@ -89,14 +90,16 @@ public class ContextualReloadHelper {
      * @param ctx
      * @param managedBean
      */
-    public static void reinitialize(Context ctx, Contextual<Object> contextual) {
+    @SuppressWarnings("unchecked")
+    static void reinitialize(Context ctx, Contextual<Object> contextual) {
         try {
             ManagedBean<Object> managedBean = ManagedBean.class.cast(contextual);
             LOGGER.debug("Re-Initializing........ {},: {}", managedBean, ctx);
             Object get = ctx.get(managedBean);
             if (get != null) {
                 LOGGER.debug("Bean injection points are reinitialized '{}'", managedBean);
-                managedBean.getProducer().inject(get, managedBean.getBeanManager().createCreationalContext(managedBean));
+                CreationalContextImpl<Object> creationalContext = managedBean.getWebBeansContext().getCreationalContextFactory().getCreationalContext(managedBean);
+                managedBean.getProducer().inject(get, creationalContext);
             }
         } catch (Exception e) {
             LOGGER.error("Error reinitializing bean {},: {}", e, contextual, ctx);

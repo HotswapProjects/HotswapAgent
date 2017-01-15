@@ -1,5 +1,4 @@
-package org.hotswap.agent.plugin.weld.beans;
-
+package org.hotswap.agent.plugin.owb.beans;
 
 import java.util.Set;
 
@@ -8,11 +7,11 @@ import javax.enterprise.context.spi.Contextual;
 
 
 /**
- * The Interface HotSwappingContext.
+ * The Interface OwbHotswapContext.
  *
  * @author alpapad@gmail.com
  */
-public interface HotSwappingContext {
+public interface OwbHotswapContext {
 
     /**
      * <p>
@@ -32,7 +31,6 @@ public interface HotSwappingContext {
      * If the context is active, then _redefine() is called.
      *
      * @definedIn Context
-     *
      * @return <tt>true</tt> if the context is active, or <tt>false</tt>
      *         otherwise.
      */
@@ -50,24 +48,28 @@ public interface HotSwappingContext {
     public <T> T get(Contextual<T> contextual);
 
     /**
-     * Adds a bean to the set of beans to be redefined.
+     * Adds a bean to the set of beans to be reloaded.
      *
      * @param bean
      */
-    void addBean(Contextual<Object> bean);
+    void _addReloading_owb(Contextual<Object> bean);
 
-    Set<Contextual<Object>> getBeans();
-
-    /** Actually private methods... */
     /**
-     * redefines the beans which have changed
+     * Gets the OWB beans to be reloaded.
+     *
+     * @return the OWB beans to be reloaded
      */
-    void _redefine();
+    Set<Contextual<Object>> _getBeansToReloadOwb();
+
+    /**
+     * reload the owb beans which have changed
+     */
+    void _reloadOwb();
 
     /**
      * the original isActive() method (renamed)
      *
      * @return
      */
-    boolean _isActive();
+    boolean _isActiveOwb();
 }

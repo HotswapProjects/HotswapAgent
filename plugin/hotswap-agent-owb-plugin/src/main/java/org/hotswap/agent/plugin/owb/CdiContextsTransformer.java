@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.weld;
+package org.hotswap.agent.plugin.owb;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
@@ -8,8 +8,8 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.weld.beans.ContextualReloadHelper;
-import org.hotswap.agent.plugin.weld.beans.WeldHotswapContext;
+import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
+import org.hotswap.agent.plugin.owb.beans.OwbHotswapContext;
 
 /**
  * The Class CdiContextsTransformer.
@@ -20,52 +20,48 @@ public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
 
-    @OnClassLoadEvent(classNameRegexp = "(org.jboss.weld.context.AbstractManagedContext)|" +
-                                        "(org.jboss.weld.context.AbstractSharedContext)|" +
-                                        "(org.jboss.weld.context.unbound.DependentContextImpl)|" +
-                                        "(org.jboss.weld.util.ForwardingContext)|" +
+    @OnClassLoadEvent(classNameRegexp = "(org.apache.webbeans.context.AbstractContext)|" +
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
-                                        "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)"
-                                        )
-    public static void transformWeldContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
+                                        "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)")
+    public static void transformOwbContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
 
-        LOGGER.debug("Adding interface {} to {}.", WeldHotswapContext.class.getName(), clazz.getName());
-        clazz.addInterface(classPool.get(WeldHotswapContext.class.getName()));
+        LOGGER.debug("Adding interface {} to {}.", OwbHotswapContext.class.getName(), clazz.getName());
+        clazz.addInterface(classPool.get(OwbHotswapContext.class.getName()));
 
-        CtField toReloadFld = CtField.make("public transient java.util.Set _toReloadWeld = null;", clazz);
+        CtField toReloadFld = CtField.make("public transient java.util.Set _toReloadOwb = null;", clazz);
         clazz.addField(toReloadFld);
 
-        CtField reloadingFld = CtField.make("public transient boolean _reloadingWeld = false;", clazz);
+        CtField reloadingFld = CtField.make("public transient boolean _reloadingOwb = false;", clazz);
         clazz.addField(reloadingFld);
 
         CtMethod addBeanToReload = CtMethod.make(
-                "public void _addBeanToReloadWeld(javax.enterprise.context.spi.Contextual bean) {" +
-                "    if (_toReloadWeld == null)" +
-                "        _toReloadWeld = new java.util.HashSet();" +
-                "    _toReloadWeld.add(bean);" +
+                "public void _addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean) {" +
+                "    if (_toReloadOwb == null)" +
+                "        _toReloadOwb = new java.util.HashSet();" +
+                "    _toReloadOwb.add(bean);" +
                 "}",
                 clazz
         );
         clazz.addMethod(addBeanToReload);
 
-        CtMethod getBeansToReload = CtMethod.make("public java.util.Set _getBeansToReloadWeld(){return _toReloadWeld;}", clazz);
+        CtMethod getBeansToReload = CtMethod.make("public java.util.Set _getBeansToReloadOwb(){return _toReloadOwb;}", clazz);
         clazz.addMethod(getBeansToReload);
 
-        CtMethod reload = CtMethod.make("public void _reloadWeld() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
+        CtMethod reload = CtMethod.make("public void _reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
         clazz.addMethod(reload);
 
-        CtMethod isActiveCopy = CtMethod.make("public boolean _isActiveWeld(){return false;}", clazz);
+        CtMethod isActiveCopy = CtMethod.make("public boolean _isActiveOwb(){return false;}", clazz);
         isActiveCopy.setBody(clazz.getDeclaredMethod("isActive"), null);
         clazz.addMethod(isActiveCopy);
 
         CtMethod isActive = clazz.getDeclaredMethod("isActive");
         isActive.setBody(
                 "{  " +
-                "    boolean active = _isActiveWeld(); " +
-                "    if(active && !_reloadingWeld ) { " +
-                "        _reloadingWeld = true;" +
-                "        _reloadWeld();" +
-                "        _reloadingWeld = false;" +
+                "    boolean active = _isActiveOwb(); " +
+                "    if(active && !_reloadingOwb ) { " +
+                "        _reloadingOwb = true;" +
+                "        _reloadOwb();" +
+                "        _reloadingOwb = false;" +
                 "    }" +
                 "    return active;" +
                 "}"

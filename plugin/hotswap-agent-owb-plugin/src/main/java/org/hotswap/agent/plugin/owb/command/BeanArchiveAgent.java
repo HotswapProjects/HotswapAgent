@@ -1,58 +1,51 @@
-package org.hotswap.agent.plugin.weld.command;
+package org.hotswap.agent.plugin.owb.command;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.enterprise.context.spi.Context;
+import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanAttributes;
+import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
+import javax.enterprise.inject.spi.InjectionTarget;
+import javax.enterprise.inject.spi.InjectionTargetFactory;
 
+import org.apache.webbeans.component.InjectionTargetBean;
+import org.apache.webbeans.component.ManagedBean;
+import org.apache.webbeans.container.BeanManagerImpl;
+import org.apache.webbeans.container.InjectableBeanManager;
+import org.apache.webbeans.container.InjectionTargetFactoryImpl;
+import org.apache.webbeans.corespi.scanner.xbean.CdiArchive;
+import org.apache.webbeans.portable.AnnotatedElementFactory;
+import org.apache.xbean.finder.archive.Archive;
+import org.apache.xbean.finder.archive.CompositeArchive;
+import org.apache.xbean.finder.archive.FileArchive;
+import org.apache.xbean.finder.archive.FilteredArchive;
+import org.apache.xbean.finder.archive.JarArchive;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.logging.AgentLogger.Level;
-import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
-import org.hotswap.agent.plugin.weld.WeldClassSignatureHelper;
-import org.hotswap.agent.plugin.weld.WeldPlugin;
-import org.hotswap.agent.plugin.weld.beans.ContextualReloadHelper;
+import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
+import org.hotswap.agent.plugin.owb.OwbClassSignatureHelper;
+import org.hotswap.agent.plugin.owb.OwbPlugin;
+import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
-import org.jboss.weld.annotated.enhanced.EnhancedAnnotatedType;
-import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
-import org.jboss.weld.annotated.slim.SlimAnnotatedType;
-import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
-import org.jboss.weld.bean.ManagedBean;
-import org.jboss.weld.bean.SessionBean;
-import org.jboss.weld.bean.attributes.BeanAttributesFactory;
-import org.jboss.weld.bean.builtin.BeanManagerProxy;
-import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
-import org.jboss.weld.bootstrap.spi.BeansXml;
-import org.jboss.weld.manager.BeanManagerImpl;
-import org.jboss.weld.metadata.TypeStore;
-import org.jboss.weld.resources.ClassTransformer;
-import org.jboss.weld.resources.ReflectionCache;
-import org.jboss.weld.resources.ReflectionCacheFactory;
-import org.jboss.weld.resources.SharedObjectCache;
-import org.jboss.weld.util.Beans;
 
 /**
- * Handles creating/redefinition of bean classes in BeanDeploymentArchive
+ * Handles creating/redefinition of bean classes in BeanArchive
  *
  * @author Vladimir Dvorak
- * @author alpapad@gmail.com
  */
-public class BeanDeploymentArchiveAgent {
+public class BeanArchiveAgent {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanDeploymentArchiveAgent.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanArchiveAgent.class);
 
     /**
      * Flag to check reload status. In unit test we need to wait for reload
@@ -61,79 +54,63 @@ public class BeanDeploymentArchiveAgent {
      */
     public static boolean reloadFlag = false;
 
-    private BeanDeploymentArchive deploymentArchive;
+    private Archive beanArchive;
 
     private String archivePath;
 
     private boolean registered = false;
 
     /**
-     * Register bean archive into BdaAgentRegistry and into WeldPlugin
+     * Register Cdi bean archive into ArchiveAgentRegistry
      *
      * @param classLoader the class loader
      * @param beanArchive the bean archive to be registered
      * @param bdaIdPath - bdaId or archive path (WildFly)
      */
-    public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String beanArchiveType) {
-        BeansXml beansXml = beanArchive.getBeansXml();
-        String archivePath = null;
+    @SuppressWarnings("unchecked")
+    public static void registerCdiArchiveDelegate(ClassLoader classLoader, CdiArchive beanArchive) {
 
-        if (beansXml != null && (beanArchiveType == null || "EXPLICIT".equals(beanArchiveType) || "IMPLICIT".equals(beanArchiveType))) {
-            String beansXmlPath = beansXml.getUrl().getPath();
-            if (beansXmlPath.endsWith("META-INF/beans.xml")) {
-                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xml".length());
-            } else if (beansXmlPath.endsWith("WEB-INF/beans.xml")) {
-                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "beans.xml".length()) + "classes";
-            }
-            if (archivePath.endsWith(".jar!/")) {
-                archivePath = archivePath.substring(0, archivePath.length() - "!/".length());
-            }
-        }
-
-        BeanDeploymentArchiveAgent bdaAgent = null;
         try {
-            LOGGER.debug("BeanDeploymentArchiveAgent registerArchive bdaId='{}' archivePath='{}'.", beanArchive.getId(), archivePath);
-            // check that it is regular file
-            // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
-            File path = new File(archivePath);
-            boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader), "contains", new Class[] {String.class}, archivePath);
-            if (!contain) {
-                bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
-                ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                    "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
-                bdaAgent.register();
+            CompositeArchive compositeArchive = (CompositeArchive) ReflectionHelper.get(beanArchive, "delegate");
+            List<Archive> archives = (List<Archive>) ReflectionHelper.get(compositeArchive, "archives");
+            for (Archive archive: archives) {
+                String archivePath = null;
+                if (archive instanceof FilteredArchive) {
+                    archive = (Archive) ReflectionHelper.get(archive, "archive");
+                }
+                if (archive instanceof JarArchive) {
+                    archivePath = ((JarArchive) archive) .getUrl().getPath();
+                } else if (archive instanceof FileArchive) {
+                    archivePath = ((FileArchive) archive).getDir().getPath();
+                } else {
+                    LOGGER.warning("Unexpected Archive class={}", archive.getClass().getName());
+                }
+                boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(ArchiveAgentRegistry.class.getName(), true, classLoader), "contains", new Class[] {String.class}, archivePath);
+                if (!contain) {
+                    BeanArchiveAgent beanArchiveAgent = new BeanArchiveAgent(archive, archivePath);
+                    ReflectionHelper.invoke(null, Class.forName(ArchiveAgentRegistry.class.getName(), true, classLoader),
+                        "put", new Class[] {String.class, BeanArchiveAgent.class}, archivePath, beanArchiveAgent);
+                    beanArchiveAgent.register();
+                }
             }
-        } catch (IllegalArgumentException e) {
-            LOGGER.warning("Unable to watch BeanDeploymentArchive with id={}", beanArchive.getId());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOGGER.error("registerArchive() exception {}.", e.getMessage());
         }
 
-
     }
 
     /**
-     * Gets the collection of registered BeanDeploymentArchive(s)
+     * Gets the collection of registered BeanArchive(s)
      *
      * @return the instances
      */
-    public static Collection<BeanDeploymentArchiveAgent> getInstances() {
-        return BdaAgentRegistry.values();
+    public static Collection<BeanArchiveAgent> getInstances() {
+        return ArchiveAgentRegistry.values();
     }
 
-    private BeanDeploymentArchiveAgent(BeanDeploymentArchive deploymentArchive, String archivePath) {
-        this.deploymentArchive = deploymentArchive;
+    private BeanArchiveAgent(Archive beanArchive, String archivePath) {
+        this.beanArchive = beanArchive;
         this.archivePath = archivePath;
-    }
-
-    /**
-     * Gets the bdaId.
-     *
-     * @return the bdaId
-     */
-    public String getBdaId() {
-        return deploymentArchive.getId();
     }
 
     /**
@@ -145,31 +122,35 @@ public class BeanDeploymentArchiveAgent {
         return archivePath;
     }
 
-    public BeanDeploymentArchive getDeploymentArchive() {
-        return deploymentArchive;
+    public Archive getBeanArchive() {
+        return beanArchive;
     }
 
     private void register() {
         if (!registered) {
             registered = true;
-            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
-                    "registerBeanDeplArchivePath", new Class[] { String.class }, new Object[] { archivePath });
+            PluginManagerInvoker.callPluginMethod(OwbPlugin.class, getClass().getClassLoader(),
+                    "registerBeanArchivePath", new Class[] { String.class }, new Object[] { archivePath });
         }
     }
 
     /**
      * Called by a reflection command from BeanRefreshCommand transformer.
      *
-     * @param classLoader
-     * @param archivePath
-     * @param beanClassName
+     * @param classLoader the class loader
+     * @param archivePath the archive path
+     * @param registeredProxiedBeans the registered proxied beans
+     * @param beanClassName the bean class name
+     * @param oldSignatureForProxyCheck
+     * @param oldSignatureByStrategy
+     * @param strReloadStrategy the bean reload strategy
      * @throws IOException error working with classDefinition
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings("rawtypes")
     public static void refreshBeanClass(ClassLoader classLoader, String archivePath, Map registeredProxiedBeans,
             String beanClassName, String oldSignatureForProxyCheck, String oldSignatureByStrategy, String strReloadStrategy) throws IOException {
 
-        BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
+        BeanArchiveAgent archiveAgent = ArchiveAgentRegistry.get(archivePath);
         BeanReloadStrategy reloadStrategy;
 
         try {
@@ -178,18 +159,19 @@ public class BeanDeploymentArchiveAgent {
             reloadStrategy = BeanReloadStrategy.NEVER;
         }
 
-        if (bdaAgent == null) {
-            LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
+        if (archiveAgent == null) {
+            LOGGER.error("Archive path '{}' is not associated with any BeanArchiveAgent", archivePath);
             return;
         }
 
         try {
-            // BDA classLoader can be different then appClassLoader for Wildfly/EAR deployment
-            // therefore we use class loader from BdaAgent class which is classloader for BDA
-            Class<?> beanClass = bdaAgent.getClass().getClassLoader().loadClass(beanClassName);
+            // archive classLoader can be different then appClassLoader for EAR deployment
+            // therefore we use class loader from archiveAgent class which is classloader for archive
+            Class<?> beanClass = archiveAgent.getClass().getClassLoader().loadClass(beanClassName);
 
-            bdaAgent.refreshProxy(classLoader, registeredProxiedBeans, beanClass, oldSignatureForProxyCheck);
-            bdaAgent.reloadBean(classLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
+            // TODO:
+            // archiveAgent.refreshProxy(classLoader, registeredProxiedBeans, beanClass, oldSignatureForProxyCheck);
+            archiveAgent.reloadBean(classLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class not found.", e);
@@ -203,12 +185,11 @@ public class BeanDeploymentArchiveAgent {
      * @param reloadStrategy
      * @param oldSignatureByStrategy
      *
-     * @param bdaId the Bean Deployment Archive ID
+     * @param bdaId the Bean Archive ID
      * @param beanClassName
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings("rawtypes")
     private void reloadBean(ClassLoader classLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
-
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
@@ -216,21 +197,21 @@ public class BeanDeploymentArchiveAgent {
 
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {
-                BeanManagerImpl beanManager;
-                if (CDI.current().getBeanManager() instanceof BeanManagerImpl) {
-                    beanManager = ((BeanManagerImpl) CDI.current().getBeanManager()).unwrap();
-                } else {
-                    beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
+                BeanManagerImpl beanManagerImpl = null;
+                BeanManager bm = CDI.current().getBeanManager();
+                if (bm instanceof BeanManagerImpl) {
+                    beanManagerImpl = (BeanManagerImpl) bm;
+                } else if (bm instanceof InjectableBeanManager){
+                    beanManagerImpl = (BeanManagerImpl) ReflectionHelper.get(bm, "bm");
                 }
 
-                Set<Bean<?>> beans = beanManager.getBeans(beanClass);
+                Set<Bean<?>> beans = beanManagerImpl.getBeans(beanClass);
 
                 if (beans != null && !beans.isEmpty()) {
                     for (Bean<?> bean : beans) {
                         if (bean instanceof ManagedBean) {
-                            reloadManagedBean(beanManager, beanClass, (ManagedBean) bean, oldSignatureByStrategy, reloadStrategy);
-                        } else if (bean instanceof SessionBean) {
-                            reloadSessionBean(beanManager, beanClass, (SessionBean) bean);
+                            clearCaches(beanManagerImpl);
+                            reloadManagedBean(beanManagerImpl, beanClass, (ManagedBean) bean, oldSignatureByStrategy, reloadStrategy);
                         } else {
                             LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
                                     bean.getClass().getName(), bean.getBeanClass());
@@ -238,6 +219,7 @@ public class BeanDeploymentArchiveAgent {
                     }
                     LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
                 } else {
+                    /*
                     try {
                         ClassTransformer classTransformer = getClassTransformer();
                         SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
@@ -256,6 +238,7 @@ public class BeanDeploymentArchiveAgent {
                     } catch (Exception e) {
                         LOGGER.debug("Bean definition failed", e);
                     }
+                    */
                 }
             }
         } finally {
@@ -263,50 +246,70 @@ public class BeanDeploymentArchiveAgent {
         }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void reloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean,
-            String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+    private void clearCaches(BeanManagerImpl beanManagerImpl) {
 
-        ClassTransformer classTransformer = getClassTransformer();
-        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
-        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+        AnnotatedElementFactory annoElementFactory = beanManagerImpl.getWebBeansContext().getAnnotatedElementFactory();
 
-        if (!eat.isAbstract() || !eat.getJavaClass().isInterface()) { // injectionTargetCannotBeCreatedForInterface
+        clearAnnoElemFactoryCache(annoElementFactory, "annotatedTypeCache");
+        clearAnnoElemFactoryCache(annoElementFactory, "modifiedAnnotatedTypeCache");
+        clearAnnoElemFactoryCache(annoElementFactory, "annotatedConstructorCache");
+        clearAnnoElemFactoryCache(annoElementFactory, "annotatedMethodCache");
+        clearAnnoElemFactoryCache(annoElementFactory, "annotatedFieldCache");
+        clearAnnoElemFactoryCache(annoElementFactory, "annotatedMethodsOfTypeCache");
+    }
 
-            managedBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, managedBean, false));
-
-            String signatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(reloadStrategy, beanClass);
-
-            if (reloadStrategy == BeanReloadStrategy.CLASS_CHANGE ||
-                 (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignatureByStrategy))) {
-
-                // Reload bean in contexts - invalidates existing instances
-                reloadManagedBeanInContexts(beanManager, beanClass, managedBean);
-
-            } else {
-
-                // keep beans in contexts, reinitialize bean injection points
-                try {
-                    Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
-                    if (get != null) {
-                        LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                        managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
-                    }
-                } catch (org.jboss.weld.context.ContextNotActiveException e) {
-                    LOGGER.warning("No active contexts for {}", beanClass.getName());
-                }
-
+    private void clearAnnoElemFactoryCache(Object target, String fieldName) {
+        try {
+            Map m = (Map) ReflectionHelper.get(target, fieldName);
+            if (m != null) {
+                m.clear();
             }
+        } catch (IllegalArgumentException e) {
+            LOGGER.warning("Cannot clear cache AnnotatedElementFactory cache.", e);;
         }
     }
 
-    private void reloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void reloadManagedBean(BeanManagerImpl beanManagerImpl, Class<?> beanClass, ManagedBean managedBean,
+            String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+
+        AnnotatedType annotatedType = beanManagerImpl.getWebBeansContext().getAnnotatedElementFactory().newAnnotatedType(beanClass);
+        InjectionTargetFactory factory = new InjectionTargetFactoryImpl(annotatedType, managedBean.getWebBeansContext());
+        InjectionTarget injectionTarget = factory.createInjectionTarget(managedBean);
+        ReflectionHelper.set(managedBean, InjectionTargetBean.class, "injectionTarget", injectionTarget);
+
+        String signatureByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(reloadStrategy, beanClass);
+
+        if (reloadStrategy == BeanReloadStrategy.CLASS_CHANGE ||
+                (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignatureByStrategy))) {
+
+            // Reload bean in contexts - invalidates existing instances
+            reloadManagedBeanInContexts(beanManagerImpl, beanClass, managedBean);
+
+        } else {
+
+            // keep beans in contexts, reinitialize bean injection points
+            try {
+                Object get = beanManagerImpl.getContext(managedBean.getScope()).get(managedBean);
+                if (get != null) {
+                    LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
+                    managedBean.getProducer().inject(get, beanManagerImpl.createCreationalContext(managedBean));
+                }
+            } catch (javax.enterprise.context.ContextNotActiveException e) {
+                LOGGER.warning("No active contexts for {}", beanClass.getName());
+            }
+
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void reloadManagedBeanInContexts(BeanManagerImpl beanManagerImpl, Class<?> beanClass, ManagedBean managedBean) {
         try {
-            Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManager);
+            Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManagerImpl);
 
             List<Context> ctxList = allContexts.get(managedBean.getScope());
 
-            if (ctxList != null) {
+            if(ctxList != null) {
                 for(Context context: ctxList) {
                     if (context != null) {
                         LOGGER.debug("Inspecting context..... '{}' {}", context.getClass(), managedBean.getScope());
@@ -315,11 +318,10 @@ public class BeanDeploymentArchiveAgent {
                         } else {
                             // try to reinitialize injection points instead...
                             try {
-                                // TODO: iterate over all active context (should access internal map directly)
                                 Object get = context.get(managedBean);
                                 if (get != null) {
                                     LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                                    managedBean.getProducer().inject(get, beanManagerImpl.createCreationalContext(managedBean));
                                 }
                             } catch (Exception e) {
                                 if(LOGGER.isLevelEnabled(Level.DEBUG)) {
@@ -336,31 +338,24 @@ public class BeanDeploymentArchiveAgent {
             } else {
                 LOGGER.debug("No active contexts for bean: {} in scope: {}",  managedBean.getScope(), beanClass.getName());
             }
-        } catch (org.jboss.weld.context.ContextNotActiveException e) {
-            LOGGER.warning("No active contexts for {}", e, beanClass.getName());
         } catch (Exception e) {
             LOGGER.warning("Context for {} failed to reload", e, beanClass.getName());
         }
     }
 
-    private static Map<Class<? extends Annotation>, List<Context>> getContexts(BeanManagerImpl beanManager){
+    private static Map<Class<? extends Annotation>, List<Context>> getContexts(BeanManagerImpl beanManagerImpl){
         try {
-            return Map.class.cast(ReflectionHelper.get(beanManager, "contexts"));
-        } catch (Exception e) {
+            Field contextsField = BeanManagerImpl.class.getField("contextMap");
+            contextsField.setAccessible(true);
+            Map<Class<? extends Annotation>, List<Context>> ctxs= Map.class.cast(contextsField.get(beanManagerImpl));
+            return ctxs;
+        } catch (IllegalAccessException |IllegalArgumentException | NoSuchFieldException | SecurityException e) {
             LOGGER.warning("BeanManagerImpl.contexts not accessible", e);
         }
         return Collections.emptyMap();
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void reloadSessionBean(BeanManagerImpl beanManager, Class<?> beanClass, SessionBean sessionBean) {
-        ClassTransformer classTransformer = getClassTransformer();
-        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
-        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
-
-        sessionBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, sessionBean, false));
-    }
-
+        /*
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void defineManagedBean(BeanManagerImpl beanManager, EnhancedAnnotatedType eat) throws Exception {
         BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
@@ -381,16 +376,17 @@ public class BeanDeploymentArchiveAgent {
         ClassTransformer classTransformer = new ClassTransformer(store, cache, reflectionCache, "STATIC_INSTANCE");
         return classTransformer;
     }
-
     @SuppressWarnings("rawtypes")
     private SlimAnnotatedType getAnnotatedType(String bdaId, ClassTransformer classTransformer, Class<?> beanClass) {
         BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, bdaId);
         return annotatedType;
     }
 
+*/
+    /*
     private void refreshProxy(ClassLoader classLoader, Map<Object, Object> registeredProxiedBeans, Class<?> beanClass, String oldClassSignature) {
         if (oldClassSignature != null && registeredProxiedBeans != null) {
-            String newClassSignature = WeldClassSignatureHelper.getSignatureForProxyClass(beanClass);
+            String newClassSignature = OwbClassSignatureHelper.getSignatureForProxyClass(beanClass);
             if (newClassSignature != null && !newClassSignature.equals(oldClassSignature)) {
                 synchronized (registeredProxiedBeans) {
                     if (!registeredProxiedBeans.isEmpty()) {
@@ -433,5 +429,6 @@ public class BeanDeploymentArchiveAgent {
             ProxyClassLoadingDelegate.endProxyRegeneration();
         }
     }
+    */
 
 }

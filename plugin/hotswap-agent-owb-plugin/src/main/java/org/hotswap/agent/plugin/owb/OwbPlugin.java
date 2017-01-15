@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.weld;
+package org.hotswap.agent.plugin.owb;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,8 +19,8 @@ import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
-import org.hotswap.agent.plugin.weld.command.BeanClassRefreshCommand;
+import org.hotswap.agent.plugin.owb.command.ArchiveAgentRegistry;
+import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
@@ -29,18 +29,18 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
 /**
- * WeldPlugin
+ * OwbPlugin
  *
  * @author Vladimir Dvorak
  */
-@Plugin(name = "Weld",
-        description = "Weld framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"2.2.5-2.2.16, 2.3.x, 2.4.0"},
-        expectedVersions = {"All between 2.2.5 - 2.4.x"},
-        supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class, AbstractClassBeanTransformer.class, CdiContextsTransformer.class})
-public class WeldPlugin {
+@Plugin(name = "Owb",
+        description = "Open Web Beans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
+        testedVersions = {"1.7.0"},
+        expectedVersions = {"All between 1.7.0-1.7.0"},
+        supportClass = { BeanArchiveTransformer.class, CdiContextsTransformer.class })
+public class OwbPlugin {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(WeldPlugin.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
 
     static boolean IS_TEST_ENVIRONMENT = Boolean.FALSE;
 
@@ -75,18 +75,9 @@ public class WeldPlugin {
 
     public void init() {
         if (!initialized) {
-            LOGGER.info("CDI/Weld plugin initialized.");
+            LOGGER.info("CDI/Owb plugin initialized.");
             initialized = true;
-            beanReloadStrategy = normBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
-        }
-    }
-
-    public void initInJBossAS() {
-        if (!initialized) {
-            LOGGER.info("CDI/Weld plugin initialized in JBossAS.");
-            inJbossAS = true;
-            initialized = true;
-            beanReloadStrategy = normBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
+            beanReloadStrategy = normBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
         }
     }
 
@@ -96,25 +87,25 @@ public class WeldPlugin {
             try {
                 ret = BeanReloadStrategy.valueOf(property);
             } catch (Exception e) {
-                LOGGER.error("Unknown property 'weld.beanReloadStrategy' value: {} ", property);
+                LOGGER.error("Unknown property 'owb.beanReloadStrategy' value: {} ", property);
             }
         }
         return ret;
     }
 
     /**
-     * Register BeanDeploymentArchive's normalizedArchivePath to watcher. In case of new class the class file is not known
+     * Register BeanArchive's normalizedArchivePath to watcher. In case of new class the class file is not known
      * to JVM hence no hotswap is called and therefore it must be handled by watcher.
      *
      * @param bdaId the BeanDeploymentArchive ID
      */
-    public synchronized void registerBeanDeplArchivePath(final String archivePath) {
+    public synchronized void registerBeanArchivePath(final String archivePath) {
         URL resource = null;
         try {
             resource = resourceNameToURL(archivePath);
             URI uri = resource.toURI();
             if (!IOUtils.isDirectoryURL(uri.toURL())) {
-                LOGGER.trace("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
+                LOGGER.trace("Owb - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
                 return;
             } else {
                 LOGGER.info("Registering archive path {}", archivePath);
@@ -135,7 +126,7 @@ public class WeldPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                if (isBdaRegistered(appClassLoader, archivePath)) {
+                                if (isBeanArchiveRegistered(appClassLoader, archivePath)) {
                                     // TODO : Create proxy factory
                                     scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
                                 }
@@ -148,16 +139,16 @@ public class WeldPlugin {
         } catch (URISyntaxException e) {
             LOGGER.error("Unable to watch path '{}' for changes.", e, resource);
         } catch (Exception e) {
-            LOGGER.warning("registerBeanDeplArchivePath() exception : {}",  e.getMessage());
+            LOGGER.warning("registerBeanArchivePath() exception : {}",  e.getMessage());
         }
     }
 
-    private static boolean isBdaRegistered(ClassLoader classLoader, String archivePath) {
+    private static boolean isBeanArchiveRegistered(ClassLoader classLoader, String archivePath) {
         if (archivePath != null) {
             try {
-                return (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader), "contains", new Class[] {String.class}, archivePath);
+                return (boolean) ReflectionHelper.invoke(null, Class.forName(ArchiveAgentRegistry.class.getName(), true, classLoader), "contains", new Class[] {String.class}, archivePath);
             } catch (ClassNotFoundException e) {
-                LOGGER.error("isBdaRegistered() exception {}.", e.getMessage());
+                LOGGER.error("isBeanArchiveRegistered() exception {}.", e.getMessage());
             }
         }
         return false;
@@ -185,9 +176,9 @@ public class WeldPlugin {
             try {
                 String archivePath = getArchivePath(classLoader, ctClass, original.getName());
                 LOGGER.debug("Class {} redefined for archive {} ", original.getName(), archivePath);
-                if (isBdaRegistered(classLoader, archivePath)) {
-                    String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
-                    String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
+                if (isBeanArchiveRegistered(classLoader, archivePath)) {
+                    String oldSignatureForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
+                    String oldSignatureByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
                     scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
                             original.getName(), oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
                 }
@@ -199,7 +190,7 @@ public class WeldPlugin {
 
     private String getArchivePath(ClassLoader classLoader, CtClass ctClass, String knownClassName) throws NotFoundException {
          try {
-             return (String) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+             return (String) ReflectionHelper.invoke(null, Class.forName(ArchiveAgentRegistry.class.getName(), true, classLoader),
                      "getArchiveByClassName", new Class[] {String.class}, knownClassName);
          } catch (ClassNotFoundException e) {
              LOGGER.error("getArchivePath() exception {}.", e.getMessage());
@@ -226,7 +217,7 @@ public class WeldPlugin {
     }
 
     // Return true if class is CDI synthetic class.
-    // Weld proxies contains $Proxy$ and $$$
+    // Owb proxies contains $Proxy$ and $$$
     // DeltaSpike's proxies contains "$$"
     private boolean isSyntheticCdiClass(String className) {
         return className.contains("$Proxy$") || className.contains("$$");
