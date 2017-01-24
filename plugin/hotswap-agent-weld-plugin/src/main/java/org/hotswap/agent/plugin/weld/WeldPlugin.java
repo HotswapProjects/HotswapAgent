@@ -77,7 +77,7 @@ public class WeldPlugin {
         if (!initialized) {
             LOGGER.info("CDI/Weld plugin initialized.");
             initialized = true;
-            beanReloadStrategy = normBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
+            beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
         }
     }
 
@@ -86,11 +86,11 @@ public class WeldPlugin {
             LOGGER.info("CDI/Weld plugin initialized in JBossAS.");
             inJbossAS = true;
             initialized = true;
-            beanReloadStrategy = normBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
+            beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
         }
     }
 
-    private BeanReloadStrategy normBeanReloadStrategy(String property) {
+    private BeanReloadStrategy setBeanReloadStrategy(String property) {
         BeanReloadStrategy ret = BeanReloadStrategy.NEVER;
         if (property != null && !property.isEmpty()) {
             try {
@@ -103,10 +103,10 @@ public class WeldPlugin {
     }
 
     /**
-     * Register BeanDeploymentArchive's normalizedArchivePath to watcher. In case of new class the class file is not known
+     * Register BeanDeploymentArchive's normalizedArchivePath to watcher. In case of new class, the class file is not known
      * to JVM hence no hotswap is called and therefore it must be handled by watcher.
      *
-     * @param bdaId the BeanDeploymentArchive ID
+     * @param archivePath the archive path
      */
     public synchronized void registerBeanDeplArchivePath(final String archivePath) {
         URL resource = null;

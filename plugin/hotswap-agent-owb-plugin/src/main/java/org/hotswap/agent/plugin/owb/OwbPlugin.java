@@ -37,7 +37,7 @@ import org.hotswap.agent.watch.Watcher;
         description = "Open Web Beans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"1.7.0"},
         expectedVersions = {"All between 1.7.0-1.7.0"},
-        supportClass = { BeanArchiveTransformer.class, CdiContextsTransformer.class })
+        supportClass = { BeanArchiveTransformer.class, CdiContextsTransformer.class, WebBeanContextTransformer.class })
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
@@ -77,11 +77,11 @@ public class OwbPlugin {
         if (!initialized) {
             LOGGER.info("CDI/Owb plugin initialized.");
             initialized = true;
-            beanReloadStrategy = normBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
+            beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
         }
     }
 
-    private BeanReloadStrategy normBeanReloadStrategy(String property) {
+    private BeanReloadStrategy setBeanReloadStrategy(String property) {
         BeanReloadStrategy ret = BeanReloadStrategy.NEVER;
         if (property != null && !property.isEmpty()) {
             try {
@@ -97,7 +97,7 @@ public class OwbPlugin {
      * Register BeanArchive's normalizedArchivePath to watcher. In case of new class the class file is not known
      * to JVM hence no hotswap is called and therefore it must be handled by watcher.
      *
-     * @param bdaId the BeanDeploymentArchive ID
+     * @param archivePath the archive path
      */
     public synchronized void registerBeanArchivePath(final String archivePath) {
         URL resource = null;
