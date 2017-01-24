@@ -45,7 +45,7 @@ import org.jboss.weld.resources.SharedObjectCache;
 import org.jboss.weld.util.Beans;
 
 /**
- * Handles creating/redefinition of bean classes in BeanDeploymentArchive
+ * Handles creating and redefinition of bean classes in BeanDeploymentArchive
  *
  * @author Vladimir Dvorak
  * @author alpapad@gmail.com
@@ -55,8 +55,8 @@ public class BeanDeploymentArchiveAgent {
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanDeploymentArchiveAgent.class);
 
     /**
-     * Flag to check reload status. In unit test we need to wait for reload
-     * finish before the test can continue. Set flag to true in the test class
+     * Flag to check the reload status. In unit test we need to wait for reload
+     * finishing before the test can continue. Set flag to true in the test class
      * and wait until the flag is false again.
      */
     public static boolean reloadFlag = false;
@@ -68,11 +68,11 @@ public class BeanDeploymentArchiveAgent {
     private boolean registered = false;
 
     /**
-     * Register bean archive into BdaAgentRegistry and into WeldPlugin
+     * Register bean archive into BdaAgentRegistry and into WeldPlugin.
      *
      * @param classLoader the class loader
      * @param beanArchive the bean archive to be registered
-     * @param bdaIdPath - bdaId or archive path (WildFly)
+     * @param beanArchiveType the bean archive type
      */
     public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String beanArchiveType) {
         BeansXml beansXml = beanArchive.getBeansXml();
@@ -95,8 +95,13 @@ public class BeanDeploymentArchiveAgent {
             LOGGER.debug("BeanDeploymentArchiveAgent registerArchive bdaId='{}' archivePath='{}'.", beanArchive.getId(), archivePath);
             // check that it is regular file
             // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
+
+            @SuppressWarnings("unused")
             File path = new File(archivePath);
-            boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader), "contains", new Class[] {String.class}, archivePath);
+
+            boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
+                    "contains", new Class[] {String.class}, archivePath);
+
             if (!contain) {
                 bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
                 ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
@@ -109,8 +114,14 @@ public class BeanDeploymentArchiveAgent {
         catch (Exception e) {
             LOGGER.error("registerArchive() exception {}.", e.getMessage());
         }
+    }
 
-
+    private void register() {
+        if (!registered) {
+            registered = true;
+            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
+                    "registerBeanDeplArchivePath", new Class[] { String.class }, new Object[] { archivePath });
+        }
     }
 
     /**
@@ -128,7 +139,7 @@ public class BeanDeploymentArchiveAgent {
     }
 
     /**
-     * Gets the bdaId.
+     * Gets the Bean depoyment ID - bdaId.
      *
      * @return the bdaId
      */
@@ -145,38 +156,30 @@ public class BeanDeploymentArchiveAgent {
         return archivePath;
     }
 
+    /**
+     * Gets the deployment archive.
+     *
+     * @return the deployment archive
+     */
     public BeanDeploymentArchive getDeploymentArchive() {
         return deploymentArchive;
     }
 
-    private void register() {
-        if (!registered) {
-            registered = true;
-            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
-                    "registerBeanDeplArchivePath", new Class[] { String.class }, new Object[] { archivePath });
-        }
-    }
-
     /**
-     * Called by a reflection command from BeanRefreshCommand transformer.
+     * Recreate proxy classes, Called from BeanClassRefreshCommand.
      *
-     * @param classLoader
-     * @param archivePath
-     * @param beanClassName
+     * @param classLoader the class loader
+     * @param archivePath the bean archive path
+     * @param registeredProxiedBeans the registered proxied beans
+     * @param beanClassName the bean class name
+     * @param oldSignatureForProxyCheck the old signature for proxy check
      * @throws IOException error working with classDefinition
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static void refreshBeanClass(ClassLoader classLoader, String archivePath, Map registeredProxiedBeans,
-            String beanClassName, String oldSignatureForProxyCheck, String oldSignatureByStrategy, String strReloadStrategy) throws IOException {
+    public static void recreateProxy(ClassLoader classLoader, String archivePath, Map registeredProxiedBeans, String beanClassName,
+            String oldSignatureForProxyCheck) throws IOException {
 
         BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
-        BeanReloadStrategy reloadStrategy;
-
-        try {
-            reloadStrategy = BeanReloadStrategy.valueOf(strReloadStrategy);
-        } catch (Exception e) {
-            reloadStrategy = BeanReloadStrategy.NEVER;
-        }
 
         if (bdaAgent == null) {
             LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
@@ -187,9 +190,45 @@ public class BeanDeploymentArchiveAgent {
             // BDA classLoader can be different then appClassLoader for Wildfly/EAR deployment
             // therefore we use class loader from BdaAgent class which is classloader for BDA
             Class<?> beanClass = bdaAgent.getClass().getClassLoader().loadClass(beanClassName);
+            bdaAgent.doRecreateProxy(classLoader, registeredProxiedBeans, beanClass, oldSignatureForProxyCheck);
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("Bean class not found.", e);
+        }
+    }
 
-            bdaAgent.refreshProxy(classLoader, registeredProxiedBeans, beanClass, oldSignatureForProxyCheck);
-            bdaAgent.reloadBean(classLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
+    /**
+     * Reload bean (reload bean according strategy, reinject instances). Called from BeanClassRefreshCommand.
+     *
+     * @param classLoader
+     * @param archivePath
+     * @param beanClassName
+     * @throws IOException error working with classDefinition
+     */
+    public static void reloadBean(ClassLoader classLoader, String archivePath, String beanClassName, String oldSignatureByStrategy,
+            String strReloadStrategy) throws IOException {
+
+        BeanDeploymentArchiveAgent bdaAgent = BdaAgentRegistry.get(archivePath);
+
+        if (bdaAgent == null) {
+            LOGGER.error("Archive path '{}' is not associated with any BeanDeploymentArchiveAgent", archivePath);
+            return;
+        }
+
+        try {
+
+            BeanReloadStrategy reloadStrategy;
+
+            try {
+                reloadStrategy = BeanReloadStrategy.valueOf(strReloadStrategy);
+            } catch (Exception e) {
+                reloadStrategy = BeanReloadStrategy.NEVER;
+            }
+
+            // BDA classLoader can be different then appClassLoader for Wildfly/EAR deployment
+            // therefore we use class loader from BdaAgent class which is classloader for BDA
+            Class<?> beanClass = bdaAgent.getClass().getClassLoader().loadClass(beanClassName);
+
+            bdaAgent.doReloadBean(classLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class not found.", e);
@@ -207,7 +246,7 @@ public class BeanDeploymentArchiveAgent {
      * @param beanClassName
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void reloadBean(ClassLoader classLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+    private void doReloadBean(ClassLoader classLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -228,9 +267,9 @@ public class BeanDeploymentArchiveAgent {
                 if (beans != null && !beans.isEmpty()) {
                     for (Bean<?> bean : beans) {
                         if (bean instanceof ManagedBean) {
-                            reloadManagedBean(beanManager, beanClass, (ManagedBean) bean, oldSignatureByStrategy, reloadStrategy);
+                            doReloadManagedBean(beanManager, beanClass, (ManagedBean) bean, oldSignatureByStrategy, reloadStrategy);
                         } else if (bean instanceof SessionBean) {
-                            reloadSessionBean(beanManager, beanClass, (SessionBean) bean);
+                            doReloadSessionBean(beanManager, beanClass, (SessionBean) bean);
                         } else {
                             LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
                                     bean.getClass().getName(), bean.getBeanClass());
@@ -264,7 +303,7 @@ public class BeanDeploymentArchiveAgent {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void reloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean,
+    private void doReloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean,
             String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
         ClassTransformer classTransformer = getClassTransformer();
@@ -281,7 +320,7 @@ public class BeanDeploymentArchiveAgent {
                  (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignatureByStrategy))) {
 
                 // Reload bean in contexts - invalidates existing instances
-                reloadManagedBeanInContexts(beanManager, beanClass, managedBean);
+                doReloadManagedBeanInContexts(beanManager, beanClass, managedBean);
 
             } else {
 
@@ -300,7 +339,7 @@ public class BeanDeploymentArchiveAgent {
         }
     }
 
-    private void reloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+    private void doReloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
         try {
             Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManager);
 
@@ -353,7 +392,7 @@ public class BeanDeploymentArchiveAgent {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void reloadSessionBean(BeanManagerImpl beanManager, Class<?> beanClass, SessionBean sessionBean) {
+    private void doReloadSessionBean(BeanManagerImpl beanManager, Class<?> beanClass, SessionBean sessionBean) {
         ClassTransformer classTransformer = getClassTransformer();
         SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
         EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
@@ -388,25 +427,27 @@ public class BeanDeploymentArchiveAgent {
         return annotatedType;
     }
 
-    private void refreshProxy(ClassLoader classLoader, Map<Object, Object> registeredProxiedBeans, Class<?> beanClass, String oldClassSignature) {
+    private void doRecreateProxy(ClassLoader classLoader, Map<Object, Object> registeredProxiedBeans, Class<?> beanClass, String oldClassSignature) {
         if (oldClassSignature != null && registeredProxiedBeans != null) {
             String newClassSignature = WeldClassSignatureHelper.getSignatureForProxyClass(beanClass);
             if (newClassSignature != null && !newClassSignature.equals(oldClassSignature)) {
                 synchronized (registeredProxiedBeans) {
                     if (!registeredProxiedBeans.isEmpty()) {
-                        doRefreshProxy(classLoader, registeredProxiedBeans, beanClass);
+                        doRecreateProxy(classLoader, registeredProxiedBeans, beanClass);
                     }
                 }
             }
         }
     }
 
-    private void doRefreshProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, Class<?> proxyClass) {
+    private void doRecreateProxy(ClassLoader classLoader, Map<Object, Object> registeredBeans, Class<?> proxyClass) {
+
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
-        ProxyClassLoadingDelegate.beginProxyRegeneration();
-
         try {
+
+            ProxyClassLoadingDelegate.beginProxyRegeneration();
+
             Class<?> proxyFactoryClass = null;
 
             for (Entry<Object, Object> entry : registeredBeans.entrySet()) {
