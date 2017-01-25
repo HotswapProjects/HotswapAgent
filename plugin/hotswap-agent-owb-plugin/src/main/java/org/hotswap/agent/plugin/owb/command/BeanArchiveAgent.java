@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.owb.command;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -17,8 +18,11 @@ import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.InjectionTarget;
 import javax.enterprise.inject.spi.InjectionTargetFactory;
 
+import org.apache.webbeans.component.BeanAttributesImpl;
 import org.apache.webbeans.component.InjectionTargetBean;
 import org.apache.webbeans.component.ManagedBean;
+import org.apache.webbeans.component.creation.BeanAttributesBuilder;
+import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
@@ -271,10 +275,27 @@ public class BeanArchiveAgent {
     private void doReloadManagedBean(BeanManagerImpl beanManagerImpl, Class<?> beanClass, ManagedBean managedBean,
             String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
-        AnnotatedType annotatedType = beanManagerImpl.getWebBeansContext().getAnnotatedElementFactory().newAnnotatedType(beanClass);
+        WebBeansContext webBeansContext = beanManagerImpl.getWebBeansContext();
+
+        AnnotatedElementFactory annotatedElementFactory = webBeansContext.getAnnotatedElementFactory();
+        annotatedElementFactory.clear();
+
+        AnnotatedType annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
+
+        ReflectionHelper.set(managedBean, InjectionTargetBean.class, "annotatedType", annotatedType);
+
         InjectionTargetFactory factory = new InjectionTargetFactoryImpl(annotatedType, managedBean.getWebBeansContext());
         InjectionTarget injectionTarget = factory.createInjectionTarget(managedBean);
         ReflectionHelper.set(managedBean, InjectionTargetBean.class, "injectionTarget", injectionTarget);
+
+        BeanAttributesImpl beanAttributes = BeanAttributesBuilder.forContext(webBeansContext).newBeanAttibutes(annotatedType).build();
+
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "types", beanAttributes.getTypes());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "qualifiers", beanAttributes.getQualifiers());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "scope", beanAttributes.getScope());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "name", beanAttributes.getName());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "stereotypes", beanAttributes.getStereotypes());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "alternative", beanAttributes.isAlternative());
 
         String signatureByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(reloadStrategy, beanClass);
 
