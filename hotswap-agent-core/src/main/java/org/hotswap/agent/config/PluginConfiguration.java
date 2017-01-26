@@ -1,13 +1,8 @@
 package org.hotswap.agent.config;
 
-import org.hotswap.agent.HotswapAgent;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
-import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
-
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -17,6 +12,13 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
+
+import org.hotswap.agent.HotswapAgent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
+import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
 
 /**
  * Plugin configuration.
@@ -29,6 +31,9 @@ public class PluginConfiguration {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PluginConfiguration.class);
 
     private static final String PLUGIN_CONFIGURATION = "hotswap-agent.properties";
+
+    /** The Constant EXCLUDED_CLASS_LOADERS_KEY. */
+    private static final String EXCLUDED_CLASS_LOADERS_KEY = "excludedClassLoaderPatterns";
 
     Properties properties = new Properties();
 
@@ -143,10 +148,11 @@ public class PluginConfiguration {
      */
     protected void init() {
         LogConfigurationHelper.configureLog(properties);
-
         initPluginPackage();
 
         initExtraClassPath();
+        initReloadCallback();
+        initExcludedClassLoaderPatterns();
     }
 
     private void initPluginPackage() {
@@ -172,6 +178,45 @@ public class PluginConfiguration {
                         "Only URLClassLoader is supported.\n" +
                         "*** extraClasspath configuration property will not be handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
             }
+        }
+    }
+    
+    private void initReloadCallback() {
+        if (properties.containsKey("reloadCallback")) {
+            String callbackDetail = properties.getProperty("reloadCallback");
+            int lastPeriod = callbackDetail.lastIndexOf(".");
+            if (lastPeriod != -1) {
+                String className = callbackDetail.substring(0, lastPeriod);
+                String methodName = callbackDetail.substring(lastPeriod + 1, callbackDetail.length());
+                try {
+                    Class<?> clazz = Class.forName(className, true, classLoader);
+                    Method method = null;
+                    for (Method candidate : clazz.getDeclaredMethods()) {
+                        if (methodName.equals(candidate.getName())) {
+                            if (method == null
+                                    || candidate.getParameterTypes().length > method.getParameterTypes().length) {
+                                method = candidate;
+                            }
+                        }
+                    }
+                    if (method != null) {
+                        PluginManager.getInstance().setReloadCallback(method);
+                    }
+                } catch (Throwable e) {
+                    LOGGER.info("Unable to resolve callback method", e);
+                }
+            }
+        }
+    }
+
+    private void initExcludedClassLoaderPatterns() {
+        if (properties != null && properties.containsKey(EXCLUDED_CLASS_LOADERS_KEY)) {
+            List<Pattern> excludedClassLoaderPatterns = new ArrayList<Pattern>();
+            for (String pattern : properties.getProperty(EXCLUDED_CLASS_LOADERS_KEY).split(",")) {
+                excludedClassLoaderPatterns.add(Pattern.compile(pattern));
+            }
+            PluginManager.getInstance().getHotswapTransformer()
+                    .setExcludedClassLoaderPatterns(excludedClassLoaderPatterns);
         }
     }
 

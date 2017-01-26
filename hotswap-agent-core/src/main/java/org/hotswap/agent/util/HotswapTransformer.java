@@ -4,7 +4,6 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -51,6 +50,16 @@ public class HotswapTransformer implements ClassFileTransformer {
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<ClassFileTransformer, ClassLoader>();
 
     protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<ClassLoader, Object>();
+
+    private List<Pattern> excludedClassLoaderPatterns;
+
+    /**
+     * @param excludedClassLoaderPatterns
+     *            the excludedClassLoaderPatterns to set
+     */
+    public void setExcludedClassLoaderPatterns(List<Pattern> excludedClassLoaderPatterns) {
+        this.excludedClassLoaderPatterns = excludedClassLoaderPatterns;
+    }
 
     /**
      * Register a transformer for a regexp matching class names.
@@ -228,7 +237,7 @@ public class HotswapTransformer implements ClassFileTransformer {
                 PluginManager.getInstance().initClassLoader(null, protectionDomain);
             } else {
                 // ensure the classloader should not be excluded
-                if (!excludedClassLoaders.contains(classLoader.getClass().getName())) {
+                if (shouldScheduleClassLoader(classLoader)) {
                     // schedule the excecution
                     PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
                         @Override
@@ -264,6 +273,21 @@ public class HotswapTransformer implements ClassFileTransformer {
                 }
             }
         }
+    }
+
+    private boolean shouldScheduleClassLoader(final ClassLoader classLoader) {
+        String name = classLoader.getClass().getName();
+        if (excludedClassLoaders.contains(name)) {
+            return false;
+        }
+        if (excludedClassLoaderPatterns != null) {
+            for (Pattern pattern : excludedClassLoaderPatterns) {
+                if (pattern.matcher(name).matches()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
 

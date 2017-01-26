@@ -222,6 +222,14 @@ public class PluginClassFileTransformer implements ClassFileTransformer {
         } catch (IOException e) {
             LOGGER.error("IOException in transform method on plugin '" + pluginAnnotation.getPluginClass() + "' class '" + className + "'.", e);
         }
+        if (pluginManager.getReloadCallback() != null) {
+            Object[] params = pluginManager.getReloadCallback().getParameterTypes().length == 1 ? new Object[]{className} : null;
+            try {
+                pluginManager.getReloadCallback().invoke(null, params == null ? null : params);
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                LOGGER.info("Unable to call defined callback.", e);
+            }
+        }
 
         return result;
     }

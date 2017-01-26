@@ -1,5 +1,16 @@
 package org.hotswap.agent.config;
 
+import java.io.IOException;
+import java.lang.instrument.ClassDefinition;
+import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Method;
+import java.security.ProtectionDomain;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.command.impl.SchedulerImpl;
 import org.hotswap.agent.logging.AgentLogger;
@@ -8,12 +19,6 @@ import org.hotswap.agent.util.classloader.ClassLoaderDefineClassPatcher;
 import org.hotswap.agent.util.classloader.ClassLoaderPatcher;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
-
-import java.io.IOException;
-import java.lang.instrument.ClassDefinition;
-import java.lang.instrument.Instrumentation;
-import java.security.ProtectionDomain;
-import java.util.*;
 
 /**
  * The main agent plugin manager, well known singleton controller.
@@ -45,6 +50,9 @@ public class PluginManager {
 
     // the instrumentation API
     private Instrumentation instrumentation;
+
+    /** The callback. */
+    private Method reloadCallback;
 
     //////////////////////////   PLUGINS /////////////////////////////////////
 
@@ -213,6 +221,21 @@ public class PluginManager {
      */
     public void setPluginRegistry(PluginRegistry pluginRegistry) {
         this.pluginRegistry = pluginRegistry;
+    }
+
+    /**
+     * @return the callback
+     */
+    public Method getReloadCallback() {
+        return reloadCallback;
+    }
+
+    /**
+     * @param reloadCallback
+     *            the callback to set
+     */
+    public void setReloadCallback(Method reloadCallback) {
+        this.reloadCallback = reloadCallback;
     }
 
     protected HotswapTransformer hotswapTransformer;
