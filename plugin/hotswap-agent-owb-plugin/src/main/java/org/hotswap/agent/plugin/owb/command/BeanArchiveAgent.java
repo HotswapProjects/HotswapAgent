@@ -3,31 +3,52 @@ package org.hotswap.agent.plugin.owb.command;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Priority;
 import javax.enterprise.context.spi.Context;
+import javax.enterprise.inject.spi.AnnotatedField;
+import javax.enterprise.inject.spi.AnnotatedMethod;
 import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.InjectionTarget;
 import javax.enterprise.inject.spi.InjectionTargetFactory;
+import javax.enterprise.inject.spi.ObserverMethod;
 
 import org.apache.webbeans.component.BeanAttributesImpl;
+import org.apache.webbeans.component.CdiInterceptorBean;
+import org.apache.webbeans.component.DecoratorBean;
 import org.apache.webbeans.component.InjectionTargetBean;
 import org.apache.webbeans.component.ManagedBean;
+import org.apache.webbeans.component.ProducerFieldBean;
+import org.apache.webbeans.component.ProducerMethodBean;
 import org.apache.webbeans.component.creation.BeanAttributesBuilder;
+import org.apache.webbeans.component.creation.CdiInterceptorBeanBuilder;
+import org.apache.webbeans.component.creation.DecoratorBeanBuilder;
+import org.apache.webbeans.component.creation.ManagedBeanBuilder;
+import org.apache.webbeans.component.creation.ObserverMethodsBuilder;
+import org.apache.webbeans.component.creation.ProducerFieldBeansBuilder;
+import org.apache.webbeans.component.creation.ProducerMethodBeansBuilder;
 import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
 import org.apache.webbeans.corespi.scanner.xbean.CdiArchive;
+import org.apache.webbeans.decorator.DecoratorsManager;
+import org.apache.webbeans.event.ObserverMethodImpl;
+import org.apache.webbeans.intercept.InterceptorsManager;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
+import org.apache.webbeans.portable.events.ProcessBeanImpl;
+import org.apache.webbeans.portable.events.generics.GProcessManagedBean;
+import org.apache.webbeans.util.WebBeansUtil;
 import org.apache.xbean.finder.archive.Archive;
 import org.apache.xbean.finder.archive.CompositeArchive;
 import org.apache.xbean.finder.archive.FileArchive;
@@ -198,22 +219,23 @@ public class BeanArchiveAgent {
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {
 
-                BeanManagerImpl beanManagerImpl = null;
+                BeanManagerImpl beanManager = null;
                 BeanManager bm = CDI.current().getBeanManager();
 
                 if (bm instanceof BeanManagerImpl) {
-                    beanManagerImpl = (BeanManagerImpl) bm;
+                    beanManager = (BeanManagerImpl) bm;
                 } else if (bm instanceof InjectableBeanManager){
-                    beanManagerImpl = (BeanManagerImpl) ReflectionHelper.get(bm, "bm");
+                    beanManager = (BeanManagerImpl) ReflectionHelper.get(bm, "bm");
                 }
 
-                Set<Bean<?>> beans = beanManagerImpl.getBeans(beanClass);
+                Set<Bean<?>> beans = beanManager.getBeans(beanClass);
 
                 if (beans != null && !beans.isEmpty()) {
                     for (Bean<?> bean : beans) {
+                        // just now only managed beans
                         if (bean instanceof ManagedBean) {
-                            clearCaches(beanManagerImpl);
-                            doReloadManagedBean(beanManagerImpl, beanClass, (ManagedBean) bean, oldSignatureByStrategy, reloadStrategy);
+                            clearAnnotElemFactoryCaches(beanManager);
+                            doReloadManagedBean(beanManager, beanClass, (ManagedBean) bean, oldSignatureByStrategy, reloadStrategy);
                         } else {
                             LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
                                     bean.getClass().getName(), bean.getBeanClass());
@@ -221,26 +243,8 @@ public class BeanArchiveAgent {
                     }
                     LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
                 } else {
-                    /*
-                    try {
-                        ClassTransformer classTransformer = getClassTransformer();
-                        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
-                        boolean managedBeanOrDecorator = Beans.isTypeManagedBeanOrDecoratorOrInterceptor(annotatedType);
-
-                        if (managedBeanOrDecorator) {
-                            EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
-                            defineManagedBean(beanManager, eat);
-                            // define managed bean
-                            // beanManager.cleanupAfterBoot();
-                            LOGGER.debug("Bean defined '{}'", beanClass.getName());
-                        } else {
-                            // TODO : define session bean
-                            LOGGER.warning("Bean NOT? defined '{}', session bean?", beanClass.getName());
-                        }
-                    } catch (Exception e) {
-                        LOGGER.debug("Bean definition failed", e);
-                    }
-                    */
+                    // Create new bean
+                    doDefineManagedBean(beanManager, beanClass);
                 }
             }
         } finally {
@@ -248,19 +252,19 @@ public class BeanArchiveAgent {
         }
     }
 
-    private void clearCaches(BeanManagerImpl beanManagerImpl) {
+    private void clearAnnotElemFactoryCaches(BeanManagerImpl beanManager) {
 
-        AnnotatedElementFactory annoElementFactory = beanManagerImpl.getWebBeansContext().getAnnotatedElementFactory();
+        AnnotatedElementFactory annoElementFactory = beanManager.getWebBeansContext().getAnnotatedElementFactory();
 
-        clearAnnoElemFactoryCache(annoElementFactory, "annotatedTypeCache");
-        clearAnnoElemFactoryCache(annoElementFactory, "modifiedAnnotatedTypeCache");
-        clearAnnoElemFactoryCache(annoElementFactory, "annotatedConstructorCache");
-        clearAnnoElemFactoryCache(annoElementFactory, "annotatedMethodCache");
-        clearAnnoElemFactoryCache(annoElementFactory, "annotatedFieldCache");
-        clearAnnoElemFactoryCache(annoElementFactory, "annotatedMethodsOfTypeCache");
+        clearMapCache(annoElementFactory, "annotatedTypeCache");
+        clearMapCache(annoElementFactory, "modifiedAnnotatedTypeCache");
+        clearMapCache(annoElementFactory, "annotatedConstructorCache");
+        clearMapCache(annoElementFactory, "annotatedMethodCache");
+        clearMapCache(annoElementFactory, "annotatedFieldCache");
+        clearMapCache(annoElementFactory, "annotatedMethodsOfTypeCache");
     }
 
-    private void clearAnnoElemFactoryCache(Object target, String fieldName) {
+    private void clearMapCache(Object target, String fieldName) {
         try {
             Map m = (Map) ReflectionHelper.get(target, fieldName);
             if (m != null) {
@@ -272,12 +276,13 @@ public class BeanArchiveAgent {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void doReloadManagedBean(BeanManagerImpl beanManagerImpl, Class<?> beanClass, ManagedBean managedBean,
+    private void doReloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean,
             String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
-        WebBeansContext webBeansContext = beanManagerImpl.getWebBeansContext();
+        WebBeansContext wbc = beanManager.getWebBeansContext();
 
-        AnnotatedElementFactory annotatedElementFactory = webBeansContext.getAnnotatedElementFactory();
+        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
+        // Clear AnnotatedElementFactory caches
         annotatedElementFactory.clear();
 
         AnnotatedType annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
@@ -288,14 +293,14 @@ public class BeanArchiveAgent {
         InjectionTarget injectionTarget = factory.createInjectionTarget(managedBean);
         ReflectionHelper.set(managedBean, InjectionTargetBean.class, "injectionTarget", injectionTarget);
 
-        BeanAttributesImpl beanAttributes = BeanAttributesBuilder.forContext(webBeansContext).newBeanAttibutes(annotatedType).build();
-
-        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "types", beanAttributes.getTypes());
-        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "qualifiers", beanAttributes.getQualifiers());
-        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "scope", beanAttributes.getScope());
-        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "name", beanAttributes.getName());
-        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "stereotypes", beanAttributes.getStereotypes());
-        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "alternative", beanAttributes.isAlternative());
+        // Updated members that were set by bean attributes
+        BeanAttributesImpl attributes = BeanAttributesBuilder.forContext(wbc).newBeanAttibutes(annotatedType).build();
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "types", attributes.getTypes());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "qualifiers", attributes.getQualifiers());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "scope", attributes.getScope());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "name", attributes.getName());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "stereotypes", attributes.getStereotypes());
+        ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "alternative", attributes.isAlternative());
 
         String signatureByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(reloadStrategy, beanClass);
 
@@ -303,28 +308,186 @@ public class BeanArchiveAgent {
                 (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignatureByStrategy))) {
 
             // Reload bean in contexts - invalidates existing instances
-            doReloadManagedBeanInContexts(beanManagerImpl, beanClass, managedBean);
+            doReloadManagedBeanInContexts(beanManager, beanClass, managedBean);
 
         } else {
 
             // keep beans in contexts, reinitialize bean injection points
             try {
-                Object get = beanManagerImpl.getContext(managedBean.getScope()).get(managedBean);
+                Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
                 if (get != null) {
                     LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                    managedBean.getProducer().inject(get, beanManagerImpl.createCreationalContext(managedBean));
+                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
                 }
             } catch (javax.enterprise.context.ContextNotActiveException e) {
-                LOGGER.warning("No active contexts for {}", beanClass.getName());
+                LOGGER.
+                warning("No active contexts for {}", beanClass.getName());
             }
 
         }
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void doDefineManagedBean(BeanManagerImpl beanManager, Class<?> beanClass) {
+
+        WebBeansContext wbc = beanManager.getWebBeansContext();
+
+        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
+        // Clear AnnotatedElementFactory caches (is it necessary for definition ?)
+        annotatedElementFactory.clear();
+
+        // Injection resolver cache must be cleared before / after definition
+        beanManager.getInjectionResolver().clearCaches();
+
+        AnnotatedType annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
+        BeanAttributesImpl attributes = BeanAttributesBuilder.forContext(wbc).newBeanAttibutes(annotatedType).build();
+
+        if(wbc.getWebBeansUtil().supportsJavaEeComponentInjections(beanClass)) {
+            //Fires ProcessInjectionTarget
+            wbc.getWebBeansUtil().fireProcessInjectionTargetEventForJavaEeComponents(beanClass).setStarted();
+            wbc.getWebBeansUtil().inspectDeploymentErrorStack(
+                    "There are errors that are added by ProcessInjectionTarget event observers. Look at logs for further details");
+            //Checks that not contains @Inject InjectionPoint
+            wbc.getAnnotationManager().checkInjectionPointForInjectInjectionPoint(beanClass);
+        }
+
+        {
+            ManagedBeanBuilder managedBeanCreator = new ManagedBeanBuilder(wbc, annotatedType, attributes);
+            DecoratorsManager decoratorsManager = wbc.getDecoratorsManager();
+            InterceptorsManager interceptorsManager = wbc.getInterceptorsManager();
+
+            if(WebBeansUtil.isDecorator(annotatedType)) {
+
+                LOGGER.debug("Found Managed Bean Decorator with class name : [{}]", annotatedType.getJavaClass().getName());
+
+                DecoratorBeanBuilder dbb = new DecoratorBeanBuilder(wbc, annotatedType, attributes);
+                if (dbb.isDecoratorEnabled()) {
+                    dbb.defineDecoratorRules();
+                    DecoratorBean decorator = dbb.getBean();
+                    decoratorsManager.addDecorator(decorator);
+                }
+
+            } else if(WebBeansUtil.isCdiInterceptor(annotatedType)) {
+                LOGGER.debug("Found Managed Bean Interceptor with class name : [{}]", annotatedType.getJavaClass().getName());
+
+                CdiInterceptorBeanBuilder ibb = new CdiInterceptorBeanBuilder(wbc, annotatedType, attributes);
+
+                if (ibb.isInterceptorEnabled()) {
+                    ibb.defineCdiInterceptorRules();
+                    CdiInterceptorBean interceptor = (CdiInterceptorBean) ibb.getBean();
+                    interceptorsManager.addCdiInterceptor(interceptor);
+                }
+            } else {
+                InjectionTargetBean bean = managedBeanCreator.getBean();
+
+                if (decoratorsManager.containsCustomDecoratorClass(annotatedType.getJavaClass()) ||
+                        interceptorsManager.containsCustomInterceptorClass(annotatedType.getJavaClass())) {
+                    return; //TODO discuss this case (it was ignored before)
+                }
+
+                LOGGER.debug("Found Managed Bean with class name : [{}]", annotatedType.getJavaClass().getName());
+
+                Set<ObserverMethod<?>> observerMethods;
+                AnnotatedType beanAnnotatedType = bean.getAnnotatedType();
+//                AnnotatedType defaultAt = webBeansContext.getAnnotatedElementFactory().getAnnotatedType(beanAnnotatedType.getJavaClass());
+                boolean ignoreProducer = false /*defaultAt != beanAnnotatedType && annotatedTypes.containsKey(defaultAt)*/;
+
+                if(bean.isEnabled()) {
+                    observerMethods = new ObserverMethodsBuilder(wbc, beanAnnotatedType).defineObserverMethods(bean);
+                } else {
+                    observerMethods = new HashSet<ObserverMethod<?>>();
+                }
+
+                Set<ProducerFieldBean<?>> producerFields =
+                        ignoreProducer ? Collections.emptySet() : new ProducerFieldBeansBuilder(wbc, beanAnnotatedType).defineProducerFields(bean);
+                Set<ProducerMethodBean<?>> producerMethods =
+                        ignoreProducer ? Collections.emptySet() : new ProducerMethodBeansBuilder(wbc, beanAnnotatedType).defineProducerMethods(bean, producerFields);
+
+                ManagedBean managedBean = (ManagedBean)bean;
+                Map<ProducerMethodBean<?>,AnnotatedMethod<?>> annotatedMethods =
+                        new HashMap<ProducerMethodBean<?>, AnnotatedMethod<?>>();
+
+                if (!producerFields.isEmpty() || !producerMethods.isEmpty()) {
+                    final Priority priority = annotatedType.getAnnotation(Priority.class);
+                    if (priority != null && !wbc.getAlternativesManager()
+                            .isAlternative(annotatedType.getJavaClass(), Collections.<Class<? extends Annotation>>emptySet())) {
+                        wbc.getAlternativesManager().addPriorityClazzAlternative(annotatedType.getJavaClass(), priority);
+                    }
+                }
+
+                for(ProducerMethodBean<?> producerMethod : producerMethods) {
+                    AnnotatedMethod method = wbc.getAnnotatedElementFactory().newAnnotatedMethod(producerMethod.getCreatorMethod(), annotatedType);
+                    wbc.getWebBeansUtil().inspectDeploymentErrorStack("There are errors that are added by ProcessProducer event observers for "
+                            + "ProducerMethods. Look at logs for further details");
+
+                    annotatedMethods.put(producerMethod, method);
+                }
+
+                Map<ProducerFieldBean<?>,AnnotatedField<?>> annotatedFields =
+                        new HashMap<ProducerFieldBean<?>, AnnotatedField<?>>();
+
+                for(ProducerFieldBean<?> producerField : producerFields) {
+                    /* TODO: check if needed in HA
+                    webBeansContext.getWebBeansUtil().inspectDeploymentErrorStack("There are errors that are added by ProcessProducer event observers for"
+                            + " ProducerFields. Look at logs for further details");
+                    */
+
+                    annotatedFields.put(producerField,
+                            wbc.getAnnotatedElementFactory().newAnnotatedField(
+                                    producerField.getCreatorField(),
+                                    wbc.getAnnotatedElementFactory().newAnnotatedType(producerField.getBeanClass())));
+                }
+
+                Map<ObserverMethod<?>,AnnotatedMethod<?>> observerMethodsMap =
+                        new HashMap<ObserverMethod<?>, AnnotatedMethod<?>>();
+
+                for(ObserverMethod<?> observerMethod : observerMethods) {
+                    ObserverMethodImpl<?> impl = (ObserverMethodImpl<?>)observerMethod;
+                    AnnotatedMethod<?> method = impl.getObserverMethod();
+
+                    observerMethodsMap.put(observerMethod, method);
+                }
+
+                //Fires ProcessManagedBean
+                ProcessBeanImpl processBeanEvent = new GProcessManagedBean(managedBean, annotatedType);
+                beanManager.fireEvent(processBeanEvent, true);
+                processBeanEvent.setStarted();
+                wbc.getWebBeansUtil().inspectDefinitionErrorStack("There are errors that are added by ProcessManagedBean event observers for " +
+                        "managed beans. Look at logs for further details");
+
+                //Fires ProcessProducerMethod
+                wbc.getWebBeansUtil().fireProcessProducerMethodBeanEvent(annotatedMethods, annotatedType);
+                wbc.getWebBeansUtil().inspectDefinitionErrorStack("There are errors that are added by ProcessProducerMethod event observers for " +
+                        "producer method beans. Look at logs for further details");
+
+                //Fires ProcessProducerField
+                wbc.getWebBeansUtil().fireProcessProducerFieldBeanEvent(annotatedFields);
+                wbc.getWebBeansUtil().inspectDefinitionErrorStack("There are errors that are added by ProcessProducerField event observers for " +
+                        "producer field beans. Look at logs for further details");
+
+                //Fire ObservableMethods
+                wbc.getWebBeansUtil().fireProcessObservableMethodBeanEvent(observerMethodsMap);
+                wbc.getWebBeansUtil().inspectDefinitionErrorStack("There are errors that are added by ProcessObserverMethod event observers for " +
+                        "observer methods. Look at logs for further details");
+                if(!wbc.getWebBeansUtil().isAnnotatedTypeDecoratorOrInterceptor(annotatedType)) {
+                    beanManager.addBean(bean);
+                    for (ProducerMethodBean<?> producerMethod : producerMethods) {
+                        // add them one after the other to enable serialization handling et al
+                        beanManager.addBean(producerMethod);
+                    }
+                    for (ProducerFieldBean<?> producerField : producerFields) {
+                        // add them one after the other to enable serialization handling et al
+                        beanManager.addBean(producerField);
+                    }
+                }
+            }
+        }
+    }
+
     @SuppressWarnings("rawtypes")
-    private void doReloadManagedBeanInContexts(BeanManagerImpl beanManagerImpl, Class<?> beanClass, ManagedBean managedBean) {
+    private void doReloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
         try {
-            Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManagerImpl);
+            Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManager);
 
             List<Context> ctxList = allContexts.get(managedBean.getScope());
 
@@ -340,7 +503,7 @@ public class BeanArchiveAgent {
                                 Object get = context.get(managedBean);
                                 if (get != null) {
                                     LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                                    managedBean.getProducer().inject(get, beanManagerImpl.createCreationalContext(managedBean));
+                                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
                                 }
                             } catch (Exception e) {
                                 if(LOGGER.isLevelEnabled(Level.DEBUG)) {
@@ -374,34 +537,6 @@ public class BeanArchiveAgent {
         return Collections.emptyMap();
     }
 
-        /*
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void defineManagedBean(BeanManagerImpl beanManager, EnhancedAnnotatedType eat) throws Exception {
-        BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
-        ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
-        Field field = beanManager.getClass().getDeclaredField("beanSet");
-        field.setAccessible(true);
-        field.set(beanManager, Collections.synchronizedSet(new HashSet<Bean<?>>()));
-        // TODO:
-        beanManager.addBean(bean);
-        beanManager.getBeanResolver().clear();
-        bean.initializeAfterBeanDiscovery();
-    }
-
-    private ClassTransformer getClassTransformer() {
-        TypeStore store = new TypeStore();
-        SharedObjectCache cache = new SharedObjectCache();
-        ReflectionCache reflectionCache = ReflectionCacheFactory.newInstance(store);
-        ClassTransformer classTransformer = new ClassTransformer(store, cache, reflectionCache, "STATIC_INSTANCE");
-        return classTransformer;
-    }
-    @SuppressWarnings("rawtypes")
-    private SlimAnnotatedType getAnnotatedType(String bdaId, ClassTransformer classTransformer, Class<?> beanClass) {
-        BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, bdaId);
-        return annotatedType;
-    }
-
-*/
     /*
     private void refreshProxy(ClassLoader classLoader, Map<Object, Object> registeredProxiedBeans, Class<?> beanClass, String oldClassSignature) {
         if (oldClassSignature != null && registeredProxiedBeans != null) {

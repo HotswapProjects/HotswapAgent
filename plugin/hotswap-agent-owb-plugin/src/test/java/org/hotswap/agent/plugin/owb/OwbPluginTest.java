@@ -1,10 +1,9 @@
 package org.hotswap.agent.plugin.owb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import java.net.URL;
 import java.util.Collection;
 
 import javax.enterprise.inject.spi.Bean;
@@ -177,25 +176,29 @@ public class OwbPluginTest extends HAAbstractUnitTest {
         assertEquals("Dependent:Service:Hello", getBean(DependentHello.class).hello());
     }
 
-    /*
+    //create new class and class file. rerun test only after clean
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
         OwbPlugin.IS_TEST_ENVIRONMENT = true;
         Collection<BeanArchiveAgent> instances = BeanArchiveAgent.getInstances();
+        Class<?> clazz = getClass();
+        String path = clazz.getResource(clazz.getSimpleName() + ".class")
+                .getPath().replace(clazz.getSimpleName() + ".class", "");
+        boolean found = false;
         for (BeanArchiveAgent instance : instances) {
-            System.out.println(instance.getArchivePath());
-            //create new class and class file. rerun test only after clean
-            Class newClass = HotSwapper.newClass("NewClass", instance.getArchivePath(), getClass().getClassLoader());
-            URL resource = newClass.getClassLoader().getResource("NewClass.class");
-            System.out.println(resource);
-            Thread.sleep(1000); // wait redefine
-            Object bean = getBean(newClass);
-            assertNotNull(bean);
-            break;
+            if (path.startsWith(instance.getArchivePath())) {
+                //create new class and class file. rerun test only after clean
+                Class newClass = HotSwapper.newClass("NewClass", instance.getArchivePath(), getClass().getClassLoader());
+                Thread.sleep(1000); // wait redefine
+                Object bean = getBean(newClass);
+                assertNotNull(bean);
+                found = true;
+                break;
+            }
         }
+        assert(found);
         OwbPlugin.IS_TEST_ENVIRONMENT = false;
     }
-    */
 
     private void swapClasses(Class original, String swap) throws Exception {
         BeanArchiveAgent.reloadFlag = true;
@@ -205,7 +208,7 @@ public class OwbPluginTest extends HAAbstractUnitTest {
             public boolean result() throws Exception {
                 return !BeanArchiveAgent.reloadFlag;
             }
-        }, 1000));
+        }));
 
         // TODO do not know why sleep is needed, maybe a separate thread in owb refresh?
         Thread.sleep(100);
