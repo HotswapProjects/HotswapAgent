@@ -2,7 +2,6 @@ package org.hotswap.agent.config;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -151,7 +150,6 @@ public class PluginConfiguration {
         initPluginPackage();
 
         initExtraClassPath();
-        initReloadCallback();
         initExcludedClassLoaderPatterns();
     }
 
@@ -177,34 +175,6 @@ public class PluginConfiguration {
                 LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. " +
                         "Only URLClassLoader is supported.\n" +
                         "*** extraClasspath configuration property will not be handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
-            }
-        }
-    }
-    
-    private void initReloadCallback() {
-        if (properties.containsKey("reloadCallback")) {
-            String callbackDetail = properties.getProperty("reloadCallback");
-            int lastPeriod = callbackDetail.lastIndexOf(".");
-            if (lastPeriod != -1) {
-                String className = callbackDetail.substring(0, lastPeriod);
-                String methodName = callbackDetail.substring(lastPeriod + 1, callbackDetail.length());
-                try {
-                    Class<?> clazz = Class.forName(className, true, classLoader);
-                    Method method = null;
-                    for (Method candidate : clazz.getDeclaredMethods()) {
-                        if (methodName.equals(candidate.getName())) {
-                            if (method == null
-                                    || candidate.getParameterTypes().length > method.getParameterTypes().length) {
-                                method = candidate;
-                            }
-                        }
-                    }
-                    if (method != null) {
-                        PluginManager.getInstance().setReloadCallback(method);
-                    }
-                } catch (Throwable e) {
-                    LOGGER.info("Unable to resolve callback method", e);
-                }
             }
         }
     }
