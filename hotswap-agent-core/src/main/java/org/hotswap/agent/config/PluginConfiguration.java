@@ -1,11 +1,5 @@
 package org.hotswap.agent.config;
 
-import org.hotswap.agent.HotswapAgent;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
-import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -17,6 +11,13 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
+
+import org.hotswap.agent.HotswapAgent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
+import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
 
 /**
  * Plugin configuration.
@@ -29,6 +30,9 @@ public class PluginConfiguration {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PluginConfiguration.class);
 
     private static final String PLUGIN_CONFIGURATION = "hotswap-agent.properties";
+
+    /** The Constant EXCLUDED_CLASS_LOADERS_KEY. */
+    private static final String EXCLUDED_CLASS_LOADERS_KEY = "excludedClassLoaderPatterns";
 
     Properties properties = new Properties();
 
@@ -143,10 +147,10 @@ public class PluginConfiguration {
      */
     protected void init() {
         LogConfigurationHelper.configureLog(properties);
-
         initPluginPackage();
 
         initExtraClassPath();
+        initExcludedClassLoaderPatterns();
     }
 
     private void initPluginPackage() {
@@ -172,6 +176,17 @@ public class PluginConfiguration {
                         "Only URLClassLoader is supported.\n" +
                         "*** extraClasspath configuration property will not be handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
             }
+        }
+    }
+
+    private void initExcludedClassLoaderPatterns() {
+        if (properties != null && properties.containsKey(EXCLUDED_CLASS_LOADERS_KEY)) {
+            List<Pattern> excludedClassLoaderPatterns = new ArrayList<Pattern>();
+            for (String pattern : properties.getProperty(EXCLUDED_CLASS_LOADERS_KEY).split(",")) {
+                excludedClassLoaderPatterns.add(Pattern.compile(pattern));
+            }
+            PluginManager.getInstance().getHotswapTransformer()
+                    .setExcludedClassLoaderPatterns(excludedClassLoaderPatterns);
         }
     }
 
