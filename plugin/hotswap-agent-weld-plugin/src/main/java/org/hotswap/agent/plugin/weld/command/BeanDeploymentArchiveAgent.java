@@ -348,7 +348,7 @@ public class BeanDeploymentArchiveAgent {
             if (ctxList != null) {
                 for(Context context: ctxList) {
                     if (context != null) {
-                        LOGGER.debug("Inspecting context..... '{}' {}", context.getClass(), managedBean.getScope());
+                        LOGGER.debug("Inspecting context '{}' for bean class {}", context.getClass(), managedBean.getScope());
                         if(ContextualReloadHelper.addToReloadSet(context, managedBean)) {
                             LOGGER.debug("Bean {}, added to reload set in context {}", managedBean, context.getClass());
                         } else {

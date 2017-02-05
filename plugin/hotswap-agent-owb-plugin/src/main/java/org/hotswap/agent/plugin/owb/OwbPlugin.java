@@ -42,7 +42,8 @@ public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
 
-    static boolean IS_TEST_ENVIRONMENT = Boolean.FALSE;
+    /** True for UnitTests */
+    static boolean isTestEnvironment = false;
 
     /**
      * If a class is modified in IDE, sequence of multiple events is generated -
@@ -123,7 +124,7 @@ public class OwbPlugin {
                                         e, event.getURI());
                                 return;
                             }
-                            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || IS_TEST_ENVIRONMENT) {
+                            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || isTestEnvironment) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
                                 if (isBeanArchiveRegistered(appClassLoader, archivePath)) {

@@ -176,18 +176,21 @@ public class WeldPluginTest {
 
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
-        WeldPlugin.IS_TEST_ENVIRONMENT = true;
-        Collection<BeanDeploymentArchiveAgent> instances = BeanDeploymentArchiveAgent.getInstances();
-        for (BeanDeploymentArchiveAgent instance : instances) {
-            //create new class and class file. rerun test only after clean
-            Class newClass = HotSwapper.newClass("NewClass", instance.getBdaId(), getClass().getClassLoader());
-            URL resource = newClass.getClassLoader().getResource("NewClass.class");
-            Thread.sleep(1000); // wait redefine
-            Object bean = getBean(newClass);
-            assertNotNull(bean);
-            break;
+        try {
+            WeldPlugin.isTestEnvironment = true;
+            Collection<BeanDeploymentArchiveAgent> instances = BeanDeploymentArchiveAgent.getInstances();
+            for (BeanDeploymentArchiveAgent instance : instances) {
+                //create new class and class file. rerun test only after clean
+                Class newClass = HotSwapper.newClass("NewClass", instance.getBdaId(), getClass().getClassLoader());
+                URL resource = newClass.getClassLoader().getResource("NewClass.class");
+                Thread.sleep(1000); // wait redefine
+                Object bean = getBean(newClass);
+                assertNotNull(bean);
+                break;
+            }
+        } finally {
+            WeldPlugin.isTestEnvironment = false;
         }
-        WeldPlugin.IS_TEST_ENVIRONMENT = false;
     }
 
     private void swapClasses(Class original, String swap) throws Exception {

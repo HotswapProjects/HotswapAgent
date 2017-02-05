@@ -44,8 +44,8 @@ public class OwbPluginTest extends HAAbstractUnitTest {
     }
 
     @Before
-    public void initContainer()
-    {
+    public void initContainer() {
+        BeanArchiveAgent.isTestEnvironment = true;
         startContainer();
     }
 
@@ -179,25 +179,28 @@ public class OwbPluginTest extends HAAbstractUnitTest {
     //create new class and class file. rerun test only after clean
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
-        OwbPlugin.IS_TEST_ENVIRONMENT = true;
-        Collection<BeanArchiveAgent> instances = BeanArchiveAgent.getInstances();
-        Class<?> clazz = getClass();
-        String path = clazz.getResource(clazz.getSimpleName() + ".class")
-                .getPath().replace(clazz.getSimpleName() + ".class", "");
-        boolean found = false;
-        for (BeanArchiveAgent instance : instances) {
-            if (path.startsWith(instance.getArchivePath())) {
-                //create new class and class file. rerun test only after clean
-                Class newClass = HotSwapper.newClass("NewClass", instance.getArchivePath(), getClass().getClassLoader());
-                Thread.sleep(1000); // wait redefine
-                Object bean = getBean(newClass);
-                assertNotNull(bean);
-                found = true;
-                break;
+        try {
+            OwbPlugin.isTestEnvironment = true;
+            Collection<BeanArchiveAgent> instances = BeanArchiveAgent.getInstances();
+            Class<?> clazz = getClass();
+            String path = clazz.getResource(clazz.getSimpleName() + ".class")
+                    .getPath().replace(clazz.getSimpleName() + ".class", "");
+            boolean found = false;
+            for (BeanArchiveAgent instance : instances) {
+                if (path.startsWith(instance.getArchivePath())) {
+                    //create new class and class file. rerun test only after clean
+                    Class newClass = HotSwapper.newClass("NewClass", instance.getArchivePath(), getClass().getClassLoader());
+                    Thread.sleep(1000); // wait redefine
+                    Object bean = getBean(newClass);
+                    assertNotNull(bean);
+                    found = true;
+                    break;
+                }
             }
+            assert(found);
+        } finally {
+            OwbPlugin.isTestEnvironment = false;
         }
-        assert(found);
-        OwbPlugin.IS_TEST_ENVIRONMENT = false;
     }
 
     private void swapClasses(Class original, String swap) throws Exception {

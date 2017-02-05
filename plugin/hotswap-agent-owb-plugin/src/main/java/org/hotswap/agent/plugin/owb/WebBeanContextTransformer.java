@@ -28,10 +28,18 @@ public class WebBeanContextTransformer {
         CtConstructor declaredConstructor = ctClass.getDeclaredConstructor(constructorParams);
 
         declaredConstructor.insertBefore(
-                "$2.setProperty(" +
-                        "\"org.apache.webbeans.proxy.mapping.javax.enterprise.context.ApplicationScoped\"," +
-                        "\"org.apache.webbeans.intercept.NormalScopedBeanInterceptorHandler\"" +
-                ");"
+                "{ " +
+                    "$2.setProperty(" +
+                            "\"org.apache.webbeans.proxy.mapping.javax.enterprise.context.ApplicationScoped\"," +
+                            "\"org.apache.webbeans.intercept.NormalScopedBeanInterceptorHandler\"" +
+                    ");" +
+                    "if(\"org.apache.webbeans.web.context.WebContextsService\".equals($2.getProperty(\"org.apache.webbeans.spi.ContextsService\"))) {" +
+                        "$2.setProperty(" +
+                            "\"org.apache.webbeans.spi.ContextsService\"," +
+                            "\"org.hotswap.agent.plugin.owb.command.HaWebContextsService\"" +
+                        ");" +
+                    "}" +
+                "}"
         );
 
         LOGGER.debug("Class '{}' patched with .", ctClass.getName());
