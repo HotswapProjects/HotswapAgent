@@ -37,7 +37,7 @@ import org.hotswap.agent.watch.Watcher;
         description = "Open Web Beans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"1.7.0"},
         expectedVersions = {"All between 1.7.0-1.7.0"},
-        supportClass = { BeanArchiveTransformer.class, CdiContextsTransformer.class, WebBeanContextTransformer.class })
+        supportClass = { BeanArchiveTransformer.class, CdiContextsTransformer.class, WebBeansContextTransformer.class, WebBeansContextsServiceTransformer.class})
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);

@@ -28,6 +28,7 @@ import org.apache.webbeans.container.InjectionTargetFactoryImpl;
 import org.apache.webbeans.corespi.scanner.xbean.CdiArchive;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
 import org.apache.webbeans.spi.ContextsService;
+import org.apache.webbeans.web.context.WebContextsService;
 import org.apache.xbean.finder.archive.Archive;
 import org.apache.xbean.finder.archive.CompositeArchive;
 import org.apache.xbean.finder.archive.FileArchive;
@@ -38,8 +39,9 @@ import org.hotswap.agent.logging.AgentLogger.Level;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
 import org.hotswap.agent.plugin.owb.OwbClassSignatureHelper;
 import org.hotswap.agent.plugin.owb.OwbPlugin;
+import org.hotswap.agent.plugin.owb.WebBeansContextsServiceTransformer;
 import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
-import org.hotswap.agent.plugin.owb.command.HaWebContextsService.WebContextsCombination;
+import org.hotswap.agent.plugin.owb.command.WebContextsTracker.WebContextsSet;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -255,20 +257,25 @@ public class BeanArchiveAgent {
                 WebBeansContext wbc = beanManager.getWebBeansContext();
                 ContextsService contextsService = wbc.getContextsService();
 
-                if (!isTestEnvironment && contextsService instanceof HaWebContextsService) {
+                if (!isTestEnvironment && contextsService instanceof WebContextsService) {
                     // For WebContextService(web application) iterate over all combination of context
-                    HaWebContextsService webContextsService = (HaWebContextsService) contextsService;
-                    try {
-                        for (WebContextsCombination wcc: webContextsService.getWebContextsCombinationList()) {
-                            webContextsService.setWebContextsCombination(wcc);
-                            Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
-                            if (get != null) {
-                                LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                                managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                    WebContextsTracker contextTracker =
+                            (WebContextsTracker) ReflectionHelper.get(contextsService, WebBeansContextsServiceTransformer.CONTEXT_TRACKER_FLD_NAME);
+                    if (contextTracker != null) {
+                        try {
+                            for (WebContextsSet wcs: contextTracker.getWebContextsSetList()) {
+                                contextTracker.setWebContextsSet(wcs);
+                                Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
+                                if (get != null) {
+                                    LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
+                                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                                }
                             }
+                        } finally {
+                            contextsService.removeThreadLocals();
                         }
-                    } finally {
-                        webContextsService.removeThreadLocals();
+                    } else {
+                        LOGGER.error("ContextTracker not found on class '{}'", contextsService.getClass().getName());
                     }
                 } else {
                     // For DefaultContextdService and testEnviroment use current contexts

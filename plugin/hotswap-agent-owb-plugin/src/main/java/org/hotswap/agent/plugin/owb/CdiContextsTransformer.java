@@ -28,40 +28,40 @@ public class CdiContextsTransformer {
         LOGGER.debug("Adding interface {} to {}.", OwbHotswapContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(OwbHotswapContext.class.getName()));
 
-        CtField toReloadFld = CtField.make("public transient java.util.Set _toReloadOwb = null;", clazz);
+        CtField toReloadFld = CtField.make("public transient java.util.Set __toReloadOwb = null;", clazz);
         clazz.addField(toReloadFld);
 
-        CtField reloadingFld = CtField.make("public transient boolean _reloadingOwb = false;", clazz);
+        CtField reloadingFld = CtField.make("public transient boolean __reloadingOwb = false;", clazz);
         clazz.addField(reloadingFld);
 
         CtMethod addBeanToReload = CtMethod.make(
                 "public void _addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean) {" +
-                "    if (_toReloadOwb == null)" +
-                "        _toReloadOwb = new java.util.HashSet();" +
-                "    _toReloadOwb.add(bean);" +
+                "    if (__toReloadOwb == null)" +
+                "        __toReloadOwb = new java.util.HashSet();" +
+                "    __toReloadOwb.add(bean);" +
                 "}",
                 clazz
         );
         clazz.addMethod(addBeanToReload);
 
-        CtMethod getBeansToReload = CtMethod.make("public java.util.Set _getBeansToReloadOwb(){return _toReloadOwb;}", clazz);
+        CtMethod getBeansToReload = CtMethod.make("public java.util.Set __getBeansToReloadOwb(){return __toReloadOwb;}", clazz);
         clazz.addMethod(getBeansToReload);
 
-        CtMethod reload = CtMethod.make("public void _reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
+        CtMethod reload = CtMethod.make("public void __reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
         clazz.addMethod(reload);
 
-        CtMethod isActiveCopy = CtMethod.make("public boolean _isActiveOwb(){return false;}", clazz);
+        CtMethod isActiveCopy = CtMethod.make("public boolean __isActiveOwb(){return false;}", clazz);
         isActiveCopy.setBody(clazz.getDeclaredMethod("isActive"), null);
         clazz.addMethod(isActiveCopy);
 
         CtMethod isActive = clazz.getDeclaredMethod("isActive");
         isActive.setBody(
                 "{  " +
-                "    boolean active = _isActiveOwb(); " +
-                "    if(active && !_reloadingOwb ) { " +
-                "        _reloadingOwb = true;" +
-                "        _reloadOwb();" +
-                "        _reloadingOwb = false;" +
+                "    boolean active = __isActiveOwb(); " +
+                "    if(active && !__reloadingOwb ) { " +
+                "        __reloadingOwb = true;" +
+                "        __reloadOwb();" +
+                "        __reloadingOwb = false;" +
                 "    }" +
                 "    return active;" +
                 "}"

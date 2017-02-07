@@ -59,17 +59,17 @@ public interface OwbHotswapContext {
      *
      * @return the OWB beans to be reloaded
      */
-    Set<Contextual<Object>> _getBeansToReloadOwb();
+    Set<Contextual<Object>> __getBeansToReloadOwb();
 
     /**
      * reload the owb beans which have changed
      */
-    void _reloadOwb();
+    void __reloadOwb();
 
     /**
      * the original isActive() method (renamed)
      *
      * @return
      */
-    boolean _isActiveOwb();
+    boolean __isActiveOwb();
 }

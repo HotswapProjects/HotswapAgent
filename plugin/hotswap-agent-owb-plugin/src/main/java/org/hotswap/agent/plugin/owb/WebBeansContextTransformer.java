@@ -13,9 +13,9 @@ import org.hotswap.agent.logging.AgentLogger;
  *
  * @author Vladimir Dvorak
  */
-public class WebBeanContextTransformer {
+public class WebBeansContextTransformer {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(WebBeanContextTransformer.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(WebBeansContextTransformer.class);
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.config.WebBeansContext")
     public static void transform(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
@@ -33,12 +33,6 @@ public class WebBeanContextTransformer {
                             "\"org.apache.webbeans.proxy.mapping.javax.enterprise.context.ApplicationScoped\"," +
                             "\"org.apache.webbeans.intercept.NormalScopedBeanInterceptorHandler\"" +
                     ");" +
-                    "if(\"org.apache.webbeans.web.context.WebContextsService\".equals($2.getProperty(\"org.apache.webbeans.spi.ContextsService\"))) {" +
-                        "$2.setProperty(" +
-                            "\"org.apache.webbeans.spi.ContextsService\"," +
-                            "\"org.hotswap.agent.plugin.owb.command.HaWebContextsService\"" +
-                        ");" +
-                    "}" +
                 "}"
         );
 
