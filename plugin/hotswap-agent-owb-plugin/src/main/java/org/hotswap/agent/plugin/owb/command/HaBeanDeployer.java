@@ -45,7 +45,7 @@ import org.hotswap.agent.logging.AgentLogger;
  */
 public class HaBeanDeployer {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanArchiveAgent.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(HaBeanDeployer.class);
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static void doDefineManagedBean(BeanManagerImpl beanManager, Class<?> beanClass) {

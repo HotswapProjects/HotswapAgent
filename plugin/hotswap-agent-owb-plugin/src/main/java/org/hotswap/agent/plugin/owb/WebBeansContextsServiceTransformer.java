@@ -9,6 +9,11 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 
+/**
+ * WebBeanContextTransformer - extend WebContextsService by WebContextsTracker
+ *
+ * @author Vladimir Dvorak
+ */
 public class WebBeansContextsServiceTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WebBeansContextsServiceTransformer.class);

@@ -14,7 +14,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
  * Hook into ProxyFactory constructors to register proxy factory into WeldPlugin. If WeldPlugin is not initialized in proxy factory
- * classLoader (ModuleClassLoader) then the proxy factory is not registered - it happens most likely for proxy factories of system beans.
+ * classLoader (ModuleClassLoader) then the proxy factory is not registered - it happens most likely in case of system beans proxy factories.
  *
  * @author Vladimir Dvorak
  */

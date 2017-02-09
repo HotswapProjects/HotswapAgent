@@ -1,10 +1,7 @@
 package org.hotswap.agent.plugin.owb.command;
 
 import java.security.ProtectionDomain;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.bytecode.ClassFile;
 
 /**

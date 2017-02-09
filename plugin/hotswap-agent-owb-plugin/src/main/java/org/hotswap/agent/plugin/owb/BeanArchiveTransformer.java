@@ -1,5 +1,7 @@
 package org.hotswap.agent.plugin.owb;
 
+import java.io.File;
+
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
@@ -10,7 +12,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
- * Hook into OwbBeanDeploymentArchive constructors to initialize OwbPlugin
+ * Hook into org.apache.webbeans.corespi.scanner.xbean.CdiArchivee constructors to initialize OwbPlugin
  *
  * @author Vladimir Dvorak
  */
@@ -26,13 +28,13 @@ public class BeanArchiveTransformer {
      * @throws NotFoundException
      * @throws CannotCompileException
      */
-    @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.corespi.scanner.xbean.CdiArchive")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.xbean.finder.archive.FileArchive")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(OwbPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(OwbPlugin.class, "init"));
-        src.append("org.hotswap.agent.plugin.owb.command.BeanArchiveAgent.registerCdiArchiveDelegate(loader, this);");
+        src.append(PluginManagerInvoker.buildCallPluginMethod(OwbPlugin.class, "registerArchiveDir", "this.dir", "java.io.File"));
         src.append("}");
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {

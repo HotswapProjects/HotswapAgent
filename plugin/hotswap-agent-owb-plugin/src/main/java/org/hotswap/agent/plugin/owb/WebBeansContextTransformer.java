@@ -9,7 +9,7 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * WebBeanContextTransformer
+ * WebBeanContextTransformer - org.apache.webbeans.config.WebBeansContext instrumentation
  *
  * @author Vladimir Dvorak
  */

@@ -2,7 +2,6 @@ package org.hotswap.agent.plugin.weld.command;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +13,11 @@ import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
 import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
- * BeanClassRefreshCommand. If a bean class is redefined, an object of BeanClassRefreshCommand is created and after
- *  a timeout executed. It calls bean reload logic in BeanDepoymentArchiveAgent internally
+ * BeanClassRefreshCommand. Collect all classes definitions/redefinitions for single archive
+ *
+ * 1. Merge all commands (definition, redefinition) for single archive to single command.
+ * 2. Call proxy redefinitions in BeanDeploymentArchiveAgent for all merged commands
+ * 3. Call bean class reload in BeanDepoymentArchiveAgent for all merged commands
  *
  * @author Vladimir Dvorak
  */
@@ -70,28 +72,26 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         }
     }
 
+    @Override
     public void executeCommand() {
-        try {
-            List<BeanClassRefreshCommand> mergedCommands = new ArrayList<BeanClassRefreshCommand>();
-            mergedCommands.add(this);
-            for (Command command : getMergedCommands()) {
-                mergedCommands.add((BeanClassRefreshCommand) command);
-            }
+        List<Command> mergedCommands = popMergedCommands();
+        mergedCommands.add(0, this);
 
+        do {
             // First step : recreate all proxies
-            for (BeanClassRefreshCommand command: mergedCommands) {
-                command.recreateProxy(mergedCommands);
+            for (Command command: mergedCommands) {
+                ((BeanClassRefreshCommand)command).recreateProxy(mergedCommands);
             }
 
             // Second step : reload beans
-            for (BeanClassRefreshCommand command: mergedCommands) {
-                command.reloadBean(mergedCommands);
+            for (Command command: mergedCommands) {
+                ((BeanClassRefreshCommand)command).reloadBean(mergedCommands);
             }
-        } finally {
-        }
+            mergedCommands = popMergedCommands();
+        } while (!mergedCommands.isEmpty());
     }
 
-    private void recreateProxy(List<BeanClassRefreshCommand> mergedCommands) {
+    private void recreateProxy(List<Command> mergedCommands) {
 
         if (isDeleteEvent(mergedCommands)) {
             LOGGER.trace("Skip recreate proxy for delete event on class '{}'", className);
@@ -129,7 +129,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         }
     }
 
-    private void reloadBean(List<BeanClassRefreshCommand> mergedCommands) {
+    private void reloadBean(List<Command> mergedCommands) {
 
         if (isDeleteEvent(mergedCommands)) {
             LOGGER.trace("Skip refresh bean class for delete event on class '{}'", className);
@@ -168,19 +168,20 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     }
 
     /**
-     * Check all merged events for delete and create events. If delete without create is found, than assume
+     * Check all merged events with same className for delete and create events. If delete without create is found, than assume
      * file was deleted.
      * @param mergedCommands
      */
-    private boolean isDeleteEvent(List<BeanClassRefreshCommand> mergedCommands) {
+    private boolean isDeleteEvent(List<Command> mergedCommands) {
         boolean createFound = false;
         boolean deleteFound = false;
-        for (BeanClassRefreshCommand command : mergedCommands) {
-            if (className.equals(command.className)) {
-                if (command.event != null) {
-                    if (command.event.getEventType().equals(FileEvent.DELETE))
+        for (Command cmd : mergedCommands) {
+            BeanClassRefreshCommand refreshCommand = (BeanClassRefreshCommand) cmd;
+            if (className.equals(refreshCommand.className)) {
+                if (refreshCommand.event != null) {
+                    if (refreshCommand.event.getEventType().equals(FileEvent.DELETE))
                         deleteFound = true;
-                    if (command.event.getEventType().equals(FileEvent.CREATE))
+                    if (refreshCommand.event.getEventType().equals(FileEvent.CREATE))
                         createFound = true;
                 }
             }
