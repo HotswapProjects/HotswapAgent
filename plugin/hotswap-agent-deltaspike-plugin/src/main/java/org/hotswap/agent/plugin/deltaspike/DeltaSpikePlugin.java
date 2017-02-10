@@ -23,7 +23,7 @@ import org.hotswap.agent.util.AnnotationHelper;
  */
 @Plugin(name = "Deltaspike",
         description = "Apache DeltaSpike (http://deltaspike.apache.org/), support repository reloading",
-        testedVersions = {"1.5.2, 1.7.1"},
+        testedVersions = {"1.5.2, 1.7.2"},
         expectedVersions = {"1.5-1.7"},
         supportClass = {DeltaSpikeTransformers.class})
 public class DeltaSpikePlugin {

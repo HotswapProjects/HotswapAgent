@@ -61,22 +61,24 @@ public class DeltaSpikeTransformers {
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.api.DeltaSpikeProxyFactory")
     public static void patchDeltaSpikeProxyFactory(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        CtMethod getProxyClassMethod = ctClass.getDeclaredMethod("getProxyClass");
-        getProxyClassMethod.instrument(
-                new ExprEditor() {
-                    public void edit(MethodCall m) throws CannotCompileException {
-                        if (m.getClassName().equals("org.apache.deltaspike.core.util.ClassUtils") && m.getMethodName().equals("tryToLoadClassForName"))
-                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate.tryToLoadClassForName($$); }");
-                    }
-                });
-        CtMethod createProxyClassMethod = ctClass.getDeclaredMethod("createProxyClass");
-        createProxyClassMethod.instrument(
-                new ExprEditor() {
-                    public void edit(MethodCall m) throws CannotCompileException {
-                        if (m.getClassName().equals("org.apache.deltaspike.core.util.ClassUtils") && m.getMethodName().equals("tryToLoadClassForName"))
-                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate.tryToLoadClassForName($$); }");
-                    }
-                });
+        instrumentTryToLoadClassForName(ctClass, "getProxyClass");
+        instrumentTryToLoadClassForName(ctClass, "createProxyClass");
+        instrumentTryToLoadClassForName(ctClass, "resolveAlreadyDefinedProxyClass");
+    }
+
+    private static void instrumentTryToLoadClassForName(CtClass ctClass, String methodName) throws CannotCompileException {
+        try {
+            CtMethod getProxyClassMethod = ctClass.getDeclaredMethod(methodName);
+            getProxyClassMethod.instrument(
+                    new ExprEditor() {
+                        public void edit(MethodCall m) throws CannotCompileException {
+                            if (m.getClassName().equals("org.apache.deltaspike.core.util.ClassUtils") && m.getMethodName().equals("tryToLoadClassForName"))
+                                m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate.tryToLoadClassForName($$); }");
+                        }
+                    });
+        } catch (NotFoundException e) {
+            LOGGER.debug("Method {} not found in {}.", methodName, ctClass.getName());
+        }
     }
 
     /**
