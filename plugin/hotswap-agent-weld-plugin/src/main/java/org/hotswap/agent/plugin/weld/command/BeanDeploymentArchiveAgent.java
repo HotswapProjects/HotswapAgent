@@ -99,13 +99,13 @@ public class BeanDeploymentArchiveAgent {
             @SuppressWarnings("unused")
             File path = new File(archivePath);
 
-            boolean contain = (boolean) ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                    "contains", new Class[] {String.class}, archivePath);
+            Class<?> registryClass = Class.forName(BdaAgentRegistry.class.getName(), true, classLoader);
+
+            boolean contain = (boolean) ReflectionHelper.invoke(null, registryClass, "contains", new Class[] {String.class}, archivePath);
 
             if (!contain) {
                 bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
-                ReflectionHelper.invoke(null, Class.forName(BdaAgentRegistry.class.getName(), true, classLoader),
-                    "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
+                ReflectionHelper.invoke(null, registryClass, "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
                 bdaAgent.register();
             }
         } catch (IllegalArgumentException e) {
