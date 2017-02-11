@@ -61,8 +61,10 @@ public class DeltaSpikeTransformers {
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.api.DeltaSpikeProxyFactory")
     public static void patchDeltaSpikeProxyFactory(CtClass ctClass) throws NotFoundException, CannotCompileException {
+        // Deltaspike 1.5
         instrumentTryToLoadClassForName(ctClass, "getProxyClass");
         instrumentTryToLoadClassForName(ctClass, "createProxyClass");
+        // Deltaspike 1.7
         instrumentTryToLoadClassForName(ctClass, "resolveAlreadyDefinedProxyClass");
     }
 
