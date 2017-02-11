@@ -29,6 +29,17 @@ public class ProxyClassLoadingDelegate {
         MAGIC_IN_PROGRESS.remove();
     }
 
+    // Deltaspike 1.7
+    public static Class<?> tryToLoadClassForName(String proxyClassName, Class<?> targetClass, ClassLoader classLoader) {
+        if (MAGIC_IN_PROGRESS.get()) {
+            return null;
+        }
+        return (Class<?>) ReflectionHelper.invoke(null, org.apache.deltaspike.core.util.ClassUtils.class, "tryToLoadClassForName",
+                new Class[] { String.class, Class.class, ClassLoader.class },
+                proxyClassName, targetClass, classLoader);
+    }
+
+    // Deltaspike 1.5
     public static Class<?> tryToLoadClassForName(String proxyClassName, Class<?> targetClass) {
         if (MAGIC_IN_PROGRESS.get()) {
             return null;
