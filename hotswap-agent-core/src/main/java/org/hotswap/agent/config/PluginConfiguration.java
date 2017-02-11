@@ -95,9 +95,15 @@ public class PluginConfiguration {
             // search for resources not known by parent classloader (defined in THIS classloader exclusively)
             // this is necessary in case of parent classloader precedence
             try {
-                Enumeration<URL> urls = classLoader == null
-                        ? ClassLoader.getSystemResources(PLUGIN_CONFIGURATION)
-                        : classLoader.getResources(PLUGIN_CONFIGURATION);
+                Enumeration<URL> urls = null;
+
+                if (classLoader != null) {
+                    urls = classLoader.getResources(PLUGIN_CONFIGURATION);
+                }
+
+                if (urls == null) {
+                    urls = ClassLoader.getSystemResources(PLUGIN_CONFIGURATION);
+                }
 
                 while (urls.hasMoreElements()) {
                     URL url = urls.nextElement();
