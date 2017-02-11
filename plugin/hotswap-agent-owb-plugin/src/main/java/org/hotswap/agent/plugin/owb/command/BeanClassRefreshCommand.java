@@ -14,9 +14,9 @@ import org.hotswap.agent.watch.WatchFileEvent;
 /**
  * BeanClassRefreshCommand. Collect all classes definitions/redefinitions for application
  *
- * 1. Merge all commands (definition, redefinition) for single archive to single command.
- * 2. Call proxy redefinitions in BeanDeploymentArchiveAgent for all merged commands
- * 3. Call bean class reload in BeanDepoymentArchiveAgent for all merged commands
+ * 1. Merge all commands (definition, redefinition) for classLoader to single command.
+ * 2. Call proxy redefinitions in BeanArchiveAgent for all merged commands
+ * 3. Call bean class reload in BeanArchiveAgent for all merged commands
  *
  * @author Vladimir Dvorak
  */
@@ -25,6 +25,8 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshCommand.class);
 
     ClassLoader classLoader;
+
+    String archivePath;
 
     String className;
 
@@ -37,9 +39,10 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     // either event or classDefinition is set by constructor (watcher or transformer)
     WatchFileEvent event;
 
-    public BeanClassRefreshCommand(ClassLoader classLoader, String className, String classSignForProxyCheck,
+    public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, String className, String classSignForProxyCheck,
             String classSignByStrategy, BeanReloadStrategy beanReloadStrategy) {
         this.classLoader = classLoader;
+        this.archivePath = archivePath;
         this.className = className;
         this.classSignForProxyCheck = classSignForProxyCheck;
         this.classSignByStrategy = classSignByStrategy;
@@ -49,6 +52,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, WatchFileEvent event) {
 
         this.classLoader = classLoader;
+        this.archivePath = archivePath;
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
@@ -73,9 +77,9 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
         do {
             // First step : recreate all proxies
-//            for (Command command: mergedCommands) {
-//                ((BeanClassRefreshCommand)command).recreateProxy(mergedCommands);
-//            }
+            for (Command command: mergedCommands) {
+                ((BeanClassRefreshCommand)command).recreateProxy(mergedCommands);
+            }
 
             // Second step : reload beans
             for (Command command: mergedCommands) {
@@ -85,8 +89,38 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         } while (!mergedCommands.isEmpty());
     }
 
-    // TODO:
     private void recreateProxy(List<Command> mergedCommands) {
+        if (isDeleteEvent(mergedCommands)) {
+            LOGGER.trace("Skip OWB recreate proxy for delete event on class '{}'", className);
+            return;
+        }
+        if (className != null) {
+            try {
+                LOGGER.debug("Executing BeanArchiveAgent.recreateProxy('{}')", className);
+                Class<?> agentClazz = Class.forName(BeanArchiveAgent.class.getName(), true, classLoader);
+                Method agentMethod  = agentClazz.getDeclaredMethod("recreateProxy",
+                        new Class[] { ClassLoader.class,
+                                      String.class,
+                                      String.class,
+                                      String.class
+                        }
+                );
+                agentMethod.invoke(null,
+                        classLoader,
+                        archivePath,
+                        className,
+                        classSignForProxyCheck
+                );
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException("Plugin error, method not found", e);
+            } catch (InvocationTargetException e) {
+                LOGGER.error("Error recreateProxy class {} in classLoader {}", e, className, classLoader);
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Plugin error, illegal access", e);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Plugin error, CDI class not found in classloader", e);
+            }
+        }
     }
 
 
@@ -97,17 +131,19 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         }
         if (className != null) {
             try {
-                LOGGER.debug("Executing BeanClassRefreshAgent.reloadBean('{}')", className);
-                Class<?> agentClazz = Class.forName(BeanClassRefreshAgent.class.getName(), true, classLoader);
-                Method bdaMethod  = agentClazz.getDeclaredMethod("reloadBean",
+                LOGGER.debug("Executing BeanArchiveAgent.reloadBean('{}')", className);
+                Class<?> agentClazz = Class.forName(BeanArchiveAgent.class.getName(), true, classLoader);
+                Method agentMethod  = agentClazz.getDeclaredMethod("reloadBean",
                         new Class[] { ClassLoader.class,
+                                      String.class,
                                       String.class,
                                       String.class,
                                       String.class
                         }
                 );
-                bdaMethod.invoke(null,
+                agentMethod.invoke(null,
                         classLoader,
+                        archivePath,
                         className,
                         classSignByStrategy,
                         strBeanReloadStrategy // passed as String since BeanArchiveAgent has different classloader
@@ -157,6 +193,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         BeanClassRefreshCommand that = (BeanClassRefreshCommand) o;
 
         if (!classLoader.equals(that.classLoader)) return false;
+        if (archivePath != null && !archivePath.equals(that.archivePath)) return false;
 
         return true;
     }
@@ -172,6 +209,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     public String toString() {
         return "BeanClassRefreshCommand{" +
                 "classLoader=" + classLoader +
+                ", archivePath='" + archivePath + '\'' +
                 ", className='" + className + '\'' +
                 '}';
     }

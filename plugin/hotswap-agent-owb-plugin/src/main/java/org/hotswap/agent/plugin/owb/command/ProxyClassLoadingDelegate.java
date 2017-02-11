@@ -1,12 +1,16 @@
 package org.hotswap.agent.plugin.owb.command;
 
 import java.security.ProtectionDomain;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.apache.webbeans.proxy.AbstractProxyFactory;
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.util.ReflectionHelper;
 
 /**
- * The CDI proxyFactory has its class loading tasks delegated to this class, which can then have some magic applied
- * to make weld think that the class has not been loaded yet.
+ * The OWB proxyFactory has its class loading tasks delegated to this class, which can then have some magic applied
+ * to make OWB think that the class has not been loaded yet.
  *
  * @author Vladimir Dvorak
  */
@@ -27,23 +31,20 @@ public class ProxyClassLoadingDelegate {
         MAGIC_IN_PROGRESS.remove();
     }
 
-    public static Class<?> loadClass(final ClassLoader classLoader, final String className) throws ClassNotFoundException {
+    public static Class<?> forName(String name, boolean initialize, ClassLoader loader) throws ClassNotFoundException {
         if (MAGIC_IN_PROGRESS.get()) {
             throw new ClassNotFoundException("HotswapAgent");
         }
-        return classLoader.loadClass(className);
+        return Class.forName(name, initialize, loader);
     }
 
-    public static Class<?> toClass(ClassFile ct, ClassLoader loader, ProtectionDomain domain) {
-        /*
+    public Class defineAndLoadClass(AbstractProxyFactory proxyFactory, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
         if (MAGIC_IN_PROGRESS.get()) {
             try {
-                final Class<?> originalProxyClass = loader.loadClass(ct.getName());
+                final Class<?> originalProxyClass = classLoader.loadClass(proxyName);
                 try {
-                    ByteArrayDataOutputStream out = new ByteArrayDataOutputStream();
-                    ct.write(out);
                     Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
-                    reloadMap.put(originalProxyClass, out.getBytes());
+                    reloadMap.put(originalProxyClass, proxyBytes);
                     // TODO : is this standard way how to reload class?
                     PluginManager.getInstance().hotswap(reloadMap);
                     return originalProxyClass;
@@ -52,11 +53,14 @@ public class ProxyClassLoadingDelegate {
                 }
             } catch (ClassNotFoundException e) {
                 //it has not actually been loaded yet
-                return ClassFileUtils.toClass(ct, loader, domain);
             }
         }
-        return ClassFileUtils.toClass(ct, loader, domain);
-        */
+        try {
+            return (Class<?>) ReflectionHelper.invoke(proxyFactory, AbstractProxyFactory.class, "defineAndLoadClass",
+                    new Class[]{ClassLoader.class, String.class, byte[].class, ProtectionDomain.class},
+                    classLoader, proxyName, proxyBytes);
+        } catch (Exception e) {
+        }
         return null;
     }
 

@@ -1,14 +1,17 @@
 package org.hotswap.agent.plugin.owb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Collection;
 
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent;
+import org.hotswap.agent.plugin.owb.command.BeanArchiveAgent;
 import org.hotswap.agent.plugin.owb.testBeans.ChangedHelloProducer;
 import org.hotswap.agent.plugin.owb.testBeans.DependentHello;
 import org.hotswap.agent.plugin.owb.testBeans.HelloProducer;
@@ -42,7 +45,7 @@ public class OwbPluginTest extends HAAbstractUnitTest {
 
     @Before
     public void initContainer() {
-        BeanClassRefreshAgent.isTestEnvironment = true;
+        BeanArchiveAgent.isTestEnvironment = true;
         startContainer();
     }
 
@@ -176,7 +179,6 @@ public class OwbPluginTest extends HAAbstractUnitTest {
     //create new class and class file. rerun test only after clean
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
-        /*
         try {
             OwbPlugin.isTestEnvironment = true;
             Collection<BeanArchiveAgent> instances = BeanArchiveAgent.getInstances();
@@ -199,16 +201,15 @@ public class OwbPluginTest extends HAAbstractUnitTest {
         } finally {
             OwbPlugin.isTestEnvironment = false;
         }
-        */
     }
 
     private void swapClasses(Class original, String swap) throws Exception {
-        BeanClassRefreshAgent.reloadFlag = true;
+        BeanArchiveAgent.reloadFlag = true;
         HotSwapper.swapClasses(original, swap);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !BeanClassRefreshAgent.reloadFlag;
+                return !BeanArchiveAgent.reloadFlag;
             }
         }));
 

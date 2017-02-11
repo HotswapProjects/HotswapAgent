@@ -1,7 +1,5 @@
 package org.hotswap.agent.plugin.owb;
 
-import java.io.File;
-
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
@@ -28,13 +26,13 @@ public class BeanArchiveTransformer {
      * @throws NotFoundException
      * @throws CannotCompileException
      */
-    @OnClassLoadEvent(classNameRegexp = "org.apache.xbean.finder.archive.FileArchive")
+    @OnClassLoadEvent(classNameRegexp = "(org.apache.xbean.finder.archive.FileArchive)|(org.apache.xbean.finder.archive.JarArchive)")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(OwbPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(OwbPlugin.class, "init"));
-        src.append(PluginManagerInvoker.buildCallPluginMethod(OwbPlugin.class, "registerArchiveDir", "this.dir", "java.io.File"));
+        src.append("org.hotswap.agent.plugin.owb.command.BeanArchiveAgent.registerArchive(getClass().getClassLoader(), this);");
         src.append("}");
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {

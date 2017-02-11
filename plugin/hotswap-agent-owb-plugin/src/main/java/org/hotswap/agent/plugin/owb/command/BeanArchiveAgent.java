@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.owb.command;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -25,20 +26,31 @@ import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
+import org.apache.webbeans.proxy.NormalScopeProxyFactory;
 import org.apache.webbeans.spi.ContextsService;
 import org.apache.webbeans.web.context.WebContextsService;
+import org.apache.xbean.finder.archive.Archive;
+import org.apache.xbean.finder.archive.FileArchive;
+import org.apache.xbean.finder.archive.JarArchive;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.logging.AgentLogger.Level;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
 import org.hotswap.agent.plugin.owb.OwbClassSignatureHelper;
+import org.hotswap.agent.plugin.owb.OwbPlugin;
 import org.hotswap.agent.plugin.owb.WebBeansContextsServiceTransformer;
 import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
 import org.hotswap.agent.plugin.owb.command.WebContextsTracker.WebContextsSet;
+import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 
-public class BeanClassRefreshAgent {
+/**
+ * Handles creating and redefinition of bean classes in BeanArchive
+ *
+ * @author Vladimir Dvorak
+ */
+public class BeanArchiveAgent {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshAgent.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanArchiveAgent.class);
 
     /** True for UnitTests */
     public static boolean isTestEnvironment = false;
@@ -50,18 +62,103 @@ public class BeanClassRefreshAgent {
      */
     public static boolean reloadFlag = false;
 
+    private Archive beanArchive;
+
+    private String archivePath;
+
+    private boolean registered = false;
+
+    /**
+     * Register archive into ArchiveAgentRegistry.
+     *
+     * @param classLoader the class loader
+     * @param beanArchive the bean archive to be registered
+     */
+    public static void registerArchive(ClassLoader classLoader, Archive archive) {
+
+        try {
+            String archivePath = null;
+
+            if (archive instanceof JarArchive) {
+                archivePath = ((JarArchive) archive) .getUrl().getPath();
+            } else if (archive instanceof FileArchive) {
+                archivePath = ((FileArchive) archive).getDir().getPath();
+            } else {
+                LOGGER.warning("Unexpected Archive class={}", archive.getClass().getName());
+            }
+
+            Class<?> registryClass = Class.forName(ArchiveAgentRegistry.class.getName(), true, classLoader);
+
+            boolean contain = (boolean) ReflectionHelper.invoke(null, registryClass, "contains", new Class[] {String.class}, archivePath);
+
+            if (!contain) {
+                BeanArchiveAgent beanArchiveAgent = new BeanArchiveAgent(archive, archivePath);
+                ReflectionHelper.invoke(null, registryClass, "put", new Class[] { String.class, BeanArchiveAgent.class }, archivePath, beanArchiveAgent);
+                beanArchiveAgent.register();
+            }
+        } catch (Exception e) {
+            LOGGER.error("registerArchive() exception {}.", e.getMessage());
+        }
+
+    }
+
+    private void register() {
+        if (!registered) {
+            registered = true;
+            LOGGER.debug("Archive {} registered.", archivePath);
+            PluginManagerInvoker.callPluginMethod(OwbPlugin.class, getClass().getClassLoader(),
+                    "registerBeanArchivePath", new Class[] { String.class }, new Object[] { archivePath });
+        }
+    }
+
+    /**
+     * Gets the collection of registered BeanArchive(s)
+     *
+     * @return the instances
+     */
+    public static Collection<BeanArchiveAgent> getInstances() {
+        return ArchiveAgentRegistry.values();
+    }
+
+    private BeanArchiveAgent(Archive beanArchive, String archivePath) {
+        this.beanArchive = beanArchive;
+        this.archivePath = archivePath;
+    }
+
+    /**
+     * Gets the archive path.
+     *
+     * @return the archive path
+     */
+    public String getArchivePath() {
+        return archivePath;
+    }
+
+    public Archive getBeanArchive() {
+        return beanArchive;
+    }
+
     /**
      * Called by a reflection command from BeanRefreshCommand transformer.
      *
      * @param classLoader the class loader
+     * @param archivePath the archive path
      * @param beanClassName the bean class name
      * @param oldSignatureByStrategy the old signature by strategy
      * @param strReloadStrategy the bean reload strategy
      * @throws IOException error working with classDefinition
      */
-    public static void reloadBean(ClassLoader classLoader, String beanClassName, String oldSignatureByStrategy, String strReloadStrategy) throws IOException {
+    public static void reloadBean(ClassLoader classLoader, String archivePath, String beanClassName, String oldSignatureByStrategy,
+            String strReloadStrategy) throws IOException {
+
+        BeanArchiveAgent archiveAgent = ArchiveAgentRegistry.get(archivePath);
+        if (archiveAgent == null) {
+            LOGGER.error("Archive path '{}' is not associated with any BeanArchiveAgent", archivePath);
+            return;
+        }
 
         try {
+
             BeanReloadStrategy reloadStrategy;
 
             try {
@@ -70,8 +167,11 @@ public class BeanClassRefreshAgent {
                 reloadStrategy = BeanReloadStrategy.NEVER;
             }
 
-            Class<?> beanClass = classLoader.loadClass(beanClassName);
-            doReloadBean(classLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
+            // archive classLoader can be different then appClassLoader for EAR deployment
+            // therefore we use class loader from archiveAgent class which is classloader for archive
+            Class<?> beanClass = archiveAgent.getClass().getClassLoader().loadClass(beanClassName);
+
+            archiveAgent.doReloadBean(classLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class not found.", e);
@@ -89,7 +189,7 @@ public class BeanClassRefreshAgent {
      * @param reloadStrategy the reload strategy
      */
     @SuppressWarnings("rawtypes")
-    private static void doReloadBean(ClassLoader classLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+    private void doReloadBean(ClassLoader classLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -132,7 +232,7 @@ public class BeanClassRefreshAgent {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static void doReloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean,
+    private void doReloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean,
             String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
         createAnnotatedTypeForExistingBeanClass(beanManager, beanClass, managedBean);
@@ -188,21 +288,19 @@ public class BeanClassRefreshAgent {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static void createAnnotatedTypeForExistingBeanClass(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+    private void createAnnotatedTypeForExistingBeanClass(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
 
         WebBeansContext wbc = beanManager.getWebBeansContext();
-        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
 
+        clearAnnotElemFactoryCaches(beanManager);
+
+        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
         // Clear AnnotatedElementFactory caches
         annotatedElementFactory.clear();
 
         AnnotatedType annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
 
         ReflectionHelper.set(managedBean, InjectionTargetBean.class, "annotatedType", annotatedType);
-
-        InjectionTargetFactory factory = new InjectionTargetFactoryImpl(annotatedType, managedBean.getWebBeansContext());
-        InjectionTarget injectionTarget = factory.createInjectionTarget(managedBean);
-        ReflectionHelper.set(managedBean, InjectionTargetBean.class, "injectionTarget", injectionTarget);
 
         // Updated members that were set by bean attributes
         BeanAttributesImpl attributes = BeanAttributesBuilder.forContext(wbc).newBeanAttibutes(annotatedType).build();
@@ -213,11 +311,40 @@ public class BeanClassRefreshAgent {
         ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "stereotypes", attributes.getStereotypes());
         ReflectionHelper.set(managedBean, BeanAttributesImpl.class, "alternative", attributes.isAlternative());
 
+        InjectionTargetFactory factory = new InjectionTargetFactoryImpl(annotatedType, managedBean.getWebBeansContext());
+        InjectionTarget injectionTarget = factory.createInjectionTarget(managedBean);
+        ReflectionHelper.set(managedBean, InjectionTargetBean.class, "injectionTarget", injectionTarget);
+
         LOGGER.debug("New annotated type created for beanClass {}", beanClass.getName());
     }
 
+    private void clearAnnotElemFactoryCaches(BeanManagerImpl beanManager) {
+
+        AnnotatedElementFactory annoElementFactory = beanManager.getWebBeansContext().getAnnotatedElementFactory();
+
+        clearMapCache(annoElementFactory, "annotatedTypeCache");
+        clearMapCache(annoElementFactory, "modifiedAnnotatedTypeCache");
+        clearMapCache(annoElementFactory, "annotatedConstructorCache");
+        clearMapCache(annoElementFactory, "annotatedMethodCache");
+        clearMapCache(annoElementFactory, "annotatedFieldCache");
+        clearMapCache(annoElementFactory, "annotatedMethodsOfTypeCache");
+
+        LOGGER.trace("AnnotatedElementFactory cache cleared.");
+    }
+
+    private void clearMapCache(Object target, String fieldName) {
+        try {
+            Map m = (Map) ReflectionHelper.get(target, fieldName);
+            if (m != null) {
+                m.clear();
+            }
+        } catch (IllegalArgumentException e) {
+            LOGGER.warning("Cannot clear cache AnnotatedElementFactory cache.", e);;
+        }
+    }
+
     @SuppressWarnings("rawtypes")
-    private static void doReloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+    private void doReloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
         try {
             Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManager);
 
@@ -227,13 +354,9 @@ public class BeanClassRefreshAgent {
                 for(Context context: ctxList) {
                     if (context != null) {
                         LOGGER.debug("Inspecting context '{}' for bean class {}", context.getClass(), managedBean.getScope());
-
                         if(ContextualReloadHelper.addToReloadSet(context, managedBean)) {
-
                             LOGGER.debug("Bean {}, added to reload set in context {}", managedBean, context.getClass());
-
                         } else {
-
                             // try to reinitialize injection points instead...
                             try {
                                 Object get = context.get(managedBean);
@@ -249,7 +372,6 @@ public class BeanClassRefreshAgent {
                                 }
                             }
                         }
-
                     } else {
                         LOGGER.debug("No active contexts for bean: {} in scope: {}",  managedBean.getScope(), beanClass.getName());
                     }
@@ -272,5 +394,74 @@ public class BeanClassRefreshAgent {
             LOGGER.warning("BeanManagerImpl.contexts not accessible", e);
         }
         return Collections.emptyMap();
+    }
+
+    /**
+     * Recreate proxy classes, Called from BeanClassRefreshCommand.
+     *
+     * @param classLoader the class loader
+     * @param beanClassName the bean class name
+     * @param oldSignatureForProxyCheck the old signature for proxy check
+     * @throws IOException error working with classDefinition
+     */
+
+    public static void recreateProxy(ClassLoader classLoader, String archivePath, String beanClassName, String oldSignatureForProxyCheck) throws IOException {
+
+        BeanArchiveAgent archiveAgent = ArchiveAgentRegistry.get(archivePath);
+        if (archiveAgent == null) {
+            LOGGER.error("Archive path '{}' is not associated with any BeanArchiveAgent", archivePath);
+            return;
+        }
+
+        try {
+            Class<?> beanClass = archiveAgent.getClass().getClassLoader().loadClass(beanClassName);
+            archiveAgent.doRecreateProxy(classLoader, beanClass, oldSignatureForProxyCheck);
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("Bean class not found.", e);
+        }
+    }
+
+    private void doRecreateProxy(ClassLoader classLoader, Class<?> beanClass, String oldClassSignature) {
+        if (oldClassSignature != null) {
+            String newClassSignature = OwbClassSignatureHelper.getSignatureForProxyClass(beanClass);
+            if (newClassSignature != null && !newClassSignature.equals(oldClassSignature)) {
+                doRecreateProxy(classLoader, beanClass);
+            }
+        }
+    }
+
+    private void doRecreateProxy(ClassLoader classLoader, Class<?> beanClass) {
+
+        ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
+
+        try {
+            ProxyClassLoadingDelegate.beginProxyRegeneration();
+            Thread.currentThread().setContextClassLoader(classLoader);
+
+            WebBeansContext wbc = WebBeansContext.currentInstance();
+            NormalScopeProxyFactory proxyFactory = wbc.getNormalScopeProxyFactory();
+
+            // Clear proxy class cache
+            Map cachedProxyClasses = (Map) ReflectionHelper.get(proxyFactory, "cachedProxyClasses");
+            Set<Bean<?>> beans = wbc.getBeanManagerImpl().getBeans(beanClass);
+            if (beans != null) {
+                boolean recreateIt = false;
+                for (Bean<?> bean : beans) {
+                    if (cachedProxyClasses.containsKey(bean)) {
+                        cachedProxyClasses.remove(bean);
+                        recreateIt = true;
+                    }
+                    if (recreateIt) {
+                        proxyFactory.createProxyClass(classLoader, beanClass);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("recreateProxyFactory() exception {}.", e, e.getMessage());
+        } finally {
+            Thread.currentThread().setContextClassLoader(oldContextClassLoader);
+            ProxyClassLoadingDelegate.endProxyRegeneration();
+        }
     }
 }
