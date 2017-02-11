@@ -25,6 +25,14 @@ public class CdiContextsTransformer {
                                         "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)")
     public static void transformOwbContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
 
+        CtClass superClass = clazz.getSuperclass();
+        while (superClass != null) {
+            if ("org.apache.webbeans.context.AbstractContext".equals(superClass.getName())) {
+                return;
+            }
+            superClass = superClass.getSuperclass();
+        }
+
         LOGGER.debug("Adding interface {} to {}.", OwbHotswapContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(OwbHotswapContext.class.getName()));
 
