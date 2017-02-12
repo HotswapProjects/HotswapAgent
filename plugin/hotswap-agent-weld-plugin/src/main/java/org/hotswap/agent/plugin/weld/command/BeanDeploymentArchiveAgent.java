@@ -68,13 +68,14 @@ public class BeanDeploymentArchiveAgent {
     private boolean registered = false;
 
     /**
-     * Register bean archive into BdaAgentRegistry and into WeldPlugin.
+     * Register bean archive into BdaAgentRegistry and into WeldPlugin. Current classLoader is  set to
+     * beanArchive classLoader.
      *
-     * @param classLoader the class loader
+     * @param appClassLoader the class loader - container or application class loader.
      * @param beanArchive the bean archive to be registered
      * @param beanArchiveType the bean archive type
      */
-    public static void registerArchive(ClassLoader classLoader, BeanDeploymentArchive beanArchive, String beanArchiveType) {
+    public static void registerArchive(ClassLoader appClassLoader, BeanDeploymentArchive beanArchive, String beanArchiveType) {
         BeansXml beansXml = beanArchive.getBeansXml();
         String archivePath = null;
 
@@ -99,7 +100,7 @@ public class BeanDeploymentArchiveAgent {
             @SuppressWarnings("unused")
             File path = new File(archivePath);
 
-            Class<?> registryClass = Class.forName(BdaAgentRegistry.class.getName(), true, classLoader);
+            Class<?> registryClass = Class.forName(BdaAgentRegistry.class.getName(), true, appClassLoader);
 
             boolean contain = (boolean) ReflectionHelper.invoke(null, registryClass, "contains", new Class[] {String.class}, archivePath);
 
