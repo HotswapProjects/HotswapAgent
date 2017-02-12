@@ -31,7 +31,6 @@ import org.apache.webbeans.spi.ContextsService;
 import org.apache.webbeans.web.context.WebContextsService;
 import org.apache.xbean.finder.archive.Archive;
 import org.apache.xbean.finder.archive.FileArchive;
-import org.apache.xbean.finder.archive.JarArchive;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.logging.AgentLogger.Level;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
@@ -62,6 +61,8 @@ public class BeanArchiveAgent {
      */
     public static boolean reloadFlag = false;
 
+    private ClassLoader archiveClassLoader;
+
     private Archive beanArchive;
 
     private String archivePath;
@@ -71,30 +72,27 @@ public class BeanArchiveAgent {
     /**
      * Register archive into ArchiveAgentRegistry.
      *
-     * @param classLoader the class loader
-     * @param beanArchive the bean archive to be registered
+     * @param archiveClassLoader the archive class loader
+     * @param archive the archive
      */
-    public static void registerArchive(ClassLoader classLoader, Archive archive) {
+    public static void registerArchive(ClassLoader archiveClassLoader, Archive archive) {
 
         try {
             String archivePath = null;
 
-            if (archive instanceof JarArchive) {
-                archivePath = ((JarArchive) archive) .getUrl().getPath();
-            } else if (archive instanceof FileArchive) {
+            if (archive instanceof FileArchive) {
                 archivePath = ((FileArchive) archive).getDir().getPath();
             } else {
-                LOGGER.warning("Unexpected Archive class={}", archive.getClass().getName());
+                LOGGER.warning("Unsupported Archive class={}", archive.getClass().getName());
             }
 
-            Class<?> registryClass = Class.forName(ArchiveAgentRegistry.class.getName(), true, classLoader);
+            if (archivePath != null) {
 
-            boolean contain = (boolean) ReflectionHelper.invoke(null, registryClass, "contains", new Class[] {String.class}, archivePath);
-
-            if (!contain) {
-                BeanArchiveAgent beanArchiveAgent = new BeanArchiveAgent(archive, archivePath);
-                ReflectionHelper.invoke(null, registryClass, "put", new Class[] { String.class, BeanArchiveAgent.class }, archivePath, beanArchiveAgent);
-                beanArchiveAgent.register();
+                if (!ArchiveAgentRegistry.contains(archivePath)) {
+                    BeanArchiveAgent beanArchiveAgent = new BeanArchiveAgent(archive, archiveClassLoader, archivePath);
+                    ArchiveAgentRegistry.put(archivePath, beanArchiveAgent);
+                    beanArchiveAgent.register();
+                }
             }
         } catch (Exception e) {
             LOGGER.error("registerArchive() exception {}.", e.getMessage());
@@ -107,7 +105,7 @@ public class BeanArchiveAgent {
             registered = true;
             LOGGER.debug("Archive {} registered.", archivePath);
             PluginManagerInvoker.callPluginMethod(OwbPlugin.class, getClass().getClassLoader(),
-                    "registerBeanArchivePath", new Class[] { String.class }, new Object[] { archivePath });
+                    "registerBeanArchivePath", new Class[] { ClassLoader.class, String.class }, new Object[] { archiveClassLoader, archivePath });
         }
     }
 
@@ -120,8 +118,9 @@ public class BeanArchiveAgent {
         return ArchiveAgentRegistry.values();
     }
 
-    private BeanArchiveAgent(Archive beanArchive, String archivePath) {
+    private BeanArchiveAgent(Archive beanArchive, ClassLoader archiveClassLoader, String archivePath) {
         this.beanArchive = beanArchive;
+        this.archiveClassLoader = archiveClassLoader;
         this.archivePath = archivePath;
     }
 
@@ -141,14 +140,14 @@ public class BeanArchiveAgent {
     /**
      * Called by a reflection command from BeanRefreshCommand transformer.
      *
-     * @param classLoader the class loader
+     * @param appClassLoader the application class loader
      * @param archivePath the archive path
      * @param beanClassName the bean class name
      * @param oldSignatureByStrategy the old signature by strategy
      * @param strReloadStrategy the bean reload strategy
      * @throws IOException error working with classDefinition
      */
-    public static void reloadBean(ClassLoader classLoader, String archivePath, String beanClassName, String oldSignatureByStrategy,
+    public static void reloadBean(ClassLoader appClassLoader, String archivePath, String beanClassName, String oldSignatureByStrategy,
             String strReloadStrategy) throws IOException {
 
         BeanArchiveAgent archiveAgent = ArchiveAgentRegistry.get(archivePath);
@@ -167,11 +166,9 @@ public class BeanArchiveAgent {
                 reloadStrategy = BeanReloadStrategy.NEVER;
             }
 
-            // archive classLoader can be different then appClassLoader for EAR deployment
-            // therefore we use class loader from archiveAgent class which is classloader for archive
-            Class<?> beanClass = archiveAgent.getClass().getClassLoader().loadClass(beanClassName);
+            Class<?> beanClass = archiveAgent.archiveClassLoader.loadClass(beanClassName);
 
-            archiveAgent.doReloadBean(classLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
+            archiveAgent.doReloadBean(appClassLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class not found.", e);
@@ -183,18 +180,18 @@ public class BeanArchiveAgent {
     /**
      * Reload bean in existing bean manager.
      *
-     * @param classLoader the class loader
+     * @param appClassLoader the class loader
      * @param beanClass the bean class
      * @param oldSignatureByStrategy the old signature by strategy
      * @param reloadStrategy the reload strategy
      */
     @SuppressWarnings("rawtypes")
-    private void doReloadBean(ClassLoader classLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+    private void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
-            Thread.currentThread().setContextClassLoader(classLoader);
+            Thread.currentThread().setContextClassLoader(appClassLoader);
 
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {
@@ -399,13 +396,13 @@ public class BeanArchiveAgent {
     /**
      * Recreate proxy classes, Called from BeanClassRefreshCommand.
      *
-     * @param classLoader the class loader
+     * @param appClassLoader the application class loader
      * @param beanClassName the bean class name
      * @param oldSignatureForProxyCheck the old signature for proxy check
      * @throws IOException error working with classDefinition
      */
 
-    public static void recreateProxy(ClassLoader classLoader, String archivePath, String beanClassName, String oldSignatureForProxyCheck) throws IOException {
+    public static void recreateProxy(ClassLoader appClassLoader, String archivePath, String beanClassName, String oldSignatureForProxyCheck) throws IOException {
 
         BeanArchiveAgent archiveAgent = ArchiveAgentRegistry.get(archivePath);
         if (archiveAgent == null) {
@@ -414,29 +411,29 @@ public class BeanArchiveAgent {
         }
 
         try {
-            Class<?> beanClass = archiveAgent.getClass().getClassLoader().loadClass(beanClassName);
-            archiveAgent.doRecreateProxy(classLoader, beanClass, oldSignatureForProxyCheck);
+            Class<?> beanClass = archiveAgent.archiveClassLoader.loadClass(beanClassName);
+            archiveAgent.doRecreateProxy(appClassLoader, beanClass, oldSignatureForProxyCheck);
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class not found.", e);
         }
     }
 
-    private void doRecreateProxy(ClassLoader classLoader, Class<?> beanClass, String oldClassSignature) {
+    private void doRecreateProxy(ClassLoader appClassLoader, Class<?> beanClass, String oldClassSignature) {
         if (oldClassSignature != null) {
             String newClassSignature = OwbClassSignatureHelper.getSignatureForProxyClass(beanClass);
             if (newClassSignature != null && !newClassSignature.equals(oldClassSignature)) {
-                doRecreateProxy(classLoader, beanClass);
+                doRecreateProxy(appClassLoader, beanClass);
             }
         }
     }
 
-    private void doRecreateProxy(ClassLoader classLoader, Class<?> beanClass) {
+    private void doRecreateProxy(ClassLoader appClassLoader, Class<?> beanClass) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
             ProxyClassLoadingDelegate.beginProxyRegeneration();
-            Thread.currentThread().setContextClassLoader(classLoader);
+            Thread.currentThread().setContextClassLoader(appClassLoader);
 
             WebBeansContext wbc = WebBeansContext.currentInstance();
             NormalScopeProxyFactory proxyFactory = wbc.getNormalScopeProxyFactory();
@@ -452,7 +449,7 @@ public class BeanArchiveAgent {
                         recreateIt = true;
                     }
                     if (recreateIt) {
-                        proxyFactory.createProxyClass(classLoader, beanClass);
+                        proxyFactory.createProxyClass(appClassLoader, beanClass);
                     }
                 }
             }

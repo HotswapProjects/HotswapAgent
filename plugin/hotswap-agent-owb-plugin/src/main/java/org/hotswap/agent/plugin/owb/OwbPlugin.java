@@ -99,9 +99,10 @@ public class OwbPlugin {
      * Register BeanArchive's normalizedArchivePath to watcher. In case of new class the class file is not known
      * to JVM hence no hotswap is called and therefore it must be handled by watcher.
      *
+     * @param archiveClassLoader the archive loader
      * @param archivePath the archive path
      */
-    public synchronized void registerBeanArchivePath(final String archivePath) {
+    public synchronized void registerBeanArchivePath(final ClassLoader archiveClassLoader, final String archivePath) {
         URL resource = null;
         try {
             resource = resourceNameToURL(archivePath);
@@ -125,7 +126,7 @@ public class OwbPlugin {
                                         e, event.getURI());
                                 return;
                             }
-                            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || isTestEnvironment) {
+                            if (!ClassLoaderHelper.isClassLoaded(archiveClassLoader, className) || isTestEnvironment) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
                                 if (isBeanArchiveRegistered(appClassLoader, archivePath)) {
@@ -157,22 +158,22 @@ public class OwbPlugin {
     }
 
     /**
-     * If bda archive is defined for given class than new BeanClassRefreshCommand is created
+     * Called on class redefinition. Class may be bean class
      *
-     * @param classLoader
-     * @param ctClass
-     * @param original
+     * @param classLoader the class loader in which class is redefined (Archive class loader)
+     * @param ctClass the ct class
+     * @param original the original
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             try {
-                String archivePath = getArchivePath(classLoader, ctClass, original.getName());
+                String archivePath = getArchivePath(appClassLoader, ctClass, original.getName());
                 LOGGER.debug("Class {} redefined for archive {} ", original.getName(), archivePath);
-                if (isBeanArchiveRegistered(classLoader, archivePath)) {
+                if (isBeanArchiveRegistered(appClassLoader, archivePath)) {
                     String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
                     String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
-                    scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath,
+                    scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath,
                             original.getName(), oldSignForProxyCheck, oldSignByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
                 }
             } catch (Exception e) {
@@ -209,7 +210,7 @@ public class OwbPlugin {
         }
     }
 
-    // Return true if class is CDI synthetic class.
+    // Return true if class is OWB synthetic class.
     // Owb proxies contains $Proxy$ and $$$
     // DeltaSpike's proxies contains "$$"
     private boolean isSyntheticCdiClass(String className) {

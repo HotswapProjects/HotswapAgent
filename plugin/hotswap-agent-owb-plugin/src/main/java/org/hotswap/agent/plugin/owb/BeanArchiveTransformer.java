@@ -26,13 +26,13 @@ public class BeanArchiveTransformer {
      * @throws NotFoundException
      * @throws CannotCompileException
      */
-    @OnClassLoadEvent(classNameRegexp = "(org.apache.xbean.finder.archive.FileArchive)|(org.apache.xbean.finder.archive.JarArchive)")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.xbean.finder.archive.FileArchive")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(OwbPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(OwbPlugin.class, "init"));
-        src.append("org.hotswap.agent.plugin.owb.command.BeanArchiveAgent.registerArchive(getClass().getClassLoader(), this);");
+        src.append("org.hotswap.agent.plugin.owb.command.BeanArchiveAgent.registerArchive(loader, this);");
         src.append("}");
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
