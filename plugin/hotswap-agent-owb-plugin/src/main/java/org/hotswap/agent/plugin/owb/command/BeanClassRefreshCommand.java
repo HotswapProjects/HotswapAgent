@@ -26,8 +26,6 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
     ClassLoader appClassLoader;
 
-    String archivePath;
-
     String className;
 
     String classSignForProxyCheck;
@@ -42,16 +40,14 @@ public class BeanClassRefreshCommand extends MergeableCommand {
      * Instantiates a new bean class refresh command.
      *
      * @param appClassLoader the application class loader
-     * @param archivePath the archive path
      * @param className the class name
      * @param classSignForProxyCheck the class signature for proxy check
      * @param classSignByStrategy the class signature by strategy
      * @param beanReloadStrategy the bean reload strategy
      */
-    public BeanClassRefreshCommand(ClassLoader appClassLoader, String archivePath, String className, String classSignForProxyCheck,
+    public BeanClassRefreshCommand(ClassLoader appClassLoader, String className, String classSignForProxyCheck,
             String classSignByStrategy, BeanReloadStrategy beanReloadStrategy) {
         this.appClassLoader = appClassLoader;
-        this.archivePath = archivePath;
         this.className = className;
         this.classSignForProxyCheck = classSignForProxyCheck;
         this.classSignByStrategy = classSignByStrategy;
@@ -68,7 +64,6 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     public BeanClassRefreshCommand(ClassLoader appClassLoader, String archivePath, WatchFileEvent event) {
 
         this.appClassLoader = appClassLoader;
-        this.archivePath = archivePath;
         this.event = event;
 
         // strip from URI prefix up to basePackage and .class suffix.
@@ -112,18 +107,16 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         }
         if (className != null) {
             try {
-                LOGGER.debug("Executing BeanArchiveAgent.recreateProxy('{}')", className);
-                Class<?> agentClazz = Class.forName(BeanArchiveAgent.class.getName(), true, appClassLoader);
+                LOGGER.debug("Executing ProxyRefreshAgent.recreateProxy('{}')", className);
+                Class<?> agentClazz = Class.forName(ProxyRefreshAgent.class.getName(), true, appClassLoader);
                 Method agentMethod  = agentClazz.getDeclaredMethod("recreateProxy",
                         new Class[] { ClassLoader.class,
-                                      String.class,
                                       String.class,
                                       String.class
                         }
                 );
                 agentMethod.invoke(null,
                         appClassLoader,
-                        archivePath,
                         className,
                         classSignForProxyCheck
                 );
@@ -147,11 +140,10 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         }
         if (className != null) {
             try {
-                LOGGER.debug("Executing BeanArchiveAgent.reloadBean('{}')", className);
-                Class<?> agentClazz = Class.forName(BeanArchiveAgent.class.getName(), true, appClassLoader);
+                LOGGER.debug("Executing BeanClassRefreshAgent.reloadBean('{}')", className);
+                Class<?> agentClazz = Class.forName(BeanClassRefreshAgent.class.getName(), true, appClassLoader);
                 Method agentMethod  = agentClazz.getDeclaredMethod("reloadBean",
                         new Class[] { ClassLoader.class,
-                                      String.class,
                                       String.class,
                                       String.class,
                                       String.class
@@ -159,7 +151,6 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                 );
                 agentMethod.invoke(null,
                         appClassLoader,
-                        archivePath,
                         className,
                         classSignByStrategy,
                         strBeanReloadStrategy // passed as String since BeanArchiveAgent has different classloader
@@ -229,7 +220,6 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         BeanClassRefreshCommand that = (BeanClassRefreshCommand) o;
 
         if (!appClassLoader.equals(that.appClassLoader)) return false;
-        if (archivePath != null && !archivePath.equals(that.archivePath)) return false;
 
         return true;
     }
@@ -245,7 +235,6 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     public String toString() {
         return "BeanClassRefreshCommand{" +
                 "appClassLoader=" + appClassLoader +
-                ", archivePath='" + archivePath + '\'' +
                 ", className='" + className + '\'' +
                 '}';
     }

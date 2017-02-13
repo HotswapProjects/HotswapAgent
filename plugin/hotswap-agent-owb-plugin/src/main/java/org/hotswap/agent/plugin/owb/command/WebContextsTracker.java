@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.owb.command;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -9,11 +10,13 @@ import java.util.WeakHashMap;
 import org.apache.webbeans.context.ConversationContext;
 import org.apache.webbeans.context.SessionContext;
 import org.apache.webbeans.web.context.ServletRequestContext;
-import org.hotswap.agent.logging.AgentLogger;
 
-public class WebContextsTracker {
-
-    private static AgentLogger LOGGER = AgentLogger.getLogger(WebContextsTracker.class);
+/**
+ * The Class WebContextsTracker.
+ *
+ * @author Vladimir Dvorak
+ */
+public class WebContextsTracker implements Iterable {
 
     public static class WebContextsSet {
 
@@ -25,6 +28,34 @@ public class WebContextsTracker {
             this.requestContext = requestContext;
             this.conversationContext = conversationContext;
             this.sessionContext = sessionContext;
+        }
+    }
+
+    public class WebContextsSetIterator implements Iterator {
+
+        private int index = 0;
+        private List<WebContextsSet> wcsList;
+
+        public WebContextsSetIterator(List wcsList) {
+            this.wcsList = wcsList;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < wcsList.size();
+        }
+
+        @Override
+        public Object next() {
+            if (index < wcsList.size()) {
+                setWebContextsSet(wcsList.get(index));
+                index++;
+            }
+            return null;
+        }
+
+        @Override
+        public void remove() {
         }
     }
 
@@ -104,9 +135,10 @@ public class WebContextsTracker {
         }
     }
 
-    public List<WebContextsSet> getWebContextsSetList() {
+    @Override
+    public Iterator iterator() {
 
-        List<WebContextsSet> result = new ArrayList<>();
+        List<WebContextsSet> wcsList = new ArrayList<>();
 
         Map<ConversationContext, Boolean> foundConversationContexts = new IdentityHashMap<>();
         Map<SessionContext, Boolean> foundSessionContexts = new IdentityHashMap<>();
@@ -115,7 +147,7 @@ public class WebContextsTracker {
         for (Map.Entry<ServletRequestContext, SessionContext> entry: request2SessionMap.entrySet()) {
             WebContextsSet wcc = createWebContextSet(entry.getKey(), request2ConversationMap.get(entry.getKey()), entry.getValue());
             if (wcc != null) {
-                result.add(wcc);
+                wcsList.add(wcc);
                 if (wcc.conversationContext != null) {
                     foundConversationContexts.put(wcc.conversationContext, true);
                 }
@@ -130,7 +162,7 @@ public class WebContextsTracker {
             if (!foundConversationContexts.containsKey(entry.getKey())) {
                 WebContextsSet wcc = createWebContextSet(null, entry.getKey(), entry.getValue());
                 if (wcc != null) {
-                    result.add(wcc);
+                    wcsList.add(wcc);
                     if (wcc.sessionContext != null) {
                         foundSessionContexts.put(wcc.sessionContext, true);
                     }
@@ -143,7 +175,7 @@ public class WebContextsTracker {
             if (!foundSessionContexts.containsKey(entry.getKey())) {
                 WebContextsSet wcc = createWebContextSet(null, null, entry.getKey());
                 if (wcc != null) {
-                    result.add(wcc);
+                    wcsList.add(wcc);
                 }
             }
         }
@@ -153,12 +185,12 @@ public class WebContextsTracker {
             if (!request2SessionMap.containsKey(entry.getKey())) {
                 WebContextsSet wcc = createWebContextSet(entry.getKey(), null, null);
                 if (wcc != null) {
-                    result.add(wcc);
+                    wcsList.add(wcc);
                 }
             }
         }
 
-        return result;
+        return new WebContextsSetIterator(wcsList);
     }
 
     private WebContextsSet createWebContextSet(ServletRequestContext requestContext,
