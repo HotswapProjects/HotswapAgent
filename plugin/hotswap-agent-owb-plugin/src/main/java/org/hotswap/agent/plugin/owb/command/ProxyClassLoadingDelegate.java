@@ -1,11 +1,11 @@
 package org.hotswap.agent.plugin.owb.command;
 
-import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.webbeans.proxy.AbstractProxyFactory;
 import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -15,6 +15,8 @@ import org.hotswap.agent.util.ReflectionHelper;
  * @author Vladimir Dvorak
  */
 public class ProxyClassLoadingDelegate {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyClassLoadingDelegate.class);
 
     private static final ThreadLocal<Boolean> MAGIC_IN_PROGRESS = new ThreadLocal<Boolean>() {
         @Override
@@ -38,7 +40,7 @@ public class ProxyClassLoadingDelegate {
         return Class.forName(name, initialize, loader);
     }
 
-    public Class defineAndLoadClass(AbstractProxyFactory proxyFactory, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
+    public static Class defineAndLoadClass(AbstractProxyFactory proxyFactory, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
         if (MAGIC_IN_PROGRESS.get()) {
             try {
                 final Class<?> originalProxyClass = classLoader.loadClass(proxyName);
@@ -57,9 +59,10 @@ public class ProxyClassLoadingDelegate {
         }
         try {
             return (Class<?>) ReflectionHelper.invoke(proxyFactory, AbstractProxyFactory.class, "defineAndLoadClass",
-                    new Class[]{ClassLoader.class, String.class, byte[].class, ProtectionDomain.class},
+                    new Class[]{ClassLoader.class, String.class, byte[].class},
                     classLoader, proxyName, proxyBytes);
         } catch (Exception e) {
+            LOGGER.error("defineAndLoadClass() exception {}", e.getMessage());
         }
         return null;
     }

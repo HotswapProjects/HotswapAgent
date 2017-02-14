@@ -2,8 +2,6 @@ package org.hotswap.agent.plugin.owb;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -34,7 +32,7 @@ import org.hotswap.agent.watch.Watcher;
         description = "Open Web Beans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"1.7.0"},
         expectedVersions = {"All between 1.7.0-1.7.0"},
-        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, WebBeansContextTransformer.class, WebBeansContextsServiceTransformer.class})
+        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, WebBeansContextsServiceTransformer.class, ProxyFactoryTransformer.class })
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);

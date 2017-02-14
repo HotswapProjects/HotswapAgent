@@ -46,6 +46,7 @@ public class ProxyFactoryTransformer {
         CtMethod createProxyClassMethod = ctClass.getDeclaredMethod("createProxyClass", new CtClass[] {
                 classPool.get(ClassLoader.class.getName()),
                 classPool.get(String.class.getName()),
+                classPool.get(Class.class.getName()),
                 classPool.get(Method.class.getName() + "[]"),
                 classPool.get(Method.class.getName() + "[]"),
                 classPool.get(Constructor.class.getName())
