@@ -208,7 +208,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         }
 
         LOGGER.trace("isCreateEvent result {}: createFound={}", createFound);
-        return !createFound;
+        return createFound;
     }
 
 
