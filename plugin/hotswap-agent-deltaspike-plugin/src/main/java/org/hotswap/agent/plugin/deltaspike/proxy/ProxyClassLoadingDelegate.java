@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator;
 import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -13,6 +14,8 @@ import org.hotswap.agent.util.ReflectionHelper;
  * @author Vladimir Dvorak
  */
 public class ProxyClassLoadingDelegate {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyClassLoadingDelegate.class);
 
     private static final ThreadLocal<Boolean> MAGIC_IN_PROGRESS = new ThreadLocal<Boolean>() {
         @Override
@@ -68,6 +71,7 @@ public class ProxyClassLoadingDelegate {
                     new Class[]{ClassLoader.class, String.class, byte[].class, ProtectionDomain.class},
                     loader, className, bytes, protectionDomain);
         } catch (Exception e) {
+            LOGGER.error("loadClass() exception {}", e.getMessage());
         }
         return null;
     }
