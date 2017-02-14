@@ -1,10 +1,7 @@
 package org.hotswap.agent.plugin.owb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import java.util.Collection;
 
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -18,9 +15,12 @@ import org.hotswap.agent.plugin.owb.testBeans.HelloProducer;
 import org.hotswap.agent.plugin.owb.testBeans.HelloService;
 import org.hotswap.agent.plugin.owb.testBeans.HelloServiceDependant;
 import org.hotswap.agent.plugin.owb.testBeans.HelloServiceImpl;
+import org.hotswap.agent.plugin.owb.testBeans.ProxyHello;
+import org.hotswap.agent.plugin.owb.testBeans.ProxyHosting;
 import org.hotswap.agent.plugin.owb.testBeansHotswap.DependentHello2;
 import org.hotswap.agent.plugin.owb.testBeansHotswap.HelloProducer2;
 import org.hotswap.agent.plugin.owb.testBeansHotswap.HelloServiceImpl2;
+import org.hotswap.agent.plugin.owb.testBeansHotswap.ProxyHello2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Before;
@@ -31,7 +31,7 @@ import org.junit.Test;
  *
  * See maven setup for javaagent and autohotswap settings.
  *
- * @author Jiri Bubnik / modified by Vladimir Dvorak
+ * @author Vladimir Dvorak
  */
 public class OwbPluginTest extends HAAbstractUnitTest {
 
@@ -204,6 +204,24 @@ public class OwbPluginTest extends HAAbstractUnitTest {
         }
         */
     }
+
+    @Test
+    public void proxy() throws Exception {
+
+        ProxyHosting proxyHosting = getBean(ProxyHosting.class);
+        assertEquals("ProxyHello:hello", proxyHosting.hello());
+        swapClasses(ProxyHello.class, ProxyHello2.class.getName());
+
+        assertEquals("ProxyHello2:hello", proxyHosting.hello());
+        Object proxy = proxyHosting.proxy;
+        String hello2 = (String) ReflectionHelper.invoke(proxy, ProxyHello.class, "hello2", new Class[]{}, null);
+        assertEquals("ProxyHello2:hello2", hello2);
+
+        // return configuration
+        swapClasses(ProxyHello.class, ProxyHello.class.getName());
+        assertEquals("ProxyHello:hello", proxyHosting.hello());
+    }
+
 
     private void swapClasses(Class original, String swap) throws Exception {
         BeanClassRefreshAgent.reloadFlag = true;
