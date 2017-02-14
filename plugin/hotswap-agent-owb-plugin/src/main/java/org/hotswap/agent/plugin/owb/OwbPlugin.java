@@ -34,7 +34,7 @@ import org.hotswap.agent.watch.Watcher;
         description = "Open Web Beans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"1.7.0"},
         expectedVersions = {"All between 1.7.0-1.7.0"},
-        supportClass = { BeanDeployerTransformer.class, CdiContextsTransformer.class, WebBeansContextTransformer.class, WebBeansContextsServiceTransformer.class})
+        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, WebBeansContextTransformer.class, WebBeansContextsServiceTransformer.class})
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
@@ -45,7 +45,7 @@ public class OwbPlugin {
     /**
      * If a class is modified in IDE, sequence of multiple events is generated -
      * class file DELETE, CREATE, MODIFY, than Hotswap transformer is invoked.
-     * ClassPathBeanRefreshCommand tries to merge these events into single command.
+     * ClassPath_ BeanRefreshCommand tries to merge these events into single command.
      * Wait for this this timeout(milliseconds) after class file event before ClassPathBeanRefreshCommand
      */
     private static final int WAIT_ON_CREATE = 500;

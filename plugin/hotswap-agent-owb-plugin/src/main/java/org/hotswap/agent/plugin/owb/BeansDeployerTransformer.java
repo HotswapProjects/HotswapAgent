@@ -14,9 +14,9 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  *
  * @author Vladimir Dvorak
  */
-public class BeanDeployerTransformer {
+public class BeansDeployerTransformer {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(BeanDeployerTransformer.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(BeansDeployerTransformer.class);
 
     /**
      * Basic CdiArchive transformation.
