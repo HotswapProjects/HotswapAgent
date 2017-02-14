@@ -43,7 +43,7 @@ public class CdiContextsTransformer {
         clazz.addField(reloadingFld);
 
         CtMethod addBeanToReload = CtMethod.make(
-                "public void _addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean) {" +
+                "public void __addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean) {" +
                 "    if (__toReloadOwb == null)" +
                 "        __toReloadOwb = new java.util.HashSet();" +
                 "    __toReloadOwb.add(bean);" +

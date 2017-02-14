@@ -32,40 +32,40 @@ public class CdiContextsTransformer {
         LOGGER.debug("Adding interface {} to {}.", WeldHotswapContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(WeldHotswapContext.class.getName()));
 
-        CtField toReloadFld = CtField.make("public transient java.util.Set _toReloadWeld = null;", clazz);
+        CtField toReloadFld = CtField.make("public transient java.util.Set __toReloadWeld = null;", clazz);
         clazz.addField(toReloadFld);
 
-        CtField reloadingFld = CtField.make("public transient boolean _reloadingWeld = false;", clazz);
+        CtField reloadingFld = CtField.make("public transient boolean __reloadingWeld = false;", clazz);
         clazz.addField(reloadingFld);
 
         CtMethod addBeanToReload = CtMethod.make(
-                "public void _addBeanToReloadWeld(javax.enterprise.context.spi.Contextual bean) {" +
-                "    if (_toReloadWeld == null)" +
-                "        _toReloadWeld = new java.util.HashSet();" +
-                "    _toReloadWeld.add(bean);" +
+                "public void __addBeanToReloadWeld(javax.enterprise.context.spi.Contextual bean) {" +
+                "    if (__toReloadWeld == null)" +
+                "        __toReloadWeld = new java.util.HashSet();" +
+                "    __toReloadWeld.add(bean);" +
                 "}",
                 clazz
         );
         clazz.addMethod(addBeanToReload);
 
-        CtMethod getBeansToReload = CtMethod.make("public java.util.Set _getBeansToReloadWeld(){return _toReloadWeld;}", clazz);
+        CtMethod getBeansToReload = CtMethod.make("public java.util.Set __getBeansToReloadWeld(){return __toReloadWeld;}", clazz);
         clazz.addMethod(getBeansToReload);
 
-        CtMethod reload = CtMethod.make("public void _reloadWeld() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
+        CtMethod reload = CtMethod.make("public void __reloadWeld() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
         clazz.addMethod(reload);
 
-        CtMethod isActiveCopy = CtMethod.make("public boolean _isActiveWeld(){return false;}", clazz);
+        CtMethod isActiveCopy = CtMethod.make("public boolean __isActiveWeld(){return false;}", clazz);
         isActiveCopy.setBody(clazz.getDeclaredMethod("isActive"), null);
         clazz.addMethod(isActiveCopy);
 
         CtMethod isActive = clazz.getDeclaredMethod("isActive");
         isActive.setBody(
                 "{  " +
-                "    boolean active = _isActiveWeld(); " +
-                "    if(active && !_reloadingWeld ) { " +
-                "        _reloadingWeld = true;" +
-                "        _reloadWeld();" +
-                "        _reloadingWeld = false;" +
+                "    boolean active = __isActiveWeld(); " +
+                "    if(active && !__reloadingWeld ) { " +
+                "        __reloadingWeld = true;" +
+                "        __reloadWeld();" +
+                "        __reloadingWeld = false;" +
                 "    }" +
                 "    return active;" +
                 "}"
