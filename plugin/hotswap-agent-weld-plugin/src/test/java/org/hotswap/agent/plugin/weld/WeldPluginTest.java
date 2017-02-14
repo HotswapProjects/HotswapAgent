@@ -1,9 +1,11 @@
 package org.hotswap.agent.plugin.weld;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.net.URL;
 import java.util.Collection;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -17,12 +19,14 @@ import org.hotswap.agent.plugin.weld.testBeans.HelloProducer;
 import org.hotswap.agent.plugin.weld.testBeans.HelloService;
 import org.hotswap.agent.plugin.weld.testBeans.HelloServiceDependant;
 import org.hotswap.agent.plugin.weld.testBeans.HelloServiceImpl;
+import org.hotswap.agent.plugin.weld.testBeans.ProxyHello;
+import org.hotswap.agent.plugin.weld.testBeans.ProxyHosting;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.DependentHello2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloProducer2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloServiceImpl2;
+import org.hotswap.agent.plugin.weld.testBeansHotswap.ProxyHello2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
-import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -191,6 +195,23 @@ public class WeldPluginTest {
         } finally {
             WeldPlugin.isTestEnvironment = false;
         }
+    }
+
+    @Test
+    public void proxy() throws Exception {
+
+        ProxyHosting proxyHosting = getBean(ProxyHosting.class);
+        assertEquals("ProxyHello:hello", proxyHosting.hello());
+        swapClasses(ProxyHello.class, ProxyHello2.class.getName());
+
+        assertEquals("ProxyHello2:hello", proxyHosting.hello());
+        Object proxy = proxyHosting.proxy;
+        String hello2 = (String) ReflectionHelper.invoke(proxy, ProxyHello.class, "hello2", new Class[]{}, null);
+        assertEquals("ProxyHello2:hello2", hello2);
+
+        // return configuration
+        swapClasses(ProxyHello.class, ProxyHello.class.getName());
+        assertEquals("ProxyHello:hello", proxyHosting.hello());
     }
 
     private void swapClasses(Class original, String swap) throws Exception {
