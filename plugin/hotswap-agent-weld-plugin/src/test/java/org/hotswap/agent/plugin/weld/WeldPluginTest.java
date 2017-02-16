@@ -198,7 +198,7 @@ public class WeldPluginTest {
     }
 
     @Test
-    public void proxy() throws Exception {
+    public void proxyTest() throws Exception {
 
         ProxyHosting proxyHosting = getBean(ProxyHosting.class);
         assertEquals("ProxyHello:hello", proxyHosting.hello());

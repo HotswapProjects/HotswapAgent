@@ -147,7 +147,7 @@ public class WeldPlugin {
             }
             LOGGER.info("Registered  watch for path '{}' for changes.", resource);
         } catch (URISyntaxException e) {
-            LOGGER.error("Unable to watch path '{}' for changes.", e, resource);
+            LOGGER.error("Unable to watch path '{}' for changes.", e, archivePath);
         } catch (Exception e) {
             LOGGER.warning("registerBeanDeplArchivePath() exception : {}",  e.getMessage());
         }
