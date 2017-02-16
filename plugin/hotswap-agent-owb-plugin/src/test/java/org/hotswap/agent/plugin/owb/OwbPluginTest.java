@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.owb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -179,34 +180,23 @@ public class OwbPluginTest extends HAAbstractUnitTest {
     //create new class and class file. rerun test only after clean
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
-        /*
         try {
             OwbPlugin.isTestEnvironment = true;
-            Collection<BeanClassRefreshAgent> instances = BeanClassRefreshAgent.getInstances();
             Class<?> clazz = getClass();
             String path = clazz.getResource(clazz.getSimpleName() + ".class")
                     .getPath().replace(clazz.getSimpleName() + ".class", "");
-            boolean found = false;
-            for (BeanClassRefreshAgent instance : instances) {
-                if (path.startsWith(instance.getArchivePath())) {
-                    //create new class and class file. rerun test only after clean
-                    Class newClass = HotSwapper.newClass("NewClass", instance.getArchivePath(), getClass().getClassLoader());
-                    Thread.sleep(1000); // wait redefine
-                    Object bean = getBean(newClass);
-                    assertNotNull(bean);
-                    found = true;
-                    break;
-                }
-            }
-            assert(found);
+            //create new class and class file. rerun test only after clean
+            Class newClass = HotSwapper.newClass("NewClass", OwbPlugin.archivePath, getClass().getClassLoader());
+            Thread.sleep(1000); // wait redefine
+            Object bean = getBean(newClass);
+            assertNotNull(bean);
         } finally {
             OwbPlugin.isTestEnvironment = false;
         }
-        */
     }
 
     @Test
-    public void proxy() throws Exception {
+    public void proxyTest() throws Exception {
 
         ProxyHosting proxyHosting = getBean(ProxyHosting.class);
         assertEquals("ProxyHello:hello", proxyHosting.hello());

@@ -1,9 +1,12 @@
 package org.hotswap.agent.plugin.owb;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,8 +40,13 @@ public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
 
+    private static final String WEB_INF_CLASSES = "WEB-INF/classes/";
+    private static final String WEB_INF_CLASSES_MAVEN = "target/classes/";
+
     /** True for UnitTests */
     static boolean isTestEnvironment = false;
+    /** Store archive path for unit tests */
+    static String archivePath = null;
 
     /**
      * If a class is modified in IDE, sequence of multiple events is generated -
@@ -93,28 +101,39 @@ public class OwbPlugin {
     /**
      * Register BeanArchive's paths to watcher. In case of new class the class file is not known
      * to JVM hence no hotswap is called and therefore it must be handled by watcher.
+     *
+     * @param bdaLocations the Set of URLs of archive locations
      */
-    public synchronized void registerAllArchives() {
-        LOGGER.info("Registering archives {}");
-
-        Enumeration<URL> resourceUrls = null;
-        try {
-            resourceUrls = appClassLoader.getResources("/");
-        } catch (IOException e) {
-            LOGGER.error("Unable to resolve root in classloader {}.", appClassLoader);
-            return;
-        }
+    public void registerBeansXmls(Set bdaLocations) {
 
         // for all application resources watch for changes
-        while (resourceUrls.hasMoreElements()) {
+        for (URL beanArchiveUrl : (Set<URL>) bdaLocations) {
 
-            URL archiveURL = resourceUrls.nextElement();
+            String beansXmlPath = beanArchiveUrl.getPath();
 
-            if (!IOUtils.isDirectoryURL(archiveURL)) {
-                LOGGER.trace("Owb - unable to watch files on URL '{}' for changes (JAR file?)", archiveURL);
+            if (!beansXmlPath.endsWith("beans.xml")) {
+                LOGGER.debug("Skipping bda location: {} ", beanArchiveUrl);
                 continue;
+            }
+
+            final String archivePath;
+
+            if (beansXmlPath.endsWith("META-INF/beans.xml")) {
+                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xml".length());
+            } else if (beansXmlPath.endsWith("WEB-INF/beans.xml")) {
+                archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "beans.xml".length()) + "classes";
             } else {
-                watcher.addEventListener(appClassLoader, archiveURL, new WatchEventListener() {
+                LOGGER.warning("Unexpected beans.xml location {}", beansXmlPath);
+                continue;
+            }
+
+            OwbPlugin.archivePath = archivePath; // store path for unit tests (single archive expected)
+
+            try {
+                URL resource = resourceNameToURL(archivePath);
+                URI uri = resource.toURI();
+
+                watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                     @Override
                     public void onEvent(WatchFileEvent event) {
                         if (event.isFile() && event.getURI().toString().endsWith(".class")) {
@@ -130,11 +149,16 @@ public class OwbPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || isTestEnvironment) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-//                                scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, , event), WAIT_ON_CREATE);
+                                scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
                             }
                         }
                     }
                 });
+                LOGGER.info("Registered  watch for path '{}' for changes.", resource);
+            } catch (URISyntaxException e) {
+                LOGGER.error("Unable to watch path '{}' for changes.", e, archivePath);
+            } catch (Exception e) {
+                LOGGER.warning("registerBeanDeplArchivePath() exception : {}",  e.getMessage());
             }
         }
     }
@@ -183,4 +207,16 @@ public class OwbPlugin {
         return false;
     }
 
+    public URL resourceNameToURL(String resource) throws Exception {
+        try {
+            // Try to format as a URL?
+            return new URL(resource);
+        } catch (MalformedURLException e) {
+            // try to locate a file
+            if (resource.startsWith("./"))
+                resource = resource.substring(2);
+            File file = new File(resource).getCanonicalFile();
+            return file.toURI().toURL();
+        }
+    }
 }

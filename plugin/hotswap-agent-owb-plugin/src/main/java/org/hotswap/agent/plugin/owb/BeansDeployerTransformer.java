@@ -33,6 +33,7 @@ public class BeansDeployerTransformer {
         src.append("ClassLoader curCl = Thread.currentThread().getContextClassLoader();");
         src.append(PluginManagerInvoker.buildInitializePlugin(OwbPlugin.class, "curCl"));
         src.append(PluginManagerInvoker.buildCallPluginMethod("curCl", OwbPlugin.class, "init"));
+        src.append(PluginManagerInvoker.buildCallPluginMethod("curCl", OwbPlugin.class, "registerBeansXmls", "$1.getBeanXmls()", "java.util.Set"));
         src.append("}");
 
         CtMethod startApplication = clazz.getDeclaredMethod("deploy");
