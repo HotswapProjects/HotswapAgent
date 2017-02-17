@@ -124,6 +124,11 @@ public class OwbPlugin {
                 continue;
             }
 
+            if (archivePath.endsWith(".jar!/")) {
+                LOGGER.debug("Skipping unsupported jar beans.xml location {}", beansXmlPath);
+                continue;
+            }
+
             OwbPlugin.archivePath = archivePath; // store path for unit tests (single archive expected)
 
             try {
