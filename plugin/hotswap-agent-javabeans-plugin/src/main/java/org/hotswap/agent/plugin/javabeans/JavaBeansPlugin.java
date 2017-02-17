@@ -28,7 +28,7 @@ public class JavaBeansPlugin {
      */
     public static boolean reloadFlag;
 
-    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
     public static void flushBeanIntrospectorsCaches(ClassLoader classLoader, CtClass ctClass) {
         try {
             LOGGER.debug("Flushing {}", ctClass.getName());
