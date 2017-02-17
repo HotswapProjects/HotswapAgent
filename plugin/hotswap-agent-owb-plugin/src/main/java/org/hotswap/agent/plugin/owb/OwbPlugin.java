@@ -40,9 +40,6 @@ public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
 
-    private static final String WEB_INF_CLASSES = "WEB-INF/classes/";
-    private static final String WEB_INF_CLASSES_MAVEN = "target/classes/";
-
     /** True for UnitTests */
     static boolean isTestEnvironment = false;
     /** Store archive path for unit tests */
@@ -130,8 +127,15 @@ public class OwbPlugin {
             OwbPlugin.archivePath = archivePath; // store path for unit tests (single archive expected)
 
             try {
-                URL resource = resourceNameToURL(archivePath);
-                URI uri = resource.toURI();
+                URL archiveUrl = resourceNameToURL(archivePath);
+
+                if (registeredArchives.contains(archiveUrl)) {
+                    continue;
+                }
+
+                registeredArchives.add(archiveUrl);
+
+                URI uri = archiveUrl.toURI();
 
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                     @Override
@@ -154,7 +158,7 @@ public class OwbPlugin {
                         }
                     }
                 });
-                LOGGER.info("Registered  watch for path '{}' for changes.", resource);
+                LOGGER.info("Registered  watch for path '{}' for changes.", archiveUrl);
             } catch (URISyntaxException e) {
                 LOGGER.error("Unable to watch path '{}' for changes.", e, archivePath);
             } catch (Exception e) {
@@ -172,13 +176,23 @@ public class OwbPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
+        if (classLoader != appClassLoader) {
+            LOGGER.debug("Attempt to redefine class {} in unsupported classLoader{}.", original.getName(), classLoader);
+            return;
+        }
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             try {
-                LOGGER.debug("Class {} redefined in classLoader {}.", original.getName(), classLoader);
-                String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
-                String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
-                scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader,
-                        original.getName(), oldSignForProxyCheck, oldSignByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
+                String classUrl = ctClass.getURL().toExternalForm();
+                for (URL archiveUrl : registeredArchives) {
+                    if (classUrl.startsWith(archiveUrl.toExternalForm())) {
+                        LOGGER.debug("Class {} redefined in classLoader {}.", original.getName(), classLoader);
+                        String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
+                        String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
+                        scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader,
+                                original.getName(), oldSignForProxyCheck, oldSignByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
+                        break;
+                    }
+                }
             } catch (Exception e) {
                 LOGGER.error("classReload() exception {}.", e, e.getMessage());
             }
@@ -186,10 +200,10 @@ public class OwbPlugin {
     }
 
     // Return true if class is OWB synthetic class.
-    // Owb proxies contains $Proxy$ and $$$
+    // Owb proxies contains $$
     // DeltaSpike's proxies contains "$$"
     private boolean isSyntheticCdiClass(String className) {
-        return className.contains("$Proxy$") || className.contains("$$");
+        return className.contains("$$");
     }
 
     // Non static inner class is not allowed to be bean class
