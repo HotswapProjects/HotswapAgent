@@ -1,12 +1,15 @@
 package org.hotswap.agent.util.classloader;
 
-import org.hotswap.agent.logging.AgentLogger;
-import sun.misc.URLClassPath;
-
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
+import java.util.Enumeration;
+
+import org.hotswap.agent.logging.AgentLogger;
+
+import sun.misc.URLClassPath;
 
 /**
  * Helper methods to enhance URL ClassLoader.
@@ -106,6 +109,21 @@ public class URLClassLoaderHelper {
             }
 
             return super.findResource(name, check);
+        }
+
+        public Enumeration<URL> findResources(final String name, boolean check) {
+            if (watchResourceLoader != null) {
+                try {
+                    Enumeration<URL> resource = watchResourceLoader.getResources(name);
+                    if (resource != null) {
+                        return resource;
+                    }
+                } catch (IOException e) {
+                    LOGGER.debug("Unable to load resource {}", e, name);
+                }
+            }
+
+            return super.findResources(name, check);
         }
 
         /**
