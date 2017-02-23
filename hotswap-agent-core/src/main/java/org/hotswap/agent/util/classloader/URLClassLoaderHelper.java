@@ -114,9 +114,9 @@ public class URLClassLoaderHelper {
         public Enumeration<URL> findResources(final String name, boolean check) {
             if (watchResourceLoader != null) {
                 try {
-                    Enumeration<URL> resource = watchResourceLoader.getResources(name);
-                    if (resource != null) {
-                        return resource;
+                    Enumeration<URL> resources = watchResourceLoader.getResources(name);
+                    if (resources != null && resources.hasMoreElements()) {
+                        return resources;
                     }
                 } catch (IOException e) {
                     LOGGER.debug("Unable to load resource {}", e, name);
