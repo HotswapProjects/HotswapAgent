@@ -20,6 +20,15 @@ public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
 
+    /**
+     * Add context reloading functionality to base contexts classes
+     *
+     * @param clazz the clazz
+     * @param classPool the class pool
+     * @param cl the class loader
+     * @throws NotFoundException the not found exception
+     * @throws CannotCompileException the cannot compile exception
+     */
     @OnClassLoadEvent(classNameRegexp = "(org.jboss.weld.context.AbstractManagedContext)|" +
                                         "(org.jboss.weld.context.AbstractSharedContext)|" +
                                         "(org.jboss.weld.context.unbound.DependentContextImpl)|" +
@@ -27,7 +36,7 @@ public class CdiContextsTransformer {
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
                                         "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)"
                                         )
-    public static void transformWeldContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
+    public static void transformReloadingWeldContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
 
         LOGGER.debug("Adding interface {} to {}.", WeldHotswapContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(WeldHotswapContext.class.getName()));
@@ -76,26 +85,23 @@ public class CdiContextsTransformer {
         LOGGER.debug("Class '{}' patched with hot-swapping support", clazz.getName() );
     }
 
-    /*
-    static void addDestroyMethod(CtClass clazz, ClassPool classPool) {
-        CtMethod destroy = null;
-        try {
-            destroy = clazz.getDeclaredMethod("destroy", new CtClass[] {classPool.get("javax.enterprise.context.spi.Contextual")});
-        } catch (NotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        if(destroy == null) {
-            try {
-                clazz.addMethod(CtMethod.make(//
-                        "public void destroy(javax.enterprise.context.spi.Contextual c) {\n"+//
-                         ContextualReloadHelper.class.getName() +".reinitialize(this, c);\n"+
-                        "}\n", clazz));
-            } catch (CannotCompileException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
+    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.beanstore.http.LazySessionBeanStore")
+    public static void transformLazySessionBeanStore(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
+
+        CtMethod getSessionCopy = CtMethod.make("public javax.servlet.http.HttpSession __getSession(boolean create) {return null;}", clazz);
+        getSessionCopy.setBody(clazz.getDeclaredMethod("getSession"), null);
+        clazz.addMethod(getSessionCopy);
+
+        CtMethod getSession = clazz.getDeclaredMethod("getSession");
+        getSession.setBody(
+                "{  " +
+                "    boolean sessionExists = $1 && (getSessionIfExists()!=null); " +
+                "    javax.servlet.http.HttpSession session = __getSession($1);" +
+                "    if(!sessionExists && session!=null) {" +
+                "        org.hotswap.agent.plugin.weld.command.HttpSessionsRegistry.addSeenSession(session);" +
+                "    }" +
+                "    return session;" +
+                "}"
+        );
     }
-    */
 }

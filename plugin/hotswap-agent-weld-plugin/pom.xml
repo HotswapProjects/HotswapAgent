@@ -11,7 +11,7 @@
     <artifactId>hotswap-agent-weld-plugin</artifactId>
 
     <properties>
-        <org.jboss.weld.version>2.3.4.Final</org.jboss.weld.version>
+        <org.jboss.weld.version>2.4.2.Final</org.jboss.weld.version>
     </properties>
 
     <dependencies>
@@ -29,5 +29,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
     </dependencies>
 </project>

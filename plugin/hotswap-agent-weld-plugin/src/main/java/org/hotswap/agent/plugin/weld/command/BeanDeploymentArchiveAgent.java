@@ -13,13 +13,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.enterprise.context.SessionScoped;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.CDI;
+import javax.servlet.http.HttpSession;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.logging.AgentLogger.Level;
 import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
 import org.hotswap.agent.plugin.weld.WeldClassSignatureHelper;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
@@ -36,6 +37,13 @@ import org.jboss.weld.bean.attributes.BeanAttributesFactory;
 import org.jboss.weld.bean.builtin.BeanManagerProxy;
 import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
 import org.jboss.weld.bootstrap.spi.BeansXml;
+import org.jboss.weld.context.AbstractBoundContext;
+import org.jboss.weld.context.PassivatingContextWrapper;
+import org.jboss.weld.context.beanstore.BeanStore;
+import org.jboss.weld.context.beanstore.BoundBeanStore;
+import org.jboss.weld.context.beanstore.NamingScheme;
+import org.jboss.weld.context.beanstore.http.EagerSessionBeanStore;
+import org.jboss.weld.context.http.HttpSessionContextImpl;
 import org.jboss.weld.manager.BeanManagerImpl;
 import org.jboss.weld.metadata.TypeStore;
 import org.jboss.weld.resources.ClassTransformer;
@@ -256,6 +264,7 @@ public class BeanDeploymentArchiveAgent {
 
             // check if it is Object descendant
             if (Object.class.isAssignableFrom(beanClass)) {
+
                 BeanManagerImpl beanManager;
                 if (CDI.current().getBeanManager() instanceof BeanManagerImpl) {
                     beanManager = ((BeanManagerImpl) CDI.current().getBeanManager()).unwrap();
@@ -324,27 +333,18 @@ public class BeanDeploymentArchiveAgent {
                 doReloadManagedBeanInContexts(beanManager, beanClass, managedBean);
 
             } else {
-
-                // keep beans in contexts, reinitialize bean injection points
-                try {
-                    Object get = beanManager.getContext(managedBean.getScope()).get(managedBean);
-                    if (get != null) {
-                        LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                        managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
-                    }
-                } catch (org.jboss.weld.context.ContextNotActiveException e) {
-                    LOGGER.warning("No active contexts for {}", beanClass.getName());
-                }
-
+                // Reinjects bean instances in aproperiate contexts
+                doReinjectBeanInstances(beanManager, beanClass, managedBean);
             }
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void doReloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
         try {
-            Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManager);
+            Map<Class<? extends Annotation>, List<Context>> contexts = getContexts(beanManager);
 
-            List<Context> ctxList = allContexts.get(managedBean.getScope());
+            List<Context> ctxList = contexts.get(managedBean.getScope());
 
             if (ctxList != null) {
                 for(Context context: ctxList) {
@@ -353,21 +353,8 @@ public class BeanDeploymentArchiveAgent {
                         if(ContextualReloadHelper.addToReloadSet(context, managedBean)) {
                             LOGGER.debug("Bean {}, added to reload set in context {}", managedBean, context.getClass());
                         } else {
-                            // try to reinitialize injection points instead...
-                            try {
-                                // TODO: iterate over all active context (should access internal map directly)
-                                Object get = context.get(managedBean);
-                                if (get != null) {
-                                    LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
-                                }
-                            } catch (Exception e) {
-                                if(LOGGER.isLevelEnabled(Level.DEBUG)) {
-                                    LOGGER.debug("Context {} not active for bean: {} in scope: {}",e, context.getClass(), beanClass.getName(), managedBean.getScope());
-                                } else {
-                                    LOGGER.warning("Context {} not active for bean: {} in scope: {}", context.getClass(), beanClass.getName(), managedBean.getScope());
-                                }
-                            }
+                            // fallback for not patched contexts
+                            doReinjectBeanInstances(beanManager, beanClass, managedBean);
                         }
                     } else {
                         LOGGER.debug("No active contexts for bean: {} in scope: {}",  managedBean.getScope(), beanClass.getName());
@@ -383,6 +370,67 @@ public class BeanDeploymentArchiveAgent {
         }
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void doReinjectBeanInstances(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+        // keep beans in contexts, reinitialize bean injection points
+        try {
+            Map<Class<? extends Annotation>, List<Context>> contexts = getContexts(beanManager);
+            List<Context> ctx = contexts.get(managedBean.getScope());
+            if (ctx != null) {
+                for (Context context : ctx) {
+                    if (context.isActive()) {
+                        Object get = context.get(managedBean);
+                        if (get != null) {
+                            LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
+                            managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                        }
+                    } else {
+                        context = PassivatingContextWrapper.unwrap(context);
+                        if (context.getScope().equals(SessionScoped.class) && context instanceof HttpSessionContextImpl) {
+                            doReinjectInSessionCtx(beanManager, beanClass, managedBean, context);
+                        }
+                    }
+                }
+            }
+
+        } catch (org.jboss.weld.context.ContextNotActiveException e) {
+            LOGGER.warning("No active contexts for {}", beanClass.getName());
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void doReinjectInSessionCtx(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean, Context context) {
+        HttpSessionContextImpl sessionContext = (HttpSessionContextImpl) context;
+        List<HttpSession> seenSessions = HttpSessionsRegistry.getSeenSessions();
+        for (HttpSession session : seenSessions) {
+            BeanStore beanStore = null;
+            try {
+                NamingScheme namingScheme = (NamingScheme) ReflectionHelper.get(sessionContext, "namingScheme");
+                beanStore = new EagerSessionBeanStore(namingScheme, session);
+                ReflectionHelper.invoke(sessionContext, AbstractBoundContext.class, "setBeanStore", new Class[] {BoundBeanStore.class}, beanStore);
+                sessionContext.activate();
+                Object get = sessionContext.get(managedBean);
+                if (get != null) {
+                    LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
+                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                }
+
+            } finally {
+                try {
+                    sessionContext.deactivate();
+                } catch (Exception e) {
+                }
+                if (beanStore != null) {
+                    try {
+                        ReflectionHelper.invoke(sessionContext, AbstractBoundContext.class, "setBeanStore", new Class[] {BeanStore.class}, (BeanStore) null);
+                    } catch (Exception e) {
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private static Map<Class<? extends Annotation>, List<Context>> getContexts(BeanManagerImpl beanManager){
         try {
             return Map.class.cast(ReflectionHelper.get(beanManager, "contexts"));
