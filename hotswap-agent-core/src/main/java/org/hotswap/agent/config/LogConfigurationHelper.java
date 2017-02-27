@@ -63,7 +63,7 @@ public class LogConfigurationHelper {
     // resolve level from enum
     private static AgentLogger.Level getLevel(String property, String levelName) {
         try {
-            return AgentLogger.Level.valueOf(levelName.toUpperCase());
+            return AgentLogger.Level.valueOf(levelName.toUpperCase(Locale.ENGLISH));
         } catch (IllegalArgumentException e) {
             LOGGER.warning("Invalid configuration value for property '{}'. Unknown LOG level '{}'.", property, levelName);
             return null;
