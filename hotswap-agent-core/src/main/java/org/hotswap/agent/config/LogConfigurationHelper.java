@@ -1,14 +1,15 @@
 package org.hotswap.agent.config;
 
-import org.hotswap.agent.logging.AgentLogger;
-
 import static java.lang.Boolean.parseBoolean;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.util.Locale;
 import java.util.Properties;
+
+import org.hotswap.agent.logging.AgentLogger;
 
 /**
  * Configure LOG level and handler according to properties.
