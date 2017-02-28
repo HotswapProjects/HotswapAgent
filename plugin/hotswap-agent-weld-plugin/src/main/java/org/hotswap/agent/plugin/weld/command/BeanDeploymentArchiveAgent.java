@@ -30,9 +30,8 @@ import org.hotswap.agent.util.ReflectionHelper;
 import org.jboss.weld.annotated.enhanced.EnhancedAnnotatedType;
 import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
 import org.jboss.weld.annotated.slim.SlimAnnotatedType;
-import org.jboss.weld.annotated.slim.backed.BackedAnnotatedType;
+import org.jboss.weld.bean.AbstractClassBean;
 import org.jboss.weld.bean.ManagedBean;
-import org.jboss.weld.bean.SessionBean;
 import org.jboss.weld.bean.attributes.BeanAttributesFactory;
 import org.jboss.weld.bean.builtin.BeanManagerProxy;
 import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
@@ -254,7 +253,7 @@ public class BeanDeploymentArchiveAgent {
      * @param bdaId the Bean Deployment Archive ID
      * @param beanClassName
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings("rawtypes")
     private void doReloadBean(ClassLoader classLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -276,10 +275,8 @@ public class BeanDeploymentArchiveAgent {
 
                 if (beans != null && !beans.isEmpty()) {
                     for (Bean<?> bean : beans) {
-                        if (bean instanceof ManagedBean) {
-                            doReloadManagedBean(beanManager, beanClass, (ManagedBean) bean, oldSignatureByStrategy, reloadStrategy);
-                        } else if (bean instanceof SessionBean) {
-                            doReloadSessionBean(beanManager, beanClass, (SessionBean) bean);
+                        if (bean instanceof AbstractClassBean) {
+                            doReloadAbstractClassBean(beanManager, beanClass, (AbstractClassBean) bean, oldSignatureByStrategy, reloadStrategy);
                         } else {
                             LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
                                     bean.getClass().getName(), bean.getBeanClass());
@@ -289,7 +286,7 @@ public class BeanDeploymentArchiveAgent {
                 } else {
                     try {
                         ClassTransformer classTransformer = getClassTransformer();
-                        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
+                        SlimAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, getBdaId());
                         boolean managedBeanOrDecorator = Beans.isTypeManagedBeanOrDecoratorOrInterceptor(annotatedType);
 
                         if (managedBeanOrDecorator) {
@@ -313,81 +310,49 @@ public class BeanDeploymentArchiveAgent {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void doReloadManagedBean(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean,
-            String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+    private void doReloadAbstractClassBean(BeanManagerImpl beanManager, Class<?> beanClass, AbstractClassBean bean, String oldSignatureByStrategy,
+            BeanReloadStrategy reloadStrategy) {
 
-        ClassTransformer classTransformer = getClassTransformer();
-        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
-        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+        EnhancedAnnotatedType eat = createAnnotatedTypeForExistingBeanClass(beanClass);
 
         if (!eat.isAbstract() || !eat.getJavaClass().isInterface()) { // injectionTargetCannotBeCreatedForInterface
 
-            managedBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, managedBean, false));
+            bean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false));
 
             String signatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(reloadStrategy, beanClass);
 
-            if (reloadStrategy == BeanReloadStrategy.CLASS_CHANGE ||
-                 (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignatureByStrategy))) {
-
+            if (bean instanceof ManagedBean && (
+                  reloadStrategy == BeanReloadStrategy.CLASS_CHANGE ||
+                 (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignatureByStrategy)))
+                 ) {
                 // Reload bean in contexts - invalidates existing instances
-                doReloadManagedBeanInContexts(beanManager, beanClass, managedBean);
+                doReloadManagedBeanInContexts(beanManager, beanClass, (ManagedBean) bean);
 
             } else {
                 // Reinjects bean instances in aproperiate contexts
-                doReinjectBeanInstances(beanManager, beanClass, managedBean);
+                doReinjectAbstractClassBeanInstances(beanManager, beanClass, bean);
             }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void doReloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
-        try {
-            Map<Class<? extends Annotation>, List<Context>> contexts = getContexts(beanManager);
-
-            List<Context> ctxList = contexts.get(managedBean.getScope());
-
-            if (ctxList != null) {
-                for(Context context: ctxList) {
-                    if (context != null) {
-                        LOGGER.debug("Inspecting context '{}' for bean class {}", context.getClass(), managedBean.getScope());
-                        if(ContextualReloadHelper.addToReloadSet(context, managedBean)) {
-                            LOGGER.debug("Bean {}, added to reload set in context {}", managedBean, context.getClass());
-                        } else {
-                            // fallback for not patched contexts
-                            doReinjectBeanInstances(beanManager, beanClass, managedBean);
-                        }
-                    } else {
-                        LOGGER.debug("No active contexts for bean: {} in scope: {}",  managedBean.getScope(), beanClass.getName());
-                    }
-                }
-            } else {
-                LOGGER.debug("No active contexts for bean: {} in scope: {}",  managedBean.getScope(), beanClass.getName());
-            }
-        } catch (org.jboss.weld.context.ContextNotActiveException e) {
-            LOGGER.warning("No active contexts for {}", e, beanClass.getName());
-        } catch (Exception e) {
-            LOGGER.warning("Context for {} failed to reload", e, beanClass.getName());
         }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void doReinjectBeanInstances(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+    private void doReinjectAbstractClassBeanInstances(BeanManagerImpl beanManager, Class<?> beanClass, AbstractClassBean bean) {
         // keep beans in contexts, reinitialize bean injection points
         try {
             Map<Class<? extends Annotation>, List<Context>> contexts = getContexts(beanManager);
-            List<Context> ctx = contexts.get(managedBean.getScope());
+            List<Context> ctx = contexts.get(bean.getScope());
             if (ctx != null) {
                 for (Context context : ctx) {
                     if (context.isActive()) {
-                        Object get = context.get(managedBean);
+                        Object get = context.get(bean);
                         if (get != null) {
                             LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                            managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                            bean.getProducer().inject(get, beanManager.createCreationalContext(bean));
                         }
                     } else {
                         context = PassivatingContextWrapper.unwrap(context);
                         if (context.getScope().equals(SessionScoped.class) && context instanceof HttpSessionContextImpl) {
-                            doReinjectInSessionCtx(beanManager, beanClass, managedBean, context);
+                            doReinjectInSessionCtx(beanManager, beanClass, bean, context);
                         }
                     }
                 }
@@ -399,7 +364,7 @@ public class BeanDeploymentArchiveAgent {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void doReinjectInSessionCtx(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean, Context context) {
+    private void doReinjectInSessionCtx(BeanManagerImpl beanManager, Class<?> beanClass, AbstractClassBean bean, Context context) {
         HttpSessionContextImpl sessionContext = (HttpSessionContextImpl) context;
         List<HttpSession> seenSessions = HttpSessionsRegistry.getSeenSessions();
         for (HttpSession session : seenSessions) {
@@ -409,10 +374,10 @@ public class BeanDeploymentArchiveAgent {
                 beanStore = new EagerSessionBeanStore(namingScheme, session);
                 ReflectionHelper.invoke(sessionContext, AbstractBoundContext.class, "setBeanStore", new Class[] {BoundBeanStore.class}, beanStore);
                 sessionContext.activate();
-                Object get = sessionContext.get(managedBean);
+                Object get = sessionContext.get(bean);
                 if (get != null) {
                     LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                    managedBean.getProducer().inject(get, beanManager.createCreationalContext(managedBean));
+                    bean.getProducer().inject(get, beanManager.createCreationalContext(bean));
                 }
 
             } finally {
@@ -430,6 +395,37 @@ public class BeanDeploymentArchiveAgent {
         }
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void doReloadManagedBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, ManagedBean managedBean) {
+        try {
+            Map<Class<? extends Annotation>, List<Context>> contexts = getContexts(beanManager);
+
+            List<Context> ctxList = contexts.get(managedBean.getScope());
+
+            if (ctxList != null) {
+                for(Context context: ctxList) {
+                    if (context != null) {
+                        LOGGER.debug("Inspecting context '{}' for bean class {}", context.getClass(), managedBean.getScope());
+                        if(ContextualReloadHelper.addToReloadSet(context, managedBean)) {
+                            LOGGER.debug("Bean {}, added to reload set in context {}", managedBean, context.getClass());
+                        } else {
+                            // fallback for not patched contexts
+                            doReinjectAbstractClassBeanInstances(beanManager, beanClass, managedBean);
+                        }
+                    } else {
+                        LOGGER.debug("No active contexts for bean: {} in scope: {}",  managedBean.getScope(), beanClass.getName());
+                    }
+                }
+            } else {
+                LOGGER.debug("No active contexts for bean: {} in scope: {}",  managedBean.getScope(), beanClass.getName());
+            }
+        } catch (org.jboss.weld.context.ContextNotActiveException e) {
+            LOGGER.warning("No active contexts for {}", e, beanClass.getName());
+        } catch (Exception e) {
+            LOGGER.warning("Context for {} failed to reload", e, beanClass.getName());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<Class<? extends Annotation>, List<Context>> getContexts(BeanManagerImpl beanManager){
         try {
@@ -438,15 +434,6 @@ public class BeanDeploymentArchiveAgent {
             LOGGER.warning("BeanManagerImpl.contexts not accessible", e);
         }
         return Collections.emptyMap();
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void doReloadSessionBean(BeanManagerImpl beanManager, Class<?> beanClass, SessionBean sessionBean) {
-        ClassTransformer classTransformer = getClassTransformer();
-        SlimAnnotatedType annotatedType = getAnnotatedType(getBdaId(), classTransformer, beanClass);
-        EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
-
-        sessionBean.setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, sessionBean, false));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -462,18 +449,18 @@ public class BeanDeploymentArchiveAgent {
         bean.initializeAfterBeanDiscovery();
     }
 
+    private EnhancedAnnotatedType<?> createAnnotatedTypeForExistingBeanClass(Class<?> beanClass) {
+        ClassTransformer classTransformer = getClassTransformer();
+        SlimAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, getBdaId());
+        return EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
+    }
+
     private ClassTransformer getClassTransformer() {
         TypeStore store = new TypeStore();
         SharedObjectCache cache = new SharedObjectCache();
         ReflectionCache reflectionCache = ReflectionCacheFactory.newInstance(store);
         ClassTransformer classTransformer = new ClassTransformer(store, cache, reflectionCache, "STATIC_INSTANCE");
         return classTransformer;
-    }
-
-    @SuppressWarnings("rawtypes")
-    private SlimAnnotatedType getAnnotatedType(String bdaId, ClassTransformer classTransformer, Class<?> beanClass) {
-        BackedAnnotatedType<?> annotatedType = classTransformer.getBackedAnnotatedType(beanClass, bdaId);
-        return annotatedType;
     }
 
     private void doRecreateProxy(ClassLoader classLoader, Map<Object, Object> registeredProxiedBeans, Class<?> beanClass, String oldClassSignature) {
@@ -496,7 +483,6 @@ public class BeanDeploymentArchiveAgent {
         try {
 
             ProxyClassLoadingDelegate.beginProxyRegeneration();
-
             Class<?> proxyFactoryClass = null;
 
             for (Entry<Object, Object> entry : registeredBeans.entrySet()) {
