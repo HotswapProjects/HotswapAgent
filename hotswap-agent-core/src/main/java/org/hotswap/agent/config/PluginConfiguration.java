@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import org.hotswap.agent.HotswapAgent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.HotswapProperties;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
 import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
 
@@ -34,7 +35,7 @@ public class PluginConfiguration {
     /** The Constant EXCLUDED_CLASS_LOADERS_KEY. */
     private static final String EXCLUDED_CLASS_LOADERS_KEY = "excludedClassLoaderPatterns";
 
-    Properties properties = new Properties();
+    Properties properties = new HotswapProperties();
 
     // if the property is not defined in this classloader, look for parent classloader and it's configuration
     PluginConfiguration parent;
