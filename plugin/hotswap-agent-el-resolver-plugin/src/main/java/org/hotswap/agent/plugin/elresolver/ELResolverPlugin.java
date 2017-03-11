@@ -23,7 +23,6 @@ import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.util.ReflectionHelper;
 
 /**
  * Clear javax.el.BeanELResolver cache after any class redefinition.
@@ -57,7 +56,11 @@ import org.hotswap.agent.util.ReflectionHelper;
             //Jetty 9
             @Manifest(value="[8.0,)", versionName={Name.BundleVersion}, names={
                     @Name(key=Name.BundleSymbolicName,value="org.mortbay.jasper.apache-el"),
-                    @Name(key="Bundle-Vendor",value="Webtide")})
+                    @Name(key="Bundle-Vendor",value="Webtide")}),
+            // GlassFish
+            @Manifest(value="[3.0,)", versionName={Name.BundleVersion}, names={
+                    @Name(key=Name.BundleSymbolicName,value="com.sun.el.javax.el"),
+                    @Name(key="Bundle-Vendor",value="GlassFish Community")})
         }
     )
 public class ELResolverPlugin {
