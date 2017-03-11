@@ -49,11 +49,7 @@ public class BeanDeploymentArchiveTransformer {
     }
 
     /**
-     * Should be moved to a separate module just for wildfly. Note that cdi 1.1+
-     * can scan an archive and consider it as a cdi deployment even without a
-     * beans.xml (implicit)
-     *
-     * Jboss BeanDeploymentArchiveImpl transformation.
+     * JbossAS (Wildfly) BeanDeploymentArchiveImpl transformation.
      *
      * @param clazz
      * @param classPool
@@ -78,4 +74,28 @@ public class BeanDeploymentArchiveTransformer {
         LOGGER.debug("Class 'org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl' patched with BDA registration.");
     }
 
+    /**
+     * GlassFish BeanDeploymentArchiveImpl transformation.
+     *
+     * @param clazz
+     * @param classPool
+     * @throws NotFoundException
+     * @throws CannotCompileException
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.glassfish.weld.BeanDeploymentArchiveImpl")
+    public static void transformGlassFishBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "this.moduleClassLoaderForBDA"));
+        src.append(PluginManagerInvoker.buildCallPluginMethod("this.moduleClassLoaderForBDA", WeldPlugin.class, "initInGlassFish"));
+        src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanDeploymentArchiveAgent\", true, this.moduleClassLoaderForBDA);");
+        src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
+        src.append("    agM.invoke(null, new Object[] { this.moduleClassLoaderForBDA, this, null});");
+        src.append("}");
+
+        for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
+            constructor.insertAfter(src.toString());
+        }
+
+        LOGGER.debug("Class 'org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl' patched with BDA registration.");
+    }
 }

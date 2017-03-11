@@ -84,9 +84,9 @@ public class BeanDeploymentArchiveAgent {
      */
     public static void registerArchive(ClassLoader appClassLoader, BeanDeploymentArchive beanArchive, String beanArchiveType) {
         BeansXml beansXml = beanArchive.getBeansXml();
-        String archivePath = null;
 
-        if (beansXml != null && (beanArchiveType == null || "EXPLICIT".equals(beanArchiveType) || "IMPLICIT".equals(beanArchiveType))) {
+        if (beansXml != null && beansXml.getUrl() != null && (beanArchiveType == null || "EXPLICIT".equals(beanArchiveType) || "IMPLICIT".equals(beanArchiveType))) {
+            String archivePath = null;
             String beansXmlPath = beansXml.getUrl().getPath();
             if (beansXmlPath.endsWith("META-INF/beans.xml")) {
                 archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "META-INF/beans.xml".length());
@@ -96,31 +96,33 @@ public class BeanDeploymentArchiveAgent {
             if (archivePath.endsWith(".jar!/")) {
                 archivePath = archivePath.substring(0, archivePath.length() - "!/".length());
             }
-        }
 
-        BeanDeploymentArchiveAgent bdaAgent = null;
-        try {
-            LOGGER.debug("BeanDeploymentArchiveAgent registerArchive bdaId='{}' archivePath='{}'.", beanArchive.getId(), archivePath);
-            // check that it is regular file
-            // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
+            BeanDeploymentArchiveAgent bdaAgent = null;
+            try {
+                LOGGER.debug("BeanDeploymentArchiveAgent registerArchive bdaId='{}' archivePath='{}'.", beanArchive.getId(), archivePath);
+                // check that it is regular file
+                // toString() is weird and solves HiearchicalUriException for URI like "file:./src/resources/file.txt".
 
-            @SuppressWarnings("unused")
-            File path = new File(archivePath);
+                @SuppressWarnings("unused")
+                File path = new File(archivePath);
 
-            Class<?> registryClass = Class.forName(BdaAgentRegistry.class.getName(), true, appClassLoader);
+                Class<?> registryClass = Class.forName(BdaAgentRegistry.class.getName(), true, appClassLoader);
 
-            boolean contain = (boolean) ReflectionHelper.invoke(null, registryClass, "contains", new Class[] {String.class}, archivePath);
+                boolean contain = (boolean) ReflectionHelper.invoke(null, registryClass, "contains", new Class[] {String.class}, archivePath);
 
-            if (!contain) {
-                bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
-                ReflectionHelper.invoke(null, registryClass, "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
-                bdaAgent.register();
+                if (!contain) {
+                    bdaAgent = new BeanDeploymentArchiveAgent(beanArchive, archivePath);
+                    ReflectionHelper.invoke(null, registryClass, "put", new Class[] {String.class, BeanDeploymentArchiveAgent.class}, archivePath, bdaAgent);
+                    bdaAgent.register();
+                }
+            } catch (IllegalArgumentException e) {
+                LOGGER.warning("Unable to watch BeanDeploymentArchive with id={}", beanArchive.getId());
             }
-        } catch (IllegalArgumentException e) {
-            LOGGER.warning("Unable to watch BeanDeploymentArchive with id={}", beanArchive.getId());
-        }
-        catch (Exception e) {
-            LOGGER.error("registerArchive() exception {}.", e.getMessage());
+            catch (Exception e) {
+                LOGGER.error("registerArchive() exception {}.", e.getMessage());
+            }
+        } else {
+            // TODO:
         }
     }
 

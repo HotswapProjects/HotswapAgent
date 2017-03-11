@@ -66,8 +66,6 @@ public class WeldPlugin {
     @Init
     PluginConfiguration pluginConfiguration;
 
-    boolean inJbossAS = false;
-
     boolean initialized = false;
 
     private Map<Object, Object> registeredProxiedBeans = new WeakHashMap<Object, Object>();
@@ -77,18 +75,28 @@ public class WeldPlugin {
     public void init() {
         if (!initialized) {
             LOGGER.info("CDI/Weld plugin initialized.");
-            initialized = true;
-            beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
+            doInit();
         }
     }
+
 
     public void initInJBossAS() {
         if (!initialized) {
             LOGGER.info("CDI/Weld plugin initialized in JBossAS.");
-            inJbossAS = true;
-            initialized = true;
-            beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
+            doInit();
         }
+    }
+
+    public void initInGlassFish() {
+        if (!initialized) {
+            LOGGER.info("CDI/Weld plugin initialized in GlassFish.");
+            doInit();
+        }
+    }
+
+    private void doInit() {
+        initialized = true;
+        beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("weld.beanReloadStrategy"));
     }
 
     private BeanReloadStrategy setBeanReloadStrategy(String property) {
