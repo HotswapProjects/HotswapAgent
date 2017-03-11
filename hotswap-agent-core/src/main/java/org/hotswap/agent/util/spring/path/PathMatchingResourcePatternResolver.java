@@ -35,6 +35,7 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipException;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.io.loader.DefaultResourceLoader;
 import org.hotswap.agent.util.spring.io.loader.ResourceLoader;
 import org.hotswap.agent.util.spring.io.resource.FileSystemResource;
@@ -499,12 +500,26 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      *             in case of resolution failure
      */
     protected Resource resolveRootDirResource(Resource original) throws IOException {
-        if (equinoxResolveMethod != null) {
-            URL url = original.getURL();
-            if (url.getProtocol().startsWith("bundle")) {
+        URL url = original.getURL();
+        if (url != null && url.getProtocol().startsWith("bundle")) {
+            if (equinoxResolveMethod != null) {
                 return new UrlResource((URL) ReflectionUtils.invokeMethod(equinoxResolveMethod, null, url));
             }
+
+            if (url.getProtocol().equals("bundle")) {
+                try {
+                    // Try felix OSGi
+                    Class<?> bundleWiringClass = ClassUtils.forName("org.apache.felix.framework.BundleWiringImpl", null);
+                    URL convertedURL = (URL) ReflectionHelper.invoke(null, bundleWiringClass, "convertToLocalUrl", new Class[] { URL.class }, url);
+                    return new UrlResource(convertedURL);
+                } catch (ClassNotFoundException e) {
+                    logger.trace("org.apache.felix.framework.BundleWiringImpl class not found for {}", url);
+                } catch (Exception e) {
+                    logger.error("Felix BundleWiring.convertToLocalUrl(URL) failed for URL {}", url, e);
+                }
+            }
         }
+
         return original;
     }
 
