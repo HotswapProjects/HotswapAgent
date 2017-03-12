@@ -36,7 +36,9 @@ public class HotswapTransformer implements ClassFileTransformer {
      * Exclude these classLoaders from initialization (system classloaders). Note that
      */
     private static final Set<String> excludedClassLoaders = new HashSet<String>(Arrays.asList(
-            "sun.reflect.DelegatingClassLoader"
+            "sun.reflect.DelegatingClassLoader",
+            "org.apache.felix.framework.BundleWiringImpl$BundleClassLoader", // delegating ClassLoader in GlassFish
+            "org.apache.felix.framework.BundleWiringImpl$BundleClassLoaderJava5" // delegating ClassLoader in_GlassFish
     ));
 
     private static class RegisteredTransformersRecord {
@@ -242,27 +244,7 @@ public class HotswapTransformer implements ClassFileTransformer {
                     PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
                         @Override
                         public void executeCommand() {
-//                            //
-//                            // Synchronize class loader to avoid DEADLOCKs on PluginManager.INSTANCE.
-//                            //
-//                            // Explanation:
-//                            // There are 2 possible places from which the PluginManager.getInstance().initClassLoader() can be called:
-//                            // 1. sun.instrument.TransformerManager.transform ->
-//                            //                   org.hotswap.agent.util.HotswapTransformer.transform ->
-//                            //                              PluginClassFileTransformer.transform() ->
-//                            //                                          PluginManager.initClassLoader()
-//                            //    In this case class loader is locked before call sun.instrument.TransformerManager.transform, subsequently
-//                            //    an attempt to get PluginManager.INSTANCE lock is done in  PluginManager.initClassLoader()
-//                            // 2. From this fallback. The lock is acquired in PluginManager.initClassLoader(), then an attempt to get ClassLoader
-//                            //    lock is done when ClassLoaderDefineClassPatcher makes copy of HA'classes in the new classloader.
-//                            //
-//                            // conclusion : classloader must be locked before PluginManager.getInstance().initClassLoader is called.
-//                            synchronized (classLoader) {
-                                PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
-//                            }
-                            //
-                            //
-                            //
+                            PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
                         }
 
                         @Override
