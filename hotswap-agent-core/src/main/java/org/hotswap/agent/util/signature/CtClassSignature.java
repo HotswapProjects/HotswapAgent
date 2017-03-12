@@ -159,7 +159,6 @@ public class CtClassSignature extends ClassSignatureBase {
     }
 
     private CtClass[] sort(CtClass[] a) {
-
         a = Arrays.copyOf(a, a.length);
         Arrays.sort(a, CtClassComparator.INSTANCE);
         return a;
