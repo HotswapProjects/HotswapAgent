@@ -34,13 +34,9 @@ final class LongVector {
         elements = 0;
     }
 
-    public int size() {
-        return elements;
-    }
+    public int size() { return elements; }
 
-    public int capacity() {
-        return objects.length * ASIZE;
-    }
+    public int capacity() { return objects.length * ASIZE; }
 
     public ConstInfo elementAt(int i) {
         if (i < 0 || elements <= i)
@@ -53,7 +49,7 @@ final class LongVector {
         int nth = elements >> ABITS;
         int offset = elements & (ASIZE - 1);
         int len = objects.length;
-        if (nth >= len) {
+        if (nth >= len) { 
             ConstInfo[][] newObj = new ConstInfo[len + VSIZE][];
             System.arraycopy(objects, 0, newObj, 0, len);
             objects = newObj;

@@ -38,8 +38,8 @@ public class ByteArray {
      * Writes a 16bit integer at the index.
      */
     public static void write16bit(int value, byte[] code, int index) {
-        code[index] = (byte) (value >>> 8);
-        code[index + 1] = (byte) value;
+        code[index] = (byte)(value >>> 8);
+        code[index + 1] = (byte)value;
     }
 
     /**
@@ -47,26 +47,26 @@ public class ByteArray {
      */
     public static int read32bit(byte[] code, int index) {
         return (code[index] << 24) | ((code[index + 1] & 0xff) << 16)
-                | ((code[index + 2] & 0xff) << 8) | (code[index + 3] & 0xff);
+               | ((code[index + 2] & 0xff) << 8) | (code[index + 3] & 0xff);
     }
 
     /**
      * Writes a 32bit integer at the index.
      */
     public static void write32bit(int value, byte[] code, int index) {
-        code[index] = (byte) (value >>> 24);
-        code[index + 1] = (byte) (value >>> 16);
-        code[index + 2] = (byte) (value >>> 8);
-        code[index + 3] = (byte) value;
+        code[index] = (byte)(value >>> 24);
+        code[index + 1] = (byte)(value >>> 16);
+        code[index + 2] = (byte)(value >>> 8);
+        code[index + 3] = (byte)value;
     }
 
     /**
      * Copies a 32bit integer.
      *
-     * @param src   the source byte array.
-     * @param isrc  the index into the source byte array.
-     * @param dest  the destination byte array.
-     * @param idest the index into the destination byte array.
+     * @param src       the source byte array.
+     * @param isrc      the index into the source byte array.
+     * @param dest      the destination byte array.
+     * @param idest     the index into the destination byte array.
      */
     static void copy32bit(byte[] src, int isrc, byte[] dest, int idest) {
         dest[idest] = src[isrc];

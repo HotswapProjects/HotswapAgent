@@ -30,15 +30,16 @@ public class ExceptionsAttribute extends AttributeInfo {
     public static final String tag = "Exceptions";
 
     ExceptionsAttribute(ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+        throws IOException
+    {
         super(cp, n, in);
     }
 
     /**
      * Constructs a copy of an exceptions attribute.
      *
-     * @param cp  constant pool table.
-     * @param src source attribute.
+     * @param cp                constant pool table.
+     * @param src               source attribute.
      */
     private ExceptionsAttribute(ConstPool cp, ExceptionsAttribute src,
                                 Map classnames) {
@@ -49,7 +50,7 @@ public class ExceptionsAttribute extends AttributeInfo {
     /**
      * Constructs a new exceptions attribute.
      *
-     * @param cp constant pool table.
+     * @param cp                constant pool table.
      */
     public ExceptionsAttribute(ConstPool cp) {
         super(cp, tag);
@@ -62,9 +63,9 @@ public class ExceptionsAttribute extends AttributeInfo {
      * Makes a copy.  Class names are replaced according to the
      * given <code>Map</code> object.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames pairs of replaced and substituted
-     *                   class names.  It can be <code>null</code>.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        pairs of replaced and substituted
+     *                          class names.  It can be <code>null</code>.
      */
     public AttributeInfo copy(ConstPool newCp, Map classnames) {
         return new ExceptionsAttribute(newCp, this, classnames);
@@ -74,9 +75,9 @@ public class ExceptionsAttribute extends AttributeInfo {
      * Copies the contents from a source attribute.
      * Specified class names are replaced during the copy.
      *
-     * @param srcAttr    source Exceptions attribute
-     * @param classnames pairs of replaced and substituted
-     *                   class names.
+     * @param srcAttr           source Exceptions attribute
+     * @param classnames        pairs of replaced and substituted
+     *                          class names.
      */
     private void copyFrom(ExceptionsAttribute srcAttr, Map classnames) {
         ConstPool srcCp = srcAttr.constPool;
@@ -89,7 +90,7 @@ public class ExceptionsAttribute extends AttributeInfo {
         for (int i = 2; i < num; i += 2) {
             int index = ByteArray.readU16bit(src, i);
             ByteArray.write16bit(srcCp.copy(index, destCp, classnames),
-                    dest, i);
+                                 dest, i);
         }
 
         this.info = dest;
@@ -153,7 +154,7 @@ public class ExceptionsAttribute extends AttributeInfo {
         ByteArray.write16bit(n, blist, 0);
         for (int i = 0; i < n; ++i)
             ByteArray.write16bit(constPool.addClassInfo(elist[i]),
-                    blist, i * 2 + 2);
+                                 blist, i * 2 + 2);
 
         info = blist;
     }
@@ -161,9 +162,7 @@ public class ExceptionsAttribute extends AttributeInfo {
     /**
      * Returns <code>number_of_exceptions</code>.
      */
-    public int tableLength() {
-        return info.length / 2 - 1;
-    }
+    public int tableLength() { return info.length / 2 - 1; }
 
     /**
      * Returns the value of <code>exception_index_table[nth]</code>.

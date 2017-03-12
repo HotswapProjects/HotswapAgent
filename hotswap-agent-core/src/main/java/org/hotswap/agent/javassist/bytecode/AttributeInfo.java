@@ -19,43 +19,52 @@ package org.hotswap.agent.javassist.bytecode;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.ListIterator;
+import java.util.List;
+import java.util.Iterator;
 
 // Note: if you define a new subclass of AttributeInfo, then
 //       update AttributeInfo.read(), .copy(), and (maybe) write().
 
 /**
  * <code>attribute_info</code> structure.
+ *
+ * @see ClassFile#getAttribute(String)
+ * @see MethodInfo#getAttribute(String)
+ * @see FieldInfo#getAttribute(String)
  */
 public class AttributeInfo {
-    protected org.hotswap.agent.javassist.bytecode.ConstPool constPool;
+    protected ConstPool constPool;
     int name;
     byte[] info;
 
-    protected AttributeInfo(org.hotswap.agent.javassist.bytecode.ConstPool cp, int attrname, byte[] attrinfo) {
+    protected AttributeInfo(ConstPool cp, int attrname, byte[] attrinfo) {
         constPool = cp;
         name = attrname;
         info = attrinfo;
     }
 
-    protected AttributeInfo(org.hotswap.agent.javassist.bytecode.ConstPool cp, String attrname) {
-        this(cp, attrname, (byte[]) null);
+    protected AttributeInfo(ConstPool cp, String attrname) {
+        this(cp, attrname, (byte[])null);
     }
 
     /**
      * Constructs an <code>attribute_info</code> structure.
      *
-     * @param cp       constant pool table
-     * @param attrname attribute name
-     * @param attrinfo <code>info</code> field
-     *                 of <code>attribute_info</code> structure.
+     * @param cp                constant pool table
+     * @param attrname          attribute name
+     * @param attrinfo          <code>info</code> field
+     *                          of <code>attribute_info</code> structure.
      */
-    public AttributeInfo(org.hotswap.agent.javassist.bytecode.ConstPool cp, String attrname, byte[] attrinfo) {
+    public AttributeInfo(ConstPool cp, String attrname, byte[] attrinfo) {
         this(cp, cp.addUtf8Info(attrname), attrinfo);
     }
 
-    protected AttributeInfo(org.hotswap.agent.javassist.bytecode.ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+    protected AttributeInfo(ConstPool cp, int n, DataInputStream in)
+        throws IOException
+    {
         constPool = cp;
         name = n;
         int len = in.readInt();
@@ -64,53 +73,70 @@ public class AttributeInfo {
             in.readFully(info);
     }
 
-    static AttributeInfo read(org.hotswap.agent.javassist.bytecode.ConstPool cp, DataInputStream in)
-            throws IOException {
+    static AttributeInfo read(ConstPool cp, DataInputStream in)
+        throws IOException
+    {
         int name = in.readUnsignedShort();
         String nameStr = cp.getUtf8Info(name);
-        if (nameStr.charAt(0) < 'L') {
-            if (nameStr.equals(AnnotationDefaultAttribute.tag))
-                return new AnnotationDefaultAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.BootstrapMethodsAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.BootstrapMethodsAttribute(cp, name, in);
-            else if (nameStr.equals(CodeAttribute.tag))
-                return new CodeAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.ConstantAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.ConstantAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.DeprecatedAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.DeprecatedAttribute(cp, name, in);
-            else if (nameStr.equals(EnclosingMethodAttribute.tag))
-                return new EnclosingMethodAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.ExceptionsAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.ExceptionsAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.InnerClassesAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.InnerClassesAttribute(cp, name, in);
-        } else {
-            /* Note that the names of Annotations attributes begin with 'R'. 
-             */
-            if (nameStr.equals(org.hotswap.agent.javassist.bytecode.LineNumberAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.LineNumberAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.LocalVariableAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.LocalVariableAttribute(cp, name, in);
-            else if (nameStr.equals(LocalVariableTypeAttribute.tag))
-                return new LocalVariableTypeAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.visibleTag)
-                    || nameStr.equals(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.invisibleTag)) {
-                // RuntimeVisibleAnnotations or RuntimeInvisibleAnnotations
-                return new org.hotswap.agent.javassist.bytecode.AnnotationsAttribute(cp, name, in);
-            } else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.ParameterAnnotationsAttribute.visibleTag)
-                    || nameStr.equals(org.hotswap.agent.javassist.bytecode.ParameterAnnotationsAttribute.invisibleTag))
-                return new org.hotswap.agent.javassist.bytecode.ParameterAnnotationsAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.SignatureAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.SignatureAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.SourceFileAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.SourceFileAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.SyntheticAttribute.tag))
-                return new org.hotswap.agent.javassist.bytecode.SyntheticAttribute(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.StackMap.tag))
-                return new org.hotswap.agent.javassist.bytecode.StackMap(cp, name, in);
-            else if (nameStr.equals(org.hotswap.agent.javassist.bytecode.StackMapTable.tag))
-                return new org.hotswap.agent.javassist.bytecode.StackMapTable(cp, name, in);
+        char first = nameStr.charAt(0);
+        if (first < 'M') {
+            if (first < 'E') {
+                if (nameStr.equals(AnnotationDefaultAttribute.tag))
+                    return new AnnotationDefaultAttribute(cp, name, in);
+                else if (nameStr.equals(BootstrapMethodsAttribute.tag))
+                    return new BootstrapMethodsAttribute(cp, name, in);
+                else if (nameStr.equals(CodeAttribute.tag))
+                    return new CodeAttribute(cp, name, in);
+                else if (nameStr.equals(ConstantAttribute.tag))
+                    return new ConstantAttribute(cp, name, in);
+                else if (nameStr.equals(DeprecatedAttribute.tag))
+                    return new DeprecatedAttribute(cp, name, in);
+            }
+            else {
+                if (nameStr.equals(EnclosingMethodAttribute.tag))
+                    return new EnclosingMethodAttribute(cp, name, in);
+                else if (nameStr.equals(ExceptionsAttribute.tag))
+                    return new ExceptionsAttribute(cp, name, in);
+                else if (nameStr.equals(InnerClassesAttribute.tag))
+                    return new InnerClassesAttribute(cp, name, in);
+                else if (nameStr.equals(LineNumberAttribute.tag))
+                    return new LineNumberAttribute(cp, name, in);
+                else if (nameStr.equals(LocalVariableAttribute.tag))
+                    return new LocalVariableAttribute(cp, name, in);
+                else if (nameStr.equals(LocalVariableTypeAttribute.tag))
+                    return new LocalVariableTypeAttribute(cp, name, in);
+            }
+        }
+        else {
+            if (first < 'S') {
+                /* Note that the names of Annotations attributes begin with 'R'. 
+                 */
+                if (nameStr.equals(MethodParametersAttribute.tag))
+                    return new MethodParametersAttribute(cp, name, in);
+                else if (nameStr.equals(AnnotationsAttribute.visibleTag)
+                         || nameStr.equals(AnnotationsAttribute.invisibleTag)) {
+                    // RuntimeVisibleAnnotations or RuntimeInvisibleAnnotations
+                    return new AnnotationsAttribute(cp, name, in);
+                }
+                else if (nameStr.equals(ParameterAnnotationsAttribute.visibleTag)
+                         || nameStr.equals(ParameterAnnotationsAttribute.invisibleTag))
+                    return new ParameterAnnotationsAttribute(cp, name, in);
+                else if (nameStr.equals(TypeAnnotationsAttribute.visibleTag)
+                         || nameStr.equals(TypeAnnotationsAttribute.invisibleTag))
+                    return new TypeAnnotationsAttribute(cp, name, in);
+            }
+            else {
+                if (nameStr.equals(SignatureAttribute.tag))
+                    return new SignatureAttribute(cp, name, in);
+                else if (nameStr.equals(SourceFileAttribute.tag))
+                    return new SourceFileAttribute(cp, name, in);
+                else if (nameStr.equals(SyntheticAttribute.tag))
+                    return new SyntheticAttribute(cp, name, in);
+                else if (nameStr.equals(StackMap.tag))
+                    return new StackMap(cp, name, in);
+                else if (nameStr.equals(StackMapTable.tag))
+                    return new StackMapTable(cp, name, in);
+            }
         }
 
         return new AttributeInfo(cp, name, in);
@@ -126,9 +152,7 @@ public class AttributeInfo {
     /**
      * Returns a constant pool table.
      */
-    public org.hotswap.agent.javassist.bytecode.ConstPool getConstPool() {
-        return constPool;
-    }
+    public ConstPool getConstPool() { return constPool; }
 
     /**
      * Returns the length of this <code>attribute_info</code>
@@ -142,34 +166,30 @@ public class AttributeInfo {
     /**
      * Returns the <code>info</code> field
      * of this <code>attribute_info</code> structure.
-     * <p/>
+     *
      * <p>This method is not available if the object is an instance
      * of <code>CodeAttribute</code>.
      */
-    public byte[] get() {
-        return info;
-    }
+    public byte[] get() { return info; }
 
     /**
      * Sets the <code>info</code> field
      * of this <code>attribute_info</code> structure.
-     * <p/>
+     *
      * <p>This method is not available if the object is an instance
      * of <code>CodeAttribute</code>.
      */
-    public void set(byte[] newinfo) {
-        info = newinfo;
-    }
+    public void set(byte[] newinfo) { info = newinfo; }
 
     /**
      * Makes a copy.  Class names are replaced according to the
      * given <code>Map</code> object.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames pairs of replaced and substituted
-     *                   class names.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        pairs of replaced and substituted
+     *                          class names.
      */
-    public AttributeInfo copy(org.hotswap.agent.javassist.bytecode.ConstPool newCp, Map classnames) {
+    public AttributeInfo copy(ConstPool newCp, Map classnames) {
         int s = info.length;
         byte[] srcInfo = info;
         byte[] newInfo = new byte[s];
@@ -190,7 +210,7 @@ public class AttributeInfo {
         int size = 0;
         int n = list.size();
         for (int i = 0; i < n; ++i) {
-            AttributeInfo attr = (AttributeInfo) list.get(i);
+            AttributeInfo attr = (AttributeInfo)list.get(i);
             size += attr.length();
         }
 
@@ -203,7 +223,7 @@ public class AttributeInfo {
 
         ListIterator iterator = list.listIterator();
         while (iterator.hasNext()) {
-            AttributeInfo ai = (AttributeInfo) iterator.next();
+            AttributeInfo ai = (AttributeInfo)iterator.next();
             if (ai.getName().equals(name))
                 return ai;
         }
@@ -211,38 +231,44 @@ public class AttributeInfo {
         return null;            // no such attribute
     }
 
-    static synchronized void remove(ArrayList list, String name) {
+    static synchronized AttributeInfo remove(ArrayList list, String name) {
         if (list == null)
-            return;
+            return null;
 
+        AttributeInfo removed = null;
         ListIterator iterator = list.listIterator();
         while (iterator.hasNext()) {
-            AttributeInfo ai = (AttributeInfo) iterator.next();
-            if (ai.getName().equals(name))
+            AttributeInfo ai = (AttributeInfo)iterator.next();
+            if (ai.getName().equals(name)) {
                 iterator.remove();
+                removed = ai;
+            }
         }
+
+        return removed;
     }
 
     static void writeAll(ArrayList list, DataOutputStream out)
-            throws IOException {
+        throws IOException
+    {
         if (list == null)
             return;
 
         int n = list.size();
         for (int i = 0; i < n; ++i) {
-            AttributeInfo attr = (AttributeInfo) list.get(i);
+            AttributeInfo attr = (AttributeInfo)list.get(i);
             attr.write(out);
         }
     }
 
-    static ArrayList copyAll(ArrayList list, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    static ArrayList copyAll(ArrayList list, ConstPool cp) {
         if (list == null)
             return null;
 
         ArrayList newList = new ArrayList();
         int n = list.size();
         for (int i = 0; i < n; ++i) {
-            AttributeInfo attr = (AttributeInfo) list.get(i);
+            AttributeInfo attr = (AttributeInfo)list.get(i);
             newList.add(attr.copy(cp, null));
         }
 
@@ -255,16 +281,13 @@ public class AttributeInfo {
      * AnnotationsAttribute, and SignatureAttribute
      * override these methods.
      */
-    void renameClass(String oldname, String newname) {
-    }
-
-    void renameClass(Map classnames) {
-    }
+    void renameClass(String oldname, String newname) {}
+    void renameClass(Map classnames) {}
 
     static void renameClass(List attributes, String oldname, String newname) {
         Iterator iterator = attributes.iterator();
         while (iterator.hasNext()) {
-            AttributeInfo ai = (AttributeInfo) iterator.next();
+            AttributeInfo ai = (AttributeInfo)iterator.next();
             ai.renameClass(oldname, newname);
         }
     }
@@ -272,18 +295,17 @@ public class AttributeInfo {
     static void renameClass(List attributes, Map classnames) {
         Iterator iterator = attributes.iterator();
         while (iterator.hasNext()) {
-            AttributeInfo ai = (AttributeInfo) iterator.next();
+            AttributeInfo ai = (AttributeInfo)iterator.next();
             ai.renameClass(classnames);
         }
     }
 
-    void getRefClasses(Map classnames) {
-    }
+    void getRefClasses(Map classnames) {}
 
     static void getRefClasses(List attributes, Map classnames) {
         Iterator iterator = attributes.iterator();
         while (iterator.hasNext()) {
-            AttributeInfo ai = (AttributeInfo) iterator.next();
+            AttributeInfo ai = (AttributeInfo)iterator.next();
             ai.getRefClasses(classnames);
         }
     }

@@ -16,7 +16,25 @@
 
 package org.hotswap.agent.javassist.expr;
 
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtPrimitiveType;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.bytecode.AccessFlag;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.ExceptionTable;
+import org.hotswap.agent.javassist.bytecode.ExceptionsAttribute;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.compiler.Javac;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -24,11 +42,11 @@ import java.util.LinkedList;
 /**
  * Expression.
  */
-public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcode {
+public abstract class Expr implements Opcode {
     int currentPos;
-    org.hotswap.agent.javassist.bytecode.CodeIterator iterator;
-    org.hotswap.agent.javassist.CtClass thisClass;
-    org.hotswap.agent.javassist.bytecode.MethodInfo thisMethod;
+    CodeIterator iterator;
+    CtClass thisClass;
+    MethodInfo thisMethod;
     boolean edited;
     int maxLocals, maxStack;
 
@@ -37,7 +55,7 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
     /**
      * Undocumented constructor. Do not use; internal-use only.
      */
-    protected Expr(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator i, org.hotswap.agent.javassist.CtClass declaring, org.hotswap.agent.javassist.bytecode.MethodInfo m) {
+    protected Expr(int pos, CodeIterator i, CtClass declaring, MethodInfo m) {
         currentPos = pos;
         iterator = i;
         thisClass = declaring;
@@ -50,11 +68,9 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
      *
      * @since 3.7
      */
-    public org.hotswap.agent.javassist.CtClass getEnclosingClass() {
-        return thisClass;
-    }
+    public CtClass getEnclosingClass() { return thisClass; }
 
-    protected final org.hotswap.agent.javassist.bytecode.ConstPool getConstPool() {
+    protected final ConstPool getConstPool() {
         return thisMethod.getConstPool();
     }
 
@@ -80,14 +96,14 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
     /**
      * Returns the constructor or method containing the expression.
      */
-    public org.hotswap.agent.javassist.CtBehavior where() {
-        org.hotswap.agent.javassist.bytecode.MethodInfo mi = thisMethod;
-        org.hotswap.agent.javassist.CtBehavior[] cb = thisClass.getDeclaredBehaviors();
+    public CtBehavior where() {
+        MethodInfo mi = thisMethod;
+        CtBehavior[] cb = thisClass.getDeclaredBehaviors();
         for (int i = cb.length - 1; i >= 0; --i)
             if (cb[i].getMethodInfo2() == mi)
                 return cb[i];
 
-        org.hotswap.agent.javassist.CtConstructor init = thisClass.getClassInitializer();
+        CtConstructor init = thisClass.getClassInitializer();
         if (init != null && init.getMethodInfo2() == mi)
             return init;
 
@@ -98,8 +114,8 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
          */
         for (int i = cb.length - 1; i >= 0; --i) {
             if (thisMethod.getName().equals(cb[i].getMethodInfo2().getName())
-                    && thisMethod.getDescriptor()
-                    .equals(cb[i].getMethodInfo2().getDescriptor())) {
+                && thisMethod.getDescriptor()
+                             .equals(cb[i].getMethodInfo2().getDescriptor())) {
                 return cb[i];
             }
         }
@@ -113,13 +129,13 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
      * expression can catch and the exceptions that the throws declaration
      * allows the method to throw.
      */
-    public org.hotswap.agent.javassist.CtClass[] mayThrow() {
-        org.hotswap.agent.javassist.ClassPool pool = thisClass.getClassPool();
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = thisMethod.getConstPool();
+    public CtClass[] mayThrow() {
+        ClassPool pool = thisClass.getClassPool();
+        ConstPool cp = thisMethod.getConstPool();
         LinkedList list = new LinkedList();
         try {
-            org.hotswap.agent.javassist.bytecode.CodeAttribute ca = thisMethod.getCodeAttribute();
-            org.hotswap.agent.javassist.bytecode.ExceptionTable et = ca.getExceptionTable();
+            CodeAttribute ca = thisMethod.getCodeAttribute();
+            ExceptionTable et = ca.getExceptionTable();
             int pos = currentPos;
             int n = et.size();
             for (int i = 0; i < n; ++i)
@@ -128,13 +144,15 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
                     if (t > 0)
                         try {
                             addClass(list, pool.get(cp.getClassInfo(t)));
-                        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+                        }
+                        catch (NotFoundException e) {
                         }
                 }
-        } catch (NullPointerException e) {
+        }
+        catch (NullPointerException e) {
         }
 
-        org.hotswap.agent.javassist.bytecode.ExceptionsAttribute ea = thisMethod.getExceptionsAttribute();
+        ExceptionsAttribute ea = thisMethod.getExceptionsAttribute();
         if (ea != null) {
             String[] exceptions = ea.getExceptions();
             if (exceptions != null) {
@@ -142,15 +160,16 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
                 for (int i = 0; i < n; ++i)
                     try {
                         addClass(list, pool.get(exceptions[i]));
-                    } catch (org.hotswap.agent.javassist.NotFoundException e) {
+                    }
+                    catch (NotFoundException e) {
                     }
             }
         }
 
-        return (org.hotswap.agent.javassist.CtClass[]) list.toArray(new org.hotswap.agent.javassist.CtClass[list.size()]);
+        return (CtClass[])list.toArray(new CtClass[list.size()]);
     }
 
-    private static void addClass(LinkedList list, org.hotswap.agent.javassist.CtClass c) {
+    private static void addClass(LinkedList list, CtClass c) {
         Iterator it = list.iterator();
         while (it.hasNext())
             if (it.next() == c)
@@ -170,7 +189,7 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
 
     /**
      * Returns the line number of the source line containing the expression.
-     *
+     * 
      * @return -1 if this information is not available.
      */
     public int getLineNumber() {
@@ -179,27 +198,27 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
 
     /**
      * Returns the source file containing the expression.
-     *
+     * 
      * @return null if this information is not available.
      */
     public String getFileName() {
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = thisClass.getClassFile2();
+        ClassFile cf = thisClass.getClassFile2();
         if (cf == null)
             return null;
         else
             return cf.getSourceFile();
     }
 
-    static final boolean checkResultValue(org.hotswap.agent.javassist.CtClass retType, String prog)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+    static final boolean checkResultValue(CtClass retType, String prog)
+            throws CannotCompileException {
         /*
          * Is $_ included in the source code?
          */
-        boolean hasIt = (prog.indexOf(org.hotswap.agent.javassist.compiler.Javac.resultVarName) >= 0);
-        if (!hasIt && retType != org.hotswap.agent.javassist.CtClass.voidType)
-            throw new org.hotswap.agent.javassist.CannotCompileException(
+        boolean hasIt = (prog.indexOf(Javac.resultVarName) >= 0);
+        if (!hasIt && retType != CtClass.voidType)
+            throw new CannotCompileException(
                     "the resulting value is not stored in "
-                            + org.hotswap.agent.javassist.compiler.Javac.resultVarName);
+                            + Javac.resultVarName);
 
         return hasIt;
     }
@@ -211,8 +230,8 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
      * After executing this method, the current stack depth might be less than
      * 0.
      */
-    static final void storeStack(org.hotswap.agent.javassist.CtClass[] params, boolean isStaticCall,
-                                 int regno, org.hotswap.agent.javassist.bytecode.Bytecode bytecode) {
+    static final void storeStack(CtClass[] params, boolean isStaticCall,
+            int regno, Bytecode bytecode) {
         storeStack0(0, params.length, params, regno + 1, bytecode);
         if (isStaticCall)
             bytecode.addOpcode(ACONST_NULL);
@@ -220,15 +239,15 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
         bytecode.addAstore(regno);
     }
 
-    private static void storeStack0(int i, int n, org.hotswap.agent.javassist.CtClass[] params, int regno,
-                                    org.hotswap.agent.javassist.bytecode.Bytecode bytecode) {
+    private static void storeStack0(int i, int n, CtClass[] params, int regno,
+            Bytecode bytecode) {
         if (i >= n)
             return;
         else {
-            org.hotswap.agent.javassist.CtClass c = params[i];
+            CtClass c = params[i];
             int size;
-            if (c instanceof org.hotswap.agent.javassist.CtPrimitiveType)
-                size = ((org.hotswap.agent.javassist.CtPrimitiveType) c).getDataSize();
+            if (c instanceof CtPrimitiveType)
+                size = ((CtPrimitiveType)c).getDataSize();
             else
                 size = 1;
 
@@ -246,29 +265,30 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
      * Replaces this expression with the bytecode derived from
      * the given source text.
      *
-     * @param statement a Java statement except try-catch.
+     * @param statement         a Java statement except try-catch.
      */
-    public abstract void replace(String statement) throws org.hotswap.agent.javassist.CannotCompileException;
+    public abstract void replace(String statement) throws CannotCompileException;
 
     /**
      * Replaces this expression with the bytecode derived from
      * the given source text and <code>ExprEditor</code>.
      *
-     * @param statement a Java statement except try-catch.
-     * @param recursive if not null, the substituted bytecode
-     *                  is recursively processed by the given
-     *                  <code>ExprEditor</code>.
+     * @param statement         a Java statement except try-catch.
+     * @param recursive         if not null, the substituted bytecode
+     *                          is recursively processed by the given
+     *                          <code>ExprEditor</code>.
      * @since 3.1
      */
     public void replace(String statement, ExprEditor recursive)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+        throws CannotCompileException
+    {
         replace(statement);
         if (recursive != null)
             runEditor(recursive, iterator);
     }
 
-    protected void replace0(int pos, org.hotswap.agent.javassist.bytecode.Bytecode bytecode, int size)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    protected void replace0(int pos, Bytecode bytecode, int size)
+            throws BadBytecode {
         byte[] code = bytecode.get();
         edited = true;
         int gap = code.length - size;
@@ -284,16 +304,17 @@ public abstract class Expr implements org.hotswap.agent.javassist.bytecode.Opcod
         maxStack = bytecode.getMaxStack();
     }
 
-    protected void runEditor(ExprEditor ed, org.hotswap.agent.javassist.bytecode.CodeIterator oldIterator)
-            throws org.hotswap.agent.javassist.CannotCompileException {
-        org.hotswap.agent.javassist.bytecode.CodeAttribute codeAttr = oldIterator.get();
+    protected void runEditor(ExprEditor ed, CodeIterator oldIterator)
+        throws CannotCompileException
+    {
+        CodeAttribute codeAttr = oldIterator.get();
         int orgLocals = codeAttr.getMaxLocals();
         int orgStack = codeAttr.getMaxStack();
         int newLocals = locals();
         codeAttr.setMaxStack(stack());
         codeAttr.setMaxLocals(newLocals);
         ExprEditor.LoopContext context
-                = new ExprEditor.LoopContext(newLocals);
+            = new ExprEditor.LoopContext(newLocals);
         int size = oldIterator.getCodeLength();
         int endPos = oldIterator.lookAhead();
         oldIterator.move(currentPos);

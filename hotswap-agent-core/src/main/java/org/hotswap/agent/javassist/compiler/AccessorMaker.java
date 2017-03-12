@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.compiler;
 
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.*;
 import java.util.HashMap;
 
 /**
@@ -23,53 +25,56 @@ import java.util.HashMap;
  * class.  It is necessary for compiling a method in an inner class.
  */
 public class AccessorMaker {
-    private org.hotswap.agent.javassist.CtClass clazz;
+    private CtClass clazz;
     private int uniqueNumber;
     private HashMap accessors;
 
-    static final String lastParamType = "Inner";
+    static final String lastParamType = "javassist.runtime.Inner";
 
-    public AccessorMaker(org.hotswap.agent.javassist.CtClass c) {
+    public AccessorMaker(CtClass c) {
         clazz = c;
         uniqueNumber = 1;
         accessors = new HashMap();
     }
 
-    public String getConstructor(org.hotswap.agent.javassist.CtClass c, String desc, org.hotswap.agent.javassist.bytecode.MethodInfo orig)
-            throws CompileError {
+    public String getConstructor(CtClass c, String desc, MethodInfo orig)
+        throws CompileError
+    {
         String key = "<init>:" + desc;
-        String consDesc = (String) accessors.get(key);
+        String consDesc = (String)accessors.get(key);
         if (consDesc != null)
             return consDesc;     // already exists.
 
-        consDesc = org.hotswap.agent.javassist.bytecode.Descriptor.appendParameter(lastParamType, desc);
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
+        consDesc = Descriptor.appendParameter(lastParamType, desc);
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
         try {
-            org.hotswap.agent.javassist.bytecode.ConstPool cp = cf.getConstPool();
-            org.hotswap.agent.javassist.ClassPool pool = clazz.getClassPool();
-            org.hotswap.agent.javassist.bytecode.MethodInfo minfo
-                    = new org.hotswap.agent.javassist.bytecode.MethodInfo(cp, org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit, consDesc);
+            ConstPool cp = cf.getConstPool();
+            ClassPool pool = clazz.getClassPool();
+            MethodInfo minfo
+                = new MethodInfo(cp, MethodInfo.nameInit, consDesc);
             minfo.setAccessFlags(0);
-            minfo.addAttribute(new org.hotswap.agent.javassist.bytecode.SyntheticAttribute(cp));
-            org.hotswap.agent.javassist.bytecode.ExceptionsAttribute ea = orig.getExceptionsAttribute();
-            if (ea != null)
+            minfo.addAttribute(new SyntheticAttribute(cp));
+            ExceptionsAttribute ea = orig.getExceptionsAttribute();
+            if (ea != null)  
                 minfo.addAttribute(ea.copy(cp, null));
 
-            org.hotswap.agent.javassist.CtClass[] params = org.hotswap.agent.javassist.bytecode.Descriptor.getParameterTypes(desc, pool);
-            org.hotswap.agent.javassist.bytecode.Bytecode code = new org.hotswap.agent.javassist.bytecode.Bytecode(cp);
+            CtClass[] params = Descriptor.getParameterTypes(desc, pool);
+            Bytecode code = new Bytecode(cp);
             code.addAload(0);
             int regno = 1;
             for (int i = 0; i < params.length; ++i)
                 regno += code.addLoad(regno, params[i]);
             code.setMaxLocals(regno + 1);    // the last parameter is added.
-            code.addInvokespecial(clazz, org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit, desc);
+            code.addInvokespecial(clazz, MethodInfo.nameInit, desc);
 
             code.addReturn(null);
             minfo.setCodeAttribute(code.toCodeAttribute());
             cf.addMethod(minfo);
-        } catch (org.hotswap.agent.javassist.CannotCompileException e) {
+        }
+        catch (CannotCompileException e) {
             throw new CompileError(e);
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             throw new CompileError(e);
         }
 
@@ -80,39 +85,41 @@ public class AccessorMaker {
     /**
      * Returns the name of the method for accessing a private method.
      *
-     * @param name    the name of the private method.
-     * @param desc    the descriptor of the private method.
-     * @param accDesc the descriptor of the accessor method.  The first
-     *                parameter type is <code>clazz</code>.
-     *                If the private method is static,
-     *                <code>accDesc<code> must be identical to <code>desc</code>.
-     * @param orig    the method info of the private method.
+     * @param name      the name of the private method.
+     * @param desc      the descriptor of the private method.
+     * @param accDesc   the descriptor of the accessor method.  The first
+     *                  parameter type is <code>clazz</code>.
+     *                  If the private method is static,
+     *              <code>accDesc</code> must be identical to <code>desc</code>. 
+     *                  
+     * @param orig      the method info of the private method.
      * @return
      */
     public String getMethodAccessor(String name, String desc, String accDesc,
-                                    org.hotswap.agent.javassist.bytecode.MethodInfo orig)
-            throws CompileError {
+                                    MethodInfo orig)
+        throws CompileError
+    {
         String key = name + ":" + desc;
-        String accName = (String) accessors.get(key);
+        String accName = (String)accessors.get(key);
         if (accName != null)
             return accName;     // already exists.
 
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
         accName = findAccessorName(cf);
         try {
-            org.hotswap.agent.javassist.bytecode.ConstPool cp = cf.getConstPool();
-            org.hotswap.agent.javassist.ClassPool pool = clazz.getClassPool();
-            org.hotswap.agent.javassist.bytecode.MethodInfo minfo
-                    = new org.hotswap.agent.javassist.bytecode.MethodInfo(cp, accName, accDesc);
-            minfo.setAccessFlags(org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC);
-            minfo.addAttribute(new org.hotswap.agent.javassist.bytecode.SyntheticAttribute(cp));
-            org.hotswap.agent.javassist.bytecode.ExceptionsAttribute ea = orig.getExceptionsAttribute();
-            if (ea != null)
+            ConstPool cp = cf.getConstPool();
+            ClassPool pool = clazz.getClassPool();
+            MethodInfo minfo
+                = new MethodInfo(cp, accName, accDesc);
+            minfo.setAccessFlags(AccessFlag.STATIC);
+            minfo.addAttribute(new SyntheticAttribute(cp));
+            ExceptionsAttribute ea = orig.getExceptionsAttribute();
+            if (ea != null)  
                 minfo.addAttribute(ea.copy(cp, null));
 
-            org.hotswap.agent.javassist.CtClass[] params = org.hotswap.agent.javassist.bytecode.Descriptor.getParameterTypes(accDesc, pool);
+            CtClass[] params = Descriptor.getParameterTypes(accDesc, pool);
             int regno = 0;
-            org.hotswap.agent.javassist.bytecode.Bytecode code = new org.hotswap.agent.javassist.bytecode.Bytecode(cp);
+            Bytecode code = new Bytecode(cp);
             for (int i = 0; i < params.length; ++i)
                 regno += code.addLoad(regno, params[i]);
 
@@ -122,12 +129,14 @@ public class AccessorMaker {
             else
                 code.addInvokevirtual(clazz, name, desc);
 
-            code.addReturn(org.hotswap.agent.javassist.bytecode.Descriptor.getReturnType(desc, pool));
+            code.addReturn(Descriptor.getReturnType(desc, pool));
             minfo.setCodeAttribute(code.toCodeAttribute());
             cf.addMethod(minfo);
-        } catch (org.hotswap.agent.javassist.CannotCompileException e) {
+        }
+        catch (CannotCompileException e) {
             throw new CompileError(e);
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             throw new CompileError(e);
         }
 
@@ -138,46 +147,50 @@ public class AccessorMaker {
     /**
      * Returns the method_info representing the added getter.
      */
-    public org.hotswap.agent.javassist.bytecode.MethodInfo getFieldGetter(org.hotswap.agent.javassist.bytecode.FieldInfo finfo, boolean is_static)
-            throws CompileError {
+    public MethodInfo getFieldGetter(FieldInfo finfo, boolean is_static)
+        throws CompileError
+    {
         String fieldName = finfo.getName();
         String key = fieldName + ":getter";
         Object res = accessors.get(key);
         if (res != null)
-            return (org.hotswap.agent.javassist.bytecode.MethodInfo) res;     // already exists.
+            return (MethodInfo)res;     // already exists.
 
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
         String accName = findAccessorName(cf);
         try {
-            org.hotswap.agent.javassist.bytecode.ConstPool cp = cf.getConstPool();
-            org.hotswap.agent.javassist.ClassPool pool = clazz.getClassPool();
+            ConstPool cp = cf.getConstPool();
+            ClassPool pool = clazz.getClassPool();
             String fieldType = finfo.getDescriptor();
             String accDesc;
             if (is_static)
                 accDesc = "()" + fieldType;
             else
-                accDesc = "(" + org.hotswap.agent.javassist.bytecode.Descriptor.of(clazz) + ")" + fieldType;
+                accDesc = "(" + Descriptor.of(clazz) + ")" + fieldType;
 
-            org.hotswap.agent.javassist.bytecode.MethodInfo minfo = new org.hotswap.agent.javassist.bytecode.MethodInfo(cp, accName, accDesc);
-            minfo.setAccessFlags(org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC);
-            minfo.addAttribute(new org.hotswap.agent.javassist.bytecode.SyntheticAttribute(cp));
-            org.hotswap.agent.javassist.bytecode.Bytecode code = new org.hotswap.agent.javassist.bytecode.Bytecode(cp);
+            MethodInfo minfo = new MethodInfo(cp, accName, accDesc);
+            minfo.setAccessFlags(AccessFlag.STATIC);
+            minfo.addAttribute(new SyntheticAttribute(cp));
+            Bytecode code = new Bytecode(cp);
             if (is_static) {
-                code.addGetstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, fieldName, fieldType);
-            } else {
+                code.addGetstatic(Bytecode.THIS, fieldName, fieldType);
+            }
+            else {
                 code.addAload(0);
-                code.addGetfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, fieldName, fieldType);
+                code.addGetfield(Bytecode.THIS, fieldName, fieldType);
                 code.setMaxLocals(1);
             }
 
-            code.addReturn(org.hotswap.agent.javassist.bytecode.Descriptor.toCtClass(fieldType, pool));
+            code.addReturn(Descriptor.toCtClass(fieldType, pool));
             minfo.setCodeAttribute(code.toCodeAttribute());
             cf.addMethod(minfo);
             accessors.put(key, minfo);
             return minfo;
-        } catch (org.hotswap.agent.javassist.CannotCompileException e) {
+        }
+        catch (CannotCompileException e) {
             throw new CompileError(e);
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             throw new CompileError(e);
         }
     }
@@ -185,39 +198,41 @@ public class AccessorMaker {
     /**
      * Returns the method_info representing the added setter.
      */
-    public org.hotswap.agent.javassist.bytecode.MethodInfo getFieldSetter(org.hotswap.agent.javassist.bytecode.FieldInfo finfo, boolean is_static)
-            throws CompileError {
+    public MethodInfo getFieldSetter(FieldInfo finfo, boolean is_static)
+        throws CompileError
+    {
         String fieldName = finfo.getName();
         String key = fieldName + ":setter";
         Object res = accessors.get(key);
         if (res != null)
-            return (org.hotswap.agent.javassist.bytecode.MethodInfo) res;     // already exists.
+            return (MethodInfo)res;     // already exists.
 
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
         String accName = findAccessorName(cf);
         try {
-            org.hotswap.agent.javassist.bytecode.ConstPool cp = cf.getConstPool();
-            org.hotswap.agent.javassist.ClassPool pool = clazz.getClassPool();
+            ConstPool cp = cf.getConstPool();
+            ClassPool pool = clazz.getClassPool();
             String fieldType = finfo.getDescriptor();
             String accDesc;
             if (is_static)
                 accDesc = "(" + fieldType + ")V";
             else
-                accDesc = "(" + org.hotswap.agent.javassist.bytecode.Descriptor.of(clazz) + fieldType + ")V";
+                accDesc = "(" + Descriptor.of(clazz) + fieldType + ")V";
 
-            org.hotswap.agent.javassist.bytecode.MethodInfo minfo = new org.hotswap.agent.javassist.bytecode.MethodInfo(cp, accName, accDesc);
-            minfo.setAccessFlags(org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC);
-            minfo.addAttribute(new org.hotswap.agent.javassist.bytecode.SyntheticAttribute(cp));
-            org.hotswap.agent.javassist.bytecode.Bytecode code = new org.hotswap.agent.javassist.bytecode.Bytecode(cp);
+            MethodInfo minfo = new MethodInfo(cp, accName, accDesc);
+            minfo.setAccessFlags(AccessFlag.STATIC);
+            minfo.addAttribute(new SyntheticAttribute(cp));
+            Bytecode code = new Bytecode(cp);
             int reg;
             if (is_static) {
-                reg = code.addLoad(0, org.hotswap.agent.javassist.bytecode.Descriptor.toCtClass(fieldType, pool));
-                code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, fieldName, fieldType);
-            } else {
+                reg = code.addLoad(0, Descriptor.toCtClass(fieldType, pool));
+                code.addPutstatic(Bytecode.THIS, fieldName, fieldType);
+            }
+            else {
                 code.addAload(0);
-                reg = code.addLoad(1, org.hotswap.agent.javassist.bytecode.Descriptor.toCtClass(fieldType, pool))
-                        + 1;
-                code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, fieldName, fieldType);
+                reg = code.addLoad(1, Descriptor.toCtClass(fieldType, pool))
+                      + 1;
+                code.addPutfield(Bytecode.THIS, fieldName, fieldType);
             }
 
             code.addReturn(null);
@@ -226,14 +241,16 @@ public class AccessorMaker {
             cf.addMethod(minfo);
             accessors.put(key, minfo);
             return minfo;
-        } catch (org.hotswap.agent.javassist.CannotCompileException e) {
+        }
+        catch (CannotCompileException e) {
             throw new CompileError(e);
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             throw new CompileError(e);
         }
     }
 
-    private String findAccessorName(org.hotswap.agent.javassist.bytecode.ClassFile cf) {
+    private String findAccessorName(ClassFile cf) {
         String accName;
         do {
             accName = "access$" + uniqueNumber++;

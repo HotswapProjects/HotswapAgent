@@ -16,6 +16,9 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtPrimitiveType;
+
 class ByteVector implements Cloneable {
     private byte[] buffer;
     private int size;
@@ -26,14 +29,12 @@ class ByteVector implements Cloneable {
     }
 
     public Object clone() throws CloneNotSupportedException {
-        ByteVector bv = (ByteVector) super.clone();
-        bv.buffer = (byte[]) buffer.clone();
+        ByteVector bv = (ByteVector)super.clone();
+        bv.buffer = (byte[])buffer.clone();
         return bv;
     }
 
-    public final int getSize() {
-        return size;
-    }
+    public final int getSize() { return size; }
 
     public final byte[] copy() {
         byte[] b = new byte[size];
@@ -52,26 +53,26 @@ class ByteVector implements Cloneable {
         if (offset < 0 || size <= offset)
             throw new ArrayIndexOutOfBoundsException(offset);
 
-        buffer[offset] = (byte) value;
+        buffer[offset] = (byte)value;
     }
 
     public void add(int code) {
         addGap(1);
-        buffer[size - 1] = (byte) code;
+        buffer[size - 1] = (byte)code;
     }
 
     public void add(int b1, int b2) {
         addGap(2);
-        buffer[size - 2] = (byte) b1;
-        buffer[size - 1] = (byte) b2;
+        buffer[size - 2] = (byte)b1;
+        buffer[size - 1] = (byte)b2;
     }
 
     public void add(int b1, int b2, int b3, int b4) {
         addGap(4);
-        buffer[size - 4] = (byte) b1;
-        buffer[size - 3] = (byte) b2;
-        buffer[size - 2] = (byte) b3;
-        buffer[size - 1] = (byte) b4;
+        buffer[size - 4] = (byte)b1;
+        buffer[size - 3] = (byte)b2;
+        buffer[size - 2] = (byte)b3;
+        buffer[size - 1] = (byte)b4;
     }
 
     public void addGap(int length) {
@@ -91,21 +92,23 @@ class ByteVector implements Cloneable {
 
 /**
  * A utility class for producing a bytecode sequence.
- * <p/>
+ *
  * <p>A <code>Bytecode</code> object is an unbounded array
  * containing bytecode.  For example,
- * <p/>
- * <ul><pre>ConstPool cp = ...;    // constant pool table
+ *
+ * <pre>
+ * ConstPool cp = ...;    // constant pool table
  * Bytecode b = new Bytecode(cp, 1, 0);
  * b.addIconst(3);
  * b.addReturn(CtClass.intType);
- * CodeAttribute ca = b.toCodeAttribute();</ul></pre>
- * <p/>
+ * CodeAttribute ca = b.toCodeAttribute();</pre>
+ *
  * <p>This program produces a Code attribute including a bytecode
  * sequence:
- * <p/>
- * <ul><pre>iconst_3
- * ireturn</pre></ul>
+ *
+ * <pre>
+ * iconst_3
+ * ireturn</pre>
  *
  * @see ConstPool
  * @see CodeAttribute
@@ -115,7 +118,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Represents the <code>CtClass</code> file using the
      * constant pool table given to this <code>Bytecode</code> object.
      */
-    public static final org.hotswap.agent.javassist.CtClass THIS = ConstPool.THIS;
+    public static final CtClass THIS = ConstPool.THIS;
 
     ConstPool constPool;
     int maxStack, maxLocals;
@@ -125,15 +128,15 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Constructs a <code>Bytecode</code> object with an empty bytecode
      * sequence.
-     * <p/>
+     *
      * <p>The parameters <code>stacksize</code> and <code>localvars</code>
      * specify initial values
      * of <code>max_stack</code> and <code>max_locals</code>.
      * They can be changed later.
      *
-     * @param cp        constant pool table.
-     * @param stacksize <code>max_stack</code>.
-     * @param localvars <code>max_locals</code>.
+     * @param cp                constant pool table.
+     * @param stacksize         <code>max_stack</code>.
+     * @param localvars         <code>max_locals</code>.
      */
     public Bytecode(ConstPool cp, int stacksize, int localvars) {
         constPool = cp;
@@ -147,8 +150,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Constructs a <code>Bytecode</code> object with an empty bytecode
      * sequence.  The initial values of <code>max_stack</code> and
      * <code>max_locals</code> are zero.
-     *
-     * @param cp constant pool table.
+     * 
+     * @param cp            constant pool table.
      * @see Bytecode#setMaxStack(int)
      * @see Bytecode#setMaxLocals(int)
      */
@@ -163,10 +166,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      */
     public Object clone() {
         try {
-            Bytecode bc = (Bytecode) super.clone();
-            bc.tryblocks = (ExceptionTable) tryblocks.clone();
+            Bytecode bc = (Bytecode)super.clone();
+            bc.tryblocks = (ExceptionTable)tryblocks.clone();
             return bc;
-        } catch (CloneNotSupportedException cnse) {
+        }
+        catch (CloneNotSupportedException cnse) {
             throw new RuntimeException(cnse);
         }
     }
@@ -174,23 +178,19 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Gets a constant pool table.
      */
-    public ConstPool getConstPool() {
-        return constPool;
-    }
+    public ConstPool getConstPool() { return constPool; }
 
     /**
      * Returns <code>exception_table</code>.
      */
-    public ExceptionTable getExceptionTable() {
-        return tryblocks;
-    }
+    public ExceptionTable getExceptionTable() { return tryblocks; }
 
     /**
      * Converts to a <code>CodeAttribute</code>.
      */
     public CodeAttribute toCodeAttribute() {
         return new CodeAttribute(constPool, maxStack, maxLocals,
-                get(), tryblocks);
+                                 get(), tryblocks);
     }
 
     /**
@@ -210,13 +210,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Gets <code>max_stack</code>.
      */
-    public int getMaxStack() {
-        return maxStack;
-    }
+    public int getMaxStack() { return maxStack; }
 
     /**
      * Sets <code>max_stack</code>.
-     * <p/>
+     *
      * <p>This value may be automatically updated when an instruction
      * is appended.  A <code>Bytecode</code> object maintains the current
      * stack depth whenever an instruction is added
@@ -235,9 +233,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Gets <code>max_locals</code>.
      */
-    public int getMaxLocals() {
-        return maxLocals;
-    }
+    public int getMaxLocals() { return maxLocals; }
 
     /**
      * Sets <code>max_locals</code>.
@@ -248,28 +244,28 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
 
     /**
      * Sets <code>max_locals</code>.
-     * <p/>
+     *
      * <p>This computes the number of local variables
      * used to pass method parameters and sets <code>max_locals</code>
      * to that number plus <code>locals</code>.
      *
-     * @param isStatic true if <code>params</code> must be
-     *                 interpreted as parameters to a static method.
-     * @param params   parameter types.
-     * @param locals   the number of local variables excluding
-     *                 ones used to pass parameters.
+     * @param isStatic          true if <code>params</code> must be
+     *                          interpreted as parameters to a static method.
+     * @param params            parameter types.
+     * @param locals            the number of local variables excluding
+     *                          ones used to pass parameters.
      */
-    public void setMaxLocals(boolean isStatic, org.hotswap.agent.javassist.CtClass[] params,
+    public void setMaxLocals(boolean isStatic, CtClass[] params,
                              int locals) {
         if (!isStatic)
             ++locals;
 
         if (params != null) {
-            org.hotswap.agent.javassist.CtClass doubleType = org.hotswap.agent.javassist.CtClass.doubleType;
-            org.hotswap.agent.javassist.CtClass longType = org.hotswap.agent.javassist.CtClass.longType;
+            CtClass doubleType = CtClass.doubleType;
+            CtClass longType = CtClass.longType;
             int n = params.length;
             for (int i = 0; i < n; ++i) {
-                org.hotswap.agent.javassist.CtClass type = params[i];
+                CtClass type = params[i];
                 if (type == doubleType || type == longType)
                     locals += 2;
                 else
@@ -291,20 +287,20 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Adds a new entry of <code>exception_table</code>.
      */
     public void addExceptionHandler(int start, int end,
-                                    int handler, org.hotswap.agent.javassist.CtClass type) {
+                                    int handler, CtClass type) {
         addExceptionHandler(start, end, handler,
-                constPool.addClassInfo(type));
+                            constPool.addClassInfo(type));
     }
 
     /**
      * Adds a new entry of <code>exception_table</code>.
      *
-     * @param type the fully-qualified name of a throwable class.
+     * @param type      the fully-qualified name of a throwable class.
      */
     public void addExceptionHandler(int start, int end,
                                     int handler, String type) {
         addExceptionHandler(start, end, handler,
-                constPool.addClassInfo(type));
+                            constPool.addClassInfo(type));
     }
 
     /**
@@ -327,7 +323,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Reads a signed 8bit value at the offset from the beginning of the
      * bytecode sequence.
      *
-     * @throws ArrayIndexOutOfBoundsException if offset is invalid.
+     * @throws ArrayIndexOutOfBoundsException   if offset is invalid.
      */
     public int read(int offset) {
         return super.read(offset);
@@ -357,7 +353,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Writes an 8bit value at the offset from the beginning of the
      * bytecode sequence.
      *
-     * @throws ArrayIndexOutOfBoundsException if offset is invalid.
+     * @throws ArrayIndexOutOfBoundsException   if offset is invalid.
      */
     public void write(int offset, int value) {
         super.write(offset, value);
@@ -398,7 +394,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends the length-byte gap to the end of the bytecode sequence.
      *
-     * @param length the gap length in byte.
+     * @param length    the gap length in byte.
      */
     public void addGap(int length) {
         super.addGap(length);
@@ -409,7 +405,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * The current stack depth is updated.
      * <code>max_stack</code> is updated if the current stack depth
      * is the deepest so far.
-     * <p/>
+     *
      * <p>Note: some instructions such as INVOKEVIRTUAL does not
      * update the current stack depth since the increment depends
      * on the method signature.
@@ -425,7 +421,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * It also updates <code>max_stack</code> if the current stack depth
      * is the deepest so far.
      *
-     * @param diff the number added to the current stack depth.
+     * @param diff      the number added to the current stack depth.
      */
     public void growStack(int diff) {
         setStackDepth(stackDepth + diff);
@@ -434,16 +430,14 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Returns the current stack depth.
      */
-    public int getStackDepth() {
-        return stackDepth;
-    }
+    public int getStackDepth() { return stackDepth; }
 
     /**
      * Sets the current stack depth.
      * It also updates <code>max_stack</code> if the current stack depth
      * is the deepest so far.
      *
-     * @param depth new value.
+     * @param depth     new value.
      */
     public void setStackDepth(int depth) {
         stackDepth = depth;
@@ -462,7 +456,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends ALOAD or (WIDE) ALOAD_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addAload(int n) {
         if (n < 4)
@@ -470,7 +464,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(ALOAD);           // aload
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(ALOAD);
             addIndex(n);
@@ -480,7 +475,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends ASTORE or (WIDE) ASTORE_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addAstore(int n) {
         if (n < 4)
@@ -488,7 +483,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(ASTORE);          // astore
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(ASTORE);
             addIndex(n);
@@ -498,7 +494,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends ICONST or ICONST_&lt;n&gt;
      *
-     * @param n the pushed integer constant.
+     * @param n         the pushed integer constant.
      */
     public void addIconst(int n) {
         if (n < 6 && -2 < n)
@@ -506,11 +502,13 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n <= 127 && -128 <= n) {
             addOpcode(16);              // bipush
             add(n);
-        } else if (n <= 32767 && -32768 <= n) {
+        }
+        else if (n <= 32767 && -32768 <= n) {
             addOpcode(17);              // sipush
             add(n >> 8);
             add(n);
-        } else
+        }
+        else
             addLdc(constPool.addIntegerInfo(n));
     }
 
@@ -518,28 +516,29 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Appends an instruction for pushing zero or null on the stack.
      * If the type is void, this method does not append any instruction.
      *
-     * @param type the type of the zero value (or null).
+     * @param type      the type of the zero value (or null).
      */
-    public void addConstZero(org.hotswap.agent.javassist.CtClass type) {
+    public void addConstZero(CtClass type) {
         if (type.isPrimitive()) {
-            if (type == org.hotswap.agent.javassist.CtClass.longType)
+            if (type == CtClass.longType)
                 addOpcode(LCONST_0);
-            else if (type == org.hotswap.agent.javassist.CtClass.floatType)
+            else if (type == CtClass.floatType)
                 addOpcode(FCONST_0);
-            else if (type == org.hotswap.agent.javassist.CtClass.doubleType)
+            else if (type == CtClass.doubleType)
                 addOpcode(DCONST_0);
-            else if (type == org.hotswap.agent.javassist.CtClass.voidType)
+            else if (type == CtClass.voidType)
                 throw new RuntimeException("void type?");
             else
                 addOpcode(ICONST_0);
-        } else
+        }
+        else
             addOpcode(ACONST_NULL);
     }
 
     /**
      * Appends ILOAD or (WIDE) ILOAD_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addIload(int n) {
         if (n < 4)
@@ -547,7 +546,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(ILOAD);           // iload
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(ILOAD);
             addIndex(n);
@@ -557,7 +557,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends ISTORE or (WIDE) ISTORE_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addIstore(int n) {
         if (n < 4)
@@ -565,7 +565,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(ISTORE);          // istore
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(ISTORE);
             addIndex(n);
@@ -575,11 +576,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends LCONST or LCONST_&lt;n&gt;
      *
-     * @param n the pushed long integer constant.
+     * @param n         the pushed long integer constant.
      */
     public void addLconst(long n) {
         if (n == 0 || n == 1)
-            addOpcode(9 + (int) n);              // lconst_<n>
+            addOpcode(9 + (int)n);              // lconst_<n>
         else
             addLdc2w(n);
     }
@@ -587,7 +588,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends LLOAD or (WIDE) LLOAD_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addLload(int n) {
         if (n < 4)
@@ -595,7 +596,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(LLOAD);           // lload
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(LLOAD);
             addIndex(n);
@@ -605,7 +607,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends LSTORE or LSTORE_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addLstore(int n) {
         if (n < 4)
@@ -613,21 +615,22 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(LSTORE);          // lstore
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(LSTORE);
             addIndex(n);
         }
     }
-
+   
     /**
      * Appends DCONST or DCONST_&lt;n&gt;
      *
-     * @param d the pushed double constant.
+     * @param d         the pushed double constant.
      */
     public void addDconst(double d) {
         if (d == 0.0 || d == 1.0)
-            addOpcode(14 + (int) d);             // dconst_<n>
+            addOpcode(14 + (int)d);             // dconst_<n>
         else
             addLdc2w(d);
     }
@@ -635,7 +638,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends DLOAD or (WIDE) DLOAD_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addDload(int n) {
         if (n < 4)
@@ -643,7 +646,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(DLOAD);           // dload
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(DLOAD);
             addIndex(n);
@@ -653,7 +657,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends DSTORE or (WIDE) DSTORE_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addDstore(int n) {
         if (n < 4)
@@ -661,7 +665,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(DSTORE);          // dstore
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(DSTORE);
             addIndex(n);
@@ -671,11 +676,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends FCONST or FCONST_&lt;n&gt;
      *
-     * @param f the pushed float constant.
+     * @param f         the pushed float constant.
      */
     public void addFconst(float f) {
         if (f == 0.0f || f == 1.0f || f == 2.0f)
-            addOpcode(11 + (int) f);             // fconst_<n>
+            addOpcode(11 + (int)f);             // fconst_<n>
         else
             addLdc(constPool.addFloatInfo(f));
     }
@@ -683,7 +688,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends FLOAD or (WIDE) FLOAD_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addFload(int n) {
         if (n < 4)
@@ -691,7 +696,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(FLOAD);           // fload
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(FLOAD);
             addIndex(n);
@@ -701,7 +707,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends FSTORE or FSTORE_&lt;n&gt;
      *
-     * @param n an index into the local variable array.
+     * @param n         an index into the local variable array.
      */
     public void addFstore(int n) {
         if (n < 4)
@@ -709,7 +715,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         else if (n < 0x100) {
             addOpcode(FSTORE);          // fstore
             add(n);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(FSTORE);
             addIndex(n);
@@ -720,27 +727,30 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Appends an instruction for loading a value from the
      * local variable at the index <code>n</code>.
      *
-     * @param n    the index.
-     * @param type the type of the loaded value.
-     * @return the size of the value (1 or 2 word).
+     * @param n         the index.
+     * @param type      the type of the loaded value.
+     * @return          the size of the value (1 or 2 word).
      */
-    public int addLoad(int n, org.hotswap.agent.javassist.CtClass type) {
+    public int addLoad(int n, CtClass type) {
         if (type.isPrimitive()) {
-            if (type == org.hotswap.agent.javassist.CtClass.booleanType || type == org.hotswap.agent.javassist.CtClass.charType
-                    || type == org.hotswap.agent.javassist.CtClass.byteType || type == org.hotswap.agent.javassist.CtClass.shortType
-                    || type == org.hotswap.agent.javassist.CtClass.intType)
+            if (type == CtClass.booleanType || type == CtClass.charType
+                || type == CtClass.byteType || type == CtClass.shortType
+                || type == CtClass.intType)
                 addIload(n);
-            else if (type == org.hotswap.agent.javassist.CtClass.longType) {
+            else if (type == CtClass.longType) {
                 addLload(n);
                 return 2;
-            } else if (type == org.hotswap.agent.javassist.CtClass.floatType)
+            }
+            else if(type == CtClass.floatType)
                 addFload(n);
-            else if (type == org.hotswap.agent.javassist.CtClass.doubleType) {
+            else if(type == CtClass.doubleType) {
                 addDload(n);
                 return 2;
-            } else
+            }
+            else
                 throw new RuntimeException("void type?");
-        } else
+        }
+        else
             addAload(n);
 
         return 1;
@@ -750,27 +760,30 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Appends an instruction for storing a value into the
      * local variable at the index <code>n</code>.
      *
-     * @param n    the index.
-     * @param type the type of the stored value.
-     * @return 2 if the type is long or double.  Otherwise 1.
+     * @param n         the index.
+     * @param type      the type of the stored value.
+     * @return          2 if the type is long or double.  Otherwise 1.
      */
-    public int addStore(int n, org.hotswap.agent.javassist.CtClass type) {
+    public int addStore(int n, CtClass type) {
         if (type.isPrimitive()) {
-            if (type == org.hotswap.agent.javassist.CtClass.booleanType || type == org.hotswap.agent.javassist.CtClass.charType
-                    || type == org.hotswap.agent.javassist.CtClass.byteType || type == org.hotswap.agent.javassist.CtClass.shortType
-                    || type == org.hotswap.agent.javassist.CtClass.intType)
+            if (type == CtClass.booleanType || type == CtClass.charType
+                || type == CtClass.byteType || type == CtClass.shortType
+                || type == CtClass.intType)
                 addIstore(n);
-            else if (type == org.hotswap.agent.javassist.CtClass.longType) {
+            else if (type == CtClass.longType) {
                 addLstore(n);
                 return 2;
-            } else if (type == org.hotswap.agent.javassist.CtClass.floatType)
+            }
+            else if (type == CtClass.floatType)
                 addFstore(n);
-            else if (type == org.hotswap.agent.javassist.CtClass.doubleType) {
+            else if (type == CtClass.doubleType) {
                 addDstore(n);
                 return 2;
-            } else
+            }
+            else
                 throw new RuntimeException("void type?");
-        } else
+        }
+        else
             addAstore(n);
 
         return 1;
@@ -780,10 +793,10 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Appends instructions for loading all the parameters onto the
      * operand stack.
      *
-     * @param offset the index of the first parameter.  It is 0
-     *               if the method is static.  Otherwise, it is 1.
+     * @param offset	the index of the first parameter.  It is 0
+     *			if the method is static.  Otherwise, it is 1.
      */
-    public int addLoadParameters(org.hotswap.agent.javassist.CtClass[] params, int offset) {
+    public int addLoadParameters(CtClass[] params, int offset) {
         int stacksize = 0;
         if (params != null) {
             int n = params.length;
@@ -797,9 +810,9 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends CHECKCAST.
      *
-     * @param c the type.
+     * @param c         the type.
      */
-    public void addCheckcast(org.hotswap.agent.javassist.CtClass c) {
+    public void addCheckcast(CtClass c) {
         addOpcode(CHECKCAST);
         addIndex(constPool.addClassInfo(c));
     }
@@ -807,7 +820,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends CHECKCAST.
      *
-     * @param classname a fully-qualified class name.
+     * @param classname         a fully-qualified class name.
      */
     public void addCheckcast(String classname) {
         addOpcode(CHECKCAST);
@@ -817,7 +830,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INSTANCEOF.
      *
-     * @param classname the class name.
+     * @param classname         the class name.
      */
     public void addInstanceof(String classname) {
         addOpcode(INSTANCEOF);
@@ -827,12 +840,13 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends GETFIELD.
      *
-     * @param c    the class.
-     * @param name the field name.
-     * @param type the descriptor of the field type.
-     * @see Descriptor#of(org.hotswap.agent.javassist.CtClass)
+     * @param c         the class.
+     * @param name      the field name.
+     * @param type      the descriptor of the field type.
+     *
+     * @see Descriptor#of(CtClass)
      */
-    public void addGetfield(org.hotswap.agent.javassist.CtClass c, String name, String type) {
+    public void addGetfield(CtClass c, String name, String type) {
         add(GETFIELD);
         int ci = constPool.addClassInfo(c);
         addIndex(constPool.addFieldrefInfo(ci, name, type));
@@ -842,10 +856,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends GETFIELD.
      *
-     * @param c    the fully-qualified class name.
-     * @param name the field name.
-     * @param type the descriptor of the field type.
-     * @see Descriptor#of(org.hotswap.agent.javassist.CtClass)
+     * @param c         the fully-qualified class name.
+     * @param name      the field name.
+     * @param type      the descriptor of the field type.
+     *
+     * @see Descriptor#of(CtClass)
      */
     public void addGetfield(String c, String name, String type) {
         add(GETFIELD);
@@ -857,12 +872,13 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends GETSTATIC.
      *
-     * @param c    the class
-     * @param name the field name
-     * @param type the descriptor of the field type.
-     * @see Descriptor#of(org.hotswap.agent.javassist.CtClass)
+     * @param c         the class
+     * @param name      the field name
+     * @param type      the descriptor of the field type.
+     *
+     * @see Descriptor#of(CtClass)
      */
-    public void addGetstatic(org.hotswap.agent.javassist.CtClass c, String name, String type) {
+    public void addGetstatic(CtClass c, String name, String type) {
         add(GETSTATIC);
         int ci = constPool.addClassInfo(c);
         addIndex(constPool.addFieldrefInfo(ci, name, type));
@@ -872,10 +888,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends GETSTATIC.
      *
-     * @param c    the fully-qualified class name
-     * @param name the field name
-     * @param type the descriptor of the field type.
-     * @see Descriptor#of(org.hotswap.agent.javassist.CtClass)
+     * @param c         the fully-qualified class name
+     * @param name      the field name
+     * @param type      the descriptor of the field type.
+     *
+     * @see Descriptor#of(CtClass)
      */
     public void addGetstatic(String c, String name, String type) {
         add(GETSTATIC);
@@ -887,13 +904,13 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INVOKESPECIAL.
      *
-     * @param clazz      the target class.
-     * @param name       the method name.
-     * @param returnType the return type.
-     * @param paramTypes the parameter types.
+     * @param clazz     the target class.
+     * @param name      the method name.
+     * @param returnType        the return type.
+     * @param paramTypes        the parameter types.
      */
-    public void addInvokespecial(org.hotswap.agent.javassist.CtClass clazz, String name,
-                                 org.hotswap.agent.javassist.CtClass returnType, org.hotswap.agent.javassist.CtClass[] paramTypes) {
+    public void addInvokespecial(CtClass clazz, String name,
+                                 CtClass returnType, CtClass[] paramTypes) {
         String desc = Descriptor.ofMethod(returnType, paramTypes);
         addInvokespecial(clazz, name, desc);
     }
@@ -901,55 +918,99 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INVOKESPECIAL.
      *
-     * @param clazz the target class.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
-     * @see Descriptor#ofConstructor(org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the target class.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
+     * @see Descriptor#ofConstructor(CtClass[])
      */
-    public void addInvokespecial(org.hotswap.agent.javassist.CtClass clazz, String name, String desc) {
-        addInvokespecial(constPool.addClassInfo(clazz), name, desc);
+    public void addInvokespecial(CtClass clazz, String name, String desc) {
+        boolean isInterface = clazz == null ? false : clazz.isInterface();
+        addInvokespecial(isInterface,
+                         constPool.addClassInfo(clazz), name, desc);
     }
 
     /**
-     * Appends INVOKESPECIAL.
+     * Appends INVOKESPECIAL.  The invoked method must not be a default
+     * method declared in an interface.
      *
-     * @param clazz the fully-qualified class name.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
-     * @see Descriptor#ofConstructor(org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the fully-qualified class name.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
+     * @see Descriptor#ofConstructor(CtClass[])
      */
     public void addInvokespecial(String clazz, String name, String desc) {
-        addInvokespecial(constPool.addClassInfo(clazz), name, desc);
+        addInvokespecial(false, constPool.addClassInfo(clazz), name, desc);
+    }
+
+    /**
+     * Appends INVOKESPECIAL.  The invoked method must not be a default
+     * method declared in an interface.
+     *
+     * @param clazz     the index of <code>CONSTANT_Class_info</code>
+     *                  structure.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
+     * @see Descriptor#ofConstructor(CtClass[])
+     */
+    public void addInvokespecial(int clazz, String name, String desc) {
+        addInvokespecial(false, clazz, name, desc);
     }
 
     /**
      * Appends INVOKESPECIAL.
      *
-     * @param clazz the index of <code>CONSTANT_Class_info</code>
-     *              structure.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
-     * @see Descriptor#ofConstructor(org.hotswap.agent.javassist.CtClass[])
+     * @param isInterface   true if the invoked method is a default method
+     *                      declared in an interface.
+     * @param clazz     the index of <code>CONSTANT_Class_info</code>
+     *                  structure.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
+     * @see Descriptor#ofConstructor(CtClass[])
      */
-    public void addInvokespecial(int clazz, String name, String desc) {
+    public void addInvokespecial(boolean isInterface, int clazz, String name, String desc) {
+        int index;
+        if (isInterface)
+            index = constPool.addInterfaceMethodrefInfo(clazz, name, desc);
+        else
+            index = constPool.addMethodrefInfo(clazz, name, desc);
+
+        addInvokespecial(index, desc);
+    }
+
+    /**
+     * Appends INVOKESPECIAL.
+     *
+     * @param index     the index of <code>CONSTANT_Methodref_info</code>
+     *                  or <code>CONSTANT_InterfaceMethodref_info</code>
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
+     * @see Descriptor#ofConstructor(CtClass[])
+     */
+    public void addInvokespecial(int index, String desc) {
         add(INVOKESPECIAL);
-        addIndex(constPool.addMethodrefInfo(clazz, name, desc));
+        addIndex(index);
         growStack(Descriptor.dataSize(desc) - 1);
     }
 
     /**
      * Appends INVOKESTATIC.
      *
-     * @param clazz      the target class.
-     * @param name       the method name
-     * @param returnType the return type.
-     * @param paramTypes the parameter types.
+     * @param clazz     the target class.
+     * @param name      the method name
+     * @param returnType        the return type.
+     * @param paramTypes        the parameter types.
      */
-    public void addInvokestatic(org.hotswap.agent.javassist.CtClass clazz, String name,
-                                org.hotswap.agent.javassist.CtClass returnType, org.hotswap.agent.javassist.CtClass[] paramTypes) {
+    public void addInvokestatic(CtClass clazz, String name,
+                                CtClass returnType, CtClass[] paramTypes) {
         String desc = Descriptor.ofMethod(returnType, paramTypes);
         addInvokestatic(clazz, name, desc);
     }
@@ -957,22 +1018,31 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INVOKESTATIC.
      *
-     * @param clazz the target class.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the target class.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
-    public void addInvokestatic(org.hotswap.agent.javassist.CtClass clazz, String name, String desc) {
-        addInvokestatic(constPool.addClassInfo(clazz), name, desc);
+    public void addInvokestatic(CtClass clazz, String name, String desc) {
+        boolean isInterface;
+        if (clazz == THIS)
+            isInterface = false;
+        else
+            isInterface = clazz.isInterface();
+
+        addInvokestatic(constPool.addClassInfo(clazz), name, desc, isInterface);
     }
 
     /**
      * Appends INVOKESTATIC.
      *
      * @param classname the fully-qualified class name.
+     *                  It must not be an interface-type name.
      * @param name      the method name
      * @param desc      the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
     public void addInvokestatic(String classname, String name, String desc) {
         addInvokestatic(constPool.addClassInfo(classname), name, desc);
@@ -981,55 +1051,68 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INVOKESTATIC.
      *
-     * @param clazz the index of <code>CONSTANT_Class_info</code>
-     *              structure.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the index of <code>CONSTANT_Class_info</code>
+     *                  structure.  It must not be an interface type.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
     public void addInvokestatic(int clazz, String name, String desc) {
+        addInvokestatic(clazz, name, desc, false);
+    }
+
+    private void addInvokestatic(int clazz, String name, String desc,
+                                 boolean isInterface) {
         add(INVOKESTATIC);
-        addIndex(constPool.addMethodrefInfo(clazz, name, desc));
+        int index;
+        if (isInterface)
+            index = constPool.addInterfaceMethodrefInfo(clazz, name, desc);
+        else
+            index = constPool.addMethodrefInfo(clazz, name, desc);
+
+        addIndex(index);
         growStack(Descriptor.dataSize(desc));
     }
 
     /**
      * Appends INVOKEVIRTUAL.
-     * <p/>
+     *
      * <p>The specified method must not be an inherited method.
      * It must be directly declared in the class specified
      * in <code>clazz</code>.
      *
-     * @param clazz      the target class.
-     * @param name       the method name
-     * @param returnType the return type.
-     * @param paramTypes the parameter types.
+     * @param clazz     the target class.
+     * @param name      the method name
+     * @param returnType        the return type.
+     * @param paramTypes        the parameter types.
      */
-    public void addInvokevirtual(org.hotswap.agent.javassist.CtClass clazz, String name,
-                                 org.hotswap.agent.javassist.CtClass returnType, org.hotswap.agent.javassist.CtClass[] paramTypes) {
+    public void addInvokevirtual(CtClass clazz, String name,
+                                 CtClass returnType, CtClass[] paramTypes) {
         String desc = Descriptor.ofMethod(returnType, paramTypes);
         addInvokevirtual(clazz, name, desc);
     }
 
     /**
      * Appends INVOKEVIRTUAL.
-     * <p/>
+     *
      * <p>The specified method must not be an inherited method.
      * It must be directly declared in the class specified
      * in <code>clazz</code>.
      *
-     * @param clazz the target class.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the target class.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
-    public void addInvokevirtual(org.hotswap.agent.javassist.CtClass clazz, String name, String desc) {
+    public void addInvokevirtual(CtClass clazz, String name, String desc) {
         addInvokevirtual(constPool.addClassInfo(clazz), name, desc);
     }
 
     /**
      * Appends INVOKEVIRTUAL.
-     * <p/>
+     *
      * <p>The specified method must not be an inherited method.
      * It must be directly declared in the class specified
      * in <code>classname</code>.
@@ -1037,7 +1120,8 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * @param classname the fully-qualified class name.
      * @param name      the method name
      * @param desc      the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
     public void addInvokevirtual(String classname, String name, String desc) {
         addInvokevirtual(constPool.addClassInfo(classname), name, desc);
@@ -1045,16 +1129,17 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
 
     /**
      * Appends INVOKEVIRTUAL.
-     * <p/>
+     *
      * <p>The specified method must not be an inherited method.
      * It must be directly declared in the class specified
      * by <code>clazz</code>.
      *
-     * @param clazz the index of <code>CONSTANT_Class_info</code>
-     *              structure.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the index of <code>CONSTANT_Class_info</code>
+     *                  structure.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
     public void addInvokevirtual(int clazz, String name, String desc) {
         add(INVOKEVIRTUAL);
@@ -1065,14 +1150,14 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INVOKEINTERFACE.
      *
-     * @param clazz      the target class.
-     * @param name       the method name
-     * @param returnType the return type.
-     * @param paramTypes the parameter types.
-     * @param count      the count operand of the instruction.
+     * @param clazz     the target class.
+     * @param name      the method name
+     * @param returnType        the return type.
+     * @param paramTypes        the parameter types.
+     * @param count     the count operand of the instruction.
      */
-    public void addInvokeinterface(org.hotswap.agent.javassist.CtClass clazz, String name,
-                                   org.hotswap.agent.javassist.CtClass returnType, org.hotswap.agent.javassist.CtClass[] paramTypes,
+    public void addInvokeinterface(CtClass clazz, String name,
+                                   CtClass returnType, CtClass[] paramTypes,
                                    int count) {
         String desc = Descriptor.ofMethod(returnType, paramTypes);
         addInvokeinterface(clazz, name, desc, count);
@@ -1081,16 +1166,17 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INVOKEINTERFACE.
      *
-     * @param clazz the target class.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @param count the count operand of the instruction.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the target class.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     * @param count     the count operand of the instruction.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
-    public void addInvokeinterface(org.hotswap.agent.javassist.CtClass clazz, String name,
+    public void addInvokeinterface(CtClass clazz, String name,
                                    String desc, int count) {
         addInvokeinterface(constPool.addClassInfo(clazz), name, desc,
-                count);
+                           count);
     }
 
     /**
@@ -1100,23 +1186,25 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * @param name      the method name
      * @param desc      the descriptor of the method signature.
      * @param count     the count operand of the instruction.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
     public void addInvokeinterface(String classname, String name,
                                    String desc, int count) {
         addInvokeinterface(constPool.addClassInfo(classname), name, desc,
-                count);
+                           count);
     }
 
     /**
      * Appends INVOKEINTERFACE.
      *
-     * @param clazz the index of <code>CONSTANT_Class_info</code>
-     *              structure.
-     * @param name  the method name
-     * @param desc  the descriptor of the method signature.
-     * @param count the count operand of the instruction.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     * @param clazz     the index of <code>CONSTANT_Class_info</code>
+     *                  structure.
+     * @param name      the method name
+     * @param desc      the descriptor of the method signature.
+     * @param count     the count operand of the instruction.
+     *
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      */
     public void addInvokeinterface(int clazz, String name,
                                    String desc, int count) {
@@ -1130,11 +1218,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends INVOKEDYNAMIC.
      *
-     * @param bootstrap an index into the <code>bootstrap_methods</code> array
-     *                  of the bootstrap method table.
-     * @param name      the method name.
-     * @param desc      the method descriptor.
-     * @see Descriptor#ofMethod(org.hotswap.agent.javassist.CtClass, org.hotswap.agent.javassist.CtClass[])
+     * @param bootstrap     an index into the <code>bootstrap_methods</code> array
+     *                      of the bootstrap method table.     
+     * @param name          the method name.
+     * @param desc          the method descriptor.
+     * @see Descriptor#ofMethod(CtClass,CtClass[])
      * @since 3.17
      */
     public void addInvokedynamic(int bootstrap, String name, String desc) {
@@ -1150,7 +1238,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Appends LDC or LDC_W.  The pushed item is a <code>String</code>
      * object.
      *
-     * @param s the character string pushed by LDC or LDC_W.
+     * @param s         the character string pushed by LDC or LDC_W.
      */
     public void addLdc(String s) {
         addLdc(constPool.addStringInfo(s));
@@ -1159,13 +1247,14 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends LDC or LDC_W.
      *
-     * @param i index into the constant pool.
+     * @param i         index into the constant pool.
      */
     public void addLdc(int i) {
         if (i > 0xFF) {
             addOpcode(LDC_W);
             addIndex(i);
-        } else {
+        }
+        else {
             addOpcode(LDC);
             add(i);
         }
@@ -1190,9 +1279,9 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends NEW.
      *
-     * @param clazz the class of the created instance.
+     * @param clazz     the class of the created instance.
      */
-    public void addNew(org.hotswap.agent.javassist.CtClass clazz) {
+    public void addNew(CtClass clazz) {
         addOpcode(NEW);
         addIndex(constPool.addClassInfo(clazz));
     }
@@ -1200,7 +1289,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends NEW.
      *
-     * @param classname the fully-qualified class name.
+     * @param classname         the fully-qualified class name.
      */
     public void addNew(String classname) {
         addOpcode(NEW);
@@ -1210,7 +1299,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends ANEWARRAY.
      *
-     * @param classname the qualified class name of the element type.
+     * @param classname         the qualified class name of the element type.
      */
     public void addAnewarray(String classname) {
         addOpcode(ANEWARRAY);
@@ -1220,10 +1309,10 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends ICONST and ANEWARRAY.
      *
-     * @param clazz  the elememnt type.
-     * @param length the array length.
+     * @param clazz     the elememnt type.
+     * @param length    the array length.
      */
-    public void addAnewarray(org.hotswap.agent.javassist.CtClass clazz, int length) {
+    public void addAnewarray(CtClass clazz, int length) {
         addIconst(length);
         addOpcode(ANEWARRAY);
         addIndex(constPool.addClassInfo(clazz));
@@ -1232,7 +1321,7 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends NEWARRAY for primitive types.
      *
-     * @param atype <code>T_BOOLEAN</code>, <code>T_CHAR</code>, ...
+     * @param atype     <code>T_BOOLEAN</code>, <code>T_CHAR</code>, ...
      * @see Opcode
      */
     public void addNewarray(int atype, int length) {
@@ -1244,11 +1333,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends MULTINEWARRAY.
      *
-     * @param clazz      the array type.
-     * @param dimensions the sizes of all dimensions.
-     * @return the length of <code>dimensions</code>.
+     * @param clazz             the array type.
+     * @param dimensions        the sizes of all dimensions.
+     * @return          the length of <code>dimensions</code>.
      */
-    public int addMultiNewarray(org.hotswap.agent.javassist.CtClass clazz, int[] dimensions) {
+    public int addMultiNewarray(CtClass clazz, int[] dimensions) {
         int len = dimensions.length;
         for (int i = 0; i < len; ++i)
             addIconst(dimensions[i]);
@@ -1261,11 +1350,11 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Appends MULTINEWARRAY.  The size of every dimension must have been
      * already pushed on the stack.
      *
-     * @param clazz the array type.
-     * @param dim   the number of the dimensions.
-     * @return the value of <code>dim</code>.
+     * @param clazz             the array type.
+     * @param dim               the number of the dimensions.
+     * @return                  the value of <code>dim</code>.
      */
-    public int addMultiNewarray(org.hotswap.agent.javassist.CtClass clazz, int dim) {
+    public int addMultiNewarray(CtClass clazz, int dim) {
         add(MULTIANEWARRAY);
         addIndex(constPool.addClassInfo(clazz));
         add(dim);
@@ -1276,9 +1365,9 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends MULTINEWARRAY.
      *
-     * @param desc the type descriptor of the created array.
-     * @param dim  dimensions.
-     * @return the value of <code>dim</code>.
+     * @param desc      the type descriptor of the created array.
+     * @param dim       dimensions.
+     * @return          the value of <code>dim</code>.
      */
     public int addMultiNewarray(String desc, int dim) {
         add(MULTIANEWARRAY);
@@ -1291,18 +1380,18 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends PUTFIELD.
      *
-     * @param c    the target class.
-     * @param name the field name.
-     * @param desc the descriptor of the field type.
+     * @param c         the target class.
+     * @param name      the field name.
+     * @param desc      the descriptor of the field type.
      */
-    public void addPutfield(org.hotswap.agent.javassist.CtClass c, String name, String desc) {
+    public void addPutfield(CtClass c, String name, String desc) {
         addPutfield0(c, null, name, desc);
     }
 
     /**
      * Appends PUTFIELD.
      *
-     * @param classname the fully-qualified name of the target class.
+     * @param classname         the fully-qualified name of the target class.
      * @param name      the field name.
      * @param desc      the descriptor of the field type.
      */
@@ -1311,12 +1400,12 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
         addPutfield0(null, classname, name, desc);
     }
 
-    private void addPutfield0(org.hotswap.agent.javassist.CtClass target, String classname,
+    private void addPutfield0(CtClass target, String classname,
                               String name, String desc) {
         add(PUTFIELD);
         // target is null if it represents THIS.
         int ci = classname == null ? constPool.addClassInfo(target)
-                : constPool.addClassInfo(classname);
+                                   : constPool.addClassInfo(classname);
         addIndex(constPool.addFieldrefInfo(ci, name, desc));
         growStack(-1 - Descriptor.dataSize(desc));
     }
@@ -1324,32 +1413,32 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends PUTSTATIC.
      *
-     * @param c    the target class.
-     * @param name the field name.
-     * @param desc the descriptor of the field type.
+     * @param c         the target class.
+     * @param name      the field name.
+     * @param desc      the descriptor of the field type.
      */
-    public void addPutstatic(org.hotswap.agent.javassist.CtClass c, String name, String desc) {
+    public void addPutstatic(CtClass c, String name, String desc) {
         addPutstatic0(c, null, name, desc);
     }
 
     /**
      * Appends PUTSTATIC.
      *
-     * @param classname the fully-qualified name of the target class.
-     * @param fieldName the field name.
-     * @param desc      the descriptor of the field type.
+     * @param classname         the fully-qualified name of the target class.
+     * @param fieldName         the field name.
+     * @param desc              the descriptor of the field type.
      */
     public void addPutstatic(String classname, String fieldName, String desc) {
         // if classname is null, the target class is THIS.
         addPutstatic0(null, classname, fieldName, desc);
     }
 
-    private void addPutstatic0(org.hotswap.agent.javassist.CtClass target, String classname,
+    private void addPutstatic0(CtClass target, String classname,
                                String fieldName, String desc) {
         add(PUTSTATIC);
         // target is null if it represents THIS.
         int ci = classname == null ? constPool.addClassInfo(target)
-                : constPool.addClassInfo(classname);
+                                : constPool.addClassInfo(classname);
         addIndex(constPool.addFieldrefInfo(ci, fieldName, desc));
         growStack(-Descriptor.dataSize(desc));
     }
@@ -1357,28 +1446,30 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
     /**
      * Appends ARETURN, IRETURN, .., or RETURN.
      *
-     * @param type the return type.
+     * @param type      the return type.
      */
-    public void addReturn(org.hotswap.agent.javassist.CtClass type) {
+    public void addReturn(CtClass type) {
         if (type == null)
             addOpcode(RETURN);
         else if (type.isPrimitive()) {
-            org.hotswap.agent.javassist.CtPrimitiveType ptype = (org.hotswap.agent.javassist.CtPrimitiveType) type;
+            CtPrimitiveType ptype = (CtPrimitiveType)type;
             addOpcode(ptype.getReturnOp());
-        } else
+        }
+        else
             addOpcode(ARETURN);
     }
 
     /**
      * Appends RET.
      *
-     * @param var local variable
+     * @param var       local variable
      */
     public void addRet(int var) {
         if (var < 0x100) {
             addOpcode(RET);
             add(var);
-        } else {
+        }
+        else {
             addOpcode(WIDE);
             addOpcode(RET);
             addIndex(var);
@@ -1389,12 +1480,12 @@ public class Bytecode extends ByteVector implements Cloneable, Opcode {
      * Appends instructions for executing
      * <code>java.lang.System.println(<i>message</i>)</code>.
      *
-     * @param message printed message.
+     * @param message           printed message.
      */
     public void addPrintln(String message) {
         addGetstatic("java.lang.System", "err", "Ljava/io/PrintStream;");
         addLdc(message);
         addInvokevirtual("java.io.PrintStream",
-                "println", "(Ljava/lang/String;)V");
+                         "println", "(Ljava/lang/String;)V");
     }
 }

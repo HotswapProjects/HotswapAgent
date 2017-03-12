@@ -30,9 +30,7 @@ public class Pair extends ASTree {
         right = _right;
     }
 
-    public void accept(Visitor v) throws CompileError {
-        v.atPair(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atPair(this); }
 
     public String toString() {
         StringBuffer sbuf = new StringBuffer();
@@ -44,19 +42,11 @@ public class Pair extends ASTree {
         return sbuf.toString();
     }
 
-    public ASTree getLeft() {
-        return left;
-    }
+    public ASTree getLeft() { return left; }
 
-    public ASTree getRight() {
-        return right;
-    }
+    public ASTree getRight() { return right; }
 
-    public void setLeft(ASTree _left) {
-        left = _left;
-    }
+    public void setLeft(ASTree _left) { left = _left; }
 
-    public void setRight(ASTree _right) {
-        right = _right;
-    }
+    public void setRight(ASTree _right) { right = _right; }
 }

@@ -40,8 +40,8 @@ import java.security.ProtectionDomain;
  * The startup program of an application using <code>MyTranslator</code>
  * should be something like this:
  *
- * <ul><pre>
- * import javassist.*;
+ * <pre>
+ * import org.hotswap.agent.javassist.*;
  *
  * public class Main {
  *   public static void main(String[] args) throws Throwable {
@@ -52,15 +52,15 @@ import java.security.ProtectionDomain;
  *     cl.run("MyApp", args);
  *   }
  * }
- * </pre></ul>
+ * </pre>
  *
  * <p>Class <code>MyApp</code> is the main program of the application.
  *
  * <p>This program should be executed as follows:
  *
- * <ul><pre>
+ * <pre>
  * % java Main <i>arg1</i> <i>arg2</i>...
- * </pre></ul>
+ * </pre>
  *
  * <p>It modifies the class <code>MyApp</code> with a <code>MyTranslator</code>
  * object before the JVM loads it.
@@ -69,9 +69,9 @@ import java.security.ProtectionDomain;
  *
  * <p>This program execution is equivalent to:
  *
- * <ul><pre>
+ * <pre>
  * % java MyApp <i>arg1</i> <i>arg2</i>...
- * </pre></ul>
+ * </pre>
  *
  * <p>except that classes are translated by <code>MyTranslator</code>
  * at load time.
@@ -81,12 +81,12 @@ import java.security.ProtectionDomain;
  * unnecessary.  For example, if only a class <code>test.Rectangle</code>
  * is modified, the <code>main()</code> method above will be the following:
  *
- * <ul><pre>
+ * <pre>
  * ClassPool cp = ClassPool.getDefault();
  * Loader cl = new Loader(cp);
  * CtClass ct = cp.get("test.Rectangle");
  * ct.setSuperclass(cp.get("test.Point"));
- * cl.run("MyApp", args);</pre></ul>
+ * cl.run("MyApp", args);</pre>
  *
  * <p>This program changes the super class of the <code>test.Rectangle</code>
  * class.
@@ -118,7 +118,7 @@ import java.security.ProtectionDomain;
  * space, then a <code>ClassCastException</code> is thrown.
  *
  * <p>Because of the fact above, this loader delegates only the loading of
- * <code>Loader</code>
+ * <code>javassist.Loader</code>
  * and classes included in package <code>java.*</code> and
  * <code>javax.*</code> to the parent class
  * loader.  Other classes are directly loaded by this loader.
@@ -130,8 +130,8 @@ import java.security.ProtectionDomain;
  * an exception since it accepts an instance of only the
  * <code>java.lang.String</code> loaded by the parent class loader.
  *
- * @see ClassPool
- * @see Translator
+ * @see javassist.ClassPool
+ * @see javassist.Translator
  */
 public class Loader extends ClassLoader {
     private Hashtable notDefinedHere; // must be atomic.
@@ -187,7 +187,7 @@ public class Loader extends ClassLoader {
         source = cp;
         translator = null;
         domain = null;
-        delegateLoadingOf("Loader");
+        delegateLoadingOf("javassist.Loader");
     }
 
     /**
@@ -229,10 +229,10 @@ public class Loader extends ClassLoader {
      *                  a class file.
      * @param t         a translator.
      * @throws NotFoundException        if <code>t.start()</code> throws an exception.
-     * @throws org.hotswap.agent.javassist.CannotCompileException   if <code>t.start()</code> throws an exception.
+     * @throws CannotCompileException   if <code>t.start()</code> throws an exception.
      */
     public void addTranslator(ClassPool cp, Translator t)
-        throws NotFoundException, org.hotswap.agent.javassist.CannotCompileException {
+        throws NotFoundException, CannotCompileException {
         source = cp;
         translator = t;
         t.start(cp);
@@ -245,13 +245,11 @@ public class Loader extends ClassLoader {
      * <p>This method calls <code>run()</code>.
      *
      * @param args              command line parameters.
-     * <ul>
-     * <code>args[0]</code> is the class name to be loaded.
-     * <br><code>args[1..n]</code> are parameters passed
-     *                      to the target <code>main()</code>.
-     * </ul>
+     * <br>&nbsp;&nbsp;{@code args[0]} is the class name to be loaded.
+     * <br>&nbsp;&nbsp;{@code args[1..n]} are parameters passed
+     *                      to the target {@code main()}.
      *
-     * @see Loader#run(String[])
+     * @see javassist.Loader#run(String[])
      */
     public static void main(String[] args) throws Throwable {
         Loader cl = new Loader();
@@ -262,11 +260,10 @@ public class Loader extends ClassLoader {
      * Loads a class and calls <code>main()</code> in that class.
      *
      * @param args              command line parameters.
-     * <ul>
-     * <code>args[0]</code> is the class name to be loaded.
-     * <br><code>args[1..n]</code> are parameters passed
-     *                      to the target <code>main()</code>.
-     * </ul>
+     *
+     * <br>&nbsp;&nbsp;{@code args[0]} is the class name to be loaded.
+     * <br>&nbsp;&nbsp;{@code args[1..n]} are parameters passed
+     *                      to the target {@code main()}.
      */
     public void run(String[] args) throws Throwable {
         int n = args.length - 1;
@@ -353,7 +350,7 @@ public class Loader extends ClassLoader {
                 if (in == null)
                     return null;
 
-                classfile = org.hotswap.agent.javassist.ClassPoolTail.readStream(in);
+                classfile = ClassPoolTail.readStream(in);
             }
         }
         catch (Exception e) {

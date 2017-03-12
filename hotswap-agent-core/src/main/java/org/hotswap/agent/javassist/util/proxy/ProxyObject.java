@@ -21,7 +21,7 @@ package org.hotswap.agent.javassist.util.proxy;
  * This interface is available only if the super class of the proxy object
  * does not have a <code>getHandler()</code> method.  If the super class
  * has <code>getHandler</code>, then <code>Proxy</code> interface is
- * available.
+ * available.  
  *
  * @see ProxyFactory
  * @see Proxy

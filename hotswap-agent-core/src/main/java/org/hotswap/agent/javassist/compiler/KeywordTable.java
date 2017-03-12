@@ -17,16 +17,14 @@
 package org.hotswap.agent.javassist.compiler;
 
 public final class KeywordTable extends java.util.HashMap {
-    public KeywordTable() {
-        super();
-    }
+    public KeywordTable() { super(); }
 
     public int lookup(String name) {
         Object found = get(name);
         if (found == null)
             return -1;
         else
-            return ((Integer) found).intValue();
+            return ((Integer)found).intValue();
     }
 
     public void append(String name, int t) {

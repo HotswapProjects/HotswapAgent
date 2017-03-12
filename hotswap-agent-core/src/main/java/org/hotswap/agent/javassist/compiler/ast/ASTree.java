@@ -16,9 +16,8 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
-import org.hotswap.agent.javassist.compiler.CompileError;
-
 import java.io.Serializable;
+import org.hotswap.agent.javassist.compiler.CompileError;
 
 /**
  * Abstract Syntax Tree.  An ASTree object represents a node of
@@ -26,19 +25,13 @@ import java.io.Serializable;
  * and <code>getRight()</code> returns null.
  */
 public abstract class ASTree implements Serializable {
-    public ASTree getLeft() {
-        return null;
-    }
+    public ASTree getLeft() { return null; }
 
-    public ASTree getRight() {
-        return null;
-    }
+    public ASTree getRight() { return null; }
 
-    public void setLeft(ASTree _left) {
-    }
+    public void setLeft(ASTree _left) {}
 
-    public void setRight(ASTree _right) {
-    }
+    public void setRight(ASTree _right) {}
 
     /**
      * Is a method for the visitor pattern.  It calls

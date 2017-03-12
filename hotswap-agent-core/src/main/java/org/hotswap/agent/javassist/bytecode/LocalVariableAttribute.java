@@ -45,9 +45,9 @@ public class LocalVariableAttribute extends AttributeInfo {
     /**
      * Constructs an empty LocalVariableTable.
      *
-     * @param name the attribute name.
-     *             <code>LocalVariableAttribute.tag</code> or
-     *             <code>LocalVariableAttribute.typeTag</code>.
+     * @param name      the attribute name.
+     *                  <code>LocalVariableAttribute.tag</code> or
+     *                  <code>LocalVariableAttribute.typeTag</code>.
      * @see #tag
      * @see #typeTag
      * @since 3.1
@@ -59,7 +59,8 @@ public class LocalVariableAttribute extends AttributeInfo {
     }
 
     LocalVariableAttribute(ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+        throws IOException
+    {
         super(cp, n, in);
     }
 
@@ -70,11 +71,11 @@ public class LocalVariableAttribute extends AttributeInfo {
     /**
      * Appends a new entry to <code>local_variable_table</code>.
      *
-     * @param startPc         <code>start_pc</code>
-     * @param length          <code>length</code>
-     * @param nameIndex       <code>name_index</code>
-     * @param descriptorIndex <code>descriptor_index</code>
-     * @param index           <code>index</code>
+     * @param startPc           <code>start_pc</code>
+     * @param length            <code>length</code>
+     * @param nameIndex         <code>name_index</code>
+     * @param descriptorIndex   <code>descriptor_index</code>
+     * @param index             <code>index</code>
      */
     public void addEntry(int startPc, int length, int nameIndex,
                          int descriptorIndex, int index) {
@@ -132,12 +133,12 @@ public class LocalVariableAttribute extends AttributeInfo {
      * For each <code>local_variable_table[i].index</code>,
      * this method increases <code>index</code> by <code>delta</code>.
      *
-     * @param lessThan the index does not change if it
-     *                 is less than this value.
+     * @param lessThan      the index does not change if it
+     *                      is less than this value.
      */
     public void shiftIndex(int lessThan, int delta) {
         int size = info.length;
-        for (int i = 2; i < size; i += 10) {
+        for (int i = 2; i < size; i += 10){
             int org = ByteArray.readU16bit(info, i + 8);
             if (org >= lessThan)
                 ByteArray.write16bit(org + delta, info, i + 8);
@@ -157,7 +158,7 @@ public class LocalVariableAttribute extends AttributeInfo {
      * This represents the index into the code array from which the local
      * variable is effective.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public int startPc(int i) {
         return ByteArray.readU16bit(info, i * 10 + 2);
@@ -168,7 +169,7 @@ public class LocalVariableAttribute extends AttributeInfo {
      * This represents the length of the code region in which the local
      * variable is effective.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public int codeLength(int i) {
         return ByteArray.readU16bit(info, i * 10 + 4);
@@ -197,7 +198,7 @@ public class LocalVariableAttribute extends AttributeInfo {
      * Returns the value of <code>local_variable_table[i].name_index</code>.
      * This represents the name of the local variable.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public int nameIndex(int i) {
         return ByteArray.readU16bit(info, i * 10 + 6);
@@ -207,7 +208,7 @@ public class LocalVariableAttribute extends AttributeInfo {
      * Returns the name of the local variable
      * specified by <code>local_variable_table[i].name_index</code>.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public String variableName(int i) {
         return getConstPool().getUtf8Info(nameIndex(i));
@@ -217,13 +218,13 @@ public class LocalVariableAttribute extends AttributeInfo {
      * Returns the value of
      * <code>local_variable_table[i].descriptor_index</code>.
      * This represents the type descriptor of the local variable.
-     * <p/>
+     * <p>
      * If this attribute represents a LocalVariableTypeTable attribute,
      * this method returns the value of
      * <code>local_variable_type_table[i].signature_index</code>.
      * It represents the type of the local variable.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public int descriptorIndex(int i) {
         return ByteArray.readU16bit(info, i * 10 + 8);
@@ -234,8 +235,8 @@ public class LocalVariableAttribute extends AttributeInfo {
      * If this attribute represents a LocalVariableTypeTable attribute,
      * this method should be used instead of <code>descriptorIndex()</code>
      * since the method name is more appropriate.
-     *
-     * @param i the i-th entry.
+     * 
+     * @param i         the i-th entry.
      * @see #descriptorIndex(int)
      * @see SignatureAttribute#toFieldSignature(String)
      */
@@ -246,12 +247,12 @@ public class LocalVariableAttribute extends AttributeInfo {
     /**
      * Returns the type descriptor of the local variable
      * specified by <code>local_variable_table[i].descriptor_index</code>.
-     * <p/>
+     * <p>
      * If this attribute represents a LocalVariableTypeTable attribute,
      * this method returns the type signature of the local variable
      * specified by <code>local_variable_type_table[i].signature_index</code>.
-     *
-     * @param i the i-th entry.
+      *
+     * @param i         the i-th entry.
      */
     public String descriptor(int i) {
         return getConstPool().getUtf8Info(descriptorIndex(i));
@@ -262,11 +263,11 @@ public class LocalVariableAttribute extends AttributeInfo {
      * If this attribute represents a LocalVariableTypeTable attribute,
      * this method should be used instead of <code>descriptor()</code>
      * since the method name is more appropriate.
-     * <p/>
+     *
      * <p>To parse the string, call <code>toFieldSignature(String)</code>
      * in <code>SignatureAttribute</code>.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      * @see #descriptor(int)
      * @see SignatureAttribute#toFieldSignature(String)
      */
@@ -278,7 +279,7 @@ public class LocalVariableAttribute extends AttributeInfo {
      * Returns <code>local_variable_table[i].index</code>.
      * This represents the index of the local variable.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public int index(int i) {
         return ByteArray.readU16bit(info, i * 10 + 10);
@@ -287,8 +288,8 @@ public class LocalVariableAttribute extends AttributeInfo {
     /**
      * Makes a copy.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames should be null.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        should be null.
      */
     public AttributeInfo copy(ConstPool newCp, Map classnames) {
         byte[] src = get();
@@ -312,7 +313,7 @@ public class LocalVariableAttribute extends AttributeInfo {
 
             ByteArray.write16bit(name, dest, j + 4);
 
-            if (type != 0) {
+            if (type != 0)  {
                 String sig = cp.getUtf8Info(type);
                 sig = Descriptor.rename(sig, classnames);
                 type = newCp.addUtf8Info(sig);

@@ -16,10 +16,9 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 
 class CtNewClass extends CtClassType {
     /* true if the class is an interface.
@@ -38,9 +37,9 @@ class CtNewClass extends CtClassType {
 
         classfile = new ClassFile(isInterface, name, superName);
         if (isInterface && superclass != null)
-            classfile.setInterfaces(new String[]{superclass.getName()});
+            classfile.setInterfaces(new String[] { superclass.getName() });
 
-        setModifiers(org.hotswap.agent.javassist.Modifier.setPublic(getModifiers()));
+        setModifiers(Modifier.setPublic(getModifiers()));
         hasConstructor = isInterface;
     }
 
@@ -52,19 +51,22 @@ class CtNewClass extends CtClassType {
     }
 
     public void addConstructor(CtConstructor c)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+        throws CannotCompileException
+    {
         hasConstructor = true;
         super.addConstructor(c);
     }
 
     public void toBytecode(DataOutputStream out)
-            throws org.hotswap.agent.javassist.CannotCompileException, IOException {
+        throws CannotCompileException, IOException
+    {
         if (!hasConstructor)
             try {
                 inheritAllConstructors();
                 hasConstructor = true;
-            } catch (NotFoundException e) {
-                throw new org.hotswap.agent.javassist.CannotCompileException(e);
+            }
+            catch (NotFoundException e) {
+                throw new CannotCompileException(e);
             }
 
         super.toBytecode(out);
@@ -72,13 +74,14 @@ class CtNewClass extends CtClassType {
 
     /**
      * Adds constructors inhrited from the super class.
-     * <p/>
+     *
      * <p>After this method is called, the class inherits all the
      * constructors from the super class.  The added constructor
      * calls the super's constructor with the same signature.
      */
     public void inheritAllConstructors()
-            throws org.hotswap.agent.javassist.CannotCompileException, NotFoundException {
+        throws CannotCompileException, NotFoundException
+    {
         CtClass superclazz;
         CtConstructor[] cs;
 
@@ -91,25 +94,25 @@ class CtNewClass extends CtClassType {
             int mod = c.getModifiers();
             if (isInheritable(mod, superclazz)) {
                 CtConstructor cons
-                        = CtNewConstructor.make(c.getParameterTypes(),
-                        c.getExceptionTypes(), this);
-                cons.setModifiers(mod & (org.hotswap.agent.javassist.Modifier.PUBLIC | org.hotswap.agent.javassist.Modifier.PROTECTED | org.hotswap.agent.javassist.Modifier.PRIVATE));
+                    = CtNewConstructor.make(c.getParameterTypes(),
+                                            c.getExceptionTypes(), this);
+                cons.setModifiers(mod & (Modifier.PUBLIC | Modifier.PROTECTED | Modifier.PRIVATE));
                 addConstructor(cons);
                 ++n;
             }
         }
 
         if (n < 1)
-            throw new org.hotswap.agent.javassist.CannotCompileException(
-                    "no inheritable constructor in " + superclazz.getName());
+            throw new CannotCompileException(
+                        "no inheritable constructor in " + superclazz.getName());
 
     }
 
     private boolean isInheritable(int mod, CtClass superclazz) {
-        if (org.hotswap.agent.javassist.Modifier.isPrivate(mod))
+        if (Modifier.isPrivate(mod))
             return false;
 
-        if (org.hotswap.agent.javassist.Modifier.isPackage(mod)) {
+        if (Modifier.isPackage(mod)) {
             String pname = getPackageName();
             String pname2 = superclazz.getPackageName();
             if (pname == null)

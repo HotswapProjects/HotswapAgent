@@ -20,22 +20,23 @@ package org.hotswap.agent.javassist.bytecode;
  * Utility for computing <code>max_stack</code>.
  */
 class CodeAnalyzer implements Opcode {
-    private org.hotswap.agent.javassist.bytecode.ConstPool constPool;
-    private org.hotswap.agent.javassist.bytecode.CodeAttribute codeAttr;
+    private ConstPool constPool;
+    private CodeAttribute codeAttr;
 
-    public CodeAnalyzer(org.hotswap.agent.javassist.bytecode.CodeAttribute ca) {
+    public CodeAnalyzer(CodeAttribute ca) {
         codeAttr = ca;
         constPool = ca.getConstPool();
     }
 
     public int computeMaxStack()
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         /* d = stack[i]
          * d == 0: not visited
          * d > 0: the depth is d - 1 after executing the bytecode at i.
          * d < 0: not visited. the initial depth (before execution) is 1 - d.
          */
-        org.hotswap.agent.javassist.bytecode.CodeIterator ci = codeAttr.iterator();
+        CodeIterator ci = codeAttr.iterator();
         int length = ci.getCodeLength();
         int[] stack = new int[length];
         constPool = codeAttr.getConstPool();
@@ -58,9 +59,9 @@ class CodeAnalyzer implements Opcode {
         return maxStack - 1;    // the base is 1.
     }
 
-    private void initStack(int[] stack, org.hotswap.agent.javassist.bytecode.CodeAttribute ca) {
+    private void initStack(int[] stack, CodeAttribute ca) {
         stack[0] = -1;
-        org.hotswap.agent.javassist.bytecode.ExceptionTable et = ca.getExceptionTable();
+        ExceptionTable et = ca.getExceptionTable();
         if (et != null) {
             int size = et.size();
             for (int i = 0; i < size; ++i)
@@ -68,8 +69,9 @@ class CodeAnalyzer implements Opcode {
         }
     }
 
-    private void visitBytecode(org.hotswap.agent.javassist.bytecode.CodeIterator ci, int[] stack, int index)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    private void visitBytecode(CodeIterator ci, int[] stack, int index)
+        throws BadBytecode
+    {
         int codeLength = stack.length;
         ci.move(index);
         int stackDepth = -stack[index];
@@ -81,7 +83,7 @@ class CodeAnalyzer implements Opcode {
             int op = ci.byteAt(index);
             stackDepth = visitInst(op, ci, index, stackDepth);
             if (stackDepth < 1)
-                throw new org.hotswap.agent.javassist.bytecode.BadBytecode("stack underflow at " + index);
+                throw new BadBytecode("stack underflow at " + index);
 
             if (processBranch(op, ci, index, codeLength, stack, stackDepth, jsrDepth))
                 break;
@@ -94,32 +96,34 @@ class CodeAnalyzer implements Opcode {
         }
     }
 
-    private boolean processBranch(int opcode, org.hotswap.agent.javassist.bytecode.CodeIterator ci, int index,
+    private boolean processBranch(int opcode, CodeIterator ci, int index,
                                   int codeLength, int[] stack, int stackDepth, int[] jsrDepth)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         if ((IFEQ <= opcode && opcode <= IF_ACMPNE)
-                || opcode == IFNULL || opcode == IFNONNULL) {
+                            || opcode == IFNULL || opcode == IFNONNULL) {
             int target = index + ci.s16bitAt(index + 1);
             checkTarget(index, target, codeLength, stack, stackDepth);
-        } else {
+        }
+        else {
             int target, index2;
             switch (opcode) {
-                case GOTO:
+            case GOTO :
+                target = index + ci.s16bitAt(index + 1);
+                checkTarget(index, target, codeLength, stack, stackDepth);
+                return true;
+            case GOTO_W :
+                target = index + ci.s32bitAt(index + 1);
+                checkTarget(index, target, codeLength, stack, stackDepth);
+                return true;
+            case JSR :
+            case JSR_W :
+                if (opcode == JSR)
                     target = index + ci.s16bitAt(index + 1);
-                    checkTarget(index, target, codeLength, stack, stackDepth);
-                    return true;
-                case GOTO_W:
+                else
                     target = index + ci.s32bitAt(index + 1);
-                    checkTarget(index, target, codeLength, stack, stackDepth);
-                    return true;
-                case JSR:
-                case JSR_W:
-                    if (opcode == JSR)
-                        target = index + ci.s16bitAt(index + 1);
-                    else
-                        target = index + ci.s32bitAt(index + 1);
 
-                    checkTarget(index, target, codeLength, stack, stackDepth);
+                checkTarget(index, target, codeLength, stack, stackDepth);
                 /*
                  * It is unknown which RET comes back to this JSR.
                  * So we assume that if the stack depth at one JSR instruction
@@ -127,53 +131,56 @@ class CodeAnalyzer implements Opcode {
                  * instructions.  Note that STACK_GROW[JSR] is 1 since it pushes
                  * a return address on the operand stack.
                  */
-                    if (jsrDepth[0] < 0) {
-                        jsrDepth[0] = stackDepth;
-                        return false;
-                    } else if (stackDepth == jsrDepth[0])
-                        return false;
-                    else
-                        throw new org.hotswap.agent.javassist.bytecode.BadBytecode(
-                                "sorry, cannot compute this data flow due to JSR: "
-                                        + stackDepth + "," + jsrDepth[0]);
-                case RET:
-                    if (jsrDepth[0] < 0) {
-                        jsrDepth[0] = stackDepth + 1;
-                        return false;
-                    } else if (stackDepth + 1 == jsrDepth[0])
-                        return true;
-                    else
-                        throw new org.hotswap.agent.javassist.bytecode.BadBytecode(
-                                "sorry, cannot compute this data flow due to RET: "
-                                        + stackDepth + "," + jsrDepth[0]);
-                case LOOKUPSWITCH:
-                case TABLESWITCH:
-                    index2 = (index & ~3) + 4;
-                    target = index + ci.s32bitAt(index2);
-                    checkTarget(index, target, codeLength, stack, stackDepth);
-                    if (opcode == LOOKUPSWITCH) {
-                        int npairs = ci.s32bitAt(index2 + 4);
-                        index2 += 12;
-                        for (int i = 0; i < npairs; ++i) {
-                            target = index + ci.s32bitAt(index2);
-                            checkTarget(index, target, codeLength,
+                if (jsrDepth[0] < 0) {
+                    jsrDepth[0] = stackDepth;
+                    return false;
+                }
+                else if (stackDepth == jsrDepth[0])
+                    return false;
+                else
+                    throw new BadBytecode(
+                        "sorry, cannot compute this data flow due to JSR: "
+                            + stackDepth + "," + jsrDepth[0]);
+            case RET :
+                if (jsrDepth[0] < 0) {
+                    jsrDepth[0] = stackDepth + 1;
+                    return false;
+                }
+                else if (stackDepth + 1 == jsrDepth[0])
+                    return true;
+                else
+                    throw new BadBytecode(
+                        "sorry, cannot compute this data flow due to RET: "
+                            + stackDepth + "," + jsrDepth[0]);
+            case LOOKUPSWITCH :
+            case TABLESWITCH :
+                index2 = (index & ~3) + 4;
+                target = index + ci.s32bitAt(index2);
+                checkTarget(index, target, codeLength, stack, stackDepth);
+                if (opcode == LOOKUPSWITCH) {
+                    int npairs = ci.s32bitAt(index2 + 4);
+                    index2 += 12;
+                    for (int i = 0; i < npairs; ++i) {
+                        target = index + ci.s32bitAt(index2);
+                        checkTarget(index, target, codeLength,
                                     stack, stackDepth);
-                            index2 += 8;
-                        }
-                    } else {
-                        int low = ci.s32bitAt(index2 + 4);
-                        int high = ci.s32bitAt(index2 + 8);
-                        int n = high - low + 1;
-                        index2 += 12;
-                        for (int i = 0; i < n; ++i) {
-                            target = index + ci.s32bitAt(index2);
-                            checkTarget(index, target, codeLength,
-                                    stack, stackDepth);
-                            index2 += 4;
-                        }
+                        index2 += 8;
                     }
+                }
+                else {
+                    int low = ci.s32bitAt(index2 + 4);
+                    int high = ci.s32bitAt(index2 + 8);
+                    int n = high - low + 1;
+                    index2 += 12;
+                    for (int i = 0; i < n; ++i) {
+                        target = index + ci.s32bitAt(index2);
+                        checkTarget(index, target, codeLength,
+                                    stack, stackDepth);
+                        index2 += 4;
+                    }
+                }
 
-                    return true;    // always branch.
+                return true;    // always branch.
             }
         }
 
@@ -182,77 +189,79 @@ class CodeAnalyzer implements Opcode {
 
     private void checkTarget(int opIndex, int target, int codeLength,
                              int[] stack, int stackDepth)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         if (target < 0 || codeLength <= target)
-            throw new org.hotswap.agent.javassist.bytecode.BadBytecode("bad branch offset at " + opIndex);
+            throw new BadBytecode("bad branch offset at " + opIndex);
 
         int d = stack[target];
         if (d == 0)
             stack[target] = -stackDepth;
         else if (d != stackDepth && d != -stackDepth)
-            throw new org.hotswap.agent.javassist.bytecode.BadBytecode("verification error (" + stackDepth +
-                    "," + d + ") at " + opIndex);
+            throw new BadBytecode("verification error (" + stackDepth +
+                                  "," + d + ") at " + opIndex);
     }
-
+                             
     private static boolean isEnd(int opcode) {
-        return (IRETURN <= opcode && opcode <= RETURN) || opcode == ATHROW;
+        return (IRETURN <= opcode && opcode <= RETURN) || opcode == ATHROW; 
     }
 
     /**
      * Visits an instruction.
      */
-    private int visitInst(int op, org.hotswap.agent.javassist.bytecode.CodeIterator ci, int index, int stack)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    private int visitInst(int op, CodeIterator ci, int index, int stack)
+        throws BadBytecode
+    {
         String desc;
         switch (op) {
-            case GETFIELD:
-                stack += getFieldSize(ci, index) - 1;
-                break;
-            case PUTFIELD:
-                stack -= getFieldSize(ci, index) + 1;
-                break;
-            case GETSTATIC:
-                stack += getFieldSize(ci, index);
-                break;
-            case PUTSTATIC:
-                stack -= getFieldSize(ci, index);
-                break;
-            case INVOKEVIRTUAL:
-            case INVOKESPECIAL:
-                desc = constPool.getMethodrefType(ci.u16bitAt(index + 1));
-                stack += org.hotswap.agent.javassist.bytecode.Descriptor.dataSize(desc) - 1;
-                break;
-            case INVOKESTATIC:
-                desc = constPool.getMethodrefType(ci.u16bitAt(index + 1));
-                stack += org.hotswap.agent.javassist.bytecode.Descriptor.dataSize(desc);
-                break;
-            case INVOKEINTERFACE:
-                desc = constPool.getInterfaceMethodrefType(
-                        ci.u16bitAt(index + 1));
-                stack += org.hotswap.agent.javassist.bytecode.Descriptor.dataSize(desc) - 1;
-                break;
-            case INVOKEDYNAMIC:
-                desc = constPool.getInvokeDynamicType(ci.u16bitAt(index + 1));
-                stack += org.hotswap.agent.javassist.bytecode.Descriptor.dataSize(desc);     // assume CosntPool#REF_invokeStatic
-                break;
-            case ATHROW:
-                stack = 1;      // the stack becomes empty (1 means no values).
-                break;
-            case MULTIANEWARRAY:
-                stack += 1 - ci.byteAt(index + 3);
-                break;
-            case WIDE:
-                op = ci.byteAt(index + 1);
-                // don't break here.
-            default:
-                stack += STACK_GROW[op];
+        case GETFIELD :
+            stack += getFieldSize(ci, index) - 1;
+            break;
+        case PUTFIELD :
+            stack -= getFieldSize(ci, index) + 1;
+            break;
+        case GETSTATIC :
+            stack += getFieldSize(ci, index);
+            break;
+        case PUTSTATIC :
+            stack -= getFieldSize(ci, index);
+            break;
+        case INVOKEVIRTUAL :
+        case INVOKESPECIAL :
+            desc = constPool.getMethodrefType(ci.u16bitAt(index + 1));
+            stack += Descriptor.dataSize(desc) - 1;
+            break;
+        case INVOKESTATIC :
+            desc = constPool.getMethodrefType(ci.u16bitAt(index + 1));
+            stack += Descriptor.dataSize(desc);
+            break;
+        case INVOKEINTERFACE :
+            desc = constPool.getInterfaceMethodrefType(
+                                            ci.u16bitAt(index + 1));
+            stack += Descriptor.dataSize(desc) - 1;
+            break;
+        case INVOKEDYNAMIC :
+            desc = constPool.getInvokeDynamicType(ci.u16bitAt(index + 1));
+            stack += Descriptor.dataSize(desc);     // assume CosntPool#REF_invokeStatic
+            break;
+        case ATHROW :
+            stack = 1;      // the stack becomes empty (1 means no values).
+            break;
+        case MULTIANEWARRAY :
+            stack += 1 - ci.byteAt(index + 3);
+            break;
+        case WIDE :
+            op = ci.byteAt(index + 1);
+            // don't break here.
+        default :
+            stack += STACK_GROW[op];
         }
 
         return stack;
     }
 
-    private int getFieldSize(org.hotswap.agent.javassist.bytecode.CodeIterator ci, int index) {
+    private int getFieldSize(CodeIterator ci, int index) {
         String desc = constPool.getFieldrefType(ci.u16bitAt(index + 1));
-        return org.hotswap.agent.javassist.bytecode.Descriptor.dataSize(desc);
+        return Descriptor.dataSize(desc);
     }
 }

@@ -16,19 +16,19 @@
 
 package org.hotswap.agent.javassist.tools.web;
 
+import java.net.*;
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Date;
+import org.hotswap.agent.javassist.*;
 
 /**
  * A web server for running sample programs.
- * <p/>
+ *
  * <p>This enables a Java program to instrument class files loaded by
  * web browsers for applets.  Since the (standard) security manager
  * does not allow an applet to create and use a class loader,
  * instrumenting class files must be done by this web server.
- * <p/>
+ *
  * <p><b>Note:</b> although this class is included in the Javassist API,
  * it is provided as a sample implementation of the web server using
  * Javassist.  Especially, there might be security flaws in this server.
@@ -36,10 +36,10 @@ import java.util.Date;
  */
 public class Webserver {
     private ServerSocket socket;
-    private org.hotswap.agent.javassist.ClassPool classPool;
-    protected org.hotswap.agent.javassist.Translator translator;
+    private ClassPool classPool;
+    protected Translator translator;
 
-    private final static byte[] endofline = {0x0d, 0x0a};
+    private final static byte[] endofline = { 0x0d, 0x0a };
 
     private final static int typeHtml = 1;
     private final static int typeClass = 2;
@@ -63,7 +63,7 @@ public class Webserver {
      * character.)
      * If this field is null, the top directory is the current one where
      * the JVM is running.
-     * <p/>
+     *
      * <p>If the given URL indicates a class file and the class file
      * is not found under the directory specified by this variable,
      * then <code>Class.getResourceAsStream()</code> is called
@@ -79,15 +79,16 @@ public class Webserver {
         if (args.length == 1) {
             Webserver web = new Webserver(args[0]);
             web.run();
-        } else
+        }
+        else
             System.err.println(
-                    "Usage: java Webserver <port number>");
+                        "Usage: java javassist.tools.web.Webserver <port number>");
     }
 
     /**
      * Constructs a web server.
      *
-     * @param port port number
+     * @param port      port number
      */
     public Webserver(String port) throws IOException {
         this(Integer.parseInt(port));
@@ -96,7 +97,7 @@ public class Webserver {
     /**
      * Constructs a web server.
      *
-     * @param port port number
+     * @param port      port number
      */
     public Webserver(int port) throws IOException {
         socket = new ServerSocket(port);
@@ -108,7 +109,7 @@ public class Webserver {
      * Requests the web server to use the specified
      * <code>ClassPool</code> object for obtaining a class file.
      */
-    public void setClassPool(org.hotswap.agent.javassist.ClassPool loader) {
+    public void setClassPool(ClassPool loader) {
         classPool = loader;
     }
 
@@ -116,12 +117,13 @@ public class Webserver {
      * Adds a translator, which is called whenever a client requests
      * a class file.
      *
-     * @param cp the <code>ClassPool</code> object for obtaining
-     *           a class file.
-     * @param t  a translator.
+     * @param cp        the <code>ClassPool</code> object for obtaining
+     *                  a class file.
+     * @param t         a translator.
      */
-    public void addTranslator(org.hotswap.agent.javassist.ClassPool cp, org.hotswap.agent.javassist.Translator t)
-            throws org.hotswap.agent.javassist.NotFoundException, org.hotswap.agent.javassist.CannotCompileException {
+    public void addTranslator(ClassPool cp, Translator t)
+        throws NotFoundException, CannotCompileException
+    {
         classPool = cp;
         translator = t;
         t.start(classPool);
@@ -174,11 +176,12 @@ public class Webserver {
      */
     public void run() {
         System.err.println("ready to service...");
-        for (; ; )
+        for (;;)
             try {
                 ServiceThread th = new ServiceThread(this, socket.accept());
                 th.start();
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 logging(e.toString());
             }
     }
@@ -188,13 +191,14 @@ public class Webserver {
         String cmd = readLine(in);
         logging(clnt.getInetAddress().getHostName(),
                 new Date().toString(), cmd);
-        while (skipLine(in) > 0) {
+        while (skipLine(in) > 0){
         }
 
         OutputStream out = new BufferedOutputStream(clnt.getOutputStream());
         try {
             doReply(in, out, cmd);
-        } catch (BadHttpRequest e) {
+        }
+        catch (BadHttpRequest e) {
             replyError(out, e);
         }
 
@@ -208,7 +212,7 @@ public class Webserver {
         StringBuffer buf = new StringBuffer();
         int c;
         while ((c = in.read()) >= 0 && c != 0x0d)
-            buf.append((char) c);
+            buf.append((char)c);
 
         in.read();      /* skip 0x0a (LF) */
         return buf.toString();
@@ -227,11 +231,12 @@ public class Webserver {
     /**
      * Proceses a HTTP request from a client.
      *
-     * @param out the output stream to a client
-     * @param cmd the command received from a client
+     * @param out       the output stream to a client
+     * @param cmd       the command received from a client
      */
     public void doReply(InputStream in, OutputStream out, String cmd)
-            throws IOException, BadHttpRequest {
+        throws IOException, BadHttpRequest
+    {
         int len;
         int fileType;
         String filename, urlName;
@@ -254,7 +259,7 @@ public class Webserver {
 
         len = filename.length();
         if (fileType == typeClass
-                && letUsersSendClassfile(out, filename, len))
+            && letUsersSendClassfile(out, filename, len))
             return;
 
         checkFilename(filename, len);
@@ -269,7 +274,7 @@ public class Webserver {
             sendHeader(out, file.length(), fileType);
             FileInputStream fin = new FileInputStream(file);
             byte[] filebuffer = new byte[4096];
-            for (; ; ) {
+            for (;;) {
                 len = fin.read(filebuffer);
                 if (len <= 0)
                     break;
@@ -286,11 +291,11 @@ public class Webserver {
 
         if (fileType == typeClass) {
             InputStream fin
-                    = getClass().getResourceAsStream("/" + urlName);
+                = getClass().getResourceAsStream("/" + urlName);
             if (fin != null) {
                 ByteArrayOutputStream barray = new ByteArrayOutputStream();
                 byte[] filebuffer = new byte[4096];
-                for (; ; ) {
+                for (;;) {
                     len = fin.read(filebuffer);
                     if (len <= 0)
                         break;
@@ -310,7 +315,8 @@ public class Webserver {
     }
 
     private void checkFilename(String filename, int len)
-            throws BadHttpRequest {
+        throws BadHttpRequest
+    {
         for (int i = 0; i < len; ++i) {
             char c = filename.charAt(i);
             if (!Character.isJavaIdentifierPart(c) && c != '.' && c != '/')
@@ -323,22 +329,24 @@ public class Webserver {
 
     private boolean letUsersSendClassfile(OutputStream out,
                                           String filename, int length)
-            throws IOException, BadHttpRequest {
+        throws IOException, BadHttpRequest
+    {
         if (classPool == null)
             return false;
 
         byte[] classfile;
         String classname
-                = filename.substring(0, length - 6).replace('/', '.');
+            = filename.substring(0, length - 6).replace('/', '.');
         try {
             if (translator != null)
                 translator.onLoad(classPool, classname);
 
-            org.hotswap.agent.javassist.CtClass c = classPool.get(classname);
+            CtClass c = classPool.get(classname);
             classfile = c.toBytecode();
             if (debugDir != null)
                 c.writeFile(debugDir);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new BadHttpRequest(e);
         }
 
@@ -348,7 +356,8 @@ public class Webserver {
     }
 
     private void sendHeader(OutputStream out, long dataLength, int filetype)
-            throws IOException {
+        throws IOException
+    {
         out.write("HTTP/1.0 200 OK".getBytes());
         out.write(endofline);
         out.write("Content-Length: ".getBytes());
@@ -370,7 +379,8 @@ public class Webserver {
     }
 
     private void replyError(OutputStream out, BadHttpRequest e)
-            throws IOException {
+        throws IOException
+    {
         logging2("bad request: " + e.toString());
         out.write("HTTP/1.0 400 Bad Request".getBytes());
         out.write(endofline);
@@ -391,7 +401,8 @@ class ServiceThread extends Thread {
     public void run() {
         try {
             web.process(sock);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
         }
     }
 }

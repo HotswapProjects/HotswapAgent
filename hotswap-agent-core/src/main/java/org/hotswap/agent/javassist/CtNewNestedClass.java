@@ -16,8 +16,8 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.javassist.bytecode.InnerClassesAttribute;
 
 /**
@@ -40,8 +40,8 @@ class CtNewNestedClass extends CtNewClass {
 
     private static void updateInnerEntry(int mod, String name, CtClass clazz, boolean outer) {
         ClassFile cf = clazz.getClassFile2();
-        InnerClassesAttribute ica = (InnerClassesAttribute) cf.getAttribute(
-                InnerClassesAttribute.tag);
+        InnerClassesAttribute ica = (InnerClassesAttribute)cf.getAttribute(
+                                                InnerClassesAttribute.tag);
         if (ica == null)
             return;
 
@@ -55,9 +55,10 @@ class CtNewNestedClass extends CtNewClass {
                     try {
                         CtClass parent = clazz.getClassPool().get(outName);
                         updateInnerEntry(mod, name, parent, false);
-                    } catch (NotFoundException e) {
+                    }
+                    catch (NotFoundException e) {
                         throw new RuntimeException("cannot find the declaring class: "
-                                + outName);
+                                                   + outName);
                     }
 
                 break;

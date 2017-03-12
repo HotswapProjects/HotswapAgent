@@ -18,7 +18,6 @@ package org.hotswap.agent.javassist.bytecode.annotation;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 
@@ -35,7 +34,7 @@ public class LongMemberValue extends MemberValue {
      * Constructs a long constant value.  The initial value is specified
      * by the constant pool entry at the given index.
      *
-     * @param index the index of a CONSTANT_Long_info structure.
+     * @param index     the index of a CONSTANT_Long_info structure.
      */
     public LongMemberValue(int index, ConstPool cp) {
         super('J', cp);
@@ -45,7 +44,7 @@ public class LongMemberValue extends MemberValue {
     /**
      * Constructs a long constant value.
      *
-     * @param j the initial value.
+     * @param j         the initial value.
      */
     public LongMemberValue(long j, ConstPool cp) {
         super('J', cp);
@@ -92,14 +91,14 @@ public class LongMemberValue extends MemberValue {
     /**
      * Writes the value.
      */
-    public void write(org.hotswap.agent.javassist.bytecode.annotation.AnnotationsWriter writer) throws IOException {
+    public void write(AnnotationsWriter writer) throws IOException {
         writer.constValueIndex(getValue());
     }
 
     /**
      * Accepts a visitor.
      */
-    public void accept(org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor visitor) {
+    public void accept(MemberValueVisitor visitor) {
         visitor.visitLongMemberValue(this);
     }
 }

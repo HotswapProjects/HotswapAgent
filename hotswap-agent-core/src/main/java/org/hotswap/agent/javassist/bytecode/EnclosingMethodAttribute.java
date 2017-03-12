@@ -20,38 +20,41 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Map;
 
+import org.hotswap.agent.javassist.CtConstructor;
+
 /**
  * <code>EnclosingMethod_attribute</code>.
  */
-public class EnclosingMethodAttribute extends org.hotswap.agent.javassist.bytecode.AttributeInfo {
+public class EnclosingMethodAttribute extends AttributeInfo {
     /**
      * The name of this attribute <code>"EnclosingMethod"</code>.
      */
     public static final String tag = "EnclosingMethod";
 
-    EnclosingMethodAttribute(org.hotswap.agent.javassist.bytecode.ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+    EnclosingMethodAttribute(ConstPool cp, int n, DataInputStream in)
+        throws IOException
+    {
         super(cp, n, in);
     }
 
     /**
      * Constructs an EnclosingMethod attribute.
      *
-     * @param cp         a constant pool table.
-     * @param className  the name of the innermost enclosing class.
-     * @param methodName the name of the enclosing method.
-     * @param methodDesc the descriptor of the enclosing method.
+     * @param cp                a constant pool table.
+     * @param className         the name of the innermost enclosing class.
+     * @param methodName        the name of the enclosing method.
+     * @param methodDesc        the descriptor of the enclosing method.
      */
-    public EnclosingMethodAttribute(org.hotswap.agent.javassist.bytecode.ConstPool cp, String className,
+    public EnclosingMethodAttribute(ConstPool cp, String className,
                                     String methodName, String methodDesc) {
         super(cp, tag);
         int ci = cp.addClassInfo(className);
         int ni = cp.addNameAndTypeInfo(methodName, methodDesc);
         byte[] bvalue = new byte[4];
-        bvalue[0] = (byte) (ci >>> 8);
-        bvalue[1] = (byte) ci;
-        bvalue[2] = (byte) (ni >>> 8);
-        bvalue[3] = (byte) ni;
+        bvalue[0] = (byte)(ci >>> 8);
+        bvalue[1] = (byte)ci;
+        bvalue[2] = (byte)(ni >>> 8);
+        bvalue[3] = (byte)ni;
         set(bvalue);
     }
 
@@ -59,18 +62,18 @@ public class EnclosingMethodAttribute extends org.hotswap.agent.javassist.byteco
      * Constructs an EnclosingMethod attribute.
      * The value of <code>method_index</code> is set to 0.
      *
-     * @param cp        a constant pool table.
-     * @param className the name of the innermost enclosing class.
+     * @param cp                a constant pool table.
+     * @param className         the name of the innermost enclosing class.
      */
-    public EnclosingMethodAttribute(org.hotswap.agent.javassist.bytecode.ConstPool cp, String className) {
+    public EnclosingMethodAttribute(ConstPool cp, String className) {
         super(cp, tag);
         int ci = cp.addClassInfo(className);
         int ni = 0;
         byte[] bvalue = new byte[4];
-        bvalue[0] = (byte) (ci >>> 8);
-        bvalue[1] = (byte) ci;
-        bvalue[2] = (byte) (ni >>> 8);
-        bvalue[3] = (byte) ni;
+        bvalue[0] = (byte)(ci >>> 8);
+        bvalue[1] = (byte)ci;
+        bvalue[2] = (byte)(ni >>> 8);
+        bvalue[3] = (byte)ni;
         set(bvalue);
     }
 
@@ -97,19 +100,25 @@ public class EnclosingMethodAttribute extends org.hotswap.agent.javassist.byteco
 
     /**
      * Returns the method name specified by <code>method_index</code>.
+     * If the method is a class initializer (static constructor),
+     * {@link MethodInfo#nameClinit} is returned. 
      */
     public String methodName() {
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = getConstPool();
+        ConstPool cp = getConstPool();
         int mi = methodIndex();
-        int ni = cp.getNameAndTypeName(mi);
-        return cp.getUtf8Info(ni);
+        if (mi == 0)
+            return MethodInfo.nameClinit;
+        else {
+            int ni = cp.getNameAndTypeName(mi);
+            return cp.getUtf8Info(ni);
+        }
     }
 
     /**
      * Returns the method descriptor specified by <code>method_index</code>.
      */
     public String methodDescriptor() {
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = getConstPool();
+        ConstPool cp = getConstPool();
         int mi = methodIndex();
         int ti = cp.getNameAndTypeDescriptor(mi);
         return cp.getUtf8Info(ti);
@@ -119,15 +128,15 @@ public class EnclosingMethodAttribute extends org.hotswap.agent.javassist.byteco
      * Makes a copy.  Class names are replaced according to the
      * given <code>Map</code> object.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames pairs of replaced and substituted
-     *                   class names.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        pairs of replaced and substituted
+     *                          class names.
      */
-    public org.hotswap.agent.javassist.bytecode.AttributeInfo copy(org.hotswap.agent.javassist.bytecode.ConstPool newCp, Map classnames) {
-        if (methodIndex() == 0)
+    public AttributeInfo copy(ConstPool newCp, Map classnames) {
+        if (methodIndex() == 0) 
             return new EnclosingMethodAttribute(newCp, className());
         else
             return new EnclosingMethodAttribute(newCp, className(),
-                    methodName(), methodDescriptor());
+                                            methodName(), methodDescriptor());
     }
 }

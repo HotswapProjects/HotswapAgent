@@ -17,6 +17,7 @@
 package org.hotswap.agent.javassist.compiler.ast;
 
 import org.hotswap.agent.javassist.compiler.TokenId;
+import org.hotswap.agent.javassist.compiler.CompileError;
 
 /**
  * New Expression.
@@ -49,39 +50,27 @@ public class NewExpr extends ASTList implements TokenId {
         return e;
     }
 
-    public boolean isArray() {
-        return newArray;
-    }
+    public boolean isArray() { return newArray; }
 
     /* TokenId.CLASS, TokenId.INT, ...
      */
-    public int getArrayType() {
-        return arrayType;
-    }
+    public int getArrayType() { return arrayType; }
 
-    public ASTList getClassName() {
-        return (ASTList) getLeft();
-    }
+    public ASTList getClassName() { return (ASTList)getLeft(); }
 
-    public ASTList getArguments() {
-        return (ASTList) getRight().getLeft();
-    }
+    public ASTList getArguments() { return (ASTList)getRight().getLeft(); }
 
-    public ASTList getArraySize() {
-        return getArguments();
-    }
+    public ASTList getArraySize() { return getArguments(); }
 
     public ArrayInit getInitializer() {
         ASTree t = getRight().getRight();
         if (t == null)
             return null;
         else
-            return (ArrayInit) t.getLeft();
+            return (ArrayInit)t.getLeft();
     }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
-        v.atNewExpr(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atNewExpr(this); }
 
     protected String getTag() {
         return newArray ? "new[]" : "new";

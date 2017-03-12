@@ -48,7 +48,7 @@ public class ClassMemberValue extends MemberValue {
     /**
      * Constructs a class value.
      *
-     * @param className the initial value.
+     * @param className         the initial value.
      */
     public ClassMemberValue(String className, ConstPool cp) {
         super('c', cp);
@@ -101,7 +101,7 @@ public class ClassMemberValue extends MemberValue {
     public String getValue() {
         String v = cp.getUtf8Info(valueIndex);
         try {
-            return SignatureAttribute.toTypeSignature(v).toString();
+            return SignatureAttribute.toTypeSignature(v).jvmTypeName();
         } catch (BadBytecode e) {
             throw new RuntimeException(e);
         }
@@ -110,7 +110,7 @@ public class ClassMemberValue extends MemberValue {
     /**
      * Sets the value of the member.
      *
-     * @param newClassName fully-qualified class name.
+     * @param newClassName      fully-qualified class name.
      */
     public void setValue(String newClassName) {
         String setTo = Descriptor.of(newClassName);
@@ -121,7 +121,7 @@ public class ClassMemberValue extends MemberValue {
      * Obtains the string representation of this object.
      */
     public String toString() {
-        return getValue() + ".class";
+        return getValue().replace('$', '.') + ".class";
     }
 
     /**
@@ -134,7 +134,7 @@ public class ClassMemberValue extends MemberValue {
     /**
      * Accepts a visitor.
      */
-    public void accept(org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor visitor) {
+    public void accept(MemberValueVisitor visitor) {
         visitor.visitClassMemberValue(this);
     }
 }

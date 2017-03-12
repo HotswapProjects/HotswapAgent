@@ -16,8 +16,8 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 
@@ -35,7 +35,7 @@ public class DoubleMemberValue extends MemberValue {
      * Constructs a double constant value.  The initial value is specified
      * by the constant pool entry at the given index.
      *
-     * @param index the index of a CONSTANT_Double_info structure.
+     * @param index     the index of a CONSTANT_Double_info structure.
      */
     public DoubleMemberValue(int index, ConstPool cp) {
         super('D', cp);
@@ -45,7 +45,7 @@ public class DoubleMemberValue extends MemberValue {
     /**
      * Constructs a double constant value.
      *
-     * @param d the initial value.
+     * @param d     the initial value.
      */
     public DoubleMemberValue(double d, ConstPool cp) {
         super('D', cp);
@@ -60,7 +60,7 @@ public class DoubleMemberValue extends MemberValue {
         setValue(0.0);
     }
 
-    Object getValue(ClassLoader cl, org.hotswap.agent.javassist.ClassPool cp, Method m) {
+    Object getValue(ClassLoader cl, ClassPool cp, Method m) {
         return new Double(getValue());
     }
 
@@ -99,7 +99,7 @@ public class DoubleMemberValue extends MemberValue {
     /**
      * Accepts a visitor.
      */
-    public void accept(org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor visitor) {
+    public void accept(MemberValueVisitor visitor) {
         visitor.visitDoubleMemberValue(this);
     }
 }

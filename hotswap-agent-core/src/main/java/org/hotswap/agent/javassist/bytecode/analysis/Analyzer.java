@@ -15,26 +15,35 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
+import java.util.Iterator;
+
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.*;
-
-import java.util.Iterator;
+import org.hotswap.agent.javassist.bytecode.AccessFlag;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.ExceptionTable;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
 
 /**
  * A data-flow analyzer that determines the type state of the stack and local
  * variable table at every reachable instruction in a method. During analysis,
  * bytecode verification is performed in a similar manner to that described
  * in the JVM specification.
- * <p/>
+ *
  * <p>Example:</p>
- * <p/>
+ *
  * <pre>
  * // Method to analyze
  * public Object doSomething(int x) {
  *     Number n;
- *     if (x < 5) {
+ *     if (x &lt; 5) {
  *        n = new Double(0);
  *     } else {
  *        n = new Long(0);
@@ -50,13 +59,13 @@ import java.util.Iterator;
  * // 5:   new #18; //class java/lang/Double
  * // 8:   dup
  * // 9:   dconst_0
- * // 10:  invokespecial   #44; //Method java/lang/Double."<init>":(D)V
+ * // 10:  invokespecial   #44; //Method java/lang/Double."&lt;init&gt;":(D)V
  * // 13:  astore_2
  * // 14:  goto    26
  * // 17:  new #16; //class java/lang/Long
  * // 20:  dup
  * // 21:  lconst_1
- * // 22:  invokespecial   #47; //Method java/lang/Long."<init>":(J)V
+ * // 22:  invokespecial   #47; //Method java/lang/Long."&lt;init&gt;":(J)V
  * // 25:  astore_2
  * // 26:  aload_2
  * // 27:  areturn
@@ -71,23 +80,23 @@ import java.util.Iterator;
  * }
  * </pre>
  *
- * @author Jason T. Greene
  * @see FramePrinter
+ * @author Jason T. Greene
  */
-public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
+public class Analyzer implements Opcode {
     private final SubroutineScanner scanner = new SubroutineScanner();
     private CtClass clazz;
     private ExceptionInfo[] exceptions;
-    private org.hotswap.agent.javassist.bytecode.analysis.Frame[] frames;
+    private Frame[] frames;
     private Subroutine[] subroutines;
 
     private static class ExceptionInfo {
         private int end;
         private int handler;
         private int start;
-        private org.hotswap.agent.javassist.bytecode.analysis.Type type;
+        private Type type;
 
-        private ExceptionInfo(int start, int end, int handler, org.hotswap.agent.javassist.bytecode.analysis.Type type) {
+        private ExceptionInfo(int start, int end, int handler, Type type) {
             this.start = start;
             this.end = end;
             this.handler = handler;
@@ -100,19 +109,19 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
      * instruction position, containing the starting frame state of all reachable
      * instructions. Non-reachable code, and illegal code offsets are represented
      * as a null in the frame state array. This can be used to detect dead code.
-     * <p/>
+     *
      * If the method does not contain code (it is either native or abstract), null
      * is returned.
      *
-     * @param clazz  the declaring class of the method
+     * @param clazz the declaring class of the method
      * @param method the method to analyze
      * @return an array, indexed by instruction position, of the starting frame state,
-     * or null if this method doesn't have code
+     *         or null if this method doesn't have code
      * @throws BadBytecode if the bytecode does not comply with the JVM specification
      */
-    public org.hotswap.agent.javassist.bytecode.analysis.Frame[] analyze(CtClass clazz, MethodInfo method) throws BadBytecode {
+    public Frame[] analyze(CtClass clazz, MethodInfo method) throws BadBytecode {
         this.clazz = clazz;
-        org.hotswap.agent.javassist.bytecode.CodeAttribute codeAttribute = method.getCodeAttribute();
+        CodeAttribute codeAttribute = method.getCodeAttribute();
         // Native or Abstract
         if (codeAttribute == null)
             return null;
@@ -121,14 +130,14 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         int maxStack = codeAttribute.getMaxStack();
         int codeLength = codeAttribute.getCodeLength();
 
-        org.hotswap.agent.javassist.bytecode.CodeIterator iter = codeAttribute.iterator();
-        org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue = new org.hotswap.agent.javassist.bytecode.analysis.IntQueue();
+        CodeIterator iter = codeAttribute.iterator();
+        IntQueue queue = new IntQueue();
 
         exceptions = buildExceptionInfo(method);
         subroutines = scanner.scan(method);
 
-        org.hotswap.agent.javassist.bytecode.analysis.Executor executor = new org.hotswap.agent.javassist.bytecode.analysis.Executor(clazz.getClassPool(), method.getConstPool());
-        frames = new org.hotswap.agent.javassist.bytecode.analysis.Frame[codeLength];
+        Executor executor = new Executor(clazz.getClassPool(), method.getConstPool());
+        frames = new Frame[codeLength];
         frames[iter.lookAhead()] = firstFrame(method, maxLocals, maxStack);
         queue.add(iter.next());
         while (!queue.isEmpty()) {
@@ -143,26 +152,26 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
      * instruction position, containing the starting frame state of all reachable
      * instructions. Non-reachable code, and illegal code offsets are represented
      * as a null in the frame state array. This can be used to detect dead code.
-     * <p/>
+     *
      * If the method does not contain code (it is either native or abstract), null
      * is returned.
      *
      * @param method the method to analyze
      * @return an array, indexed by instruction position, of the starting frame state,
-     * or null if this method doesn't have code
+     *         or null if this method doesn't have code
      * @throws BadBytecode if the bytecode does not comply with the JVM specification
      */
-    public org.hotswap.agent.javassist.bytecode.analysis.Frame[] analyze(CtMethod method) throws BadBytecode {
+    public Frame[] analyze(CtMethod method) throws BadBytecode {
         return analyze(method.getDeclaringClass(), method.getMethodInfo2());
     }
 
-    private void analyzeNextEntry(MethodInfo method, org.hotswap.agent.javassist.bytecode.CodeIterator iter,
-                                  org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue, org.hotswap.agent.javassist.bytecode.analysis.Executor executor) throws BadBytecode {
+    private void analyzeNextEntry(MethodInfo method, CodeIterator iter,
+            IntQueue queue, Executor executor) throws BadBytecode {
         int pos = queue.take();
         iter.move(pos);
         iter.next();
 
-        org.hotswap.agent.javassist.bytecode.analysis.Frame frame = frames[pos].copy();
+        Frame frame = frames[pos].copy();
         Subroutine subroutine = subroutines[pos];
 
         try {
@@ -179,18 +188,18 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
             mergeLookupSwitch(queue, pos, iter, frame);
         } else if (opcode == RET) {
             mergeRet(queue, iter, pos, frame, subroutine);
-        } else if (org.hotswap.agent.javassist.bytecode.analysis.Util.isJumpInstruction(opcode)) {
-            int target = org.hotswap.agent.javassist.bytecode.analysis.Util.getJumpTarget(pos, iter);
+        } else if (Util.isJumpInstruction(opcode)) {
+            int target = Util.getJumpTarget(pos, iter);
 
-            if (org.hotswap.agent.javassist.bytecode.analysis.Util.isJsr(opcode)) {
+            if (Util.isJsr(opcode)) {
                 // Merge the state before the jsr into the next instruction
                 mergeJsr(queue, frames[pos], subroutines[target], pos, lookAhead(iter, pos));
-            } else if (!org.hotswap.agent.javassist.bytecode.analysis.Util.isGoto(opcode)) {
+            } else if (! Util.isGoto(opcode)) {
                 merge(queue, frame, lookAhead(iter, pos));
             }
 
             merge(queue, frame, target);
-        } else if (opcode != ATHROW && !org.hotswap.agent.javassist.bytecode.analysis.Util.isReturn(opcode)) {
+        } else if (opcode != ATHROW && ! Util.isReturn(opcode)) {
             // Can advance to next instruction
             merge(queue, frame, lookAhead(iter, pos));
         }
@@ -203,15 +212,15 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
 
     private ExceptionInfo[] buildExceptionInfo(MethodInfo method) {
         ConstPool constPool = method.getConstPool();
-        org.hotswap.agent.javassist.ClassPool classes = clazz.getClassPool();
+        ClassPool classes = clazz.getClassPool();
 
-        org.hotswap.agent.javassist.bytecode.ExceptionTable table = method.getCodeAttribute().getExceptionTable();
+        ExceptionTable table = method.getCodeAttribute().getExceptionTable();
         ExceptionInfo[] exceptions = new ExceptionInfo[table.size()];
         for (int i = 0; i < table.size(); i++) {
             int index = table.catchType(i);
-            org.hotswap.agent.javassist.bytecode.analysis.Type type;
+            Type type;
             try {
-                type = index == 0 ? org.hotswap.agent.javassist.bytecode.analysis.Type.THROWABLE : org.hotswap.agent.javassist.bytecode.analysis.Type.get(classes.get(constPool.getClassInfo(index)));
+                type = index == 0 ? Type.THROWABLE : Type.get(classes.get(constPool.getClassInfo(index)));
             } catch (NotFoundException e) {
                 throw new IllegalStateException(e.getMessage());
             }
@@ -222,12 +231,12 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         return exceptions;
     }
 
-    private org.hotswap.agent.javassist.bytecode.analysis.Frame firstFrame(MethodInfo method, int maxLocals, int maxStack) {
+    private Frame firstFrame(MethodInfo method, int maxLocals, int maxStack) {
         int pos = 0;
 
-        org.hotswap.agent.javassist.bytecode.analysis.Frame first = new org.hotswap.agent.javassist.bytecode.analysis.Frame(maxLocals, maxStack);
+        Frame first = new Frame(maxLocals, maxStack);
         if ((method.getAccessFlags() & AccessFlag.STATIC) == 0) {
-            first.setLocal(pos++, org.hotswap.agent.javassist.bytecode.analysis.Type.get(clazz));
+            first.setLocal(pos++, Type.get(clazz));
         }
 
         CtClass[] parameters;
@@ -238,16 +247,16 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         }
 
         for (int i = 0; i < parameters.length; i++) {
-            org.hotswap.agent.javassist.bytecode.analysis.Type type = zeroExtend(org.hotswap.agent.javassist.bytecode.analysis.Type.get(parameters[i]));
+            Type type = zeroExtend(Type.get(parameters[i]));
             first.setLocal(pos++, type);
             if (type.getSize() == 2)
-                first.setLocal(pos++, org.hotswap.agent.javassist.bytecode.analysis.Type.TOP);
+                first.setLocal(pos++, Type.TOP);
         }
 
         return first;
     }
 
-    private int getNext(org.hotswap.agent.javassist.bytecode.CodeIterator iter, int of, int restore) throws BadBytecode {
+    private int getNext(CodeIterator iter, int of, int restore) throws BadBytecode {
         iter.move(of);
         iter.next();
         int next = iter.lookAhead();
@@ -257,16 +266,16 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         return next;
     }
 
-    private int lookAhead(org.hotswap.agent.javassist.bytecode.CodeIterator iter, int pos) throws BadBytecode {
-        if (!iter.hasNext())
+    private int lookAhead(CodeIterator iter, int pos) throws BadBytecode {
+        if (! iter.hasNext())
             throw new BadBytecode("Execution falls off end! [pos = " + pos + "]");
 
         return iter.lookAhead();
     }
 
 
-    private void merge(org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue, org.hotswap.agent.javassist.bytecode.analysis.Frame frame, int target) {
-        org.hotswap.agent.javassist.bytecode.analysis.Frame old = frames[target];
+    private void merge(IntQueue queue, Frame frame, int target) {
+        Frame old = frames[target];
         boolean changed;
 
         if (old == null) {
@@ -281,13 +290,13 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         }
     }
 
-    private void mergeExceptionHandlers(org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue, MethodInfo method, int pos, org.hotswap.agent.javassist.bytecode.analysis.Frame frame) {
+    private void mergeExceptionHandlers(IntQueue queue, MethodInfo method, int pos, Frame frame) {
         for (int i = 0; i < exceptions.length; i++) {
             ExceptionInfo exception = exceptions[i];
 
             // Start is inclusive, while end is exclusive!
             if (pos >= exception.start && pos < exception.end) {
-                org.hotswap.agent.javassist.bytecode.analysis.Frame newFrame = frame.copy();
+                Frame newFrame = frame.copy();
                 newFrame.clearStack();
                 newFrame.push(exception.type);
                 merge(queue, newFrame, exception.handler);
@@ -295,11 +304,11 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         }
     }
 
-    private void mergeJsr(org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue, org.hotswap.agent.javassist.bytecode.analysis.Frame frame, Subroutine sub, int pos, int next) throws BadBytecode {
+    private void mergeJsr(IntQueue queue, Frame frame, Subroutine sub, int pos, int next) throws BadBytecode {
         if (sub == null)
             throw new BadBytecode("No subroutine at jsr target! [pos = " + pos + "]");
 
-        org.hotswap.agent.javassist.bytecode.analysis.Frame old = frames[next];
+        Frame old = frames[next];
         boolean changed = false;
 
         if (old == null) {
@@ -309,8 +318,8 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
             for (int i = 0; i < frame.localsLength(); i++) {
                 // Skip everything accessed by a subroutine, mergeRet must handle this
                 if (!sub.isAccessed(i)) {
-                    org.hotswap.agent.javassist.bytecode.analysis.Type oldType = old.getLocal(i);
-                    org.hotswap.agent.javassist.bytecode.analysis.Type newType = frame.getLocal(i);
+                    Type oldType = old.getLocal(i);
+                    Type newType = frame.getLocal(i);
                     if (oldType == null) {
                         old.setLocal(i, newType);
                         changed = true;
@@ -326,7 +335,7 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
             }
         }
 
-        if (!old.isJsrMerged()) {
+        if (! old.isJsrMerged()) {
             old.setJsrMerged(true);
             changed = true;
         }
@@ -336,7 +345,7 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
 
     }
 
-    private void mergeLookupSwitch(org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iter, org.hotswap.agent.javassist.bytecode.analysis.Frame frame) throws BadBytecode {
+    private void mergeLookupSwitch(IntQueue queue, int pos, CodeIterator iter, Frame frame) throws BadBytecode {
         int index = (pos & ~3) + 4;
         // default
         merge(queue, frame, pos + iter.s32bitAt(index));
@@ -350,7 +359,7 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         }
     }
 
-    private void mergeRet(org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue, org.hotswap.agent.javassist.bytecode.CodeIterator iter, int pos, org.hotswap.agent.javassist.bytecode.analysis.Frame frame, Subroutine subroutine) throws BadBytecode {
+    private void mergeRet(IntQueue queue, CodeIterator iter, int pos, Frame frame, Subroutine subroutine) throws BadBytecode {
         if (subroutine == null)
             throw new BadBytecode("Ret on no subroutine! [pos = " + pos + "]");
 
@@ -360,7 +369,7 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
             int returnLoc = getNext(iter, caller, pos);
             boolean changed = false;
 
-            org.hotswap.agent.javassist.bytecode.analysis.Frame old = frames[returnLoc];
+            Frame old = frames[returnLoc];
             if (old == null) {
                 old = frames[returnLoc] = frame.copyStack();
                 changed = true;
@@ -369,16 +378,16 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
             }
 
             for (Iterator i = subroutine.accessed().iterator(); i.hasNext(); ) {
-                int index = ((Integer) i.next()).intValue();
-                org.hotswap.agent.javassist.bytecode.analysis.Type oldType = old.getLocal(index);
-                org.hotswap.agent.javassist.bytecode.analysis.Type newType = frame.getLocal(index);
+                int index = ((Integer)i.next()).intValue();
+                Type oldType = old.getLocal(index);
+                Type newType = frame.getLocal(index);
                 if (oldType != newType) {
                     old.setLocal(index, newType);
                     changed = true;
                 }
             }
 
-            if (!old.isRetMerged()) {
+            if (! old.isRetMerged()) {
                 old.setRetMerged(true);
                 changed = true;
             }
@@ -389,7 +398,7 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
     }
 
 
-    private void mergeTableSwitch(org.hotswap.agent.javassist.bytecode.analysis.IntQueue queue, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iter, org.hotswap.agent.javassist.bytecode.analysis.Frame frame) throws BadBytecode {
+    private void mergeTableSwitch(IntQueue queue, int pos, CodeIterator iter, Frame frame) throws BadBytecode {
         // Skip 4 byte alignment padding
         int index = (pos & ~3) + 4;
         // default
@@ -405,9 +414,9 @@ public class Analyzer implements org.hotswap.agent.javassist.bytecode.Opcode {
         }
     }
 
-    private org.hotswap.agent.javassist.bytecode.analysis.Type zeroExtend(org.hotswap.agent.javassist.bytecode.analysis.Type type) {
-        if (type == org.hotswap.agent.javassist.bytecode.analysis.Type.SHORT || type == org.hotswap.agent.javassist.bytecode.analysis.Type.BYTE || type == org.hotswap.agent.javassist.bytecode.analysis.Type.CHAR || type == org.hotswap.agent.javassist.bytecode.analysis.Type.BOOLEAN)
-            return org.hotswap.agent.javassist.bytecode.analysis.Type.INTEGER;
+    private Type zeroExtend(Type type) {
+        if (type == Type.SHORT || type == Type.BYTE || type == Type.CHAR || type == Type.BOOLEAN)
+            return  Type.INTEGER;
 
         return type;
     }

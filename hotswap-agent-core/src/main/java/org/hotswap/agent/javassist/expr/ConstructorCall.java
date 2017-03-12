@@ -17,6 +17,7 @@
 package org.hotswap.agent.javassist.expr;
 
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.bytecode.CodeIterator;
@@ -55,7 +56,7 @@ public class ConstructorCall extends MethodCall {
     /**
      * Returns the called constructor.
      */
-    public org.hotswap.agent.javassist.CtConstructor getConstructor() throws NotFoundException {
+    public CtConstructor getConstructor() throws NotFoundException {
         return getCtClass().getConstructor(getSignature());
     }
 

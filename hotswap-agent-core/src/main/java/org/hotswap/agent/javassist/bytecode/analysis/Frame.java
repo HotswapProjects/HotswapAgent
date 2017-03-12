@@ -32,7 +32,7 @@ public class Frame {
      * Create a new frame with the specified local variable table size, and max stack size
      *
      * @param locals the number of local variable table entries
-     * @param stack  the maximum stack size
+     * @param stack the maximum stack size
      */
     public Frame(int locals, int stack) {
         this.locals = new Type[locals];
@@ -53,7 +53,7 @@ public class Frame {
      * Sets the local variable table entry at index to a type.
      *
      * @param index the position in the table
-     * @param type  the type to set at the position
+     * @param type the type to set at the position
      */
     public void setLocal(int index, Type type) {
         locals[index] = type;
@@ -74,7 +74,7 @@ public class Frame {
      * Sets the type of the stack position
      *
      * @param index the position on the stack
-     * @param type  the type to set
+     * @param type the type to set
      */
     public void setStack(int index, Type type) {
         stack[index] = type;
@@ -190,7 +190,7 @@ public class Frame {
 
                 stack[i] = merged;
                 // always replace the instance in case a multi-interface type changes to a normal Type
-                if ((!merged.equals(prev)) || merged.popChanged()) {
+                if ((! merged.equals(prev)) || merged.popChanged()) {
                     changed = true;
                 }
             }
@@ -216,7 +216,7 @@ public class Frame {
                 Type merged = prev.merge(frame.locals[i]);
                 // always replace the instance in case a multi-interface type changes to a normal Type
                 locals[i] = merged;
-                if (!merged.equals(prev) || merged.popChanged()) {
+                if (! merged.equals(prev) || merged.popChanged()) {
                     changed = true;
                 }
             } else if (frame.locals[i] != null) {

@@ -16,88 +16,101 @@
 
 package org.hotswap.agent.javassist.scopedpool;
 
-import org.hotswap.agent.javassist.CannotCompileException;
-
 import java.lang.ref.WeakReference;
 import java.security.ProtectionDomain;
 import java.util.Iterator;
 import java.util.Map;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.LoaderClassPath;
+import org.hotswap.agent.javassist.NotFoundException;
 
 /**
  * A scoped class pool.
- *
+ * 
  * @author <a href="mailto:bill@jboss.org">Bill Burke</a>
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  * @version $Revision: 1.8 $
  */
-public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
-    protected org.hotswap.agent.javassist.scopedpool.ScopedClassPoolRepository repository;
+public class ScopedClassPool extends ClassPool {
+    protected ScopedClassPoolRepository repository;
 
     protected WeakReference classLoader;
 
-    protected org.hotswap.agent.javassist.LoaderClassPath classPath;
+    protected LoaderClassPath classPath;
 
     protected SoftValueHashMap softcache = new SoftValueHashMap();
-
+    
     boolean isBootstrapCl = true;
 
     static {
-        org.hotswap.agent.javassist.ClassPool.doPruning = false;
-        org.hotswap.agent.javassist.ClassPool.releaseUnmodifiedClassFile = false;
+        ClassPool.doPruning = false;
+        ClassPool.releaseUnmodifiedClassFile = false;
     }
 
     /**
      * Create a new ScopedClassPool.
-     *
-     * @param cl         the classloader
-     * @param src        the original class pool
-     * @param repository the repository
-     * @deprecated
+     * 
+     * @param cl
+     *            the classloader
+     * @param src
+     *            the original class pool
+     * @param repository
+     *            the repository
+     *@deprecated
      */
-    protected ScopedClassPool(ClassLoader cl, org.hotswap.agent.javassist.ClassPool src,
-                              org.hotswap.agent.javassist.scopedpool.ScopedClassPoolRepository repository) {
-        this(cl, src, repository, false);
+    protected ScopedClassPool(ClassLoader cl, ClassPool src,
+            ScopedClassPoolRepository repository) {
+       this(cl, src, repository, false);
     }
-
+    
     /**
      * Create a new ScopedClassPool.
-     *
-     * @param cl         the classloader
-     * @param src        the original class pool
-     * @param repository the repository
-     * @param isTemp     Whether this is a temporary pool used to resolve references
+     * 
+     * @param cl
+     *            the classloader
+     * @param src
+     *            the original class pool
+     * @param repository
+     *            the repository
+     * @param isTemp
+     *            Whether this is a temporary pool used to resolve references
      */
-    protected ScopedClassPool(ClassLoader cl, org.hotswap.agent.javassist.ClassPool src, org.hotswap.agent.javassist.scopedpool.ScopedClassPoolRepository repository, boolean isTemp) {
-        super(src);
-        this.repository = repository;
-        this.classLoader = new WeakReference(cl);
-        if (cl != null) {
-            classPath = new org.hotswap.agent.javassist.LoaderClassPath(cl);
-            this.insertClassPath(classPath);
-        }
-        childFirstLookup = true;
-        if (!isTemp && cl == null) {
-            isBootstrapCl = true;
-        }
+    protected ScopedClassPool(ClassLoader cl, ClassPool src, ScopedClassPoolRepository repository, boolean isTemp)
+    {
+       super(src);
+       this.repository = repository;
+       this.classLoader = new WeakReference(cl);
+       if (cl != null) {
+           classPath = new LoaderClassPath(cl);
+           this.insertClassPath(classPath);
+       }
+       childFirstLookup = true;
+       if (!isTemp && cl == null)
+       {
+          isBootstrapCl = true;
+       }
     }
 
     /**
      * Get the class loader
-     *
+     * 
      * @return the class loader
      */
     public ClassLoader getClassLoader() {
-        ClassLoader cl = getClassLoader0();
-        if (cl == null && !isBootstrapCl) {
-            throw new IllegalStateException(
-                    "ClassLoader has been garbage collected");
-        }
-        return cl;
+       ClassLoader cl = getClassLoader0();
+       if (cl == null && !isBootstrapCl)
+       {
+          throw new IllegalStateException(
+                  "ClassLoader has been garbage collected");
+       }
+       return cl;
     }
 
     protected ClassLoader getClassLoader0() {
-        return (ClassLoader) classLoader.get();
+       return (ClassLoader)classLoader.get();
     }
 
     /**
@@ -112,8 +125,9 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
 
     /**
      * Flush a class
-     *
-     * @param classname the class to flush
+     * 
+     * @param classname
+     *            the class to flush
      */
     public synchronized void flushClass(String classname) {
         classes.remove(classname);
@@ -122,10 +136,11 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
 
     /**
      * Soften a class
-     *
-     * @param clazz the class
+     * 
+     * @param clazz
+     *            the class
      */
-    public synchronized void soften(org.hotswap.agent.javassist.CtClass clazz) {
+    public synchronized void soften(CtClass clazz) {
         if (repository.isPrune())
             clazz.prune();
         classes.remove(clazz.getName());
@@ -134,7 +149,7 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
 
     /**
      * Whether the classloader is loader
-     *
+     * 
      * @return false always
      */
     public boolean isUnloadedClassLoader() {
@@ -143,12 +158,13 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
 
     /**
      * Get the cached class
-     *
-     * @param classname the class name
+     * 
+     * @param classname
+     *            the class name
      * @return the class
      */
-    protected org.hotswap.agent.javassist.CtClass getCached(String classname) {
-        org.hotswap.agent.javassist.CtClass clazz = getCachedLocally(classname);
+    protected CtClass getCached(String classname) {
+        CtClass clazz = getCachedLocally(classname);
         if (clazz == null) {
             boolean isLocal = false;
 
@@ -159,7 +175,8 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
                 if (lastIndex < 0) {
                     classResourceName = classname.replaceAll("[\\.]", "/")
                             + ".class";
-                } else {
+                }
+                else {
                     classResourceName = classname.substring(0, lastIndex)
                             .replaceAll("[\\.]", "/")
                             + classname.substring(lastIndex) + ".class";
@@ -173,7 +190,7 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
                 synchronized (registeredCLs) {
                     Iterator it = registeredCLs.values().iterator();
                     while (it.hasNext()) {
-                        ScopedClassPool pool = (ScopedClassPool) it.next();
+                        ScopedClassPool pool = (ScopedClassPool)it.next();
                         if (pool.isUnloadedClassLoader()) {
                             repository.unregisterClassLoader(pool
                                     .getClassLoader());
@@ -194,15 +211,19 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
 
     /**
      * Cache a class
-     *
-     * @param classname the class name
-     * @param c         the ctClass
-     * @param dynamic   whether the class is dynamically generated
+     * 
+     * @param classname
+     *            the class name
+     * @param c
+     *            the ctClass
+     * @param dynamic
+     *            whether the class is dynamically generated
      */
-    protected void cacheCtClass(String classname, org.hotswap.agent.javassist.CtClass c, boolean dynamic) {
+    protected void cacheCtClass(String classname, CtClass c, boolean dynamic) {
         if (dynamic) {
             super.cacheCtClass(classname, c, dynamic);
-        } else {
+        }
+        else {
             if (repository.isPrune())
                 c.prune();
             softcache.put(classname, c);
@@ -211,43 +232,47 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
 
     /**
      * Lock a class into the cache
-     *
-     * @param c the class
+     * 
+     * @param c
+     *            the class
      */
-    public void lockInCache(org.hotswap.agent.javassist.CtClass c) {
+    public void lockInCache(CtClass c) {
         super.cacheCtClass(c.getName(), c, false);
     }
 
     /**
      * Whether the class is cached in this pooled
-     *
-     * @param classname the class name
+     * 
+     * @param classname
+     *            the class name
      * @return the cached class
      */
-    protected org.hotswap.agent.javassist.CtClass getCachedLocally(String classname) {
-        org.hotswap.agent.javassist.CtClass cached = (org.hotswap.agent.javassist.CtClass) classes.get(classname);
+    protected CtClass getCachedLocally(String classname) {
+        CtClass cached = (CtClass)classes.get(classname);
         if (cached != null)
             return cached;
         synchronized (softcache) {
-            return (org.hotswap.agent.javassist.CtClass) softcache.get(classname);
+            return (CtClass)softcache.get(classname);
         }
     }
 
     /**
      * Get any local copy of the class
-     *
-     * @param classname the class name
+     * 
+     * @param classname
+     *            the class name
      * @return the class
-     * @throws org.hotswap.agent.javassist.NotFoundException when the class is not found
+     * @throws NotFoundException
+     *             when the class is not found
      */
-    public synchronized org.hotswap.agent.javassist.CtClass getLocally(String classname)
-            throws org.hotswap.agent.javassist.NotFoundException {
+    public synchronized CtClass getLocally(String classname)
+            throws NotFoundException {
         softcache.remove(classname);
-        org.hotswap.agent.javassist.CtClass clazz = (org.hotswap.agent.javassist.CtClass) classes.get(classname);
+        CtClass clazz = (CtClass)classes.get(classname);
         if (clazz == null) {
             clazz = createCtClass(classname, true);
             if (clazz == null)
-                throw new org.hotswap.agent.javassist.NotFoundException(classname);
+                throw new NotFoundException(classname);
             super.cacheCtClass(classname, clazz, false);
         }
 
@@ -256,12 +281,15 @@ public class ScopedClassPool extends org.hotswap.agent.javassist.ClassPool {
 
     /**
      * Convert a javassist class to a java class
-     *
-     * @param ct     the javassist class
-     * @param loader the loader
-     * @throws CannotCompileException for any error
+     * 
+     * @param ct
+     *            the javassist class
+     * @param loader
+     *            the loader
+     * @throws CannotCompileException
+     *             for any error
      */
-    public Class toClass(org.hotswap.agent.javassist.CtClass ct, ClassLoader loader, ProtectionDomain domain)
+    public Class toClass(CtClass ct, ClassLoader loader, ProtectionDomain domain)
             throws CannotCompileException {
         // We need to pass up the classloader stored in this pool, as the
         // default implementation uses the Thread context cl.

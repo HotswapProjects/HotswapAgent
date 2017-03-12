@@ -34,7 +34,7 @@ public class BadBytecode extends Exception {
 
     public BadBytecode(MethodInfo minfo, Throwable cause) {
         super(minfo.toString() + " in "
-                + minfo.getConstPool().getClassName()
-                + ": " + cause.getMessage(), cause);
+              + minfo.getConstPool().getClassName()
+              + ": " + cause.getMessage(), cause);
     }
 }

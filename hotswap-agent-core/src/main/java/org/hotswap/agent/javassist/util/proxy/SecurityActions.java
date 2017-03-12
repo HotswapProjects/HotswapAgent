@@ -52,7 +52,7 @@ class SecurityActions {
     }
 
     static Method getDeclaredMethod(final Class clazz, final String name,
-                                    final Class[] types) throws NoSuchMethodException {
+            final Class[] types) throws NoSuchMethodException {
         if (System.getSecurityManager() == null)
             return clazz.getDeclaredMethod(name, types);
         else {
@@ -63,7 +63,8 @@ class SecurityActions {
                                 return clazz.getDeclaredMethod(name, types);
                             }
                         });
-            } catch (PrivilegedActionException e) {
+            }
+            catch (PrivilegedActionException e) {
                 if (e.getCause() instanceof NoSuchMethodException)
                     throw (NoSuchMethodException) e.getCause();
 
@@ -74,7 +75,8 @@ class SecurityActions {
 
     static Constructor getDeclaredConstructor(final Class clazz,
                                               final Class[] types)
-            throws NoSuchMethodException {
+        throws NoSuchMethodException
+    {
         if (System.getSecurityManager() == null)
             return clazz.getDeclaredConstructor(types);
         else {
@@ -85,7 +87,8 @@ class SecurityActions {
                                 return clazz.getDeclaredConstructor(types);
                             }
                         });
-            } catch (PrivilegedActionException e) {
+            }
+            catch (PrivilegedActionException e) {
                 if (e.getCause() instanceof NoSuchMethodException)
                     throw (NoSuchMethodException) e.getCause();
 
@@ -109,7 +112,8 @@ class SecurityActions {
     }
 
     static void set(final Field fld, final Object target, final Object value)
-            throws IllegalAccessException {
+        throws IllegalAccessException
+    {
         if (System.getSecurityManager() == null)
             fld.set(target, value);
         else {
@@ -120,7 +124,8 @@ class SecurityActions {
                         return null;
                     }
                 });
-            } catch (PrivilegedActionException e) {
+            }
+            catch (PrivilegedActionException e) {
                 if (e.getCause() instanceof NoSuchMethodException)
                     throw (IllegalAccessException) e.getCause();
 

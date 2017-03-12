@@ -16,7 +16,13 @@
 
 package org.hotswap.agent.javassist;
 
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.compiler.Javac;
+import org.hotswap.agent.javassist.compiler.SymbolTable;
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.ast.ASTree;
 import org.hotswap.agent.javassist.compiler.ast.IntConst;
+import org.hotswap.agent.javassist.compiler.ast.DoubleConst;
 import org.hotswap.agent.javassist.compiler.ast.StringL;
 
 /**
@@ -27,7 +33,7 @@ import org.hotswap.agent.javassist.compiler.ast.StringL;
 public class CtField extends CtMember {
     static final String javaLangString = "java.lang.String";
 
-    protected org.hotswap.agent.javassist.bytecode.FieldInfo fieldInfo;
+    protected FieldInfo fieldInfo;
 
     /**
      * Creates a <code>CtField</code> object.
@@ -52,7 +58,7 @@ public class CtField extends CtMember {
     public CtField(CtClass type, String name, CtClass declaring)
         throws CannotCompileException
     {
-        this(org.hotswap.agent.javassist.bytecode.Descriptor.of(type), name, declaring);
+        this(Descriptor.of(type), name, declaring);
     }
 
     /**
@@ -79,11 +85,11 @@ public class CtField extends CtMember {
              declaring);
         java.util.ListIterator iterator
             = src.fieldInfo.getAttributes().listIterator();
-        org.hotswap.agent.javassist.bytecode.FieldInfo fi = fieldInfo;
+        FieldInfo fi = fieldInfo;
         fi.setAccessFlags(src.fieldInfo.getAccessFlags());
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = fi.getConstPool();
+        ConstPool cp = fi.getConstPool();
         while (iterator.hasNext()) {
-            org.hotswap.agent.javassist.bytecode.AttributeInfo ainfo = (org.hotswap.agent.javassist.bytecode.AttributeInfo)iterator.next();
+            AttributeInfo ainfo = (AttributeInfo)iterator.next();
             fi.addAttribute(ainfo.copy(cp, null));
         }
     }
@@ -92,15 +98,15 @@ public class CtField extends CtMember {
         throws CannotCompileException
     {
         super(clazz);
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = clazz.getClassFile2();
+        ClassFile cf = clazz.getClassFile2();
         if (cf == null)
             throw new CannotCompileException("bad declaring class: "
                                              + clazz.getName());
 
-        fieldInfo = new org.hotswap.agent.javassist.bytecode.FieldInfo(cf.getConstPool(), name, typeDesc);
+        fieldInfo = new FieldInfo(cf.getConstPool(), name, typeDesc);
     }
 
-    CtField(org.hotswap.agent.javassist.bytecode.FieldInfo fi, CtClass clazz) {
+    CtField(FieldInfo fi, CtClass clazz) {
         super(clazz);
         fieldInfo = fi;
     }
@@ -122,12 +128,12 @@ public class CtField extends CtMember {
 
     /* Javac.CtFieldWithInit overrides.
      */
-    protected org.hotswap.agent.javassist.compiler.ast.ASTree getInitAST() { return null; }
+    protected ASTree getInitAST() { return null; }
 
     /* Called by CtClassType.addField().
      */
     Initializer getInit() {
-        org.hotswap.agent.javassist.compiler.ast.ASTree tree = getInitAST();
+        ASTree tree = getInitAST();
         if (tree == null)
             return null;
         else
@@ -138,9 +144,9 @@ public class CtField extends CtMember {
      * Compiles the given source code and creates a field.
      * Examples of the source code are:
      *
-     * <ul><pre>
+     * <pre>
      * "public String name;"
-     * "public int k = 3;"</pre></ul>
+     * "public int k = 3;"</pre>
      *
      * <p>Note that the source code ends with <code>';'</code>
      * (semicolon).
@@ -151,13 +157,13 @@ public class CtField extends CtMember {
     public static CtField make(String src, CtClass declaring)
         throws CannotCompileException
     {
-        org.hotswap.agent.javassist.compiler.Javac compiler = new org.hotswap.agent.javassist.compiler.Javac(declaring);
+        Javac compiler = new Javac(declaring);
         try {
             CtMember obj = compiler.compile(src);
             if (obj instanceof CtField)
                 return (CtField)obj; // an instance of Javac.CtFieldWithInit
         }
-        catch (org.hotswap.agent.javassist.compiler.CompileError e) {
+        catch (CompileError e) {
             throw new CannotCompileException(e);
         }
 
@@ -167,7 +173,7 @@ public class CtField extends CtMember {
     /**
      * Returns the FieldInfo representing the field in the class file.
      */
-    public org.hotswap.agent.javassist.bytecode.FieldInfo getFieldInfo() {
+    public FieldInfo getFieldInfo() {
         declaringClass.checkModify();
         return fieldInfo;
     }
@@ -191,7 +197,7 @@ public class CtField extends CtMember {
      * @see CtClass#isFrozen()
      * @see CtClass#prune()
      */
-    public org.hotswap.agent.javassist.bytecode.FieldInfo getFieldInfo2() { return fieldInfo; }
+    public FieldInfo getFieldInfo2() { return fieldInfo; }
 
     /**
      * Returns the class declaring the field.
@@ -222,7 +228,7 @@ public class CtField extends CtMember {
      * @see Modifier
      */
     public int getModifiers() {
-        return org.hotswap.agent.javassist.bytecode.AccessFlag.toModifier(fieldInfo.getAccessFlags());
+        return AccessFlag.toModifier(fieldInfo.getAccessFlags());
     }
 
     /**
@@ -232,23 +238,23 @@ public class CtField extends CtMember {
      */
     public void setModifiers(int mod) {
         declaringClass.checkModify();
-        fieldInfo.setAccessFlags(org.hotswap.agent.javassist.bytecode.AccessFlag.of(mod));
+        fieldInfo.setAccessFlags(AccessFlag.of(mod));
     }
 
     /**
-     * Returns true if the class has the specified annotation class.
+     * Returns true if the class has the specified annotation type.
      *
-     * @param clz the annotation class.
+     * @param typeName      the name of annotation type.
      * @return <code>true</code> if the annotation is found, otherwise <code>false</code>.
-     * @since 3.11
+     * @since 3.21
      */
-    public boolean hasAnnotation(Class clz) {
-        org.hotswap.agent.javassist.bytecode.FieldInfo fi = getFieldInfo2();
-        org.hotswap.agent.javassist.bytecode.AnnotationsAttribute ainfo = (org.hotswap.agent.javassist.bytecode.AnnotationsAttribute)
-                    fi.getAttribute(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.invisibleTag);
-        org.hotswap.agent.javassist.bytecode.AnnotationsAttribute ainfo2 = (org.hotswap.agent.javassist.bytecode.AnnotationsAttribute)
-                    fi.getAttribute(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.visibleTag);
-        return CtClassType.hasAnnotationType(clz, getDeclaringClass().getClassPool(),
+    public boolean hasAnnotation(String typeName) {
+        FieldInfo fi = getFieldInfo2();
+        AnnotationsAttribute ainfo = (AnnotationsAttribute)
+                    fi.getAttribute(AnnotationsAttribute.invisibleTag);  
+        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
+                    fi.getAttribute(AnnotationsAttribute.visibleTag);  
+        return CtClassType.hasAnnotationType(typeName, getDeclaringClass().getClassPool(),
                                              ainfo, ainfo2);
     }
 
@@ -264,11 +270,11 @@ public class CtField extends CtMember {
      * @since 3.11
      */
     public Object getAnnotation(Class clz) throws ClassNotFoundException {
-        org.hotswap.agent.javassist.bytecode.FieldInfo fi = getFieldInfo2();
-        org.hotswap.agent.javassist.bytecode.AnnotationsAttribute ainfo = (org.hotswap.agent.javassist.bytecode.AnnotationsAttribute)
-                    fi.getAttribute(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.invisibleTag);
-        org.hotswap.agent.javassist.bytecode.AnnotationsAttribute ainfo2 = (org.hotswap.agent.javassist.bytecode.AnnotationsAttribute)
-                    fi.getAttribute(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.visibleTag);
+        FieldInfo fi = getFieldInfo2();
+        AnnotationsAttribute ainfo = (AnnotationsAttribute)
+                    fi.getAttribute(AnnotationsAttribute.invisibleTag);  
+        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
+                    fi.getAttribute(AnnotationsAttribute.visibleTag);  
         return CtClassType.getAnnotationType(clz, getDeclaringClass().getClassPool(),
                                              ainfo, ainfo2);
     }
@@ -303,11 +309,11 @@ public class CtField extends CtMember {
     }
 
     private Object[] getAnnotations(boolean ignoreNotFound) throws ClassNotFoundException {
-        org.hotswap.agent.javassist.bytecode.FieldInfo fi = getFieldInfo2();
-        org.hotswap.agent.javassist.bytecode.AnnotationsAttribute ainfo = (org.hotswap.agent.javassist.bytecode.AnnotationsAttribute)
-                    fi.getAttribute(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.invisibleTag);
-        org.hotswap.agent.javassist.bytecode.AnnotationsAttribute ainfo2 = (org.hotswap.agent.javassist.bytecode.AnnotationsAttribute)
-                    fi.getAttribute(org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.visibleTag);
+        FieldInfo fi = getFieldInfo2();
+        AnnotationsAttribute ainfo = (AnnotationsAttribute)
+                    fi.getAttribute(AnnotationsAttribute.invisibleTag);  
+        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
+                    fi.getAttribute(AnnotationsAttribute.visibleTag);  
         return CtClassType.toAnnotationType(ignoreNotFound, getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2);
     }
@@ -323,7 +329,7 @@ public class CtField extends CtMember {
      * contained in the <code>SignatureAttirbute</code>.  It is
      * a descriptor.
      *
-     * @see org.hotswap.agent.javassist.bytecode.Descriptor
+     * @see javassist.bytecode.Descriptor
      * @see #getGenericSignature()
      */
     public String getSignature() {
@@ -334,44 +340,55 @@ public class CtField extends CtMember {
      * Returns the generic signature of the field.
      * It represents a type including type variables.
      *
-     * @see org.hotswap.agent.javassist.bytecode.SignatureAttribute#toFieldSignature(String)
+     * @see SignatureAttribute#toFieldSignature(String)
      * @since 3.17
      */
     public String getGenericSignature() {
-        org.hotswap.agent.javassist.bytecode.SignatureAttribute sa
-            = (org.hotswap.agent.javassist.bytecode.SignatureAttribute)fieldInfo.getAttribute(org.hotswap.agent.javassist.bytecode.SignatureAttribute.tag);
+        SignatureAttribute sa
+            = (SignatureAttribute)fieldInfo.getAttribute(SignatureAttribute.tag);
         return sa == null ? null : sa.getSignature();
     }
 
     /**
      * Set the generic signature of the field.
      * It represents a type including type variables.
-     * See {@link CtClass#setGenericSignature(String)}
+     * See {@link javassist.CtClass#setGenericSignature(String)}
      * for a code sample.
      *
      * @param sig       a new generic signature.
-     * @see org.hotswap.agent.javassist.bytecode.SignatureAttribute.ObjectType#encode()
+     * @see javassist.bytecode.SignatureAttribute.ObjectType#encode()
      * @since 3.17
      */
     public void setGenericSignature(String sig) {
         declaringClass.checkModify();
-        fieldInfo.addAttribute(new org.hotswap.agent.javassist.bytecode.SignatureAttribute(fieldInfo.getConstPool(), sig));
+        fieldInfo.addAttribute(new SignatureAttribute(fieldInfo.getConstPool(), sig));
     }
 
     /**
      * Returns the type of the field.
      */
     public CtClass getType() throws NotFoundException {
-        return org.hotswap.agent.javassist.bytecode.Descriptor.toCtClass(fieldInfo.getDescriptor(),
-                declaringClass.getClassPool());
+        return Descriptor.toCtClass(fieldInfo.getDescriptor(),
+                                    declaringClass.getClassPool());
     }
 
     /**
      * Sets the type of the field.
+     *
+     * <p>This method does not automatically update method bodies that access
+     * this field.  They have to be explicitly updated.  For example,
+     * if some method contains an expression {@code t.value} and the type
+     * of the variable {@code t} is changed by {@link #setType(CtClass)}
+     * from {@code int} to {@code double}, then {@code t.value} has to be modified
+     * as well since the bytecode of {@code t.value} contains the type information.
+     * </p>
+     *
+     * @see CodeConverter
+     * @see javassist.expr.ExprEditor
      */
     public void setType(CtClass clazz) {
         declaringClass.checkModify();
-        fieldInfo.setDescriptor(org.hotswap.agent.javassist.bytecode.Descriptor.of(clazz));
+        fieldInfo.setDescriptor(Descriptor.of(clazz));
     }
 
     /**
@@ -396,22 +413,22 @@ public class CtField extends CtMember {
         if (index == 0)
             return null;
 
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = fieldInfo.getConstPool();
+        ConstPool cp = fieldInfo.getConstPool();
         switch (cp.getTag(index)) {
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Long :
+            case ConstPool.CONST_Long :
                 return new Long(cp.getLongInfo(index));
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Float :
+            case ConstPool.CONST_Float :
                 return new Float(cp.getFloatInfo(index));
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Double :
+            case ConstPool.CONST_Double :
                 return new Double(cp.getDoubleInfo(index));
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Integer :
+            case ConstPool.CONST_Integer :
                 int value = cp.getIntegerInfo(index);
                 // "Z" means boolean type.
                 if ("Z".equals(fieldInfo.getDescriptor()))
                     return new Boolean(value != 0);
                 else
                     return new Integer(value);
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_String :
+            case ConstPool.CONST_String :
                 return cp.getStringInfo(index);
             default :
                 throw new RuntimeException("bad tag: " + cp.getTag(index)
@@ -426,12 +443,12 @@ public class CtField extends CtMember {
      *
      * <p>Note that an attribute is a data block specified by
      * the class file format.
-     * See {@link org.hotswap.agent.javassist.bytecode.AttributeInfo}.
+     * See {@link javassist.bytecode.AttributeInfo}.
      *
      * @param name              attribute name
      */
     public byte[] getAttribute(String name) {
-        org.hotswap.agent.javassist.bytecode.AttributeInfo ai = fieldInfo.getAttribute(name);
+        AttributeInfo ai = fieldInfo.getAttribute(name);
         if (ai == null)
             return null;
         else
@@ -443,14 +460,14 @@ public class CtField extends CtMember {
      *
      * <p>Note that an attribute is a data block specified by
      * the class file format.
-     * See {@link org.hotswap.agent.javassist.bytecode.AttributeInfo}.
+     * See {@link javassist.bytecode.AttributeInfo}.
      *
      * @param name      attribute name
      * @param data      attribute value
      */
     public void setAttribute(String name, byte[] data) {
         declaringClass.checkModify();
-        fieldInfo.addAttribute(new org.hotswap.agent.javassist.bytecode.AttributeInfo(fieldInfo.getConstPool(),
+        fieldInfo.addAttribute(new AttributeInfo(fieldInfo.getConstPool(),
                                                  name, data));
     }
 
@@ -545,8 +562,7 @@ public class CtField extends CtMember {
          * value of the field.  The constructor of the created object receives
          * the parameter:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
-         * </ul>
+         * <p><code>Object obj</code> - the object including the field.
          *
          * <p>If the initialized field is static, then the constructor does
          * not receive any parameters.
@@ -568,10 +584,9 @@ public class CtField extends CtMember {
          * value of the field.  The constructor of the created object receives
          * the parameters:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
+         * <p><code>Object obj</code> - the object including the field.<br>
          *     <code>String[] strs</code> - the character strings specified
          *                              by <code>stringParams</code><br>
-         * </ul>
          *
          * <p>If the initialized field is static, then the constructor
          * receives only <code>strs</code>.
@@ -596,19 +611,18 @@ public class CtField extends CtMember {
          * value of the field.  The constructor of the created object receives
          * the parameters:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
+         * <p><code>Object obj</code> - the object including the field.<br>
          *     <code>Object[] args</code> - the parameters passed to the
          *                      constructor of the object including the
          *                      filed.
-         * </ul>
          *
          * <p>If the initialized field is static, then the constructor does
          * not receive any parameters.
          *
          * @param objectType    the class instantiated for the initial value.
          *
-         * @see CtField.Initializer#byNewArray(CtClass,int)
-         * @see CtField.Initializer#byNewArray(CtClass,int[])
+         * @see javassist.CtField.Initializer#byNewArray(CtClass,int)
+         * @see javassist.CtField.Initializer#byNewArray(CtClass,int[])
          */
         public static Initializer byNewWithParams(CtClass objectType) {
             NewInitializer i = new NewInitializer();
@@ -625,13 +639,12 @@ public class CtField extends CtMember {
          * value of the field.  The constructor of the created object receives
          * the parameters:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
+         * <p><code>Object obj</code> - the object including the field.<br>
          *     <code>String[] strs</code> - the character strings specified
          *                              by <code>stringParams</code><br>
          *     <code>Object[] args</code> - the parameters passed to the
          *                      constructor of the object including the
          *                      filed.
-         * </ul>
          *
          * <p>If the initialized field is static, then the constructor receives
          * only <code>strs</code>.
@@ -656,8 +669,7 @@ public class CtField extends CtMember {
          * value as the initial value of the field.
          * The called method receives the parameters:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
-         * </ul>
+         * <p><code>Object obj</code> - the object including the field.
          *
          * <p>If the initialized field is static, then the method does
          * not receive any parameters.
@@ -686,10 +698,9 @@ public class CtField extends CtMember {
          * value as the initial value of the field.  The called method
          * receives the parameters:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
+         * <p><code>Object obj</code> - the object including the field.<br>
          *     <code>String[] strs</code> - the character strings specified
          *                              by <code>stringParams</code><br>
-         * </ul>
          *
          * <p>If the initialized field is static, then the method
          * receive only <code>strs</code>.
@@ -721,11 +732,10 @@ public class CtField extends CtMember {
          * value as the initial value of the field.  The called method
          * receives the parameters:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
+         * <p><code>Object obj</code> - the object including the field.<br>
          *     <code>Object[] args</code> - the parameters passed to the
          *                      constructor of the object including the
          *                      filed.
-         * </ul>
          *
          * <p>If the initialized field is static, then the method does
          * not receive any parameters.
@@ -754,13 +764,12 @@ public class CtField extends CtMember {
          * value as the initial value of the field.  The called method
          * receives the parameters:
          *
-         * <ul><code>Object obj</code> - the object including the field.<br>
+         * <p><code>Object obj</code> - the object including the field.<br>
          *     <code>String[] strs</code> - the character strings specified
          *                              by <code>stringParams</code><br>
          *     <code>Object[] args</code> - the parameters passed to the
          *                      constructor of the object including the
          *                      filed.
-         * </ul>
          *
          * <p>If the initialized field is static, then the method
          * receive only <code>strs</code>.
@@ -820,7 +829,7 @@ public class CtField extends CtMember {
             return new CodeInitializer(source);
         }
 
-        static Initializer byExpr(org.hotswap.agent.javassist.compiler.ast.ASTree source) {
+        static Initializer byExpr(ASTree source) {
             return new PtreeInitializer(source);
         }
 
@@ -829,51 +838,51 @@ public class CtField extends CtMember {
         void check(String desc) throws CannotCompileException {}
 
         // produce codes for initialization
-        abstract int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                             CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        abstract int compile(CtClass type, String name, Bytecode code,
+                             CtClass[] parameters, Javac drv)
             throws CannotCompileException;
 
         // produce codes for initialization
         abstract int compileIfStatic(CtClass type, String name,
-                org.hotswap.agent.javassist.bytecode.Bytecode code, org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException;
+                Bytecode code, Javac drv) throws CannotCompileException;
 
         // returns the index of CONSTANT_Integer_info etc
         // if the value is constant.  Otherwise, 0.
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) { return 0; }
+        int getConstantValue(ConstPool cp, CtClass type) { return 0; }
     }
 
     static abstract class CodeInitializer0 extends Initializer {
-        abstract void compileExpr(org.hotswap.agent.javassist.compiler.Javac drv) throws org.hotswap.agent.javassist.compiler.CompileError;
+        abstract void compileExpr(Javac drv) throws CompileError;
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             try {
                 code.addAload(0);
                 compileExpr(drv);
-                code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+                code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
                 return code.getMaxStack();
             }
-            catch (org.hotswap.agent.javassist.compiler.CompileError e) {
+            catch (CompileError e) {
                 throw new CannotCompileException(e);
             }
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             try {
                 compileExpr(drv);
-                code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+                code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
                 return code.getMaxStack();
             }
-            catch (org.hotswap.agent.javassist.compiler.CompileError e) {
+            catch (CompileError e) {
                 throw new CannotCompileException(e);
             }
         }
 
-        int getConstantValue2(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type, org.hotswap.agent.javassist.compiler.ast.ASTree tree) {
+        int getConstantValue2(ConstPool cp, CtClass type, ASTree tree) {
             if (type.isPrimitive()) {
                 if (tree instanceof IntConst) {
                     long value = ((IntConst)tree).get();
@@ -886,8 +895,8 @@ public class CtField extends CtMember {
                     else  if (type != CtClass.voidType)
                         return cp.addIntegerInfo((int)value);
                 }
-                else if (tree instanceof org.hotswap.agent.javassist.compiler.ast.DoubleConst) {
-                    double value = ((org.hotswap.agent.javassist.compiler.ast.DoubleConst)tree).get();
+                else if (tree instanceof DoubleConst) {
+                    double value = ((DoubleConst)tree).get();
                     if (type == CtClass.floatType)
                         return cp.addFloatInfo((float)value);
                     else if (type == CtClass.doubleType)
@@ -907,31 +916,31 @@ public class CtField extends CtMember {
 
         CodeInitializer(String expr) { expression = expr; }
 
-        void compileExpr(org.hotswap.agent.javassist.compiler.Javac drv) throws org.hotswap.agent.javassist.compiler.CompileError {
+        void compileExpr(Javac drv) throws CompileError {
             drv.compileExpr(expression);
         }
 
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) {
+        int getConstantValue(ConstPool cp, CtClass type) {
             try {
-                org.hotswap.agent.javassist.compiler.ast.ASTree t = org.hotswap.agent.javassist.compiler.Javac.parseExpr(expression, new org.hotswap.agent.javassist.compiler.SymbolTable());
+                ASTree t = Javac.parseExpr(expression, new SymbolTable());
                 return getConstantValue2(cp, type, t);
             }
-            catch (org.hotswap.agent.javassist.compiler.CompileError e) {
+            catch (CompileError e) {
                 return 0;
             }
         }
     }
 
     static class PtreeInitializer extends CodeInitializer0 {
-        private org.hotswap.agent.javassist.compiler.ast.ASTree expression;
+        private ASTree expression;
 
-        PtreeInitializer(org.hotswap.agent.javassist.compiler.ast.ASTree expr) { expression = expr; }
+        PtreeInitializer(ASTree expr) { expression = expr; }
 
-        void compileExpr(org.hotswap.agent.javassist.compiler.Javac drv) throws org.hotswap.agent.javassist.compiler.CompileError {
+        void compileExpr(Javac drv) throws CompileError {
             drv.compileExpr(expression);
         }
 
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) {
+        int getConstantValue(ConstPool cp, CtClass type) {
             return getConstantValue2(cp, type, expression);
         }
     }
@@ -945,15 +954,15 @@ public class CtField extends CtMember {
 
         ParamInitializer() {}
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             if (parameters != null && nthParam < parameters.length) {
                 code.addAload(0);
                 int nth = nthParamToLocal(nthParam, parameters, false);
                 int s = code.addLoad(nth, type) + 1;
-                code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+                code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
                 return s;       // stack size
             }
             else
@@ -989,8 +998,8 @@ public class CtField extends CtMember {
             return k;
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             return 0;
         }
@@ -1010,15 +1019,15 @@ public class CtField extends CtMember {
          * Produces codes in which a new object is created and assigned to
          * the field as the initial value.
          */
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             int stacksize;
 
             code.addAload(0);
             code.addNew(objectType);
-            code.add(org.hotswap.agent.javassist.bytecode.Bytecode.DUP);
+            code.add(Bytecode.DUP);
             code.addAload(0);
 
             if (stringParams == null)
@@ -1027,11 +1036,11 @@ public class CtField extends CtMember {
                 stacksize = compileStringParameter(code) + 4;
 
             if (withConstructorParams)
-                stacksize += org.hotswap.agent.javassist.CtNewWrappedMethod.compileParameterList(code,
-                        parameters, 1);
+                stacksize += CtNewWrappedMethod.compileParameterList(code,
+                                                            parameters, 1);
 
             code.addInvokespecial(objectType, "<init>", getDescriptor());
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return stacksize;
         }
 
@@ -1054,13 +1063,13 @@ public class CtField extends CtMember {
         /**
          * Produces codes for a static field.
          */
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             String desc;
 
             code.addNew(objectType);
-            code.add(org.hotswap.agent.javassist.bytecode.Bytecode.DUP);
+            code.add(Bytecode.DUP);
 
             int stacksize = 2;
             if (stringParams == null)
@@ -1071,21 +1080,21 @@ public class CtField extends CtMember {
             }
 
             code.addInvokespecial(objectType, "<init>", desc);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return stacksize;
         }
 
-        protected final int compileStringParameter(org.hotswap.agent.javassist.bytecode.Bytecode code)
+        protected final int compileStringParameter(Bytecode code)
             throws CannotCompileException
         {
             int nparam = stringParams.length;
             code.addIconst(nparam);
             code.addAnewarray(javaLangString);
             for (int j = 0; j < nparam; ++j) {
-                code.add(org.hotswap.agent.javassist.bytecode.Bytecode.DUP);         // dup
+                code.add(Bytecode.DUP);         // dup
                 code.addIconst(j);                      // iconst_<j>
                 code.addLdc(stringParams[j]);   // ldc ...
-                code.add(org.hotswap.agent.javassist.bytecode.Bytecode.AASTORE);             // aastore
+                code.add(Bytecode.AASTORE);             // aastore
             }
 
             return 4;
@@ -1106,8 +1115,8 @@ public class CtField extends CtMember {
          * Produces codes in which a new object is created and assigned to
          * the field as the initial value.
          */
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             int stacksize;
@@ -1121,13 +1130,13 @@ public class CtField extends CtMember {
                 stacksize = compileStringParameter(code) + 2;
 
             if (withConstructorParams)
-                stacksize += org.hotswap.agent.javassist.CtNewWrappedMethod.compileParameterList(code,
-                        parameters, 1);
+                stacksize += CtNewWrappedMethod.compileParameterList(code,
+                                                            parameters, 1);
 
-            String typeDesc = org.hotswap.agent.javassist.bytecode.Descriptor.of(type);
+            String typeDesc = Descriptor.of(type);
             String mDesc = getDescriptor() + typeDesc;
             code.addInvokestatic(objectType, methodName, mDesc);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, typeDesc);
+            code.addPutfield(Bytecode.THIS, name, typeDesc);
             return stacksize;
         }
 
@@ -1150,8 +1159,8 @@ public class CtField extends CtMember {
         /**
          * Produces codes for a static field.
          */
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             String desc;
 
@@ -1163,9 +1172,9 @@ public class CtField extends CtMember {
                 stacksize += compileStringParameter(code);
             }
 
-            String typeDesc = org.hotswap.agent.javassist.bytecode.Descriptor.of(type);
+            String typeDesc = Descriptor.of(type);
             code.addInvokestatic(objectType, methodName, desc + typeDesc);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, typeDesc);
+            code.addPutstatic(Bytecode.THIS, name, typeDesc);
             return stacksize;
         }
     }
@@ -1181,25 +1190,25 @@ public class CtField extends CtMember {
                 throw new CannotCompileException("type mismatch");
         }
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             code.addAload(0);
             code.addIconst(value);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return 2;   // stack size
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             code.addIconst(value);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return 1;   // stack size
         }
 
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) {
+        int getConstantValue(ConstPool cp, CtClass type) {
             return cp.addIntegerInfo(value);
         }
     }
@@ -1214,25 +1223,25 @@ public class CtField extends CtMember {
                 throw new CannotCompileException("type mismatch");
         }
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             code.addAload(0);
             code.addLdc2w(value);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return 3;   // stack size
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             code.addLdc2w(value);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return 2;   // stack size
         }
 
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) {
+        int getConstantValue(ConstPool cp, CtClass type) {
             if (type == CtClass.longType)
                 return cp.addLongInfo(value);
             else
@@ -1250,25 +1259,25 @@ public class CtField extends CtMember {
                 throw new CannotCompileException("type mismatch");
         }
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             code.addAload(0);
             code.addFconst(value);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return 3;   // stack size
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             code.addFconst(value);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return 2;   // stack size
         }
 
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) {
+        int getConstantValue(ConstPool cp, CtClass type) {
             if (type == CtClass.floatType)
                 return cp.addFloatInfo(value);
             else
@@ -1286,25 +1295,25 @@ public class CtField extends CtMember {
                 throw new CannotCompileException("type mismatch");
         }
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             code.addAload(0);
             code.addLdc2w(value);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return 3;   // stack size
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             code.addLdc2w(value);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return 2;   // stack size
         }
 
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) {
+        int getConstantValue(ConstPool cp, CtClass type) {
             if (type == CtClass.doubleType)
                 return cp.addDoubleInfo(value);
             else
@@ -1317,25 +1326,25 @@ public class CtField extends CtMember {
 
         StringInitializer(String v) { value = v; }
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             code.addAload(0);
             code.addLdc(value);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return 2;   // stack size
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             code.addLdc(value);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return 1;   // stack size
         }
 
-        int getConstantValue(org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass type) {
+        int getConstantValue(ConstPool cp, CtClass type) {
             if (type.getName().equals(javaLangString))
                 return cp.addStringInfo(value);
             else
@@ -1349,7 +1358,7 @@ public class CtField extends CtMember {
 
         ArrayInitializer(CtClass t, int s) { type = t; size = s; }
 
-        private void addNewarray(org.hotswap.agent.javassist.bytecode.Bytecode code) {
+        private void addNewarray(Bytecode code) {
             if (type.isPrimitive())
                 code.addNewarray(((CtPrimitiveType)type).getArrayType(),
                                  size);
@@ -1357,21 +1366,21 @@ public class CtField extends CtMember {
                 code.addAnewarray(type, size);
         }
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             code.addAload(0);
             addNewarray(code);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return 2;   // stack size
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             addNewarray(code);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return 1;   // stack size
         }
     }
@@ -1387,21 +1396,21 @@ public class CtField extends CtMember {
                 throw new CannotCompileException("type mismatch");
         }
 
-        int compile(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                    CtClass[] parameters, org.hotswap.agent.javassist.compiler.Javac drv)
+        int compile(CtClass type, String name, Bytecode code,
+                    CtClass[] parameters, Javac drv)
             throws CannotCompileException
         {
             code.addAload(0);
             int s = code.addMultiNewarray(type, dim);
-            code.addPutfield(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutfield(Bytecode.THIS, name, Descriptor.of(type));
             return s + 1;       // stack size
         }
 
-        int compileIfStatic(CtClass type, String name, org.hotswap.agent.javassist.bytecode.Bytecode code,
-                            org.hotswap.agent.javassist.compiler.Javac drv) throws CannotCompileException
+        int compileIfStatic(CtClass type, String name, Bytecode code,
+                            Javac drv) throws CannotCompileException
         {
             int s = code.addMultiNewarray(type, dim);
-            code.addPutstatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, name, org.hotswap.agent.javassist.bytecode.Descriptor.of(type));
+            code.addPutstatic(Bytecode.THIS, name, Descriptor.of(type));
             return s;   // stack size
         }
     }

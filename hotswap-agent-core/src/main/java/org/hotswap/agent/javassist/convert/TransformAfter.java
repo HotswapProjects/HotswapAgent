@@ -18,15 +18,17 @@ package org.hotswap.agent.javassist.convert;
 
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.*;
 
 public class TransformAfter extends TransformBefore {
-    public TransformAfter(org.hotswap.agent.javassist.convert.Transformer next,
-                          CtMethod origMethod, CtMethod afterMethod)
-            throws NotFoundException {
+    public TransformAfter(Transformer next,
+                           CtMethod origMethod, CtMethod afterMethod)
+        throws NotFoundException
+    {
         super(next, origMethod, afterMethod);
     }
 
-    protected int match2(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    protected int match2(int pos, CodeIterator iterator) throws BadBytecode {
         iterator.move(pos);
         iterator.insert(saveCode);
         iterator.insert(loadCode);

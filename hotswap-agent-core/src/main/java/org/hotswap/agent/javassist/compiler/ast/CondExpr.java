@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
+import org.hotswap.agent.javassist.compiler.CompileError;
+
 /**
  * Conditional expression.
  */
@@ -24,35 +26,19 @@ public class CondExpr extends ASTList {
         super(cond, new ASTList(thenp, new ASTList(elsep)));
     }
 
-    public ASTree condExpr() {
-        return head();
-    }
+    public ASTree condExpr() { return head(); }
 
-    public void setCond(ASTree t) {
-        setHead(t);
-    }
+    public void setCond(ASTree t) { setHead(t); }
 
-    public ASTree thenExpr() {
-        return tail().head();
-    }
+    public ASTree thenExpr() { return tail().head(); }
 
-    public void setThen(ASTree t) {
-        tail().setHead(t);
-    }
+    public void setThen(ASTree t) { tail().setHead(t); } 
 
-    public ASTree elseExpr() {
-        return tail().tail().head();
-    }
+    public ASTree elseExpr() { return tail().tail().head(); }
 
-    public void setElse(ASTree t) {
-        tail().tail().setHead(t);
-    }
+    public void setElse(ASTree t) { tail().tail().setHead(t); } 
 
-    public String getTag() {
-        return "?:";
-    }
+    public String getTag() { return "?:"; }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
-        v.atCondExpr(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atCondExpr(this); }
 }

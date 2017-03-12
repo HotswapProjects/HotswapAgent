@@ -16,8 +16,12 @@
 
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
+import org.hotswap.agent.javassist.bytecode.ByteArray;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.bytecode.*;
 
 /*
  * A class for performing abstract interpretation.
@@ -30,8 +34,8 @@ public abstract class Tracer implements TypeTag {
     protected String returnType;    // used as the type of ARETURN
 
     protected int stackTop;
-    protected org.hotswap.agent.javassist.bytecode.stackmap.TypeData[] stackTypes;
-    protected org.hotswap.agent.javassist.bytecode.stackmap.TypeData[] localsTypes;
+    protected TypeData[] stackTypes;
+    protected TypeData[] localsTypes;
 
     public Tracer(ClassPool classes, ConstPool cp, int maxStack, int maxLocals,
                   String retType) {
@@ -39,8 +43,8 @@ public abstract class Tracer implements TypeTag {
         cpool = cp;
         returnType = retType;
         stackTop = 0;
-        stackTypes = org.hotswap.agent.javassist.bytecode.stackmap.TypeData.make(maxStack);
-        localsTypes = org.hotswap.agent.javassist.bytecode.stackmap.TypeData.make(maxLocals);
+        stackTypes = TypeData.make(maxStack);
+        localsTypes = TypeData.make(maxLocals);
     }
 
     public Tracer(Tracer t) {
@@ -48,8 +52,8 @@ public abstract class Tracer implements TypeTag {
         cpool = t.cpool;
         returnType = t.returnType;
         stackTop = t.stackTop;
-        stackTypes = org.hotswap.agent.javassist.bytecode.stackmap.TypeData.make(t.stackTypes.length);
-        localsTypes = org.hotswap.agent.javassist.bytecode.stackmap.TypeData.make(t.localsTypes.length);
+        stackTypes = TypeData.make(t.stackTypes.length);
+        localsTypes = TypeData.make(t.localsTypes.length);
     }
 
     /**
@@ -59,8 +63,8 @@ public abstract class Tracer implements TypeTag {
      * a stack element has a more specific type, this method updates the
      * type of it.
      *
-     * @param pos the position of the instruction.
-     * @return the size of the instruction at POS.
+     * @param pos         the position of the instruction.
+     * @return      the size of the instruction at POS.
      */
     protected int doOpcode(int pos, byte[] code) throws BadBytecode {
         try {
@@ -70,48 +74,41 @@ public abstract class Tracer implements TypeTag {
                     return doOpcode0_53(pos, code, op);
                 else
                     return doOpcode54_95(pos, code, op);
-            else if (op < 148)
-                return doOpcode96_147(pos, code, op);
             else
-                return doOpcode148_201(pos, code, op);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            throw new BadBytecode("inconsistent stack height " + e.getMessage());
+                if (op < 148)
+                    return doOpcode96_147(pos, code, op);
+                else
+                    return doOpcode148_201(pos, code, op);
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            throw new BadBytecode("inconsistent stack height " + e.getMessage(), e);
         }
     }
 
-    protected void visitBranch(int pos, byte[] code, int offset) throws BadBytecode {
-    }
-
-    protected void visitGoto(int pos, byte[] code, int offset) throws BadBytecode {
-    }
-
-    protected void visitReturn(int pos, byte[] code) throws BadBytecode {
-    }
-
-    protected void visitThrow(int pos, byte[] code) throws BadBytecode {
-    }
+    protected void visitBranch(int pos, byte[] code, int offset) throws BadBytecode {}
+    protected void visitGoto(int pos, byte[] code, int offset) throws BadBytecode {}
+    protected void visitReturn(int pos, byte[] code) throws BadBytecode {}
+    protected void visitThrow(int pos, byte[] code) throws BadBytecode {}
 
     /**
      * @param pos           the position of TABLESWITCH
      * @param code          bytecode
      * @param n             the number of case labels
      * @param offsetPos     the position of the branch-target table.
-     * @param defaultOffset the offset to the default branch target.
+     * @param defaultOffset     the offset to the default branch target.
      */
     protected void visitTableSwitch(int pos, byte[] code, int n,
-                                    int offsetPos, int defaultOffset) throws BadBytecode {
-    }
+                int offsetPos, int defaultOffset) throws BadBytecode {}
 
     /**
      * @param pos           the position of LOOKUPSWITCH
      * @param code          bytecode
      * @param n             the number of case labels
-     * @param offsetPos     the position of the table of pairs of a value and a branch target.
-     * @param defaultOffset the offset to the default branch target.
+     * @param pairsPos      the position of the table of pairs of a value and a branch target.
+     * @param defaultOffset     the offset to the default branch target.
      */
     protected void visitLookupSwitch(int pos, byte[] code, int n,
-                                     int pairsPos, int defaultOffset) throws BadBytecode {
-    }
+                int pairsPos, int defaultOffset) throws BadBytecode {}
 
     /**
      * Invoked when the visited instruction is jsr.
@@ -130,133 +127,131 @@ public abstract class Tracer implements TypeTag {
      * Invoked when the visited instruction is ret or wide ret.
      * Java6 or later does not allow using RET.
      */
-    protected void visitRET(int pos, byte[] code) throws BadBytecode {
-    }
+    protected void visitRET(int pos, byte[] code) throws BadBytecode {}
 
     private int doOpcode0_53(int pos, byte[] code, int op) throws BadBytecode {
         int reg;
-        org.hotswap.agent.javassist.bytecode.stackmap.TypeData[] stackTypes = this.stackTypes;
+        TypeData[] stackTypes = this.stackTypes;
         switch (op) {
-            case Opcode.NOP:
-                break;
-            case Opcode.ACONST_NULL:
-                stackTypes[stackTop++] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.NullType();
-                break;
-            case Opcode.ICONST_M1:
-            case Opcode.ICONST_0:
-            case Opcode.ICONST_1:
-            case Opcode.ICONST_2:
-            case Opcode.ICONST_3:
-            case Opcode.ICONST_4:
-            case Opcode.ICONST_5:
-                stackTypes[stackTop++] = INTEGER;
-                break;
-            case Opcode.LCONST_0:
-            case Opcode.LCONST_1:
-                stackTypes[stackTop++] = LONG;
-                stackTypes[stackTop++] = TOP;
-                break;
-            case Opcode.FCONST_0:
-            case Opcode.FCONST_1:
-            case Opcode.FCONST_2:
-                stackTypes[stackTop++] = FLOAT;
-                break;
-            case Opcode.DCONST_0:
-            case Opcode.DCONST_1:
-                stackTypes[stackTop++] = DOUBLE;
-                stackTypes[stackTop++] = TOP;
-                break;
-            case Opcode.BIPUSH:
-            case Opcode.SIPUSH:
-                stackTypes[stackTop++] = INTEGER;
-                return op == Opcode.SIPUSH ? 3 : 2;
-            case Opcode.LDC:
-                doLDC(code[pos + 1] & 0xff);
-                return 2;
-            case Opcode.LDC_W:
-            case Opcode.LDC2_W:
-                doLDC(ByteArray.readU16bit(code, pos + 1));
-                return 3;
-            case Opcode.ILOAD:
-                return doXLOAD(INTEGER, code, pos);
-            case Opcode.LLOAD:
-                return doXLOAD(LONG, code, pos);
-            case Opcode.FLOAD:
-                return doXLOAD(FLOAT, code, pos);
-            case Opcode.DLOAD:
-                return doXLOAD(DOUBLE, code, pos);
-            case Opcode.ALOAD:
-                return doALOAD(code[pos + 1] & 0xff);
-            case Opcode.ILOAD_0:
-            case Opcode.ILOAD_1:
-            case Opcode.ILOAD_2:
-            case Opcode.ILOAD_3:
-                stackTypes[stackTop++] = INTEGER;
-                break;
-            case Opcode.LLOAD_0:
-            case Opcode.LLOAD_1:
-            case Opcode.LLOAD_2:
-            case Opcode.LLOAD_3:
-                stackTypes[stackTop++] = LONG;
-                stackTypes[stackTop++] = TOP;
-                break;
-            case Opcode.FLOAD_0:
-            case Opcode.FLOAD_1:
-            case Opcode.FLOAD_2:
-            case Opcode.FLOAD_3:
-                stackTypes[stackTop++] = FLOAT;
-                break;
-            case Opcode.DLOAD_0:
-            case Opcode.DLOAD_1:
-            case Opcode.DLOAD_2:
-            case Opcode.DLOAD_3:
-                stackTypes[stackTop++] = DOUBLE;
-                stackTypes[stackTop++] = TOP;
-                break;
-            case Opcode.ALOAD_0:
-            case Opcode.ALOAD_1:
-            case Opcode.ALOAD_2:
-            case Opcode.ALOAD_3:
-                reg = op - Opcode.ALOAD_0;
-                stackTypes[stackTop++] = localsTypes[reg];
-                break;
-            case Opcode.IALOAD:
-                stackTypes[--stackTop - 1] = INTEGER;
-                break;
-            case Opcode.LALOAD:
-                stackTypes[stackTop - 2] = LONG;
-                stackTypes[stackTop - 1] = TOP;
-                break;
-            case Opcode.FALOAD:
-                stackTypes[--stackTop - 1] = FLOAT;
-                break;
-            case Opcode.DALOAD:
-                stackTypes[stackTop - 2] = DOUBLE;
-                stackTypes[stackTop - 1] = TOP;
-                break;
-            case Opcode.AALOAD: {
-                int s = --stackTop - 1;
-                org.hotswap.agent.javassist.bytecode.stackmap.TypeData data = stackTypes[s];
-                stackTypes[s] = org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ArrayElement.make(data);
-                break;
-            }
-            case Opcode.BALOAD:
-            case Opcode.CALOAD:
-            case Opcode.SALOAD:
-                stackTypes[--stackTop - 1] = INTEGER;
-                break;
-            default:
-                throw new RuntimeException("fatal");
+        case Opcode.NOP :
+            break;
+        case Opcode.ACONST_NULL :
+            stackTypes[stackTop++] = new TypeData.NullType();
+            break;
+        case Opcode.ICONST_M1 :
+        case Opcode.ICONST_0 :
+        case Opcode.ICONST_1 :
+        case Opcode.ICONST_2 :
+        case Opcode.ICONST_3 :
+        case Opcode.ICONST_4 :
+        case Opcode.ICONST_5 :
+            stackTypes[stackTop++] = INTEGER;
+            break;
+        case Opcode.LCONST_0 :
+        case Opcode.LCONST_1 :
+            stackTypes[stackTop++] = LONG;
+            stackTypes[stackTop++] = TOP;
+            break;
+        case Opcode.FCONST_0 :
+        case Opcode.FCONST_1 :
+        case Opcode.FCONST_2 :
+            stackTypes[stackTop++] = FLOAT;
+            break;
+        case Opcode.DCONST_0 :
+        case Opcode.DCONST_1 :
+            stackTypes[stackTop++] = DOUBLE;
+            stackTypes[stackTop++] = TOP;
+            break;
+        case Opcode.BIPUSH :
+        case Opcode.SIPUSH :
+            stackTypes[stackTop++] = INTEGER;
+            return op == Opcode.SIPUSH ? 3 : 2;
+        case Opcode.LDC :
+            doLDC(code[pos + 1] & 0xff);
+            return 2;
+        case Opcode.LDC_W :
+        case Opcode.LDC2_W :
+            doLDC(ByteArray.readU16bit(code, pos + 1));
+            return 3;
+        case Opcode.ILOAD :
+            return doXLOAD(INTEGER, code, pos);
+        case Opcode.LLOAD :
+            return doXLOAD(LONG, code, pos);
+        case Opcode.FLOAD :
+            return doXLOAD(FLOAT, code, pos);
+        case Opcode.DLOAD :
+            return doXLOAD(DOUBLE, code, pos);
+        case Opcode.ALOAD :
+            return doALOAD(code[pos + 1] & 0xff);
+        case Opcode.ILOAD_0 :
+        case Opcode.ILOAD_1 :
+        case Opcode.ILOAD_2 :
+        case Opcode.ILOAD_3 :
+            stackTypes[stackTop++] = INTEGER;
+            break;
+        case Opcode.LLOAD_0 :
+        case Opcode.LLOAD_1 :
+        case Opcode.LLOAD_2 :
+        case Opcode.LLOAD_3 :
+            stackTypes[stackTop++] = LONG;
+            stackTypes[stackTop++] = TOP;
+            break;
+        case Opcode.FLOAD_0 :
+        case Opcode.FLOAD_1 :
+        case Opcode.FLOAD_2 :
+        case Opcode.FLOAD_3 :
+            stackTypes[stackTop++] = FLOAT;
+            break;
+        case Opcode.DLOAD_0 :
+        case Opcode.DLOAD_1 :
+        case Opcode.DLOAD_2 :
+        case Opcode.DLOAD_3 :
+            stackTypes[stackTop++] = DOUBLE;
+            stackTypes[stackTop++] = TOP;
+            break;
+        case Opcode.ALOAD_0 :
+        case Opcode.ALOAD_1 :
+        case Opcode.ALOAD_2 :
+        case Opcode.ALOAD_3 :
+            reg = op - Opcode.ALOAD_0;
+            stackTypes[stackTop++] = localsTypes[reg];
+            break;
+        case Opcode.IALOAD :
+            stackTypes[--stackTop - 1] = INTEGER;
+            break;
+        case Opcode.LALOAD :
+            stackTypes[stackTop - 2] = LONG;
+            stackTypes[stackTop - 1] = TOP;
+            break;
+        case Opcode.FALOAD :
+            stackTypes[--stackTop - 1] = FLOAT;
+            break;
+        case Opcode.DALOAD :
+            stackTypes[stackTop - 2] = DOUBLE;
+            stackTypes[stackTop - 1] = TOP;
+            break;
+        case Opcode.AALOAD : {
+            int s = --stackTop - 1;
+            TypeData data = stackTypes[s];
+            stackTypes[s] = TypeData.ArrayElement.make(data);
+            break; }
+        case Opcode.BALOAD :
+        case Opcode.CALOAD :
+        case Opcode.SALOAD :
+            stackTypes[--stackTop - 1] = INTEGER;
+            break;
+        default :
+            throw new RuntimeException("fatal");
         }
 
         return 1;
     }
 
     private void doLDC(int index) {
-        org.hotswap.agent.javassist.bytecode.stackmap.TypeData[] stackTypes = this.stackTypes;
+        TypeData[] stackTypes = this.stackTypes;
         int tag = cpool.getTag(index);
         if (tag == ConstPool.CONST_String)
-            stackTypes[stackTop++] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName("java.lang.String");
+            stackTypes[stackTop++] = new TypeData.ClassName("java.lang.String");
         else if (tag == ConstPool.CONST_Integer)
             stackTypes[stackTop++] = INTEGER;
         else if (tag == ConstPool.CONST_Float)
@@ -264,21 +259,23 @@ public abstract class Tracer implements TypeTag {
         else if (tag == ConstPool.CONST_Long) {
             stackTypes[stackTop++] = LONG;
             stackTypes[stackTop++] = TOP;
-        } else if (tag == ConstPool.CONST_Double) {
+        }
+        else if (tag == ConstPool.CONST_Double) {
             stackTypes[stackTop++] = DOUBLE;
             stackTypes[stackTop++] = TOP;
-        } else if (tag == ConstPool.CONST_Class)
-            stackTypes[stackTop++] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName("java.lang.Class");
+        }
+        else if (tag == ConstPool.CONST_Class)
+            stackTypes[stackTop++] = new TypeData.ClassName("java.lang.Class");
         else
             throw new RuntimeException("bad LDC: " + tag);
     }
 
-    private int doXLOAD(org.hotswap.agent.javassist.bytecode.stackmap.TypeData type, byte[] code, int pos) {
+    private int doXLOAD(TypeData type, byte[] code, int pos) {
         int localVar = code[pos + 1] & 0xff;
         return doXLOAD(localVar, type);
     }
 
-    private int doXLOAD(int localVar, org.hotswap.agent.javassist.bytecode.stackmap.TypeData type) {
+    private int doXLOAD(int localVar, TypeData type) {
         stackTypes[stackTop++] = type;
         if (type.is2WordType())
             stackTypes[stackTop++] = TOP;
@@ -293,134 +290,125 @@ public abstract class Tracer implements TypeTag {
 
     private int doOpcode54_95(int pos, byte[] code, int op) throws BadBytecode {
         switch (op) {
-            case Opcode.ISTORE:
-                return doXSTORE(pos, code, INTEGER);
-            case Opcode.LSTORE:
-                return doXSTORE(pos, code, LONG);
-            case Opcode.FSTORE:
-                return doXSTORE(pos, code, FLOAT);
-            case Opcode.DSTORE:
-                return doXSTORE(pos, code, DOUBLE);
-            case Opcode.ASTORE:
-                return doASTORE(code[pos + 1] & 0xff);
-            case Opcode.ISTORE_0:
-            case Opcode.ISTORE_1:
-            case Opcode.ISTORE_2:
-            case Opcode.ISTORE_3: {
-                int var = op - Opcode.ISTORE_0;
-                localsTypes[var] = INTEGER;
-                stackTop--;
-            }
+        case Opcode.ISTORE :
+            return doXSTORE(pos, code, INTEGER);
+        case Opcode.LSTORE :
+            return doXSTORE(pos, code, LONG);
+        case Opcode.FSTORE :
+            return doXSTORE(pos, code, FLOAT);
+        case Opcode.DSTORE :
+            return doXSTORE(pos, code, DOUBLE);
+        case Opcode.ASTORE :
+            return doASTORE(code[pos + 1] & 0xff);
+        case Opcode.ISTORE_0 :
+        case Opcode.ISTORE_1 :
+        case Opcode.ISTORE_2 :
+        case Opcode.ISTORE_3 :
+          { int var = op - Opcode.ISTORE_0;
+            localsTypes[var] = INTEGER;
+            stackTop--; }
             break;
-            case Opcode.LSTORE_0:
-            case Opcode.LSTORE_1:
-            case Opcode.LSTORE_2:
-            case Opcode.LSTORE_3: {
-                int var = op - Opcode.LSTORE_0;
-                localsTypes[var] = LONG;
-                localsTypes[var + 1] = TOP;
-                stackTop -= 2;
-            }
+        case Opcode.LSTORE_0 :
+        case Opcode.LSTORE_1 :
+        case Opcode.LSTORE_2 :
+        case Opcode.LSTORE_3 :
+          { int var = op - Opcode.LSTORE_0;
+            localsTypes[var] = LONG;
+            localsTypes[var + 1] = TOP;
+            stackTop -= 2; }
             break;
-            case Opcode.FSTORE_0:
-            case Opcode.FSTORE_1:
-            case Opcode.FSTORE_2:
-            case Opcode.FSTORE_3: {
-                int var = op - Opcode.FSTORE_0;
-                localsTypes[var] = FLOAT;
-                stackTop--;
-            }
+        case Opcode.FSTORE_0 :
+        case Opcode.FSTORE_1 :
+        case Opcode.FSTORE_2 :
+        case Opcode.FSTORE_3 :
+          { int var = op - Opcode.FSTORE_0;
+            localsTypes[var] = FLOAT;
+            stackTop--; }
             break;
-            case Opcode.DSTORE_0:
-            case Opcode.DSTORE_1:
-            case Opcode.DSTORE_2:
-            case Opcode.DSTORE_3: {
-                int var = op - Opcode.DSTORE_0;
-                localsTypes[var] = DOUBLE;
-                localsTypes[var + 1] = TOP;
-                stackTop -= 2;
-            }
+        case Opcode.DSTORE_0 :
+        case Opcode.DSTORE_1 :
+        case Opcode.DSTORE_2 :
+        case Opcode.DSTORE_3 :
+          { int var = op - Opcode.DSTORE_0;
+            localsTypes[var] = DOUBLE;
+            localsTypes[var + 1] = TOP;
+            stackTop -= 2; }
             break;
-            case Opcode.ASTORE_0:
-            case Opcode.ASTORE_1:
-            case Opcode.ASTORE_2:
-            case Opcode.ASTORE_3: {
-                int var = op - Opcode.ASTORE_0;
-                doASTORE(var);
-                break;
-            }
-            case Opcode.IASTORE:
-            case Opcode.LASTORE:
-            case Opcode.FASTORE:
-            case Opcode.DASTORE:
-                stackTop -= (op == Opcode.LASTORE || op == Opcode.DASTORE) ? 4 : 3;
-                break;
-            case Opcode.AASTORE:
-                org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ArrayElement.aastore(stackTypes[stackTop - 3],
-                        stackTypes[stackTop - 1],
-                        classPool);
-                stackTop -= 3;
-                break;
-            case Opcode.BASTORE:
-            case Opcode.CASTORE:
-            case Opcode.SASTORE:
-                stackTop -= 3;
-                break;
-            case Opcode.POP:
-                stackTop--;
-                break;
-            case Opcode.POP2:
-                stackTop -= 2;
-                break;
-            case Opcode.DUP: {
-                int sp = stackTop;
-                stackTypes[sp] = stackTypes[sp - 1];
-                stackTop = sp + 1;
-                break;
-            }
-            case Opcode.DUP_X1:
-            case Opcode.DUP_X2: {
-                int len = op - Opcode.DUP_X1 + 2;
-                doDUP_XX(1, len);
-                int sp = stackTop;
-                stackTypes[sp - len] = stackTypes[sp];
-                stackTop = sp + 1;
-                break;
-            }
-            case Opcode.DUP2:
-                doDUP_XX(2, 2);
-                stackTop += 2;
-                break;
-            case Opcode.DUP2_X1:
-            case Opcode.DUP2_X2: {
-                int len = op - Opcode.DUP2_X1 + 3;
-                doDUP_XX(2, len);
-                int sp = stackTop;
-                stackTypes[sp - len] = stackTypes[sp];
-                stackTypes[sp - len + 1] = stackTypes[sp + 1];
-                stackTop = sp + 2;
-                break;
-            }
-            case Opcode.SWAP: {
-                int sp = stackTop - 1;
-                org.hotswap.agent.javassist.bytecode.stackmap.TypeData t = stackTypes[sp];
-                stackTypes[sp] = stackTypes[sp - 1];
-                stackTypes[sp - 1] = t;
-                break;
-            }
-            default:
-                throw new RuntimeException("fatal");
+        case Opcode.ASTORE_0 :
+        case Opcode.ASTORE_1 :
+        case Opcode.ASTORE_2 :
+        case Opcode.ASTORE_3 :
+          { int var = op - Opcode.ASTORE_0;
+            doASTORE(var);
+            break; }
+        case Opcode.IASTORE :
+        case Opcode.LASTORE :
+        case Opcode.FASTORE :
+        case Opcode.DASTORE :
+            stackTop -= (op == Opcode.LASTORE || op == Opcode.DASTORE) ? 4 : 3;
+            break;
+        case Opcode.AASTORE :
+            TypeData.ArrayElement.aastore(stackTypes[stackTop - 3],
+                                          stackTypes[stackTop - 1],
+                                          classPool);
+            stackTop -= 3;
+            break;
+        case Opcode.BASTORE :
+        case Opcode.CASTORE :
+        case Opcode.SASTORE :
+            stackTop -= 3;
+            break;
+        case Opcode.POP :
+            stackTop--;
+            break;
+        case Opcode.POP2 :
+            stackTop -= 2;
+            break;
+        case Opcode.DUP : {
+            int sp = stackTop;
+            stackTypes[sp] = stackTypes[sp - 1];
+            stackTop = sp + 1;
+            break; }
+        case Opcode.DUP_X1 :
+        case Opcode.DUP_X2 : {
+            int len = op - Opcode.DUP_X1 + 2;
+            doDUP_XX(1, len);
+            int sp = stackTop;
+            stackTypes[sp - len] = stackTypes[sp];
+            stackTop = sp + 1;
+            break; }
+        case Opcode.DUP2 :
+            doDUP_XX(2, 2);
+            stackTop += 2;
+            break;
+        case Opcode.DUP2_X1 :
+        case Opcode.DUP2_X2 : {
+            int len = op - Opcode.DUP2_X1 + 3;
+            doDUP_XX(2, len);
+            int sp = stackTop;
+            stackTypes[sp - len] = stackTypes[sp];
+            stackTypes[sp - len + 1] = stackTypes[sp + 1];
+            stackTop = sp + 2; 
+            break; }
+        case Opcode.SWAP : {
+            int sp = stackTop - 1;
+            TypeData t = stackTypes[sp];
+            stackTypes[sp] = stackTypes[sp - 1];
+            stackTypes[sp - 1] = t;
+            break; }
+        default :
+            throw new RuntimeException("fatal");
         }
 
         return 1;
     }
 
-    private int doXSTORE(int pos, byte[] code, org.hotswap.agent.javassist.bytecode.stackmap.TypeData type) {
+    private int doXSTORE(int pos, byte[] code, TypeData type) {
         int index = code[pos + 1] & 0xff;
         return doXSTORE(index, type);
     }
 
-    private int doXSTORE(int index, org.hotswap.agent.javassist.bytecode.stackmap.TypeData type) {
+    private int doXSTORE(int index, TypeData type) {
         stackTop--;
         localsTypes[index] = type;
         if (type.is2WordType()) {
@@ -439,7 +427,7 @@ public abstract class Tracer implements TypeTag {
     }
 
     private void doDUP_XX(int delta, int len) {
-        org.hotswap.agent.javassist.bytecode.stackmap.TypeData types[] = stackTypes;
+        TypeData types[] = stackTypes;
         int sp = stackTop - 1;
         int end = sp - len;
         while (sp > end) {
@@ -455,59 +443,59 @@ public abstract class Tracer implements TypeTag {
         }
 
         switch (op) {
-            case Opcode.IINC:
-                // this does not call writeLocal().
-                return 3;
-            case Opcode.I2L:
-                stackTypes[stackTop - 1] = LONG;
-                stackTypes[stackTop] = TOP;
-                stackTop++;
-                break;
-            case Opcode.I2F:
-                stackTypes[stackTop - 1] = FLOAT;
-                break;
-            case Opcode.I2D:
-                stackTypes[stackTop - 1] = DOUBLE;
-                stackTypes[stackTop] = TOP;
-                stackTop++;
-                break;
-            case Opcode.L2I:
-                stackTypes[--stackTop - 1] = INTEGER;
-                break;
-            case Opcode.L2F:
-                stackTypes[--stackTop - 1] = FLOAT;
-                break;
-            case Opcode.L2D:
-                stackTypes[stackTop - 2] = DOUBLE;
-                break;
-            case Opcode.F2I:
-                stackTypes[stackTop - 1] = INTEGER;
-                break;
-            case Opcode.F2L:
-                stackTypes[stackTop - 1] = LONG;
-                stackTypes[stackTop] = TOP;
-                stackTop++;
-                break;
-            case Opcode.F2D:
-                stackTypes[stackTop - 1] = DOUBLE;
-                stackTypes[stackTop] = TOP;
-                stackTop++;
-                break;
-            case Opcode.D2I:
-                stackTypes[--stackTop - 1] = INTEGER;
-                break;
-            case Opcode.D2L:
-                stackTypes[stackTop - 2] = LONG;
-                break;
-            case Opcode.D2F:
-                stackTypes[--stackTop - 1] = FLOAT;
-                break;
-            case Opcode.I2B:
-            case Opcode.I2C:
-            case Opcode.I2S:
-                break;
-            default:
-                throw new RuntimeException("fatal");
+        case Opcode.IINC :
+            // this does not call writeLocal().
+            return 3;
+        case Opcode.I2L :
+            stackTypes[stackTop - 1] = LONG;
+            stackTypes[stackTop] = TOP;
+            stackTop++;
+            break;
+        case Opcode.I2F :
+            stackTypes[stackTop - 1] = FLOAT;
+            break;
+        case Opcode.I2D :
+            stackTypes[stackTop - 1] = DOUBLE;
+            stackTypes[stackTop] = TOP;
+            stackTop++;
+            break;
+        case Opcode.L2I :
+            stackTypes[--stackTop - 1] = INTEGER;
+            break;
+        case Opcode.L2F :
+            stackTypes[--stackTop - 1] = FLOAT;
+            break;
+        case Opcode.L2D :
+            stackTypes[stackTop - 2] = DOUBLE;
+            break;
+        case Opcode.F2I :
+            stackTypes[stackTop - 1] = INTEGER;
+            break;
+        case Opcode.F2L :
+            stackTypes[stackTop - 1] = LONG;
+            stackTypes[stackTop] = TOP;
+            stackTop++;
+            break;
+        case Opcode.F2D :
+            stackTypes[stackTop - 1] = DOUBLE;
+            stackTypes[stackTop] = TOP;
+            stackTop++;
+            break;
+        case Opcode.D2I :
+            stackTypes[--stackTop - 1] = INTEGER;
+            break;
+        case Opcode.D2L :
+            stackTypes[stackTop - 2] = LONG;
+            break;
+        case Opcode.D2F :
+            stackTypes[--stackTop - 1] = FLOAT;
+            break;
+        case Opcode.I2B :
+        case Opcode.I2C :
+        case Opcode.I2S :
+            break;
+        default :
+            throw new RuntimeException("fatal");
         }
 
         return 1;
@@ -515,166 +503,161 @@ public abstract class Tracer implements TypeTag {
 
     private int doOpcode148_201(int pos, byte[] code, int op) throws BadBytecode {
         switch (op) {
-            case Opcode.LCMP:
-                stackTypes[stackTop - 4] = INTEGER;
-                stackTop -= 3;
-                break;
-            case Opcode.FCMPL:
-            case Opcode.FCMPG:
-                stackTypes[--stackTop - 1] = INTEGER;
-                break;
-            case Opcode.DCMPL:
-            case Opcode.DCMPG:
-                stackTypes[stackTop - 4] = INTEGER;
-                stackTop -= 3;
-                break;
-            case Opcode.IFEQ:
-            case Opcode.IFNE:
-            case Opcode.IFLT:
-            case Opcode.IFGE:
-            case Opcode.IFGT:
-            case Opcode.IFLE:
-                stackTop--;     // branch
-                visitBranch(pos, code, ByteArray.readS16bit(code, pos + 1));
-                return 3;
-            case Opcode.IF_ICMPEQ:
-            case Opcode.IF_ICMPNE:
-            case Opcode.IF_ICMPLT:
-            case Opcode.IF_ICMPGE:
-            case Opcode.IF_ICMPGT:
-            case Opcode.IF_ICMPLE:
-            case Opcode.IF_ACMPEQ:
-            case Opcode.IF_ACMPNE:
-                stackTop -= 2;  // branch
-                visitBranch(pos, code, ByteArray.readS16bit(code, pos + 1));
-                return 3;
-            case Opcode.GOTO:
-                visitGoto(pos, code, ByteArray.readS16bit(code, pos + 1));
-                return 3;       // branch
-            case Opcode.JSR:
-                visitJSR(pos, code);
-                return 3;       // branch
-            case Opcode.RET:
-                visitRET(pos, code);
-                return 2;
-            case Opcode.TABLESWITCH: {
-                stackTop--;     // branch
-                int pos2 = (pos & ~3) + 8;
-                int low = ByteArray.read32bit(code, pos2);
-                int high = ByteArray.read32bit(code, pos2 + 4);
-                int n = high - low + 1;
-                visitTableSwitch(pos, code, n, pos2 + 8, ByteArray.read32bit(code, pos2 - 4));
-                return n * 4 + 16 - (pos & 3);
-            }
-            case Opcode.LOOKUPSWITCH: {
-                stackTop--;     // branch
-                int pos2 = (pos & ~3) + 8;
-                int n = ByteArray.read32bit(code, pos2);
-                visitLookupSwitch(pos, code, n, pos2 + 4, ByteArray.read32bit(code, pos2 - 4));
-                return n * 8 + 12 - (pos & 3);
-            }
-            case Opcode.IRETURN:
-                stackTop--;
-                visitReturn(pos, code);
-                break;
-            case Opcode.LRETURN:
-                stackTop -= 2;
-                visitReturn(pos, code);
-                break;
-            case Opcode.FRETURN:
-                stackTop--;
-                visitReturn(pos, code);
-                break;
-            case Opcode.DRETURN:
-                stackTop -= 2;
-                visitReturn(pos, code);
-                break;
-            case Opcode.ARETURN:
-                stackTypes[--stackTop].setType(returnType, classPool);
-                visitReturn(pos, code);
-                break;
-            case Opcode.RETURN:
-                visitReturn(pos, code);
-                break;
-            case Opcode.GETSTATIC:
-                return doGetField(pos, code, false);
-            case Opcode.PUTSTATIC:
-                return doPutField(pos, code, false);
-            case Opcode.GETFIELD:
-                return doGetField(pos, code, true);
-            case Opcode.PUTFIELD:
-                return doPutField(pos, code, true);
-            case Opcode.INVOKEVIRTUAL:
-            case Opcode.INVOKESPECIAL:
-                return doInvokeMethod(pos, code, true);
-            case Opcode.INVOKESTATIC:
-                return doInvokeMethod(pos, code, false);
-            case Opcode.INVOKEINTERFACE:
-                return doInvokeIntfMethod(pos, code);
-            case Opcode.INVOKEDYNAMIC:
-                return doInvokeDynamic(pos, code);
-            case Opcode.NEW: {
-                int i = ByteArray.readU16bit(code, pos + 1);
-                stackTypes[stackTop++]
-                        = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.UninitData(pos, cpool.getClassInfo(i));
-                return 3;
-            }
-            case Opcode.NEWARRAY:
-                return doNEWARRAY(pos, code);
-            case Opcode.ANEWARRAY: {
-                int i = ByteArray.readU16bit(code, pos + 1);
-                String type = cpool.getClassInfo(i).replace('.', '/');
-                if (type.charAt(0) == '[')
-                    type = "[" + type;
-                else
-                    type = "[L" + type + ";";
+        case Opcode.LCMP :
+            stackTypes[stackTop - 4] = INTEGER;
+            stackTop -= 3;
+            break;
+        case Opcode.FCMPL :
+        case Opcode.FCMPG :
+            stackTypes[--stackTop - 1] = INTEGER;
+            break;
+        case Opcode.DCMPL :
+        case Opcode.DCMPG :
+            stackTypes[stackTop - 4] = INTEGER;
+            stackTop -= 3;
+            break;
+        case Opcode.IFEQ :
+        case Opcode.IFNE :
+        case Opcode.IFLT :
+        case Opcode.IFGE :
+        case Opcode.IFGT :
+        case Opcode.IFLE :
+            stackTop--;     // branch
+            visitBranch(pos, code, ByteArray.readS16bit(code, pos + 1));
+            return 3;
+        case Opcode.IF_ICMPEQ :
+        case Opcode.IF_ICMPNE :
+        case Opcode.IF_ICMPLT :
+        case Opcode.IF_ICMPGE :
+        case Opcode.IF_ICMPGT :
+        case Opcode.IF_ICMPLE :
+        case Opcode.IF_ACMPEQ :
+        case Opcode.IF_ACMPNE :
+            stackTop -= 2;  // branch
+            visitBranch(pos, code, ByteArray.readS16bit(code, pos + 1));
+            return 3;
+        case Opcode.GOTO :
+            visitGoto(pos, code, ByteArray.readS16bit(code, pos + 1));
+            return 3;       // branch
+        case Opcode.JSR :
+            visitJSR(pos, code);
+            return 3;       // branch
+        case Opcode.RET :
+            visitRET(pos, code);
+            return 2;
+        case Opcode.TABLESWITCH : {
+            stackTop--;     // branch
+            int pos2 = (pos & ~3) + 8;
+            int low = ByteArray.read32bit(code, pos2);
+            int high = ByteArray.read32bit(code, pos2 + 4);
+            int n = high - low + 1;
+            visitTableSwitch(pos, code, n, pos2 + 8, ByteArray.read32bit(code, pos2 - 4));
+            return n * 4 + 16 - (pos & 3); }
+        case Opcode.LOOKUPSWITCH : {
+            stackTop--;     // branch
+            int pos2 = (pos & ~3) + 8;
+            int n = ByteArray.read32bit(code, pos2);
+            visitLookupSwitch(pos, code, n, pos2 + 4, ByteArray.read32bit(code, pos2 - 4));
+            return n * 8 + 12 - (pos & 3); }
+        case Opcode.IRETURN :
+            stackTop--;
+            visitReturn(pos, code);
+            break;
+        case Opcode.LRETURN :
+            stackTop -= 2;
+            visitReturn(pos, code);
+            break;
+        case Opcode.FRETURN :
+            stackTop--;
+            visitReturn(pos, code);
+            break;
+        case Opcode.DRETURN :
+            stackTop -= 2;
+            visitReturn(pos, code);
+            break;
+        case Opcode.ARETURN :
+            stackTypes[--stackTop].setType(returnType, classPool);
+            visitReturn(pos, code);
+            break;
+        case Opcode.RETURN :
+            visitReturn(pos, code);
+            break;
+        case Opcode.GETSTATIC :
+            return doGetField(pos, code, false);
+        case Opcode.PUTSTATIC :
+            return doPutField(pos, code, false);
+        case Opcode.GETFIELD :
+            return doGetField(pos, code, true);
+        case Opcode.PUTFIELD :
+            return doPutField(pos, code, true);
+        case Opcode.INVOKEVIRTUAL :
+        case Opcode.INVOKESPECIAL :
+            return doInvokeMethod(pos, code, true);
+        case Opcode.INVOKESTATIC :
+            return doInvokeMethod(pos, code, false);
+        case Opcode.INVOKEINTERFACE :
+            return doInvokeIntfMethod(pos, code);
+        case Opcode.INVOKEDYNAMIC :
+            return doInvokeDynamic(pos, code);
+        case Opcode.NEW : {
+            int i = ByteArray.readU16bit(code, pos + 1);
+            stackTypes[stackTop++]
+                      = new TypeData.UninitData(pos, cpool.getClassInfo(i));
+            return 3; }
+        case Opcode.NEWARRAY :
+            return doNEWARRAY(pos, code);
+        case Opcode.ANEWARRAY : {
+            int i = ByteArray.readU16bit(code, pos + 1);
+            String type = cpool.getClassInfo(i).replace('.', '/');
+            if (type.charAt(0) == '[')
+                type = "[" + type;
+            else
+                type = "[L" + type + ";";
 
-                stackTypes[stackTop - 1]
-                        = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName(type);
-                return 3;
-            }
-            case Opcode.ARRAYLENGTH:
-                stackTypes[stackTop - 1].setType("[Ljava.lang.Object;", classPool);
-                stackTypes[stackTop - 1] = INTEGER;
-                break;
-            case Opcode.ATHROW:
-                stackTypes[--stackTop].setType("java.lang.Throwable", classPool);
-                visitThrow(pos, code);
-                break;
-            case Opcode.CHECKCAST: {
-                // TypeData.setType(stackTypes[stackTop - 1], "java.lang.Object", classPool);
-                int i = ByteArray.readU16bit(code, pos + 1);
-                String type = cpool.getClassInfo(i);
-                if (type.charAt(0) == '[')
-                    type = type.replace('.', '/');  // getClassInfo() may return "[java.lang.Object;".
+            stackTypes[stackTop - 1]
+                    = new TypeData.ClassName(type);
+            return 3; }
+        case Opcode.ARRAYLENGTH :
+            stackTypes[stackTop - 1].setType("[Ljava.lang.Object;", classPool);
+            stackTypes[stackTop - 1] = INTEGER;
+            break;
+        case Opcode.ATHROW :
+            stackTypes[--stackTop].setType("java.lang.Throwable", classPool);
+            visitThrow(pos, code);
+            break;
+        case Opcode.CHECKCAST : {
+            // TypeData.setType(stackTypes[stackTop - 1], "java.lang.Object", classPool);
+            int i = ByteArray.readU16bit(code, pos + 1);
+            String type = cpool.getClassInfo(i);
+            if (type.charAt(0) == '[')
+                type = type.replace('.', '/');  // getClassInfo() may return "[java.lang.Object;".
 
-                stackTypes[stackTop - 1] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName(type);
-                return 3;
-            }
-            case Opcode.INSTANCEOF:
-                // TypeData.setType(stackTypes[stackTop - 1], "java.lang.Object", classPool);
-                stackTypes[stackTop - 1] = INTEGER;
-                return 3;
-            case Opcode.MONITORENTER:
-            case Opcode.MONITOREXIT:
-                stackTop--;
-                // TypeData.setType(stackTypes[stackTop], "java.lang.Object", classPool);
-                break;
-            case Opcode.WIDE:
-                return doWIDE(pos, code);
-            case Opcode.MULTIANEWARRAY:
-                return doMultiANewArray(pos, code);
-            case Opcode.IFNULL:
-            case Opcode.IFNONNULL:
-                stackTop--;         // branch
-                visitBranch(pos, code, ByteArray.readS16bit(code, pos + 1));
-                return 3;
-            case Opcode.GOTO_W:
-                visitGoto(pos, code, ByteArray.read32bit(code, pos + 1));
-                return 5;           // branch
-            case Opcode.JSR_W:
-                visitJSR(pos, code);
-                return 5;
+            stackTypes[stackTop - 1] = new TypeData.ClassName(type);
+            return 3; }
+        case Opcode.INSTANCEOF :
+            // TypeData.setType(stackTypes[stackTop - 1], "java.lang.Object", classPool);
+            stackTypes[stackTop - 1] = INTEGER;
+            return 3;
+        case Opcode.MONITORENTER :
+        case Opcode.MONITOREXIT :
+            stackTop--;
+            // TypeData.setType(stackTypes[stackTop], "java.lang.Object", classPool);
+            break;
+        case Opcode.WIDE :
+            return doWIDE(pos, code);
+        case Opcode.MULTIANEWARRAY :
+            return doMultiANewArray(pos, code);
+        case Opcode.IFNULL :
+        case Opcode.IFNONNULL :
+            stackTop--;         // branch
+            visitBranch(pos, code, ByteArray.readS16bit(code, pos + 1));
+            return 3;
+        case Opcode.GOTO_W :
+            visitGoto(pos, code, ByteArray.read32bit(code, pos + 1));
+            return 5;           // branch
+        case Opcode.JSR_W :
+            visitJSR(pos, code);
+            return 5;
         }
         return 1;
     }
@@ -682,59 +665,57 @@ public abstract class Tracer implements TypeTag {
     private int doWIDE(int pos, byte[] code) throws BadBytecode {
         int op = code[pos + 1] & 0xff;
         switch (op) {
-            case Opcode.ILOAD:
-                doWIDE_XLOAD(pos, code, INTEGER);
-                break;
-            case Opcode.LLOAD:
-                doWIDE_XLOAD(pos, code, LONG);
-                break;
-            case Opcode.FLOAD:
-                doWIDE_XLOAD(pos, code, FLOAT);
-                break;
-            case Opcode.DLOAD:
-                doWIDE_XLOAD(pos, code, DOUBLE);
-                break;
-            case Opcode.ALOAD: {
-                int index = ByteArray.readU16bit(code, pos + 2);
-                doALOAD(index);
-                break;
-            }
-            case Opcode.ISTORE:
-                doWIDE_STORE(pos, code, INTEGER);
-                break;
-            case Opcode.LSTORE:
-                doWIDE_STORE(pos, code, LONG);
-                break;
-            case Opcode.FSTORE:
-                doWIDE_STORE(pos, code, FLOAT);
-                break;
-            case Opcode.DSTORE:
-                doWIDE_STORE(pos, code, DOUBLE);
-                break;
-            case Opcode.ASTORE: {
-                int index = ByteArray.readU16bit(code, pos + 2);
-                doASTORE(index);
-                break;
-            }
-            case Opcode.IINC:
-                // this does not call writeLocal().
-                return 6;
-            case Opcode.RET:
-                visitRET(pos, code);
-                break;
-            default:
-                throw new RuntimeException("bad WIDE instruction: " + op);
+        case Opcode.ILOAD :
+            doWIDE_XLOAD(pos, code, INTEGER);
+            break;
+        case Opcode.LLOAD :
+            doWIDE_XLOAD(pos, code, LONG);
+            break;
+        case Opcode.FLOAD :
+            doWIDE_XLOAD(pos, code, FLOAT);
+            break;
+        case Opcode.DLOAD :
+            doWIDE_XLOAD(pos, code, DOUBLE);
+            break;
+        case Opcode.ALOAD : {
+            int index = ByteArray.readU16bit(code, pos + 2);
+            doALOAD(index);
+            break; }
+        case Opcode.ISTORE :
+            doWIDE_STORE(pos, code, INTEGER);
+            break;
+        case Opcode.LSTORE :
+            doWIDE_STORE(pos, code, LONG);
+            break;
+        case Opcode.FSTORE :
+            doWIDE_STORE(pos, code, FLOAT);
+            break;
+        case Opcode.DSTORE :
+            doWIDE_STORE(pos, code, DOUBLE);
+            break;
+        case Opcode.ASTORE : {
+            int index = ByteArray.readU16bit(code, pos + 2);
+            doASTORE(index);
+            break; }
+        case Opcode.IINC :
+            // this does not call writeLocal().
+            return 6;
+        case Opcode.RET :
+            visitRET(pos, code);
+            break;
+        default :
+            throw new RuntimeException("bad WIDE instruction: " + op);
         }
 
         return 4;
     }
 
-    private void doWIDE_XLOAD(int pos, byte[] code, org.hotswap.agent.javassist.bytecode.stackmap.TypeData type) {
+    private void doWIDE_XLOAD(int pos, byte[] code, TypeData type) {
         int index = ByteArray.readU16bit(code, pos + 2);
         doXLOAD(index, type);
     }
 
-    private void doWIDE_STORE(int pos, byte[] code, org.hotswap.agent.javassist.bytecode.stackmap.TypeData type) {
+    private void doWIDE_STORE(int pos, byte[] code, TypeData type) {
         int index = ByteArray.readU16bit(code, pos + 2);
         doXSTORE(index, type);
     }
@@ -772,35 +753,35 @@ public abstract class Tracer implements TypeTag {
         int s = stackTop - 1;
         String type;
         switch (code[pos + 1] & 0xff) {
-            case Opcode.T_BOOLEAN:
-                type = "[Z";
-                break;
-            case Opcode.T_CHAR:
-                type = "[C";
-                break;
-            case Opcode.T_FLOAT:
-                type = "[F";
-                break;
-            case Opcode.T_DOUBLE:
-                type = "[D";
-                break;
-            case Opcode.T_BYTE:
-                type = "[B";
-                break;
-            case Opcode.T_SHORT:
-                type = "[S";
-                break;
-            case Opcode.T_INT:
-                type = "[I";
-                break;
-            case Opcode.T_LONG:
-                type = "[J";
-                break;
-            default:
-                throw new RuntimeException("bad newarray");
+        case Opcode.T_BOOLEAN :
+            type = "[Z";
+            break;
+        case Opcode.T_CHAR :
+            type = "[C";
+            break;
+        case Opcode.T_FLOAT :
+            type = "[F";
+            break;
+        case Opcode.T_DOUBLE :
+            type = "[D";
+            break;
+        case Opcode.T_BYTE :
+            type = "[B";
+            break;
+        case Opcode.T_SHORT :
+            type = "[S";
+            break;
+        case Opcode.T_INT :
+            type = "[I";
+            break;
+        case Opcode.T_LONG :
+            type = "[J";
+            break;
+        default :
+            throw new RuntimeException("bad newarray");
         }
 
-        stackTypes[s] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName(type);
+        stackTypes[s] = new TypeData.ClassName(type);
         return 2;
     }
 
@@ -810,7 +791,7 @@ public abstract class Tracer implements TypeTag {
         stackTop -= dim - 1;
 
         String type = cpool.getClassInfo(i).replace('.', '/');
-        stackTypes[stackTop - 1] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName(type);
+        stackTypes[stackTop - 1] = new TypeData.ClassName(type);
         return 4;
     }
 
@@ -820,11 +801,11 @@ public abstract class Tracer implements TypeTag {
         checkParamTypes(desc, 1);
         if (notStatic) {
             String className = cpool.getMethodrefClassName(i);
-            org.hotswap.agent.javassist.bytecode.stackmap.TypeData target = stackTypes[--stackTop];
-            if (target instanceof org.hotswap.agent.javassist.bytecode.stackmap.TypeData.UninitTypeVar && target.isUninit())
-                constructorCalled(target, ((org.hotswap.agent.javassist.bytecode.stackmap.TypeData.UninitTypeVar) target).offset());
-            else if (target instanceof org.hotswap.agent.javassist.bytecode.stackmap.TypeData.UninitData)
-                constructorCalled(target, ((org.hotswap.agent.javassist.bytecode.stackmap.TypeData.UninitData) target).offset());
+            TypeData target = stackTypes[--stackTop];
+            if (target instanceof TypeData.UninitTypeVar && target.isUninit())
+                constructorCalled(target, ((TypeData.UninitTypeVar)target).offset());
+            else if (target instanceof TypeData.UninitData)
+                constructorCalled(target, ((TypeData.UninitData)target).offset());
 
             target.setType(className, classPool);
         }
@@ -838,7 +819,7 @@ public abstract class Tracer implements TypeTag {
      *
      * @param offset        the offset where the object has been created.
      */
-    private void constructorCalled(org.hotswap.agent.javassist.bytecode.stackmap.TypeData target, int offset) {
+    private void constructorCalled(TypeData target, int offset) {
         target.constructorCalled(offset);
         for (int i = 0; i < stackTop; i++)
             stackTypes[i].constructorCalled(offset);
@@ -862,7 +843,7 @@ public abstract class Tracer implements TypeTag {
         String desc = cpool.getInvokeDynamicType(i);
         checkParamTypes(desc, 1);
 
-        // assume CosntPool#REF_invokeStatic
+     // assume CosntPool#REF_invokeStatic
      /* TypeData target = stackTypes[--stackTop];
         if (target instanceof TypeData.UninitTypeVar && target.isUninit())
             constructorCalled((TypeData.UninitTypeVar)target);
@@ -878,36 +859,36 @@ public abstract class Tracer implements TypeTag {
             top = descriptor.indexOf(')') + 1;
             if (top < 1)
                 throw new IndexOutOfBoundsException("bad descriptor: "
-                        + descriptor);
+                                                    + descriptor);
         }
 
-        org.hotswap.agent.javassist.bytecode.stackmap.TypeData[] types = stackTypes;
+        TypeData[] types = stackTypes;
         int index = stackTop;
         switch (descriptor.charAt(top)) {
-            case '[':
-                types[index] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName(descriptor.substring(top));
-                break;
-            case 'L':
-                types[index] = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.ClassName(getFieldClassName(descriptor, top));
-                break;
-            case 'J':
-                types[index] = LONG;
-                types[index + 1] = TOP;
-                stackTop += 2;
-                return;
-            case 'F':
-                types[index] = FLOAT;
-                break;
-            case 'D':
-                types[index] = DOUBLE;
-                types[index + 1] = TOP;
-                stackTop += 2;
-                return;
-            case 'V':
-                return;
-            default: // C, B, S, I, Z
-                types[index] = INTEGER;
-                break;
+        case '[' :
+            types[index] = new TypeData.ClassName(descriptor.substring(top));
+            break;
+        case 'L' :
+            types[index] = new TypeData.ClassName(getFieldClassName(descriptor, top));
+            break;
+        case 'J' :
+            types[index] = LONG;
+            types[index + 1] = TOP;
+            stackTop += 2;
+            return;
+        case 'F' :
+            types[index] = FLOAT;
+            break;
+        case 'D' :
+            types[index] = DOUBLE;
+            types[index + 1] = TOP;
+            stackTop += 2;
+            return;
+        case 'V' :
+            return;
+        default : // C, B, S, I, Z
+            types[index] = INTEGER;
+            break;
         }
 
         stackTop++;
@@ -933,7 +914,8 @@ public abstract class Tracer implements TypeTag {
             k = desc.indexOf(';', k) + 1;
             if (k <= 0)
                 throw new IndexOutOfBoundsException("bad descriptor");
-        } else
+        }
+        else
             k++;
 
         checkParamTypes(desc, k);
@@ -946,6 +928,6 @@ public abstract class Tracer implements TypeTag {
             stackTypes[stackTop].setType(desc.substring(i, k), classPool);
         else if (c == 'L')
             stackTypes[stackTop].setType(desc.substring(i + 1, k - 1).replace('/', '.'),
-                    classPool);
+                                         classPool);
     }
 }

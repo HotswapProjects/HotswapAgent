@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.tools.reflect;
 
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.ClassPool;
 import java.io.PrintStream;
 
 class CompiledClass {
@@ -26,31 +28,31 @@ class CompiledClass {
 
 /**
  * A bytecode translator for reflection.
- * <p/>
+ *
  * <p>This translator directly modifies class files on a local disk so that
  * the classes represented by those class files are reflective.
  * After the modification, the class files can be run with the standard JVM
- * without <code>Loader</code>
+ * without <code>javassist.tools.reflect.Loader</code>
  * or any other user-defined class loader.
- * <p/>
+ *
  * <p>The modified class files are given as the command-line parameters,
  * which are a sequence of fully-qualified class names followed by options:
- * <p/>
+ *
  * <p><code>-m <i>classname</i></code> : specifies the class of the
  * metaobjects associated with instances of the class followed by
  * this option.  The default is <code>javassit.reflect.Metaobject</code>.
- * <p/>
+ *
  * <p><code>-c <i>classname</i></code> : specifies the class of the
  * class metaobjects associated with instances of the class followed by
  * this option.  The default is <code>javassit.reflect.ClassMetaobject</code>.
- * <p/>
+ *
  * <p>If a class name is not followed by any options, the class indicated
  * by that class name is not reflective.
- * <p/>
+ * 
  * <p>For example,
- * <ul><pre>% java Compiler Dog -m MetaDog -c CMetaDog Cat -m MetaCat Cow
- * </pre></ul>
- * <p/>
+ * <pre>% java Compiler Dog -m MetaDog -c CMetaDog Cat -m MetaCat Cow
+ * </pre>
+ *
  * <p>modifies class files <code>Dog.class</code>, <code>Cat.class</code>,
  * and <code>Cow.class</code>.
  * The metaobject of a Dog object is a MetaDog object and the class
@@ -58,13 +60,13 @@ class CompiledClass {
  * The metaobject of a Cat object is a MetaCat object but
  * the class metaobject is a default one.
  * Cow objects are not reflective.
- * <p/>
+ *
  * <p>Note that if the super class is also made reflective, it must be done
  * before the sub class.
  *
- * @see Metaobject
- * @see ClassMetaobject
- * @see Reflection
+ * @see javassist.tools.reflect.Metaobject
+ * @see javassist.tools.reflect.ClassMetaobject
+ * @see javassist.tools.reflect.Reflection
  */
 public class Compiler {
 
@@ -86,35 +88,37 @@ public class Compiler {
     }
 
     private static void processClasses(CompiledClass[] entries, int n)
-            throws Exception {
+        throws Exception
+    {
         Reflection implementor = new Reflection();
-        org.hotswap.agent.javassist.ClassPool pool = org.hotswap.agent.javassist.ClassPool.getDefault();
+        ClassPool pool = ClassPool.getDefault();
         implementor.start(pool);
 
         for (int i = 0; i < n; ++i) {
-            org.hotswap.agent.javassist.CtClass c = pool.get(entries[i].classname);
+            CtClass c = pool.get(entries[i].classname);
             if (entries[i].metaobject != null
-                    || entries[i].classobject != null) {
+                                        || entries[i].classobject != null) {
                 String metaobj, classobj;
 
                 if (entries[i].metaobject == null)
-                    metaobj = "Metaobject";
+                    metaobj = "javassist.tools.reflect.Metaobject";
                 else
                     metaobj = entries[i].metaobject;
 
                 if (entries[i].classobject == null)
-                    classobj = "ClassMetaobject";
+                    classobj = "javassist.tools.reflect.ClassMetaobject";
                 else
                     classobj = entries[i].classobject;
 
                 if (!implementor.makeReflective(c, pool.get(metaobj),
-                        pool.get(classobj)))
+                                              pool.get(classobj)))
                     System.err.println("Warning: " + c.getName()
-                            + " is reflective.  It was not changed.");
+                                + " is reflective.  It was not changed.");
 
                 System.err.println(c.getName() + ": " + metaobj + ", "
-                        + classobj);
-            } else
+                                   + classobj);
+            }
+            else
                 System.err.println(c.getName() + ": not reflective");
         }
 
@@ -153,7 +157,7 @@ public class Compiler {
     }
 
     private static void help(PrintStream out) {
-        out.println("Usage: java Compiler");
+        out.println("Usage: java javassist.tools.reflect.Compiler");
         out.println("            (<class> [-m <metaobject>] [-c <class metaobject>])+");
     }
 }
