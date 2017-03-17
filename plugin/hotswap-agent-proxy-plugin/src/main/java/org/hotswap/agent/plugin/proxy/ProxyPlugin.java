@@ -15,6 +15,7 @@ import org.hotswap.agent.plugin.proxy.hscglib.CglibEnhancerProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParams;
+import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 
 /**
  * Redefines proxy classes that implement or extend changed interfaces or classes. Currently it supports proxies created
@@ -41,11 +42,15 @@ public class ProxyPlugin {
     public static void transformJavaProxy(final Class<?> classBeingRedefined, final ClassLoader classLoader) {
 
     /*
-     * We can't redefine proxy directly (and return new proxy class bytes) in this method since the classLoader contains
+     * Proxy can't be redefined directly (and return new proxy class bytes) in this method since the classLoader contains
      * OLD definition of proxie's interface. Therefore proxy is defined in deferred command after proxied interface is redefined
      * in DCEVM. It follows that there must be a delay between interface redefinition and proxy redefinition.
      *
      */
+        if (!ClassLoaderHelper.isClassLoderStarted(classLoader)) {
+            return;
+        }
+
         final String className = classBeingRedefined.getName();
 
         if (proxyRedefiningMap.contains(className)) {
@@ -104,6 +109,10 @@ public class ProxyPlugin {
     public static byte[] transformCglibProxy(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
             final ClassLoader loader, final ClassPool cp) throws Exception {
         GeneratorParams generatorParams = GeneratorParametersTransformer.getGeneratorParams(loader, classBeingRedefined.getName());
+
+        if (!ClassLoaderHelper.isClassLoderStarted(loader)) {
+            return classfileBuffer;
+        }
 
         if (generatorParams == null) {
             return classfileBuffer;
