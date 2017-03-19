@@ -68,7 +68,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
 
             LOGGER.debug("Executing ClassPathBeanDefinitionScannerAgent.refreshClass('{}')", className);
 
-            Class<?> clazz = appClassLoader.loadClass(ClassPathBeanDefinitionScannerAgent.class.getName());
+            Class<?> clazz = Class.forName(ClassPathBeanDefinitionScannerAgent.class.getName(), true, appClassLoader);
             Method method  = clazz.getDeclaredMethod(
                     "refreshClass", new Class[] {String.class, byte[].class});
             method.invoke(null, basePackage, classDefinition);
