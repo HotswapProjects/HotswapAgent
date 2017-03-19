@@ -26,6 +26,19 @@ public @interface Plugin {
     String description() default "";
 
     /**
+     * Plugin group the plugin belongs to. Group is used to resolve fallback plugin
+     *
+     * @return the string
+     */
+    String group() default "";
+
+    /**
+     * If no other plugin matches and fallback is set to true, then use this plugin
+     * @return
+     */
+    boolean fallback() default false;
+
+    /**
      * Version of target framework this framework was tested with.
      */
     String[] testedVersions();
@@ -42,4 +55,5 @@ public @interface Plugin {
      * supporting class in addition to pluginClass itself.
      */
     Class<?>[] supportClass() default {};
+
 }

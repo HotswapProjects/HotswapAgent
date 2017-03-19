@@ -15,14 +15,10 @@
  */
 package org.hotswap.agent.plugin.wildfly.el;
 
-import java.net.URL;
-
-import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.Maven;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Versions;
 import org.hotswap.agent.command.Scheduler;
@@ -43,7 +39,11 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * @author alpapad@gmail.com
  *
  */
-@Plugin(name = "WildFlyELResolver", description = "Purge WildFlyELResolver class cache on any class redefinition.", testedVersions = { "1.0.5.Final" }, expectedVersions = { "1.0.5.Final" })
+@Plugin(name = "WildFlyELResolver",
+        group = "groupELResolver",
+        description = "Purge WildFlyELResolver class cache on any class redefinition.",
+        testedVersions = { "1.0.5.Final" },
+        expectedVersions = { "1.0.5.Final" })
 @Versions(maven = { @Maven(value = "[1.0,)", artifactId = "jboss-el-api_3.0_spec", groupId = "org.jboss.spec.javax.el") })
 public class WildFlyELResolverPlugin {
 

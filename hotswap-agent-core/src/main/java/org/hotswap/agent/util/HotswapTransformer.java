@@ -4,6 +4,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -197,26 +198,32 @@ public class HotswapTransformer implements ClassFileTransformer {
     LinkedList<PluginClassFileTransformer> reduce(final ClassLoader classLoader, List<PluginClassFileTransformer> pluginCalls, String className) {
         LinkedList<PluginClassFileTransformer> reduced = new LinkedList<>();
 
-        PluginClassFileTransformer def = null;
+        Map<String, PluginClassFileTransformer> fallbackMap = new HashMap<>();
 
         for (PluginClassFileTransformer pcft : pluginCalls) {
             try {
+                String pluginGroup = pcft.getPluginGroup();
                 if(pcft.versionMatches(classLoader)){
+                    if (pluginGroup != null) {
+                        fallbackMap.put(pluginGroup, null);
+                    }
                     reduced.add(pcft);
-                } else if(pcft.isDefaultPlugin()){
-                    def = pcft;
+                } else if(pcft.isFallbackPlugin()){
+                    if (pluginGroup != null && !fallbackMap.containsKey(pluginGroup)) {
+                        fallbackMap.put(pluginGroup, pcft);
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.warning("Error evaluating aplicability of plugin", e);
             }
         }
 
-        if(reduced.isEmpty() && def != null) {
-            reduced.add(def);
+        for (PluginClassFileTransformer pcft: fallbackMap.values()) {
+            if (pcft != null) {
+                reduced.add(pcft);
+            }
         }
-//        if(reduced.size() >1){
-//            LOGGER.warn("Multiple plugins will attempt patching for class {}, {}", className, reduced);
-//        }
+
         return reduced;
     }
     /**

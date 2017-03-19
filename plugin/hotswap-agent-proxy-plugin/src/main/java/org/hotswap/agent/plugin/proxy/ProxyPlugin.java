@@ -42,10 +42,9 @@ public class ProxyPlugin {
     public static void transformJavaProxy(final Class<?> classBeingRedefined, final ClassLoader classLoader) {
 
     /*
-     * Proxy can't be redefined directly (and return new proxy class bytes) in this method since the classLoader contains
-     * OLD definition of proxie's interface. Therefore proxy is defined in deferred command after proxied interface is redefined
-     * in DCEVM. It follows that there must be a delay between interface redefinition and proxy redefinition.
-     *
+     * Proxy can't be redefined directly in this method (and return new proxy class bytes), since the classLoader contains
+     * OLD definition of proxie's interface. Therefore proxy is defined in deferred command (after some delay)
+     * after proxied interface is redefined in DCEVM.
      */
         if (!ClassLoaderHelper.isClassLoderStarted(classLoader)) {
             return;
