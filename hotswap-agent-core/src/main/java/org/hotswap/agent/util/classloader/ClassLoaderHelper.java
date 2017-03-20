@@ -51,10 +51,13 @@ public class ClassLoaderHelper {
             "org.apache.catalina.loader.WebappClassLoader".equals(classLoader.getClass().getName())) {
             try {
                 Class<?> clazz = classLoader.getClass();
+                boolean isStarted;
                 if ("org.apache.catalina.loader.WebappClassLoaderBase".equals(clazz.getSuperclass().getName())) {
                     clazz = clazz.getSuperclass();
+                    isStarted = "STARTED".equals((String) ReflectionHelper.invoke(classLoader, clazz, "getStateName", new Class[] {}, null));
+                } else {
+                    isStarted = (boolean) ReflectionHelper.invoke(classLoader, clazz, "isStarted", new Class[] {}, null);
                 }
-                boolean isStarted = (boolean) ReflectionHelper.invoke(classLoader, clazz, "isStarted", new Class[] {}, null);
                 return isStarted;
             } catch (Exception e) {
                 LOGGER.warning("isClassLoderStarted() : {}", e.getMessage());
