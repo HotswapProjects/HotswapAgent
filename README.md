@@ -171,7 +171,7 @@ uses agent services to:
 #### JVM plugins - hotswapping enhancements:
 
 * [AnonymousClassPatch](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - Swap anonymous inner class names to avoid not compatible changes.
-* [ClassInit](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM)
+* [ClassInit](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM limitation)
 * [Hotswapper](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/hotswapper/README.md) - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
 * [Proxy](plugin/hotswap-agent-proxy-plugin/README.md) (supported com.sun.proxy, CGlib) - redefines proxy classes that implement or extend changed interfaces or classes.
 
