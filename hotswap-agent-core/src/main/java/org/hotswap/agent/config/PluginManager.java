@@ -46,6 +46,8 @@ public class PluginManager {
     // the instrumentation API
     private Instrumentation instrumentation;
 
+    private Object hotswapLock = new Object();
+
     //////////////////////////   PLUGINS /////////////////////////////////////
 
     /**
@@ -266,7 +268,9 @@ public class PluginManager {
             }
             try {
                 LOGGER.reload("Reloading classes {} (autoHotswap)", Arrays.toString(classNames));
-                instrumentation.redefineClasses(definitions);
+                synchronized (hotswapLock) {
+                    instrumentation.redefineClasses(definitions);
+                }
                 LOGGER.debug("... reloaded classes {} (autoHotswap)", Arrays.toString(classNames));
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to redefine classes", e);
