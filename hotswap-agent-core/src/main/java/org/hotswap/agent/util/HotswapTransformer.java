@@ -144,15 +144,18 @@ public class HotswapTransformer implements ClassFileTransformer {
         List<PluginClassFileTransformer> pluginTransformers = new LinkedList<>();
         try {
             // call transform on all registered transformers
+            boolean isRedefineEvent = (redefiningClass != null);
             for (RegisteredTransformersRecord transformerRecord : new LinkedList<RegisteredTransformersRecord>(registeredTransformers.values())) {
                 if ((className != null && transformerRecord.pattern.matcher(className).matches()) ||
                         (redefiningClass != null && transformerRecord.pattern.matcher(redefiningClass.getName()).matches())) {
 
                     for (ClassFileTransformer transformer : new LinkedList<ClassFileTransformer>(transformerRecord.transformerList)) {
                         if(transformer instanceof PluginClassFileTransformer) {
-                            PluginClassFileTransformer pcft = PluginClassFileTransformer.class.cast(transformer);
-                            if(!pcft.isPluginDisabled(classLoader)) {
-                                pluginTransformers.add(pcft);
+                            PluginClassFileTransformer pcft = (PluginClassFileTransformer )transformer;
+                            if (isRedefineEvent || pcft.acceptsDefineEvent()) {
+                                if(!pcft.isPluginDisabled(classLoader)) {
+                                    pluginTransformers.add(pcft);
+                                }
                             }
                         } else {
                             toApply.add(transformer);

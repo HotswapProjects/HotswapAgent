@@ -61,6 +61,10 @@ public class PluginClassFileTransformer implements ClassFileTransformer {
         return pluginAnnotation.getGroup();
     }
 
+    public boolean acceptsDefineEvent() {
+        return events.contains(LoadEvent.DEFINE);
+    }
+
     public boolean versionMatches(ClassLoader loader){
         if (pluginAnnotation.shouldCheckVersion()) {
             DeploymentInfo info = DeploymentInfo.fromClassLoader(loader);
