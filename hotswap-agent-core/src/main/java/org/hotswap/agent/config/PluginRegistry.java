@@ -185,10 +185,13 @@ public class PluginRegistry {
         if (!registeredPlugins.containsKey(pluginClass))
             throw new IllegalArgumentException(String.format("Plugin %s is not known to the registry.", pluginClass));
 
-        for (Map.Entry<ClassLoader, Object> registeredClassLoaderEntry : registeredPlugins.get(pluginClass).entrySet()) {
-            if (isParentClassLoader(registeredClassLoaderEntry.getKey(), classLoader)) {
-                //noinspection unchecked
-                return (T) registeredClassLoaderEntry.getValue();
+        Map<ClassLoader, Object> pluginInstances = registeredPlugins.get(pluginClass);
+        synchronized(pluginInstances) {
+            for (Map.Entry<ClassLoader, Object> registeredClassLoaderEntry : pluginInstances.entrySet()) {
+                if (isParentClassLoader(registeredClassLoaderEntry.getKey(), classLoader)) {
+                    //noinspection unchecked
+                    return (T) registeredClassLoaderEntry.getValue();
+                }
             }
         }
 
@@ -208,11 +211,14 @@ public class PluginRegistry {
         if (!registeredPlugins.containsKey(pluginClass))
             return false;
 
-        for (Map.Entry<ClassLoader, Object> registeredClassLoaderEntry : registeredPlugins.get(pluginClass).entrySet()) {
-            if (checkParent && isParentClassLoader(registeredClassLoaderEntry.getKey(), classLoader)) {
-                return true;
-            } else if (registeredClassLoaderEntry.getKey().equals(classLoader)) {
-                return true;
+        Map<ClassLoader, Object> pluginInstances = registeredPlugins.get(pluginClass);
+        synchronized (pluginInstances) {
+            for (Map.Entry<ClassLoader, Object> registeredClassLoaderEntry : pluginInstances.entrySet()) {
+                if (checkParent && isParentClassLoader(registeredClassLoaderEntry.getKey(), classLoader)) {
+                    return true;
+                } else if (registeredClassLoaderEntry.getKey().equals(classLoader)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -226,13 +232,16 @@ public class PluginRegistry {
      */
     public ClassLoader getAppClassLoader(Object plugin) {
         // search with for loop. Maybe performance improvement to create reverse map if this is used heavily
-        for (Map<ClassLoader, Object> plugins : registeredPlugins.values()) {
-            for (Map.Entry<ClassLoader, Object> entry : plugins.entrySet()) {
-                if (entry.getValue().equals(plugin))
-                    return entry.getKey();
+        Class<Object> clazz = getPluginClass(plugin.getClass().getName());
+        Map<ClassLoader, Object> pluginInstances = registeredPlugins.get(clazz);
+        if (pluginInstances != null) {
+            synchronized(pluginInstances) {
+                for (Map.Entry<ClassLoader, Object> entry : pluginInstances.entrySet()) {
+                    if (entry.getValue().equals(plugin))
+                        return entry.getKey();
+                }
             }
         }
-
         throw new IllegalArgumentException("Plugin not found in the registry " + plugin);
     }
 
@@ -281,8 +290,11 @@ public class PluginRegistry {
      * @param classLoader classloader to cleanup
      */
     public void closeClassLoader(ClassLoader classLoader) {
-        for (Map<ClassLoader, Object> plugins : registeredPlugins.values()) {
-            plugins.remove(classLoader);
+        LOGGER.debug("Closing classloader {}.", classLoader);
+        synchronized (registeredPlugins) {
+            for (Map<ClassLoader, Object> plugins : registeredPlugins.values()) {
+                plugins.remove(classLoader);
+            }
         }
     }
 }
