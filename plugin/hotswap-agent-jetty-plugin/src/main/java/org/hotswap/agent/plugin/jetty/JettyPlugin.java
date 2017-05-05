@@ -155,12 +155,12 @@ public class JettyPlugin {
         }
 
         // set different resource
-        URL webappDir = pluginConfiguration.getWebappDir();
-        if (webappDir != null) {
-            LOGGER.debug("Setting webappDir to directory '{}' for Jetty webapp {}.", webappDir, contextHandler);
+        URL[] webappDir = pluginConfiguration.getWebappDir();
+        if (webappDir.length > 0) {
+            LOGGER.debug("Setting webappDir to directory '{}' for Jetty webapp {}.", webappDir[0], contextHandler);
             try {
                 Object originalBaseResource = ReflectionHelper.invoke(contextHandler, contextHandlerClass, "getBaseResource", new Class[] {});
-                Object fileResource = fileResourceClass.getDeclaredConstructor(URL.class).newInstance(webappDir);
+                Object fileResource = fileResourceClass.getDeclaredConstructor(URL.class).newInstance(webappDir[0]);
                 Object resourceArray = Array.newInstance(resourceClass, 2);
                 Array.set(resourceArray, 0, fileResource);
                 Array.set(resourceArray, 1, originalBaseResource);
@@ -171,7 +171,7 @@ public class JettyPlugin {
                         new Class[] {resourceClass}, resourceCollection);
 
             } catch (Exception e) {
-                LOGGER.error("Unable to set webappDir to directory '{}' for Jetty webapp {}. This configuration will not work.", e, webappDir, contextHandler);
+                LOGGER.error("Unable to set webappDir to directory '{}' for Jetty webapp {}. This configuration will not work.", e, webappDir[0], contextHandler);
             }
         }
 

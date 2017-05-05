@@ -34,6 +34,9 @@ public class TomcatPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(TomcatPlugin.class);
 
     private static final String TOMCAT_WEBAPP_CLASS_LOADER = "org.apache.catalina.loader.WebappClassLoader";
+
+    private static final String TOMCAT_PARALLEL_WEBAPP_CLASS_LOADER = "org.apache.catalina.loader.ParallelWebappClassLoader";
+
     private static final String GLASSFISH_WEBAPP_CLASS_LOADER = "org.glassfish.web.loader.WebappClassLoader";
 
     private static final String WEB_INF_CLASSES = "/WEB-INF/classes/";
@@ -54,8 +57,10 @@ public class TomcatPlugin {
         String version = resolveTomcatVersion(appClassLoader);
         int majorVersion = resolveTomcatMajorVersion(version);
 
-        if (appClassLoader.getClass().getName().equals(TOMCAT_WEBAPP_CLASS_LOADER) ||
-            appClassLoader.getClass().getName().equals(GLASSFISH_WEBAPP_CLASS_LOADER)) {
+        String classLoaderName = appClassLoader.getClass().getName();
+        if (classLoaderName.equals(TOMCAT_WEBAPP_CLASS_LOADER)
+                || classLoaderName.equals(TOMCAT_PARALLEL_WEBAPP_CLASS_LOADER)
+                || classLoaderName.equals(GLASSFISH_WEBAPP_CLASS_LOADER)) {
             registeredResourcesMap.put(resource, appClassLoader);
 
             // create plugin configuration in advance to get extraClasspath and watchResources properties
@@ -83,11 +88,13 @@ public class TomcatPlugin {
             // register special repo
             getExtraRepositories(appClassLoader).put(WEB_INF_CLASSES, watchResourcesClassLoader);
 
-            // register special repo for webappDir
-            URL webappDir = pluginConfiguration.getWebappDir();
-            if (webappDir != null) {
+            URL[] webappDir = pluginConfiguration.getWebappDir();
+            if (webappDir.length > 0) {
+                for (URL url : webappDir) {
+                    LOGGER.debug("Watching 'webappDir' for changes: {}", url);
+                }
                 WatchResourcesClassLoader webappDirClassLoader = new WatchResourcesClassLoader(false);
-                webappDirClassLoader.initExtraPath(new URL[] {webappDir});
+                webappDirClassLoader.initExtraPath(webappDir);
 
                 getExtraRepositories(appClassLoader).put("/", webappDirClassLoader);
             }

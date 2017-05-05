@@ -258,18 +258,8 @@ public class PluginConfiguration {
     /**
      * Return configuration property webappDir as URL.
      */
-    public URL getWebappDir() {
-        try {
-            String webappDir = getProperty("webappDir");
-            if (webappDir != null && webappDir.length() > 0) {
-                return resourceNameToURL(webappDir);
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            LOGGER.error("Invalid configuration value for webappDir: '{}' is not a valid URL or path and will be skipped.", getProperty("webappDir"), e);
-            return null;
-        }
+    public URL[] getWebappDir() {
+        return convertToURL(getProperty("webappDir"));
     }
 
     /**
