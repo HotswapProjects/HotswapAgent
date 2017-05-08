@@ -72,7 +72,7 @@ public class ProxyRefreshAgent {
             }
 
         } catch (Exception e) {
-            LOGGER.error("recreateProxyFactory() exception {}.", e, e.getMessage());
+            LOGGER.error("Proxy redefinition failed {}.", e, e.getMessage());
         } finally {
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
             ProxyClassLoadingDelegate.endProxyRegeneration();

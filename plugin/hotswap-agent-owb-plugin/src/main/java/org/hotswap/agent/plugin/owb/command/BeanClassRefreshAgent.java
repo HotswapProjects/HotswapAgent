@@ -228,7 +228,7 @@ public class BeanClassRefreshAgent {
         LOGGER.debug("New annotated type created for beanClass {}", beanClass.getName());
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private static void doReloadInjectionTargetBeanInContexts(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean bean) {
         try {
             Map<Class<? extends Annotation>, List<Context>> allContexts = getContexts(beanManager);
@@ -269,11 +269,12 @@ public class BeanClassRefreshAgent {
         }
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private static Map<Class<? extends Annotation>, List<Context>> getContexts(BeanManagerImpl beanManagerImpl){
         try {
             Field contextsField = BeanManagerImpl.class.getField("contextMap");
             contextsField.setAccessible(true);
-            Map<Class<? extends Annotation>, List<Context>> ctxs= Map.class.cast(contextsField.get(beanManagerImpl));
+            Map<Class<? extends Annotation>, List<Context>> ctxs= (Map) contextsField.get(beanManagerImpl);
             return ctxs;
         } catch (IllegalAccessException |IllegalArgumentException | NoSuchFieldException | SecurityException e) {
             LOGGER.warning("BeanManagerImpl.contexts not accessible", e);
