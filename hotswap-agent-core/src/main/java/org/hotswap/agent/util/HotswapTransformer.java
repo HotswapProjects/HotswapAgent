@@ -292,7 +292,7 @@ public class HotswapTransformer implements ClassFileTransformer {
      */
     protected String normalizeTypeRegexp(String registeredType) {
         String regexp = registeredType;
-        while (regexp.contains("**"){
+        while (regexp.contains("**")){
             regexp = regexp.replace("**", ".*");
         }
         if (!registeredType.startsWith("^")){
