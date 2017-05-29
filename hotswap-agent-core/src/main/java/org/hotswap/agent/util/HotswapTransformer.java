@@ -282,16 +282,12 @@ public class HotswapTransformer implements ClassFileTransformer {
 
     /**
      * Transform type to ^regexp$ form - match only whole pattern.
-     * Additionally, remove Ant path style ** with .*.
      *
      * @param registeredType type
      * @return
      */
     protected String normalizeTypeRegexp(String registeredType) {
         String regexp = registeredType;
-        while (regexp.contains("**")){
-            regexp = regexp.replace("**", ".*");
-        }
         if (!registeredType.startsWith("^")){
             regexp = "^" + regexp;
         }
