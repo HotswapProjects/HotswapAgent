@@ -101,7 +101,7 @@ public class SpringPlugin {
 
     private void registerBasePackage(final String basePackage) {
         final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
-        hotswapTransformer.registerTransformer(appClassLoader, basePackage + ".*", new ClassFileTransformer() {
+        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage), new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if (classBeingRedefined != null) {
@@ -130,7 +130,7 @@ public class SpringPlugin {
 
         Enumeration<URL> resourceUrls = null;
         try {
-            resourceUrls = appClassLoader.getResources(basePackage.replace(".", "/"));
+            resourceUrls = getResources(basePackage);
         } catch (IOException e) {
             LOGGER.error("Unable to resolve base package {} in classloader {}.", basePackage, appClassLoader);
             return;
@@ -160,7 +160,7 @@ public class SpringPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
                                 // refresh spring only for new classes
                                 scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                                        basePackage, event), WAIT_ON_CREATE);
+                                        basePackage, className, event), WAIT_ON_CREATE);
                             }
                         }
                     }
@@ -169,6 +169,31 @@ public class SpringPlugin {
         }
     }
 
+    private String getClassNameRegExp(String basePackage) {
+        String regexp = basePackage;
+        while (regexp.contains("**")) {
+            regexp = regexp.replace("**", ".*");
+        }
+        if (!regexp.endsWith(".*")) {
+            regexp += ".*";
+        }
+        return regexp;
+    }
+
+    private Enumeration<URL> getResources(String basePackage) throws IOException {
+        String resourceName = basePackage;
+        int index = resourceName.indexOf('*');
+        if (index != -1) {
+            resourceName = resourceName.substring(0, index);
+            index = resourceName.lastIndexOf('.');
+            if (index != -1) {
+                resourceName = resourceName.substring(0, index);
+            }
+        }
+        resourceName = resourceName.replace('.', '/');
+        return appClassLoader.getResources(resourceName);
+    }
+    
     /**
      * Plugin initialization is after Spring has finished its startup and freezeConfiguration is called.
      *
