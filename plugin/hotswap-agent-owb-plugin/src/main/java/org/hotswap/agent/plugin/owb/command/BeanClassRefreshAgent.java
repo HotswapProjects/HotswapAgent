@@ -114,22 +114,25 @@ public class BeanClassRefreshAgent {
                     beanManager = (BeanManagerImpl) ReflectionHelper.get(bm, "bm");
                 }
 
-                Set<Bean<?>> beans = beanManager.getBeans(beanClass);
+                if (beanManager != null) {
+                    Set<Bean<?>> beans = beanManager.getBeans(beanClass);
 
-                if (beans != null && !beans.isEmpty()) {
-                    for (Bean<?> bean : beans) {
-                        // just now only managed beans
-                        if (bean instanceof InjectionTargetBean) {
-                            doReloadInjectionTargetBean(beanManager, beanClass, (InjectionTargetBean) bean, oldSignatureByStrategy, reloadStrategy);
-                        } else {
-                            LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
-                                    bean.getClass().getName(), bean.getBeanClass());
+                    if (beans != null && !beans.isEmpty()) {
+                        for (Bean<?> bean : beans) {
+                            // just now only managed beans
+                            if (bean instanceof InjectionTargetBean) {
+                                doReloadInjectionTargetBean(beanManager, beanClass, (InjectionTargetBean) bean,
+                                        oldSignatureByStrategy, reloadStrategy);
+                            } else {
+                                LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
+                                        bean.getClass().getName(), bean.getBeanClass());
+                            }
                         }
+                        LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
+                    } else {
+                        // Create new bean
+                        HaBeanDeployer.doDefineManagedBean(beanManager, beanClass);
                     }
-                    LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
-                } else {
-                    // Create new bean
-                    HaBeanDeployer.doDefineManagedBean(beanManager, beanClass);
                 }
             }
         } finally {

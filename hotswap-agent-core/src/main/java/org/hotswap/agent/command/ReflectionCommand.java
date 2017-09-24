@@ -176,7 +176,7 @@ public class ReflectionCommand extends MergeableCommand {
         Class[] paramTypes = new Class[params.size()];
         int i = 0;
         for (Object param : params) {
-            if (params == null)
+            if (param == null)
                 throw new IllegalArgumentException("Cannot execute for null parameter value");
             else {
                 paramTypes[i++] = param.getClass();

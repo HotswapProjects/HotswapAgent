@@ -161,7 +161,7 @@ public class WatchEventCommand<T extends Annotation> extends MergeableCommand {
             } else if (watchEventDTO.isClassFileEvent() && type.isAssignableFrom(CtClass.class)) {
                 args.add(ctClass);
             } else if (watchEventDTO.isClassFileEvent() && type.isAssignableFrom(String.class)) {
-                args.add(ctClass.getName());
+                args.add(ctClass != null ? ctClass.getName() : null);
             } else {
                 LOGGER.error("Unable to call method {} on plugin {}. Method parameter type {} is not recognized.",
                         pluginAnnotation.getMethod().getName(), plugin.getClass().getName(), type);
