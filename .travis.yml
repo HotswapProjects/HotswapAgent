@@ -13,4 +13,4 @@ env:
     - WELD_VERSION=2.2.13.Final
    
 
-script: "mvn clean install"
+script: "mvn clean install -DskipTests"
