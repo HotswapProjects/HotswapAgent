@@ -5,7 +5,7 @@ notifications:
     - lada.dvorak7@gmail.com
     
 jdk:
-  - openjdk7
+  - openjdk-8-jre-dcevm
 
 env:
 
@@ -13,4 +13,4 @@ env:
     - WELD_VERSION=2.2.13.Final
    
 
-script: "mvn clean install -DskipTests"
+script: "mvn clean install"
