@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.owb.command;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
+import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
 import org.apache.webbeans.spi.ContextsService;
 import org.apache.webbeans.web.context.WebContextsService;
 import org.hotswap.agent.logging.AgentLogger;
@@ -58,13 +60,14 @@ public class BeanClassRefreshAgent {
      * Called by a reflection command from BeanRefreshCommand transformer.
      *
      * @param appClassLoader the application class loader
-     * @param archivePath the archive path
      * @param beanClassName the bean class name
      * @param oldSignatureByStrategy the old signature by strategy
      * @param strReloadStrategy the bean reload strategy
+     * @param beanArchiveUrl the bean archive url
      * @throws IOException error working with classDefinition
      */
-    public static void reloadBean(ClassLoader appClassLoader, String beanClassName, String oldSignatureByStrategy, String strReloadStrategy) throws IOException {
+    public static void reloadBean(ClassLoader appClassLoader, String beanClassName, String oldSignatureByStrategy,
+            String strReloadStrategy, URL beanArchiveUrl) throws IOException {
 
         try {
             BeanReloadStrategy reloadStrategy;
@@ -77,7 +80,7 @@ public class BeanClassRefreshAgent {
 
             Class<?> beanClass = appClassLoader.loadClass(beanClassName);
 
-            doReloadBean(appClassLoader, beanClass, oldSignatureByStrategy, reloadStrategy);
+            doReloadBean(appClassLoader, beanClass, oldSignatureByStrategy, reloadStrategy, beanArchiveUrl);
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class not found.", e);
@@ -93,9 +96,11 @@ public class BeanClassRefreshAgent {
      * @param beanClass the bean class
      * @param oldSignatureByStrategy the old signature by strategy
      * @param reloadStrategy the reload strategy
+     * @param beansXml the path to beans.xml
      */
     @SuppressWarnings("rawtypes")
-    private static void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+    private static void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, String oldSignatureByStrategy,
+            BeanReloadStrategy reloadStrategy, URL beanArchiveUrl) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -115,23 +120,30 @@ public class BeanClassRefreshAgent {
                 }
 
                 if (beanManager != null) {
-                    Set<Bean<?>> beans = beanManager.getBeans(beanClass);
 
-                    if (beans != null && !beans.isEmpty()) {
-                        for (Bean<?> bean : beans) {
-                            // just now only managed beans
-                            if (bean instanceof InjectionTargetBean) {
-                                doReloadInjectionTargetBean(beanManager, beanClass, (InjectionTargetBean) bean,
-                                        oldSignatureByStrategy, reloadStrategy);
-                            } else {
-                                LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
-                                        bean.getClass().getName(), bean.getBeanClass());
+                    BeanArchiveInformation beanArchiveInfo =
+                            beanManager.getWebBeansContext().getBeanArchiveService().getBeanArchiveInformation(beanArchiveUrl);
+
+                    if (!beanArchiveInfo.isClassExcluded(beanClass.getName())) {
+
+                        Set<Bean<?>> beans = beanManager.getBeans(beanClass);
+
+                        if (beans != null && !beans.isEmpty()) {
+                            for (Bean<?> bean : beans) {
+                                // just now only managed beans
+                                if (bean instanceof InjectionTargetBean) {
+                                    doReloadInjectionTargetBean(beanManager, beanClass, (InjectionTargetBean) bean,
+                                            oldSignatureByStrategy, reloadStrategy);
+                                } else {
+                                    LOGGER.warning("reloadBean() : class '{}' reloading is not implemented ({}).",
+                                            bean.getClass().getName(), bean.getBeanClass());
+                                }
                             }
+                            LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
+                        } else {
+                            // Create new bean
+                            HaBeanDeployer.doDefineManagedBean(beanManager, beanClass);
                         }
-                        LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
-                    } else {
-                        // Create new bean
-                        HaBeanDeployer.doDefineManagedBean(beanManager, beanClass);
                     }
                 }
             }
@@ -175,10 +187,10 @@ public class BeanClassRefreshAgent {
                             Iterator it = ((Iterable ) ctxTracker).iterator();
                             while (it.hasNext()) {
                                 it.next();
-                                Object get = beanManager.getContext(bean.getScope()).get(bean);
-                                if (get != null) {
-                                    LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                                    bean.getProducer().inject(get, beanManager.createCreationalContext(bean));
+                                Object instance = beanManager.getContext(bean.getScope()).get(bean);
+                                if (instance != null) {
+                                    bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
+                                    LOGGER.debug("Bean instance injection points are reinitialized '{}'", beanClass.getName());
                                 }
                             }
                         } finally {
@@ -189,10 +201,10 @@ public class BeanClassRefreshAgent {
                     }
                 } else {
                     // For DefaultContextdService and testEnviroment use current contexts
-                    Object get = beanManager.getContext(bean.getScope()).get(bean);
-                    if (get != null) {
-                        LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                        bean.getProducer().inject(get, beanManager.createCreationalContext(bean));
+                    Object instance = beanManager.getContext(bean.getScope()).get(bean);
+                    if (instance != null) {
+                        bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
+                        LOGGER.debug("Bean instance injection points are reinitialized '{}'", beanClass.getName());
                     }
                 }
             } catch (javax.enterprise.context.ContextNotActiveException e) {
@@ -247,10 +259,10 @@ public class BeanClassRefreshAgent {
                         } else {
                             // try to reinitialize injection points instead...
                             try {
-                                Object get = context.get(bean);
-                                if (get != null) {
-                                    LOGGER.debug("Bean injection points are reinitialized '{}'", beanClass.getName());
-                                    bean.getProducer().inject(get, beanManager.createCreationalContext(bean));
+                                Object instance = context.get(bean);
+                                if (instance != null) {
+                                    bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
+                                    LOGGER.debug("Bean instance injection points are reinitialized '{}'", beanClass.getName());
                                 }
                             } catch (Exception e) {
                                 if(LOGGER.isLevelEnabled(Level.DEBUG)) {

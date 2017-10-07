@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.owb.command;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.List;
 
 import org.hotswap.agent.annotation.FileEvent;
@@ -36,6 +37,8 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
     WatchFileEvent event;
 
+    URL beanArchiveUrl;
+
     /**
      * Instantiates a new bean class refresh command.
      *
@@ -43,14 +46,16 @@ public class BeanClassRefreshCommand extends MergeableCommand {
      * @param className the class name
      * @param classSignForProxyCheck the class signature for proxy check
      * @param classSignByStrategy the class signature by strategy
+     * @param beanArchiveUrl the bean archive url
      * @param beanReloadStrategy the bean reload strategy
      */
     public BeanClassRefreshCommand(ClassLoader appClassLoader, String className, String classSignForProxyCheck,
-            String classSignByStrategy, BeanReloadStrategy beanReloadStrategy) {
+            String classSignByStrategy, URL beanArchiveUrl, BeanReloadStrategy beanReloadStrategy) {
         this.appClassLoader = appClassLoader;
         this.className = className;
         this.classSignForProxyCheck = classSignForProxyCheck;
         this.classSignByStrategy = classSignByStrategy;
+        this.beanArchiveUrl = beanArchiveUrl;
         this.strBeanReloadStrategy = beanReloadStrategy != null ? beanReloadStrategy.toString() : null;
     }
 
@@ -59,17 +64,19 @@ public class BeanClassRefreshCommand extends MergeableCommand {
      *
      * @param appClassLoader the application class loader
      * @param archivePath the archive path
+     * @param beanArchiveUrl the bean archive url
      * @param event the class event
      */
-    public BeanClassRefreshCommand(ClassLoader appClassLoader, String archivePath, WatchFileEvent event) {
+    public BeanClassRefreshCommand(ClassLoader appClassLoader, String archivePath,  URL beanArchiveUrl, WatchFileEvent event) {
 
         this.appClassLoader = appClassLoader;
         this.event = event;
+        this.beanArchiveUrl = beanArchiveUrl;
 
-        // strip from URI prefix up to basePackage and .class suffix.
         String classFullPath = event.getURI().getPath();
         int index = classFullPath.indexOf(archivePath);
         if (index == 0) {
+            // Strip archive path from beginning and .class from the end to get class name from full path to class file
             String classPath = classFullPath.substring(archivePath.length());
             classPath = classPath.substring(0, classPath.indexOf(".class"));
             if (classPath.startsWith("/")) {
@@ -146,14 +153,16 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                         new Class[] { ClassLoader.class,
                                       String.class,
                                       String.class,
-                                      String.class
+                                      String.class,
+                                      URL.class
                         }
                 );
                 agentMethod.invoke(null,
                         appClassLoader,
                         className,
                         classSignByStrategy,
-                        strBeanReloadStrategy // passed as String since BeanArchiveAgent has different classloader
+                        strBeanReloadStrategy,            // passed as String since BeanArchiveAgent has different classloader
+                        beanArchiveUrl
                 );
             } catch (NoSuchMethodException e) {
                 throw new IllegalStateException("Plugin error, method not found", e);

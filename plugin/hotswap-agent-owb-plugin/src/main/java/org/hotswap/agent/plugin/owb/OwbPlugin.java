@@ -7,7 +7,10 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.hotswap.agent.annotation.Init;
@@ -70,7 +73,7 @@ public class OwbPlugin {
 
     BeanReloadStrategy beanReloadStrategy;
 
-    Set<URL> registeredArchives = new HashSet<>();
+    Map<URL, URL> registeredArchives = new HashMap<>();
 
     /**
      * Plugin initialization, called from archive registration,
@@ -104,7 +107,7 @@ public class OwbPlugin {
     public void registerBeansXmls(Set bdaLocations) {
 
         // for all application resources watch for changes
-        for (URL beanArchiveUrl : (Set<URL>) bdaLocations) {
+        for (final URL beanArchiveUrl : (Set<URL>) bdaLocations) {
 
             String beansXmlPath = beanArchiveUrl.getPath();
 
@@ -132,15 +135,15 @@ public class OwbPlugin {
             OwbPlugin.archivePath = archivePath; // store path for unit tests (single archive expected)
 
             try {
-                URL archiveUrl = resourceNameToURL(archivePath);
+                URL archivePathUrl = resourceNameToURL(archivePath);
 
-                if (registeredArchives.contains(archiveUrl)) {
+                if (registeredArchives.containsKey(archivePathUrl)) {
                     continue;
                 }
 
-                registeredArchives.add(archiveUrl);
+                registeredArchives.put(archivePathUrl, beanArchiveUrl);
 
-                URI uri = archiveUrl.toURI();
+                URI uri = archivePathUrl.toURI();
 
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                     @Override
@@ -158,12 +161,12 @@ public class OwbPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || isTestEnvironment) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
+                                scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, beanArchiveUrl, event), WAIT_ON_CREATE);
                             }
                         }
                     }
                 });
-                LOGGER.info("Registered  watch for path '{}' for changes.", archiveUrl);
+                LOGGER.info("Registered  watch for path '{}' for changes.", archivePathUrl);
             } catch (URISyntaxException e) {
                 LOGGER.error("Unable to watch path '{}' for changes.", e, archivePath);
             } catch (Exception e) {
@@ -188,13 +191,22 @@ public class OwbPlugin {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             try {
                 String classUrl = ctClass.getURL().toExternalForm();
-                for (URL archiveUrl : registeredArchives) {
-                    if (classUrl.startsWith(archiveUrl.toExternalForm())) {
+                Iterator<Entry<URL, URL>> iterator = registeredArchives.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Entry<URL, URL> entry = iterator.next();
+                    if (classUrl.startsWith(entry.getKey().toExternalForm())) {
                         LOGGER.debug("Class {} redefined in classLoader {}.", original.getName(), classLoader);
                         String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
                         String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
-                        scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader,
-                                original.getName(), oldSignForProxyCheck, oldSignByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
+                        scheduler.scheduleCommand(
+                            new BeanClassRefreshCommand(appClassLoader,
+                                original.getName(),
+                                oldSignForProxyCheck,
+                                oldSignByStrategy,
+                                entry.getValue(),
+                                beanReloadStrategy),
+                            WAIT_ON_REDEFINE
+                        );
                         break;
                     }
                 }
