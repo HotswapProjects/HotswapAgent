@@ -19,15 +19,15 @@
     <build>
         <pluginManagement>
             <plugins>
-            	<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.1</version>
-					<configuration>
-						<source>1.7</source>
-						<target>1.7</target>
-					</configuration>
-				</plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.1</version>
+                    <configuration>
+                        <source>1.7</source>
+                        <target>1.7</target>
+                    </configuration>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
@@ -113,6 +113,7 @@
             </plugin>
         </plugins>
     </build>
+
     <profiles>
         <profile>
             <id>release</id>
@@ -136,20 +137,30 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <activation>
+                <jdk>(,1.9)</jdk>
+            </activation>
+
+            <dependencyManagement>
+                <dependencies>
+                    <!-- Tools jar is needed at runtime to allow JPDA hotswap -->
+                    <dependency>
+                        <groupId>com.sun</groupId>
+                        <artifactId>tools</artifactId>
+                        <version>${java.version}</version>
+                        <scope>system</scope>
+                        <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                        <optional>true</optional>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
     </profiles>
 
     <dependencyManagement>
         <dependencies>
-            <!-- Tools jar is needed at runtime to allow JPDA hotswap -->
-            <dependency>
-                <groupId>com.sun</groupId>
-                <artifactId>tools</artifactId>
-                <version>${java.version}</version>
-                <scope>system</scope>
-                <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                <optional>true</optional>
-            </dependency>
-
             <!-- Test dependencies -->
             <dependency>
                 <groupId>junit</groupId>
