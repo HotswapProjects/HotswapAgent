@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.javabeans;
+package org.hotswap.agent.plugin.jdk;
 
 public class TestBean2 {
     public String helloWorld2() {

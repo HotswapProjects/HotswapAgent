@@ -156,12 +156,6 @@
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-            <artifactId>hotswap-agent-javabeans-plugin</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hotswap.agent</groupId>
             <artifactId>hotswap-agent-glassfish-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
