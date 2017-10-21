@@ -16,19 +16,23 @@ public class WatcherFactory {
 
     static double getVersion() {
         String version = System.getProperty("java.version");
-        int pos = 0, count = 0;
-        for (; pos < version.length() && count < 2; pos++) {
-            if (version.charAt(pos) == '.') count++;
+        int pos = 0;
+        boolean decimalPart = false;
+        for (; pos < version.length(); pos++) {
+            if (version.charAt(pos) == '.') {
+                if (decimalPart) break;
+                decimalPart = true;
+            }
         }
-        return Double.parseDouble(version.substring(0, pos - 1));
+        return Double.parseDouble(version.substring(0, pos));
     }
-    
+
     public static boolean IS_WINDOWS = isWindows();
 
     static boolean isWindows() {
         return System.getProperty("os.name").startsWith("Windows");
     }
-    
+
     public Watcher getWatcher() throws IOException {
         if (JAVA_VERSION >= 1.7) {
             if (IS_WINDOWS) {

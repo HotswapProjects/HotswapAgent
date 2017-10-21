@@ -156,10 +156,13 @@ public class ProxyPlugin {
 
     private static int getVersion() {
         String version = System.getProperty("java.version");
-        int pos = 0, count = 0;
-        for (; pos < version.length() && count < 2; pos++) {
-            if (version.charAt(pos) == '.')
-                count++;
+        int pos = 0;
+        boolean decimalPart = false;
+        for (; pos < version.length(); pos++) {
+            if (version.charAt(pos) == '.') {
+                if (decimalPart) break;
+                decimalPart = true;
+            }
         }
         return Integer.valueOf(version.substring(0, pos).replace(".", ""));
     }
