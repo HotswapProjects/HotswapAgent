@@ -67,7 +67,9 @@ public class AnnotationImpl implements InvocationHandler {
      * @return the annotation
      */
     public static Object make(ClassLoader cl, Class clazz, ClassPool cp,
-                              Annotation anon) {
+                              Annotation anon)
+        throws IllegalArgumentException
+    {
         AnnotationImpl handler = new AnnotationImpl(anon, cp, cl);
         return Proxy.newProxyInstance(cl, new Class[] { clazz }, handler);
     }
@@ -131,12 +133,12 @@ public class AnnotationImpl implements InvocationHandler {
         if (Object.class == method.getDeclaringClass()) {
             if ("equals".equals(name)) {
                 Object obj = args[0];
-                return new Boolean(checkEquals(obj));
+                return Boolean.valueOf(checkEquals(obj));
             }
             else if ("toString".equals(name))
                 return annotation.toString();
             else if ("hashCode".equals(name))
-                return new Integer(hashCode());
+                return Integer.valueOf(hashCode());
         }
         else if ("annotationType".equals(name)
                  && method.getParameterTypes().length == 0)

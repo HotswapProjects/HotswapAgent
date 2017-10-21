@@ -31,6 +31,10 @@ import java.lang.ref.WeakReference;
  *
  * <p>The given class loader must have both <code>getResourceAsStream()</code>
  * and <code>getResource()</code>.
+ * 
+ * <p>Class files in a named module are private to that module.
+ * This method cannot obtain class files in named modules.
+ * </p>
  *
  * @author <a href="mailto:bill@jboss.org">Bill Burke</a>
  * @author Shigeru Chiba
@@ -62,13 +66,15 @@ public class LoaderClassPath implements ClassPath {
      * This method calls <code>getResourceAsStream(String)</code>
      * on the class loader.
      */
-    public InputStream openClassfile(String classname) {
+    public InputStream openClassfile(String classname) throws NotFoundException {
         String cname = classname.replace('.', '/') + ".class";
         ClassLoader cl = (ClassLoader)clref.get();
         if (cl == null)
             return null;        // not found
-        else
-            return cl.getResourceAsStream(cname);
+        else {
+            InputStream is = cl.getResourceAsStream(cname);
+            return is;
+        }
     }
 
     /**
@@ -83,8 +89,10 @@ public class LoaderClassPath implements ClassPath {
         ClassLoader cl = (ClassLoader)clref.get();
         if (cl == null)
             return null;        // not found
-        else
-            return cl.getResource(cname);
+        else {
+            URL url = cl.getResource(cname);
+            return url;
+        }
     }
 
     /**

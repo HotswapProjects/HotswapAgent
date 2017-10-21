@@ -16,10 +16,9 @@
 
 package org.hotswap.agent.javassist;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.net.MalformedURLException;
+import java.io.*;
 import java.net.URL;
+import java.net.MalformedURLException;
 
 /**
  * A <code>ByteArrayClassPath</code> contains bytes that is served as
@@ -38,7 +37,7 @@ import java.net.URL;
  *
  * <p>The <code>ClassPool</code> object <code>cp</code> uses the created
  * <code>ByteArrayClassPath</code> object as the source of the class file.
- *
+ * 
  * <p>A <code>ByteArrayClassPath</code> must be instantiated for every
  * class.  It contains only a single class file.
  *

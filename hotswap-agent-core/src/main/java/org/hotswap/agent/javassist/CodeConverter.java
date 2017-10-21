@@ -117,7 +117,7 @@ public class CodeConverter {
      *
      * <p>Note that <code>Point2</code> must be type-compatible with <code>Point</code>.
      * It must have the same set of methods, fields, and constructors as the
-     * replaced class.
+     * replaced class. 
      */
     public void replaceNew(CtClass oldClass, CtClass newClass) {
         transformers = new TransformNewClass(transformers, oldClass.getName(),
@@ -230,28 +230,28 @@ public class CodeConverter {
     }
 
     /**
-     * Modify a method body, so that ALL accesses to an array are replaced with
-     * calls to static methods within another class. In the case of reading an
-     * element from the array, this is replaced with a call to a static method with
-     * the array and the index as arguments, the return value is the value read from
-     * the array. If writing to an array, this is replaced with a call to a static
-     * method with the array, index and new value as parameters, the return value of
+     * Modify a method body, so that ALL accesses to an array are replaced with 
+     * calls to static methods within another class. In the case of reading an 
+     * element from the array, this is replaced with a call to a static method with 
+     * the array and the index as arguments, the return value is the value read from 
+     * the array. If writing to an array, this is replaced with a call to a static 
+     * method with the array, index and new value as parameters, the return value of 
      * the static method is <code>void</code>.
-     *
-     * <p>The <code>calledClass</code> parameter is the class containing the static methods to be used
-     * for array replacement. The <code>names</code> parameter points to an implementation of
-     * <code>ArrayAccessReplacementMethodNames</code> which specifies the names of the method to be
-     * used for access for each type of array.  For example reading from an <code>int[]</code> will
-     * require a different method than if writing to an <code>int[]</code>, and writing to a <code>long[]</code>
-     * will require a different method than if writing to a <code>byte[]</code>. If the implementation
-     * of <code>ArrayAccessReplacementMethodNames</code> does not contain the name for access for a
+     * 
+     * <p>The <code>calledClass</code> parameter is the class containing the static methods to be used 
+     * for array replacement. The <code>names</code> parameter points to an implementation of 
+     * <code>ArrayAccessReplacementMethodNames</code> which specifies the names of the method to be 
+     * used for access for each type of array.  For example reading from an <code>int[]</code> will 
+     * require a different method than if writing to an <code>int[]</code>, and writing to a <code>long[]</code> 
+     * will require a different method than if writing to a <code>byte[]</code>. If the implementation 
+     * of <code>ArrayAccessReplacementMethodNames</code> does not contain the name for access for a 
      * type of array, that access is not replaced.
-     *
-     * <p>A default implementation of <code>ArrayAccessReplacementMethodNames</code> called
-     * <code>DefaultArrayAccessReplacementMethodNames</code> has been provided and is what is used in the
-     * following example. This also assumes that <code>'foo.ArrayAdvisor'</code> is the name of the
+     * 
+     * <p>A default implementation of <code>ArrayAccessReplacementMethodNames</code> called 
+     * <code>DefaultArrayAccessReplacementMethodNames</code> has been provided and is what is used in the 
+     * following example. This also assumes that <code>'foo.ArrayAdvisor'</code> is the name of the 
      * <code>CtClass</code> passed in.
-     *
+     * 
      * <p>If we have the following class:
      * <pre>class POJO{
      *    int[] ints = new int[]{1, 2, 3, 4, 5};
@@ -262,64 +262,64 @@ public class CodeConverter {
      * </pre>
      * and this is accessed as:
      * <pre>POJO p = new POJO();
-     *
+     * 
      * //Write to int array
      * p.ints[2] = 7;
-     *
+     * 
      * //Read from int array
      * int i = p.ints[2];
-     *
+     * 
      * //Write to long array
      * p.longs[2] = 1000L;
-     *
+     * 
      * //Read from long array
      * long l = p.longs[2];
-     *
+     * 
      * //Write to Object array
      * p.objects[2] = "Hello";
-     *
+     * 
      * //Read from Object array
      * Object o = p.objects[2];
-     *
+     * 
      * //Write to Integer array
      * Integer integer = new Integer(5);
      * p.integers[0] = integer;
-     *
+     * 
      * //Read from Object array
      * integer = p.integers[0];
      * </pre>
-     *
+     * 
      * Following instrumentation we will have
      * <pre>POJO p = new POJO();
-     *
+     * 
      * //Write to int array
      * ArrayAdvisor.arrayWriteInt(p.ints, 2, 7);
-     *
+     * 
      * //Read from int array
      * int i = ArrayAdvisor.arrayReadInt(p.ints, 2);
-     *
+     * 
      * //Write to long array
      * ArrayAdvisor.arrayWriteLong(p.longs, 2, 1000L);
-     *
+     * 
      * //Read from long array
      * long l = ArrayAdvisor.arrayReadLong(p.longs, 2);
-     *
+     * 
      * //Write to Object array
      * ArrayAdvisor.arrayWriteObject(p.objects, 2, "Hello");
-     *
+     * 
      * //Read from Object array
      * Object o = ArrayAdvisor.arrayReadObject(p.objects, 2);
-     *
+     * 
      * //Write to Integer array
      * Integer integer = new Integer(5);
      * ArrayAdvisor.arrayWriteObject(p.integers, 0, integer);
-     *
+     * 
      * //Read from Object array
      * integer = ArrayAdvisor.arrayWriteObject(p.integers, 0);
      * </pre>
-     *
+     * 
      * @see DefaultArrayAccessReplacementMethodNames
-     *
+     * 
      * @param calledClass        the class containing the static methods.
      * @param names              contains the names of the methods to replace
      *                           the different kinds of array access with.
@@ -535,7 +535,7 @@ public class CodeConverter {
             codeAttr.setMaxStack(codeAttr.getMaxStack() + stack);
 
         try {
-            minfo.rebuildStackMapIf6(clazz.getClassPool(),
+        	minfo.rebuildStackMapIf6(clazz.getClassPool(),
                                      clazz.getClassFile2());
         }
         catch (BadBytecode b) {

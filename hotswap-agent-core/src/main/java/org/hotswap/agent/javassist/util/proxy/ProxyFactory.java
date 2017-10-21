@@ -27,7 +27,6 @@ import java.util.*;
 import java.lang.ref.WeakReference;
 
 import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.bytecode.*;
 
 /*
@@ -174,6 +173,29 @@ public class ProxyFactory {
      */
     private boolean factoryWriteReplace;
 
+    /**
+     * <p>If true, only public/protected methods are forwarded to a proxy object.
+     * The class for that proxy object is loaded by the {@code defineClass} method
+     * in {@code java.lang.invoke.MethodHandles.Lookup}, which is available in
+     * Java 9 or later.  This works even when {@code sun.misc.Unsafe} is not
+     * available for some reasons (it is already deprecated in Java 9).</p>
+     *
+     * <p>To load a class, Javassist first tries to use {@code sun.misc.Unsafe} and,
+     * if not available, it uses a {@code protected} method in {@code java.lang.ClassLoader}
+     * via {@code PrivilegedAction}.  Since the latter approach is not available
+     * any longer by default in Java 9 or later, the JVM argument
+     * {@code --add-opens java.base/java.lang=ALL-UNNAMED} must be given to the JVM
+     * when it is used (because of lack of {@code sun.misc.Unsafe}).
+     * If this argument cannot be given to the JVM, {@code onlyPublicMethods} should
+     * be set to {@code true}.  Javassist will try to load by using
+     * {@code java.lang.invoke.MethodHandles.Lookup}.</p>
+     *
+     * <p>The default value is {@code false}.</p>
+     *
+     * @see DefineClassHelper#toClass(String, ClassLoader, ProtectionDomain, byte[])
+     * @since 3.22
+     */
+    public static boolean onlyPublicMethods = false;
 
     /**
      * If the value of this variable is not null, the class file of
@@ -795,7 +817,7 @@ public class ProxyFactory {
             superClass = OBJECT_TYPE;
             superName = superClass.getName();
             basename = interfaces.length == 0 ? superName
-                                               : interfaces[0].getName();
+                                              : interfaces[0].getName();
         } else {
             superName = superClass.getName();
             basename = superName;
@@ -804,8 +826,8 @@ public class ProxyFactory {
         if (Modifier.isFinal(superClass.getModifiers()))
             throw new RuntimeException(superName + " is final");
         
-        if (basename.startsWith("java."))
-            basename = "org.javassist.tmp." + basename;
+        if (basename.startsWith("java.") || onlyPublicMethods)
+            basename = "javassist.util.proxy." + basename.replace('.', '_');
     }
 
     private void allocateClassName() {
