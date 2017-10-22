@@ -31,6 +31,7 @@ public class URLClassLoaderHelper {
             urlClassPathClass = URLClassLoaderHelper.class.getClassLoader().loadClass("sun.misc.URLClassPath");
         } catch (ClassNotFoundException e) {
             try {
+                // java9
                 urlClassPathClass = URLClassLoaderHelper.class.getClassLoader().loadClass("jdk.internal.loader.URLClassPath");
             } catch (ClassNotFoundException e1) {
                 LOGGER.error("Unable to loadClass URLClassPath!");
