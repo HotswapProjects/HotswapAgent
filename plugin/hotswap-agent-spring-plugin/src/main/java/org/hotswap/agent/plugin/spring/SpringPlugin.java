@@ -4,11 +4,12 @@ import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.*;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -31,7 +32,7 @@ import java.util.Enumeration;
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
         testedVersions = {"All between 3.0.1 - 4.2.6"}, expectedVersions = {"3x", "4x"},
-        supportClass = {ClassPathBeanDefinitionScannerTransformer.class, ProxyReplacerTransformer.class})
+        supportClass = {ClassPathBeanDefinitionScannerTransformer.class, ProxyReplacerTransformer.class, XmlBeanDefinitionScannerTransformer.class})
 public class SpringPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
@@ -42,6 +43,13 @@ public class SpringPlugin {
      * Wait this this timeout after class file event.
      */
     private static final int WAIT_ON_CREATE = 600;
+
+    public static String[] basePackagePrefixes;
+
+    static {
+        PluginConfiguration pluginConfiguration = new PluginConfiguration(SpringPlugin.class.getClassLoader());
+        basePackagePrefixes = pluginConfiguration.getBasePackagePrefixes();
+    }
 
     @Init
     HotswapTransformer hotswapTransformer;
@@ -57,9 +65,50 @@ public class SpringPlugin {
 
     public void init() {
         LOGGER.info("Spring plugin initialized");
+        this.registerResourceListeners();
+        this.registerBasePackageFromConfiguration();
     }
     public void init(String version) {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
+        this.registerResourceListeners();
+        this.registerBasePackageFromConfiguration();
+    }
+
+    private void registerResourceListeners() {
+        WatchResourcesClassLoader.getDefault().addWatchResourcesListener(new WatchResourcesListener() {
+            @Override
+            public void onFileChange(URL url) {
+                scheduler.scheduleCommand(new XmlBeanRefreshCommand(url));
+            }
+        });
+    }
+
+    /**
+     * register base package prefix from configuration file
+     */
+    public void registerBasePackageFromConfiguration() {
+        if (basePackagePrefixes != null) {
+            for (String basePackagePrefix : basePackagePrefixes) {
+                this.registerBasePackage(basePackagePrefix);
+            }
+        }
+    }
+
+    private void registerBasePackage(final String basePackage) {
+        final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
+        hotswapTransformer.registerTransformer(appClassLoader, basePackage + ".*", new ClassFileTransformer() {
+            @Override
+            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+                if (classBeingRedefined != null) {
+                    // any annotation with array will lead to xxx
+                    if (analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer)) {
+                        scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
+                                basePackage, className, classfileBuffer));
+                    }
+                }
+                return classfileBuffer;
+            }
+        });
     }
 
     /**
@@ -72,19 +121,8 @@ public class SpringPlugin {
      */
     public void registerComponentScanBasePackage(final String basePackage) {
         LOGGER.info("Registering basePackage {}", basePackage);
-        final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
-        hotswapTransformer.registerTransformer(appClassLoader, basePackage + ".*", new ClassFileTransformer() {
-            @Override
-            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-                if (classBeingRedefined != null) {
-                    if (analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer)) {
-                        scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
-                            basePackage, className, classfileBuffer));
-                    }
-                }
-                return classfileBuffer;
-            }
-        });
+
+        this.registerBasePackage(basePackage);
 
         Enumeration<URL> resourceUrls = null;
         try {

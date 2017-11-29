@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.spring.scanner;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.SpringPlugin;
 
 /**
  * Hook into classpath scanner process to register basicPackage of scanned classes.
@@ -23,14 +24,17 @@ public class ClassPathBeanDefinitionScannerTransformer {
      */
     @OnClassLoadEvent(classNameRegexp = "org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        if (SpringPlugin.basePackagePrefixes == null) {
+            CtMethod method = clazz.getDeclaredMethod("findCandidateComponents", new CtClass[]{classPool.get("java.lang.String")});
+            method.insertAfter("if (this instanceof org.springframework.context.annotation.ClassPathBeanDefinitionScanner) {" +
+                    "org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent." +
+                    "getInstance((org.springframework.context.annotation.ClassPathBeanDefinitionScanner)this)." +
+                    "registerBasePackage($1);" +
+                    "}");
 
-        CtMethod method = clazz.getDeclaredMethod("findCandidateComponents", new CtClass[]{classPool.get("java.lang.String")});
-        method.insertAfter("if (this instanceof org.springframework.context.annotation.ClassPathBeanDefinitionScanner) {" +
-                "org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent." +
-                "getInstance((org.springframework.context.annotation.ClassPathBeanDefinitionScanner)this)." +
-                "registerBasePackage($1);" +
-                "}");
-
-        LOGGER.debug("Class 'org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider' patched with basePackage registration.");
+            LOGGER.debug("Class 'org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider' patched with basePackage registration.");
+        } else {
+            LOGGER.debug("No need to register scanned path, instead just register basePackagePrefix in configuration file.");
+        }
     }
 }

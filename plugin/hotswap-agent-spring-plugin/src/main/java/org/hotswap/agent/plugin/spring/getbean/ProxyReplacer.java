@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.SpringPlugin;
 
 /**
  * Proxies the beans. The beans inside these proxies can be cleared.
@@ -26,7 +27,7 @@ public class ProxyReplacer {
 	public static void clearAllProxies() {
 		DetachableBeanHolder.detachBeans();
 	}
-	
+
 	/**
 	 * Creates a proxied Spring bean. Called from within WebApp code by modification of Spring classes
 	 * 
@@ -43,6 +44,21 @@ public class ProxyReplacer {
 	 * @return Proxied bean
 	 */
 	public static Object register(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+	    if (SpringPlugin.basePackagePrefixes != null) {
+	    	boolean hasMatch = false;
+			for (String basePackagePrefix : SpringPlugin.basePackagePrefixes) {
+				if (bean.getClass().getName().startsWith(basePackagePrefix)) {
+					hasMatch = true;
+					break;
+				}
+			}
+
+			// bean from other package
+			if (!hasMatch) {
+				return bean;
+			}
+		}
+
 		if (bean.getClass().getName().startsWith("com.sun.proxy.$Proxy")) {
 			InvocationHandler handler = new HotswapSpringInvocationHandler(bean, beanFactry, paramClasses, paramValues);
 			Class<?>[] interfaces = bean.getClass().getInterfaces();
@@ -58,6 +74,7 @@ public class ProxyReplacer {
 		} else if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
 			return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
 		}
+
 		return bean;
 	}
 
