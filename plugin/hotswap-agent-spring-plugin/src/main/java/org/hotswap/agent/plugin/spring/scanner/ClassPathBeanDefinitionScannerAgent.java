@@ -63,6 +63,7 @@ public class ClassPathBeanDefinitionScannerAgent {
 
     /**
      * Return an agent instance for a scanner. If the instance does not exists yet, it is created.
+     *
      * @param scanner the scanner
      * @return agent instance
      */
@@ -98,6 +99,7 @@ public class ClassPathBeanDefinitionScannerAgent {
 
     /**
      * Initialize base package from ClassPathBeanDefinitionScanner.scan() (hooked by a Transformer)
+     *
      * @param basePackage package that Spring will scan
      */
     public void registerBasePackage(String basePackage) {
@@ -110,7 +112,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     /**
      * Called by a reflection command from SpringPlugin transformer.
      *
-     * @param basePackage base package on witch the transformer was registered, used to obtain associated scanner.
+     * @param basePackage     base package on witch the transformer was registered, used to obtain associated scanner.
      * @param classDefinition new class definition
      * @throws IOException error working with classDefinition
      */
@@ -147,52 +149,44 @@ public class ClassPathBeanDefinitionScannerAgent {
                 processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
             }
 
-            clearCahceIfExists(beanName);
+            removeIfExists(beanName);
 
-            DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
+            BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+            definitionHolder = applyScopedProxyMode(scopeMetadata, definitionHolder, registry);
 
-            // use previous singleton bean, if modified class is not bean, a exception will be throw
-            Object bean;
-            try {
-                bean = bf.getBean(beanName);
-            } catch (NoSuchBeanDefinitionException e) {
-                LOGGER.warning("{} is not managed by spring", beanName);
-                return;
-            }
-            BeanWrapper bw = new BeanWrapperImpl(bf.getBean(beanName));
-            RootBeanDefinition rootBeanDefinition = (RootBeanDefinition)ReflectionHelper.invoke(bf, AbstractBeanFactory.class,
-                    "getMergedLocalBeanDefinition", new Class[]{String.class},
-                    beanName);
-            ReflectionHelper.invoke(bf, AbstractAutowireCapableBeanFactory.class,
-                    "populateBean", new Class[]{String.class, RootBeanDefinition.class, BeanWrapper.class},
-                    beanName,rootBeanDefinition , bw);
+            LOGGER.reload("Registering Spring bean '{}'", beanName);
+            LOGGER.debug("Bean definition '{}'", beanName, candidate);
+            registerBeanDefinition(definitionHolder, registry);
 
             freezeConfiguration();
-
-
-			ProxyReplacer.clearAllProxies();
         }
+
+        ProxyReplacer.clearAllProxies();
 
     }
 
     /**
      * If registry contains the bean, remove it first (destroying existing singletons).
+     *
      * @param beanName name of the bean
      */
-    private void clearCahceIfExists(String beanName) {
+    private void removeIfExists(String beanName) {
         if (registry.containsBeanDefinition(beanName)) {
+            LOGGER.debug("Removing bean definition '{}'", beanName);
+            registry.removeBeanDefinition(beanName);
+
             ResetSpringStaticCaches.reset();
             DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
             if (bf != null) {
-            	ResetBeanPostProcessorCaches.reset(bf);
+                ResetBeanPostProcessorCaches.reset(bf);
                 ResetRequestMappingCaches.reset(bf);
             }
         }
     }
-    
+
     private DefaultListableBeanFactory maybeRegistryToBeanFactory() {
         if (registry instanceof DefaultListableBeanFactory) {
-            return (DefaultListableBeanFactory)registry;
+            return (DefaultListableBeanFactory) registry;
         } else if (registry instanceof GenericApplicationContext) {
             return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
         }
@@ -202,7 +196,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     // rerun freez configuration - this method is enhanced with cache reset
     private void freezeConfiguration() {
         if (registry instanceof DefaultListableBeanFactory) {
-            ((DefaultListableBeanFactory)registry).freezeConfiguration();
+            ((DefaultListableBeanFactory) registry).freezeConfiguration();
         } else if (registry instanceof GenericApplicationContext) {
             (((GenericApplicationContext) registry).getDefaultListableBeanFactory()).freezeConfiguration();
         }
@@ -233,7 +227,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     private void resetCachingMetadataReaderFactoryCache() {
         if (getMetadataReaderFactory() instanceof CachingMetadataReaderFactory) {
             Map metadataReaderCache = (Map) ReflectionHelper.getNoException(getMetadataReaderFactory(),
-                        CachingMetadataReaderFactory.class, "metadataReaderCache");
+                    CachingMetadataReaderFactory.class, "metadataReaderCache");
 
             if (metadataReaderCache == null)
                 metadataReaderCache = (Map) ReflectionHelper.getNoException(getMetadataReaderFactory(),

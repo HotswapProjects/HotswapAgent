@@ -1,6 +1,8 @@
 package org.hotswap.agent.plugin.spring.scanner;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
+import org.hotswap.agent.plugin.spring.SpringPlugin;
 import org.springframework.beans.factory.support.BeanDefinitionReader;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -29,8 +31,17 @@ public class XmlBeanDefinationScannerAgent {
      */
     public static boolean reloadFlag = false;
 
+    public static boolean basePackagePrefixRegistered = false;
+
     public static void registerXmlBeanDefinationScannerAgent(XmlBeanDefinitionReader reader, URL url) {
         instances.put(url, new XmlBeanDefinationScannerAgent(reader));
+        if (!basePackagePrefixRegistered && SpringPlugin.basePackagePrefixes != null) {
+            ClassPathBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = ClassPathBeanDefinitionScannerAgent.getInstance(new ClassPathBeanDefinitionScanner(reader.getRegistry()));
+            for (String basePackage : SpringPlugin.basePackagePrefixes) {
+                xmlBeanDefinitionScannerAgent.registerBasePackage(basePackage);
+            }
+            basePackagePrefixRegistered = true;
+        }
     }
 
     public static void reloadXml(URL url) {
@@ -62,7 +73,20 @@ public class XmlBeanDefinationScannerAgent {
      */
     public void reloadBeanFromXml(URL url) {
         LOGGER.info("reloading xml file: " + url);
+        // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
         this.reader.loadBeanDefinitions(new FileSystemResource(url.getPath()));
-        // no need to clear cache
+        // spring won't rebuild dependency map if injectionMetadataCache is not cleared
+        // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
+        ResetBeanPostProcessorCaches.reset(maybeRegistryToBeanFactory());
+    }
+
+    private DefaultListableBeanFactory maybeRegistryToBeanFactory() {
+        BeanDefinitionRegistry registry = this.reader.getRegistry();
+        if (registry instanceof DefaultListableBeanFactory) {
+            return (DefaultListableBeanFactory) registry;
+        } else if (registry instanceof GenericApplicationContext) {
+            return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
+        }
+        return null;
     }
 }
