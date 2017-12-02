@@ -173,13 +173,15 @@ public class ClassPathBeanDefinitionScannerAgent {
     private void removeIfExists(String beanName) {
         if (registry.containsBeanDefinition(beanName)) {
             LOGGER.debug("Removing bean definition '{}'", beanName);
+            DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
+            if (bf != null) {
+                ResetRequestMappingCaches.reset(bf);
+            }
             registry.removeBeanDefinition(beanName);
 
             ResetSpringStaticCaches.reset();
-            DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
             if (bf != null) {
                 ResetBeanPostProcessorCaches.reset(bf);
-                ResetRequestMappingCaches.reset(bf);
             }
         }
     }
