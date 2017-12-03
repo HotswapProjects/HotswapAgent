@@ -27,7 +27,10 @@ public class XmlBeanRefreshCommand extends MergeableCommand {
      */
     URL url;
 
-    public XmlBeanRefreshCommand(URL url) {
+    ClassLoader appClassLoader;
+
+    public XmlBeanRefreshCommand(ClassLoader appClassLoader, URL url) {
+        this.appClassLoader = appClassLoader;
         this.url = url;
     }
 
@@ -40,8 +43,20 @@ public class XmlBeanRefreshCommand extends MergeableCommand {
 
         LOGGER.info("Executing XmlBeanDefinitionScannerAgent.reloadXml('{}')", url);
 
-        XmlBeanDefinationScannerAgent.reloadXml(url);
-
+        try {
+            Class clazz = Class.forName(XmlBeanDefinationScannerAgent.class.getName(), true, appClassLoader);
+            Method method  = clazz.getDeclaredMethod(
+                    "reloadXml", new Class[] {URL.class});
+            method.invoke(null, this.url);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Plugin error, maybe failed to hook spring method to init plugin with right classLoader", e);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException("Plugin error, method not found", e);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
+        } catch (InvocationTargetException e) {
+            LOGGER.error("Error refreshing xml {} in classLoader {}", e, this.url, appClassLoader);
+        }
     }
 
     @Override

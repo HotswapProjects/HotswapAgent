@@ -181,7 +181,7 @@ public class URLClassLoaderHelper {
                   }
               }
 
-              return proceed.invoke(URLClassLoader.class, args);
+              return proceed.invoke(self, args);
           }
 
       }

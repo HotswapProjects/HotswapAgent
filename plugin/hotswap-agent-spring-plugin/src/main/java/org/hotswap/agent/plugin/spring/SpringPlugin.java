@@ -75,10 +75,10 @@ public class SpringPlugin {
     }
 
     private void registerResourceListeners() {
-        WatchResourcesClassLoader.getDefault().addWatchResourcesListener(new WatchResourcesListener() {
+        WatchResourcesClassLoader.getDefault(appClassLoader).addWatchResourcesListener(new WatchResourcesListener() {
             @Override
             public void onFileChange(URL url) {
-                scheduler.scheduleCommand(new XmlBeanRefreshCommand(url));
+                scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, url));
             }
         });
     }
@@ -175,6 +175,7 @@ public class SpringPlugin {
     public static void register(CtClass clazz) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
         src.append("setCacheBeanMetadata(false);");
+        // init a spring plugin with every appclassloader
         src.append(PluginManagerInvoker.buildInitializePlugin(SpringPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(SpringPlugin.class, "init",
                 "org.springframework.core.SpringVersion.getVersion()", String.class.getName()));

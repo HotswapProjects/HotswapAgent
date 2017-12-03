@@ -9,7 +9,6 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 
 import java.net.URL;
@@ -74,6 +73,7 @@ public class XmlBeanDefinationScannerAgent {
     public void reloadBeanFromXml(URL url) {
         LOGGER.info("reloading xml file: " + url);
         // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
+        // maybe should use watchResourceClassLoader.getResource?
         this.reader.loadBeanDefinitions(new FileSystemResource(url.getPath()));
         // spring won't rebuild dependency map if injectionMetadataCache is not cleared
         // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?

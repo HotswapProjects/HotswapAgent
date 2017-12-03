@@ -59,10 +59,10 @@ public class WatchResourcesClassLoader extends URLClassLoader {
     /**
      * Get the singleton instance of the watchResources classLoader.
      */
-    public static WatchResourcesClassLoader getDefault() {
+    public static WatchResourcesClassLoader getDefault(ClassLoader classLoader) {
         if (DEFAULT_INSTANCE == null) {
             DEFAULT_INSTANCE = new WatchResourcesClassLoader();
-            PluginConfiguration pluginConfiguration = new PluginConfiguration(WatchResourcesClassLoader.class.getClassLoader());
+            PluginConfiguration pluginConfiguration = new PluginConfiguration(classLoader);
             URL[] watchResources = pluginConfiguration.getWatchResources();
             LOGGER.debug("watched resources is: " + Arrays.toString(watchResources));
             DEFAULT_INSTANCE.initWatchResources(watchResources, PluginManager.getInstance().getWatcher());
