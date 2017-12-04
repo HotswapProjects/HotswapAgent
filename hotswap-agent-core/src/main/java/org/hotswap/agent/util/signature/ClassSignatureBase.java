@@ -74,8 +74,17 @@ public abstract class ClassSignatureBase {
                         }
 
                         try {
-                            Method toStringMethod = Arrays.class.getMethod("toString", value.getClass());
-                            value = toStringMethod.invoke(null, value);
+                            Method toStringMethod;
+                            try {
+                                toStringMethod = Arrays.class.getMethod("toString", value.getClass());
+                                // maybe because value is a subclass of Object[]
+                                value = toStringMethod.invoke(null, value);
+                            } catch (NoSuchMethodException e) {
+                                if (value instanceof Object[]) {
+                                    toStringMethod = Arrays.class.getMethod("toString", Object[].class);
+                                    value = toStringMethod.invoke(null, value);
+                                }
+                            }
                         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
                             // continue
                         }
