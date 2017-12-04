@@ -28,9 +28,9 @@ test 3.1.2.RELEASE
 test 3.1.3.RELEASE
 test 3.1.4.RELEASE
 
-# Spring 3.2 issues with Java 1.8
+# Spring 3.2 issues with > Java 1.7
 # see http://stackoverflow.com/questions/22526695/java-1-8-asm-classreader-failed-to-parse-class-file-probably-due-to-a-new-java
-if [[ $JAVA_HOME != *1.8* ]]
+if [[ $JAVA_HOME == *1.7* ]]
 then
     test 3.2.0.RELEASE
     test 3.2.1.RELEASE
@@ -78,5 +78,20 @@ test 4.3.0.RELEASE
 test 4.3.1.RELEASE
 test 4.3.2.RELEASE
 test 4.3.3.RELEASE
+test 4.3.4.RELEASE
+test 4.3.5.RELEASE
+test 4.3.6.RELEASE
+test 4.3.7.RELEASE
+test 4.3.8.RELEASE
+test 4.3.9.RELEASE
+test 4.3.10.RELEASE
+test 4.3.11.RELEASE
+test 4.3.12.RELEASE
+test 4.3.13.RELEASE
+
+test 5.0.0.RELEASE
+test 5.0.1.RELEASE
+test 5.0.2.RELEASE
+
 
 

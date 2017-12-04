@@ -47,6 +47,7 @@
     </dependencies>
     <profiles>
         <profile>
+            <id>default-tools</id>
             <activation>
                     <jdk>(,1.9)</jdk>
             </activation>
