@@ -36,14 +36,6 @@ public class XmlBeanDefinationScannerAgent {
      */
     public static boolean reloadFlag = false;
 
-    {
-        if (SpringPlugin.basePackagePrefixes != null) {
-            ClassPathBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = ClassPathBeanDefinitionScannerAgent.getInstance(new ClassPathBeanDefinitionScanner(reader.getRegistry()));
-            for (String basePackage : SpringPlugin.basePackagePrefixes) {
-                xmlBeanDefinitionScannerAgent.registerBasePackage(basePackage);
-            }
-        }
-    }
 
     /**
      * need to ensure that when method is invoked first time , this class is not loaded,
@@ -77,6 +69,13 @@ public class XmlBeanDefinationScannerAgent {
 
     private XmlBeanDefinationScannerAgent(BeanDefinitionReader reader) {
         this.reader = reader;
+
+        if (SpringPlugin.basePackagePrefixes != null) {
+            ClassPathBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = ClassPathBeanDefinitionScannerAgent.getInstance(new ClassPathBeanDefinitionScanner(reader.getRegistry()));
+            for (String basePackage : SpringPlugin.basePackagePrefixes) {
+                xmlBeanDefinitionScannerAgent.registerBasePackage(basePackage);
+            }
+        }
     }
 
     /**
