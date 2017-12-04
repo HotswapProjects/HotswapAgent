@@ -46,6 +46,8 @@ For xml defined bean:
 
 Hooked XmlBeanDefinitionReader.loadBeanDefinitions(URL url) method to get it's args, and use that method to loadBeanDefinition when xml changed.
 
+If you are running server using IDE, just change the xml and save it.
+If the server is running standalone, you need to change the xml under server's webapp path with autoHotswap on, because there is actually no hotswap for xml
 
 # TODO:
 * ... a lot to do ...
