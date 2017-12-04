@@ -9,13 +9,13 @@ import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Enumeration;
 
-import org.hotswap.agent.javassist.URLClassPath;
 import org.hotswap.agent.javassist.util.proxy.MethodFilter;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.Proxy;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.javassist.util.proxy.ProxyObject;
 import org.hotswap.agent.logging.AgentLogger;
+import sun.misc.URLClassPath;
 
 /**
  * Helper methods to enhance URL ClassLoader.
@@ -181,7 +181,7 @@ public class URLClassLoaderHelper {
                   }
               }
 
-              return proceed.invoke(URLClassLoader.class, args);
+              return proceed.invoke(self, args);
           }
 
       }

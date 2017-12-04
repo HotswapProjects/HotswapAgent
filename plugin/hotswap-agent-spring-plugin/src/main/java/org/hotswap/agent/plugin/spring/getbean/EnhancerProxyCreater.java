@@ -85,8 +85,12 @@ public class EnhancerProxyCreater {
 				return bean;
 			}
 			return proxyCreater.invoke(null, beanFactry, bean, paramClasses, paramValues);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | CannotCompileException
-				| NotFoundException e) {
+		} catch (IllegalArgumentException | InvocationTargetException e) {
+			LOGGER.warning("Can't create proxy for " + bean.getClass().getSuperclass()
+					+ " because there is no default constructor,"
+					+ " which means your non-singleton bean created before won't get rewired with new props when update class.");
+			return bean;
+		} catch (IllegalAccessException  | CannotCompileException | NotFoundException e) {
 			LOGGER.error("Creating a proxy failed", e);
 			throw new RuntimeException(e);
 		}
@@ -190,7 +194,7 @@ public class EnhancerProxyCreater {
 			originalNamingPolicy = core + "DefaultNamingPolicy";
 		ct.setSuperclass(cp.get(originalNamingPolicy));
 		String rawBody = "			public String getClassName(String prefix, String source, Object key, {0}Predicate names) {"//
-				+ "				return super.getClassName(\"HOTSWAPAGENT_\" + prefix, source, key, names);"//
+				+ "				return super.getClassName(prefix + \"$HOTSWAPAGENT_\", source, key, names);"//
 				+ "			}";
 		String body = rawBody.replaceAll("\\{0\\}", core);
 		CtMethod m = CtNewMethod.make(body, ct);

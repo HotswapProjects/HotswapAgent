@@ -79,7 +79,7 @@ public class TomcatPlugin {
 
             URL[] watchResources = pluginConfiguration.getWatchResources();
             if (watchResources.length > 0) {
-                if (majorVersion > 7)
+                if (majorVersion >= 7)
                     watchResourcesClassLoader.initWatchResources(watchResources, PluginManager.getInstance().getWatcher());
                 else
                     addRepositoriesAtStart(appClassLoader, watchResources, true);

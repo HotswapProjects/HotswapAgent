@@ -1,11 +1,7 @@
 package org.hotswap.agent.plugin.spring.getbean;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 
 /**
  * Transforms Spring classes so the beans go through this plugin. The returned beans are proxied and tracked. The bean
@@ -16,6 +12,13 @@ import org.hotswap.agent.javassist.NotFoundException;
  */
 public class ProxyReplacerTransformer {
     public static final String FACTORY_METHOD_NAME = "getBean";
+
+    private static CtMethod overrideMethod(CtClass ctClass, CtMethod getConnectionMethodOfSuperclass)
+            throws NotFoundException, CannotCompileException {
+        final CtMethod m = CtNewMethod.delegator(getConnectionMethodOfSuperclass, ctClass);
+        ctClass.addMethod(m);
+        return m;
+    }
 
     /**
      *
@@ -29,6 +32,10 @@ public class ProxyReplacerTransformer {
         for (CtMethod ctMethod : methods) {
             if (!ctMethod.getName().equals(FACTORY_METHOD_NAME))
                 continue;
+
+            if (!ctClass.equals(ctMethod.getDeclaringClass())) {
+                ctMethod = overrideMethod(ctClass, ctMethod);
+            }
             StringBuilder methodParamTypes = new StringBuilder();
             for (CtClass type : ctMethod.getParameterTypes()) {
                 methodParamTypes.append(type.getName()).append(".class").append(", ");

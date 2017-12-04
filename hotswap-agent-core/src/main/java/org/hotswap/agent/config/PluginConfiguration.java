@@ -256,6 +256,17 @@ public class PluginConfiguration {
     }
 
     /**
+     * Converts watchResources property to URL array. Invalid URLs will be skipped and logged as error.
+     */
+    public String[] getBasePackagePrefixes() {
+        String basePackagePrefix = getProperty("basePackagePrefix");
+        if (basePackagePrefix != null) {
+            return basePackagePrefix.split(",");
+        }
+        return null;
+    }
+
+    /**
      * Return configuration property webappDir as URL.
      */
     public URL[] getWebappDir() {

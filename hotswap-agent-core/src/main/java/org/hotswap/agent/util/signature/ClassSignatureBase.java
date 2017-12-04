@@ -1,6 +1,7 @@
 package org.hotswap.agent.util.signature;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -71,6 +72,23 @@ public abstract class ClassSignatureBase {
                         } else {
                             printComma = true;
                         }
+
+                        try {
+                            Method toStringMethod;
+                            try {
+                                toStringMethod = Arrays.class.getMethod("toString", value.getClass());
+                                // maybe because value is a subclass of Object[]
+                                value = toStringMethod.invoke(null, value);
+                            } catch (NoSuchMethodException e) {
+                                if (value instanceof Object[]) {
+                                    toStringMethod = Arrays.class.getMethod("toString", Object[].class);
+                                    value = toStringMethod.invoke(null, value);
+                                }
+                            }
+                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
+                            // continue
+                        }
+
                         b.append(method.getName() + "=" + value.getClass() + ":" + value);
                     }
                 }

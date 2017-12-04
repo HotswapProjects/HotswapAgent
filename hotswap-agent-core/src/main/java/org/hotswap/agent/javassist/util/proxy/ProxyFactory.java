@@ -215,7 +215,7 @@ public class ProxyFactory {
     private static final String FILTER_SIGNATURE_FIELD = "_filter_signature";
     private static final String FILTER_SIGNATURE_TYPE = "[B";
     private static final String HANDLER = "handler";
-    private static final String NULL_INTERCEPTOR_HOLDER = "javassist.util.proxy.RuntimeSupport";
+    private static final String NULL_INTERCEPTOR_HOLDER = "org.hotswap.agent.javassist.util.proxy.RuntimeSupport";
     private static final String DEFAULT_INTERCEPTOR = "default_interceptor";
     private static final String HANDLER_TYPE
         = 'L' + MethodHandler.class.getName().replace('.', '/') + ';';
