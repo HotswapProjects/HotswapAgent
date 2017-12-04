@@ -16,10 +16,14 @@ public class WatcherFactory {
 
     static double getVersion() {
         String version = System.getProperty("java.version");
+
         int pos = 0;
         boolean decimalPart = false;
+
         for (; pos < version.length(); pos++) {
-            if (version.charAt(pos) == '.') {
+            char c = version.charAt(pos);
+            if ((c < '0' || c > '9') && c != '.') break;
+            if (c == '.') {
                 if (decimalPart) break;
                 decimalPart = true;
             }

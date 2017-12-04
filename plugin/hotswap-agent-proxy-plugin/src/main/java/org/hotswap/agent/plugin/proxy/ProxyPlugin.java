@@ -16,6 +16,7 @@ import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParams;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
+import org.hotswap.agent.watch.WatcherFactory;
 
 /**
  * Redefines proxy classes that implement or extend changed interfaces or classes. Currently it supports proxies created
@@ -27,7 +28,7 @@ import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 @Plugin(name = "Proxy", description = "Redefines proxies", testedVersions = { "" }, expectedVersions = { "all" }, supportClass = RedefinitionScheduler.class)
 public class ProxyPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyPlugin.class);
-    static boolean isJava8OrNewer = getVersion() >= 18;
+    static boolean isJava8OrNewer = WatcherFactory.JAVA_VERSION >= 18;
 
     /**
      * Flag to check reload status. In unit test we need to wait for reload
@@ -153,18 +154,4 @@ public class ProxyPlugin {
         }
         return cc;
     }
-
-    private static int getVersion() {
-        String version = System.getProperty("java.version");
-        int pos = 0;
-        boolean decimalPart = false;
-        for (; pos < version.length(); pos++) {
-            if (version.charAt(pos) == '.') {
-                if (decimalPart) break;
-                decimalPart = true;
-            }
-        }
-        return Integer.valueOf(version.substring(0, pos).replace(".", ""));
-    }
-
 }
