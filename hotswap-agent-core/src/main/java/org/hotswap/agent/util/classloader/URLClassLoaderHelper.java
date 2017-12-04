@@ -15,7 +15,6 @@ import org.hotswap.agent.javassist.util.proxy.Proxy;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.javassist.util.proxy.ProxyObject;
 import org.hotswap.agent.logging.AgentLogger;
-import sun.misc.URLClassPath;
 
 /**
  * Helper methods to enhance URL ClassLoader.
@@ -115,7 +114,7 @@ public class URLClassLoaderHelper {
 
     private static URL[] getOrigClassPath(URLClassLoader classLoader, Field ucpField) throws IllegalAccessException {
         URL[] origClassPath = null;
-        URLClassPath urlClassPath = (URLClassPath) ucpField.get(classLoader);
+        Object urlClassPath = ucpField.get(classLoader);
 
         if (urlClassPath instanceof ProxyObject) {
             ProxyObject p = (ProxyObject) urlClassPath;
