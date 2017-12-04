@@ -1,7 +1,5 @@
 package org.hotswap.agent.util.classloader;
 
-import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -26,20 +24,12 @@ import java.util.*;
  */
 public class WatchResourcesClassLoader extends URLClassLoader {
     private static AgentLogger LOGGER = AgentLogger.getLogger(WatchResourcesClassLoader.class);
-    // singleton instance
-    private static WatchResourcesClassLoader DEFAULT_INSTANCE;
 
     /**
      * URLs of changed resources. Use this set to check if the resource was changed and hence should
      * be returned by this classloader.
      */
     Set<URL> changedUrls = new HashSet<URL>();
-
-    /**
-     * listeners watch for watchResources change
-     */
-    List<WatchResourcesListener> watchResourcesListeners = new ArrayList<>();
-
 
     /**
      * Watch for requested resource in parent classloader in case it is not found by this classloader?
@@ -55,20 +45,6 @@ public class WatchResourcesClassLoader extends URLClassLoader {
      * URL classloader configured to get resources only from exact set of URL's (no parent delegation)
      */
     ClassLoader watchResourcesClassLoader;
-
-    /**
-     * Get the singleton instance of the watchResources classLoader.
-     */
-    public static WatchResourcesClassLoader getDefault(ClassLoader classLoader) {
-        if (DEFAULT_INSTANCE == null) {
-            DEFAULT_INSTANCE = new WatchResourcesClassLoader();
-            PluginConfiguration pluginConfiguration = new PluginConfiguration(classLoader);
-            URL[] watchResources = pluginConfiguration.getWatchResources();
-            LOGGER.debug("watched resources is: " + Arrays.toString(watchResources));
-            DEFAULT_INSTANCE.initWatchResources(watchResources, PluginManager.getInstance().getWatcher());
-        }
-        return DEFAULT_INSTANCE;
-    }
 
     public WatchResourcesClassLoader() {
         this(false);
@@ -115,9 +91,6 @@ public class WatchResourcesClassLoader extends URLClassLoader {
                         try {
                             if (event.isFile() || event.isDirectory()) {
                                 changedUrls.add(event.getURI().toURL());
-                                for (WatchResourcesListener watchResourcesListener: watchResourcesListeners) {
-                                    watchResourcesListener.onFileChange(event.getURI().toURL());
-                                }
                                 LOGGER.trace("File '{}' changed and will be returned instead of original classloader equivalent.", event.getURI().toURL());
                             }
                         } catch (MalformedURLException e) {
@@ -129,10 +102,6 @@ public class WatchResourcesClassLoader extends URLClassLoader {
                 LOGGER.warning("Unable to convert watchResources URL '{}' to URI. URL is skipped.", e, resource);
             }
         }
-    }
-
-    public void addWatchResourcesListener(WatchResourcesListener watchResourcesListener) {
-        this.watchResourcesListeners.add(watchResourcesListener);
     }
 
     /**

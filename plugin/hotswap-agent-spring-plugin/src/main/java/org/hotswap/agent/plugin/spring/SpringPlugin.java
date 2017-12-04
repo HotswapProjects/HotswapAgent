@@ -1,8 +1,6 @@
 package org.hotswap.agent.plugin.spring;
 
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.config.PluginManager;
@@ -23,7 +21,10 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 
 /**
  * Spring plugin.
@@ -46,11 +47,6 @@ public class SpringPlugin {
 
     public static String[] basePackagePrefixes;
 
-    static {
-        PluginConfiguration pluginConfiguration = new PluginConfiguration(SpringPlugin.class.getClassLoader());
-        basePackagePrefixes = pluginConfiguration.getBasePackagePrefixes();
-    }
-
     @Init
     HotswapTransformer hotswapTransformer;
 
@@ -65,22 +61,31 @@ public class SpringPlugin {
 
     public void init() {
         LOGGER.info("Spring plugin initialized");
-        this.registerResourceListeners();
         this.registerBasePackageFromConfiguration();
+        this.initBasePackagePrefixes();
     }
     public void init(String version) {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
-        this.registerResourceListeners();
         this.registerBasePackageFromConfiguration();
+        this.initBasePackagePrefixes();
     }
 
-    private void registerResourceListeners() {
-        WatchResourcesClassLoader.getDefault(appClassLoader).addWatchResourcesListener(new WatchResourcesListener() {
-            @Override
-            public void onFileChange(URL url) {
-                scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, url));
-            }
-        });
+    private void initBasePackagePrefixes() {
+        PluginConfiguration pluginConfiguration = new PluginConfiguration(this.appClassLoader);
+        if (basePackagePrefixes == null || basePackagePrefixes.length == 0) {
+            basePackagePrefixes = pluginConfiguration.getBasePackagePrefixes();
+        } else {
+            String[] newBasePackagePrefixes = pluginConfiguration.getBasePackagePrefixes();
+            List<String> both = new ArrayList<>(basePackagePrefixes.length + newBasePackagePrefixes.length);
+            Collections.addAll(both, basePackagePrefixes);
+            Collections.addAll(both, newBasePackagePrefixes);
+            basePackagePrefixes = both.toArray(new String[both.size()]);
+        }
+    }
+
+    @OnResourceFileEvent(path="/", filter = ".*.xml", events = {FileEvent.MODIFY})
+    public void registerResourceListeners(URL url) {
+        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, url));
     }
 
     /**
@@ -100,7 +105,6 @@ public class SpringPlugin {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if (classBeingRedefined != null) {
-                    // any annotation with array will lead to xxx
                     if (analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer)) {
                         scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
                                 basePackage, className, classfileBuffer));
