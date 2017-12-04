@@ -59,6 +59,7 @@ public class ProxyReplacer {
 			}
 		}
 
+		// create proxy for prototype-scope beans and apsect proxied beans
 		if (bean.getClass().getName().startsWith("com.sun.proxy.$Proxy")) {
 			InvocationHandler handler = new HotswapSpringInvocationHandler(bean, beanFactry, paramClasses, paramValues);
 			Class<?>[] interfaces = bean.getClass().getInterfaces();

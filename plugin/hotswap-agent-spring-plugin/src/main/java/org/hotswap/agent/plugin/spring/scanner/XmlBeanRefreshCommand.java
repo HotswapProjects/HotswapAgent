@@ -44,7 +44,10 @@ public class XmlBeanRefreshCommand extends MergeableCommand {
         LOGGER.info("Executing XmlBeanDefinitionScannerAgent.reloadXml('{}')", url);
 
         try {
-            Class clazz = Class.forName(XmlBeanDefinationScannerAgent.class.getName(), true, appClassLoader);
+            // not using Class.getName() to get class name
+            // because it will cause common classloader to load XmlBeanDefinationScannerAgent
+            // which may cause problem in multi-app scenario.
+            Class clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinationScannerAgent", true, appClassLoader);
             Method method  = clazz.getDeclaredMethod(
                     "reloadXml", new Class[] {URL.class});
             method.invoke(null, this.url);

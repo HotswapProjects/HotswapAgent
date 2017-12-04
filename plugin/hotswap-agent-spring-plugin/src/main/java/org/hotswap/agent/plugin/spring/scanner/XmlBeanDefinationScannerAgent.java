@@ -9,16 +9,22 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * IMPORTANT: DON'T REFER TO THIS CLASS IN OTHER CLASS!!
+ */
 public class XmlBeanDefinationScannerAgent {
     private static AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanDefinationScannerAgent.class);
 
-    private static Map<URL, XmlBeanDefinationScannerAgent> instances = new HashMap<URL, XmlBeanDefinationScannerAgent>();
+    private static Map<String, XmlBeanDefinationScannerAgent> instances = new HashMap<String, XmlBeanDefinationScannerAgent>();
 
     // xmlReader for corresponding url
     BeanDefinitionReader reader;
@@ -30,40 +36,72 @@ public class XmlBeanDefinationScannerAgent {
      */
     public static boolean reloadFlag = false;
 
-    public static boolean basePackagePrefixRegistered = false;
-
-    public static void registerXmlBeanDefinationScannerAgent(XmlBeanDefinitionReader reader, URL url) {
-        instances.put(url, new XmlBeanDefinationScannerAgent(reader));
-        if (!basePackagePrefixRegistered && SpringPlugin.basePackagePrefixes != null) {
+    {
+        if (SpringPlugin.basePackagePrefixes != null) {
             ClassPathBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = ClassPathBeanDefinitionScannerAgent.getInstance(new ClassPathBeanDefinitionScanner(reader.getRegistry()));
             for (String basePackage : SpringPlugin.basePackagePrefixes) {
                 xmlBeanDefinitionScannerAgent.registerBasePackage(basePackage);
             }
-            basePackagePrefixRegistered = true;
         }
     }
 
-    public static void reloadXml(URL url) {
-        if (!url.getPath().endsWith(".xml")) {
-            LOGGER.error(url + " is not xml");
-            return;
+    /**
+     * need to ensure that when method is invoked first time , this class is not loaded,
+     * so this class is will be loaded by appClassLoader
+     */
+    public static void registerXmlBeanDefinationScannerAgent(XmlBeanDefinitionReader reader, Resource resource) {
+        String path;
+        if (resource instanceof ClassPathResource) {
+            path = ((ClassPathResource)resource).getPath();
+        } else {
+            try {
+                path = convertToClasspathURL(resource.getURL().getPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+                LOGGER.error("Cannot get url from resource: {}", resource);
+                return;
+            }
         }
 
-        // TODO: use classpath url as key, now xmlBeanDefinationScannerAgent is always null.
-        XmlBeanDefinationScannerAgent xmlBeanDefinationScannerAgent = instances.get(url);
+        instances.put(path, new XmlBeanDefinationScannerAgent(reader));
+    }
+
+    public static void reloadXml(URL url) {
+        XmlBeanDefinationScannerAgent xmlBeanDefinationScannerAgent = instances.get(convertToClasspathURL(url.getPath()));
         if (xmlBeanDefinationScannerAgent == null) {
-            LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinationScannerAgent, using random reader");
-            if (!instances.isEmpty()) {
-                xmlBeanDefinationScannerAgent = ((XmlBeanDefinationScannerAgent)instances.values().toArray()[0]);
-            } else {
-                LOGGER.error("can't load xml file " + url + " because there is no xml loaded by spring before");
-            }
+            LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinationScannerAgent, not reloading");
+            return;
         }
         xmlBeanDefinationScannerAgent.reloadBeanFromXml(url);
     }
 
     private XmlBeanDefinationScannerAgent(BeanDefinitionReader reader) {
         this.reader = reader;
+    }
+
+    /**
+     * convert src/main/resources/xxx.xml and classes/xxx.xml to xxx.xml
+     * @param filePath the file path to convert
+     * @return if convert succeed, return classpath path, or else return file path
+     */
+    private static String convertToClasspathURL(String filePath) {
+        String[] paths = filePath.split("src/main/resources/");
+        if (paths.length == 2) {
+            return paths[1];
+        }
+
+        paths = filePath.split("WEB-INF/classes/");
+        if (paths.length == 2) {
+            return paths[1];
+        }
+
+        paths = filePath.split("target/classes/");
+        if (paths.length == 2) {
+            return paths[1];
+        }
+
+        LOGGER.error("failed to convert filePath {} to classPath path", filePath);
+        return filePath;
     }
 
     /**
