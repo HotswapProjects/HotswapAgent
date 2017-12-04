@@ -73,20 +73,8 @@ public abstract class ClassSignatureBase {
                             printComma = true;
                         }
 
-                        try {
-                            Method toStringMethod;
-                            try {
-                                toStringMethod = Arrays.class.getMethod("toString", value.getClass());
-                                // maybe because value is a subclass of Object[]
-                                value = toStringMethod.invoke(null, value);
-                            } catch (NoSuchMethodException e) {
-                                if (value instanceof Object[]) {
-                                    toStringMethod = Arrays.class.getMethod("toString", Object[].class);
-                                    value = toStringMethod.invoke(null, value);
-                                }
-                            }
-                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
-                            // continue
+                        if (value.getClass().isArray()) {
+                            value = arrayToString(value);
                         }
 
                         b.append(method.getName() + "=" + value.getClass() + ":" + value);
@@ -103,6 +91,24 @@ public abstract class ClassSignatureBase {
         }
         b.append(']');
         return b.toString();
+    }
+
+    private Object arrayToString(Object value) {
+        Object result = value;
+        try {
+            try {
+                Method toStringMethod = Arrays.class.getMethod("toString", value.getClass());
+                // maybe because value is a subclass of Object[]
+                result = toStringMethod.invoke(null, value);
+            } catch (NoSuchMethodException e) {
+                if (value instanceof Object[]) {
+                    Method toStringMethod = Arrays.class.getMethod("toString", Object[].class);
+                    result = toStringMethod.invoke(null, value);
+                }
+            }
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
+        }
+        return result;
     }
 
     protected String annotationToString(Object[][] a) {
