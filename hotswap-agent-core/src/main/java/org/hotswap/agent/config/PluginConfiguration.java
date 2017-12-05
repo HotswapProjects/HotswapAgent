@@ -259,7 +259,7 @@ public class PluginConfiguration {
      * Converts watchResources property to URL array. Invalid URLs will be skipped and logged as error.
      */
     public String[] getBasePackagePrefixes() {
-        String basePackagePrefix = getProperty("basePackagePrefix");
+        String basePackagePrefix = getProperty("spring.basePackagePrefix");
         if (basePackagePrefix != null) {
             return basePackagePrefix.split(",");
         }

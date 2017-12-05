@@ -34,7 +34,7 @@ public class ClassPathBeanDefinitionScannerTransformer {
 
             LOGGER.debug("Class 'org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider' patched with basePackage registration.");
         } else {
-            LOGGER.debug("No need to register scanned path, instead just register basePackagePrefix in configuration file.");
+            LOGGER.debug("No need to register scanned path, instead just register 'spring.basePackagePrefix' in configuration file.");
         }
     }
 }
