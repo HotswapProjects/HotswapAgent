@@ -110,7 +110,7 @@ public class SpringPluginTest {
     }
 
     @Test
-    public void hotswapPrototypeTest() throws Exception {
+    public void hotswapPrototypeTestNewInstance() throws Exception {
         assertEquals("Hello from Repository ServiceWithAspect Prototype", factory.getBean(BeanPrototype.class).hello());
 
         // swap service this prototype is dependent to
@@ -127,23 +127,13 @@ public class SpringPluginTest {
         assertEquals("Hello from Repository ServiceWithAspect Prototype", factory.getBean(BeanPrototype.class).hello());
     }
 
-    /**
-     * Plugin is currently unable to reload prototype bean instance.
-     */
     @Test
-    public void hotswapPrototypeTestFailWhenHoldingInstance() throws Exception {
+    public void hotswapPrototypeTestExistingInstance() throws Exception {
         BeanPrototype beanPrototypeInstance = factory.getBean(BeanPrototype.class);
         assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
 
-        // swap service this prototype is dependent to
-        try {
-            swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
-            assertEquals("Hello from ChangedRepository Service2WithAspect Prototype", beanPrototypeInstance.hello());
-            throw new IllegalStateException("Reload prototype bean should not be correctly initialized.");
-        } catch (NullPointerException e) {
-            // BeanServiceImpl2 contains reference to different repository. Because existing reference
-            // is not changed, this reference is null
-        }
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
+        assertEquals("Hello from ChangedRepository Service2WithAspect Prototype", beanPrototypeInstance.hello());
 
         // return configuration
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class.getName());
