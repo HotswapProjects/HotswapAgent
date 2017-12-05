@@ -74,9 +74,14 @@ public class ComponentScanWithWildcardsTest {
             assertEquals("Hello from Repository NewHelloServiceWithAspect",
                     factory.getBean(NewHelloService.class).hello());
         } finally {
-            if (file != null) {
+            if (file != null && file.exists()) {
+                // explicit GC on windows to release class file
+                System.gc();
                 // we don't reload on delete
-                file.delete();
+                if (!file.delete()) {
+                    System.err.println("Warning - unable to delete class file " + file.getAbsolutePath() +
+                            ". Run maven clean project or delete the file manually before running subsequent test runs.");
+                }
             }
         }
     }
