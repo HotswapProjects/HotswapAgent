@@ -68,7 +68,9 @@ public class ClassPathBeanDefinitionScannerAgent {
      * @return agent instance
      */
     public static ClassPathBeanDefinitionScannerAgent getInstance(ClassPathBeanDefinitionScanner scanner) {
-        if (!instances.containsKey(scanner)) {
+        ClassPathBeanDefinitionScannerAgent classPathBeanDefinitionScannerAgent = instances.get(scanner);
+        // registry may be different if there is multiple app. (this is just a temporary solution)
+        if (classPathBeanDefinitionScannerAgent == null || classPathBeanDefinitionScannerAgent.registry != scanner.getRegistry()) {
             instances.put(scanner, new ClassPathBeanDefinitionScannerAgent(scanner));
         }
         return instances.get(scanner);
