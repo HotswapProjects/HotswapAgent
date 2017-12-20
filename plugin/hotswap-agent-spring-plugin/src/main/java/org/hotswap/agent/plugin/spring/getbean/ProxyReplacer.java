@@ -55,6 +55,7 @@ public class ProxyReplacer {
 
 			// bean from other package
 			if (!hasMatch) {
+				LOGGER.info("{} not in basePackagePrefix", bean.getClass().getName());
 				return bean;
 			}
 		}

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
  * Change to this repository to check reinitialization after hotswap.
  */
 @Repository
-public class BeanChangedRepository {
+public class BeanChangedRepository extends BeanRepository {
     public String hello() {
         return "Hello from ChangedRepository";
     }

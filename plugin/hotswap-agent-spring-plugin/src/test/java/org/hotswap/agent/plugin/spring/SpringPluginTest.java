@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinationScannerAgent;
 import org.hotswap.agent.plugin.spring.testBeans.BeanPrototype;
 import org.hotswap.agent.plugin.spring.testBeans.BeanRepository;
 import org.hotswap.agent.plugin.spring.testBeans.BeanService;
@@ -10,13 +11,24 @@ import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
+import org.hotswap.agent.util.spring.io.resource.Resource;
 import org.hotswap.agent.util.test.WaitHelper;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -100,7 +112,7 @@ public class SpringPluginTest {
         assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
         swapClasses(BeanRepository.class, BeanRepository2.class.getName());
 
-        String helloNewMethodImplVal = (String) ReflectionHelper.invoke(factory.getBean(BeanRepository.class),
+        String helloNewMethodImplVal = (String) ReflectionHelper.invoke(factory.getBean("beanRepository",BeanRepository.class),
                 BeanRepository.class, "helloNewMethod", new Class[] {});
         assertEquals("Repository new method", helloNewMethodImplVal);
 
@@ -152,5 +164,67 @@ public class SpringPluginTest {
 
         // TODO do not know why sleep is needed, maybe a separate thread in Spring refresh?
         Thread.sleep(100);
+    }
+
+
+    private static ApplicationContext applicationContext;
+    private static Resource xmlContext = new ClassPathResource("xmlContext.xml");
+    private static Resource xmlContextWithRepo = new ClassPathResource("xmlContextWithRepository.xml");
+    private static Resource xmlContextWithChangedRepo = new ClassPathResource("xmlContextWithChangedRepository.xml");
+
+    /*
+        -------Xml test, has to be put in there so xmlContext is load after component scan context-----------
+        (because we don't support multiple component-scan context in single app, or ClassPathBeanDefinitionScannerAgent will
+        not be able to get the right registry to use (it will only use the first one it encountered,
+        Spring tends to reuse ClassPathScanner))
+     */
+
+    @Before
+    public void initApplicationCtx() throws IOException {
+        if (applicationContext == null) {
+            writeRepositoryToXml();
+            applicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");
+        }
+    }
+
+    private void writeRepositoryToXml() throws IOException {
+        FileChannel src = new FileInputStream(xmlContextWithRepo.getFile()).getChannel();
+        FileChannel dest = new FileOutputStream(xmlContext.getFile()).getChannel();
+        dest.transferFrom(src, 0, src.size());
+        dest.close();
+    }
+
+    private void writeChangedRepositoryToXml() throws IOException {
+        FileChannel src = new FileInputStream(xmlContextWithChangedRepo.getFile()).getChannel();
+        FileChannel dest = new FileOutputStream(xmlContext.getFile()).getChannel();
+        dest.transferFrom(src, 0, src.size());
+        dest.close();
+    }
+
+    @Test
+    public void swapXmlTest() throws IOException {
+        BeanService beanService = applicationContext.getBean("beanService", BeanService.class);
+        Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
+
+        XmlBeanDefinationScannerAgent.reloadFlag = true;
+        writeChangedRepositoryToXml();
+        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return !XmlBeanDefinationScannerAgent.reloadFlag;
+            }
+        }, 5000));
+
+        Assert.assertEquals(beanService.hello(), "Hello from ChangedRepository ServiceWithAspect");
+
+        XmlBeanDefinationScannerAgent.reloadFlag = true;
+        writeRepositoryToXml();
+        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return !XmlBeanDefinationScannerAgent.reloadFlag;
+            }
+        }, 5000));
+        Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
     }
 }

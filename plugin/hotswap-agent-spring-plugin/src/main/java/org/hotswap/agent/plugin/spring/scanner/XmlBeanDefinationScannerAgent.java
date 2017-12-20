@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.spring.scanner;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
+import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.springframework.beans.factory.support.BeanDefinitionReader;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -67,14 +68,17 @@ public class XmlBeanDefinationScannerAgent {
         xmlBeanDefinationScannerAgent.reloadBeanFromXml(url);
     }
 
+    private static boolean basePackageInited = false;
+
     private XmlBeanDefinationScannerAgent(BeanDefinitionReader reader) {
         this.reader = reader;
 
-        if (SpringPlugin.basePackagePrefixes != null) {
+        if (SpringPlugin.basePackagePrefixes != null && !basePackageInited) {
             ClassPathBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = ClassPathBeanDefinitionScannerAgent.getInstance(new ClassPathBeanDefinitionScanner(reader.getRegistry()));
             for (String basePackage : SpringPlugin.basePackagePrefixes) {
                 xmlBeanDefinitionScannerAgent.registerBasePackage(basePackage);
             }
+            basePackageInited = true;
         }
     }
 
@@ -99,6 +103,11 @@ public class XmlBeanDefinationScannerAgent {
             return paths[1];
         }
 
+        paths = filePath.split("target/test-classes/");
+        if (paths.length == 2) {
+            return paths[1];
+        }
+
         LOGGER.error("failed to convert filePath {} to classPath path", filePath);
         return filePath;
     }
@@ -115,6 +124,8 @@ public class XmlBeanDefinationScannerAgent {
         // spring won't rebuild dependency map if injectionMetadataCache is not cleared
         // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
         ResetBeanPostProcessorCaches.reset(maybeRegistryToBeanFactory());
+        ProxyReplacer.clearAllProxies();
+        reloadFlag = false;
     }
 
     private DefaultListableBeanFactory maybeRegistryToBeanFactory() {

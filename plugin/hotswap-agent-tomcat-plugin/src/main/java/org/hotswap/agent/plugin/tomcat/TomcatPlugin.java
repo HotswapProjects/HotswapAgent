@@ -70,7 +70,7 @@ public class TomcatPlugin {
 
             URL[] extraClasspath = pluginConfiguration.getExtraClasspath();
             if (extraClasspath.length > 0) {
-                if (majorVersion > 7)
+                if (majorVersion >= 7)
                     watchResourcesClassLoader.initExtraPath(extraClasspath);
                 else
                     addRepositoriesAtStart(appClassLoader, extraClasspath, false);
