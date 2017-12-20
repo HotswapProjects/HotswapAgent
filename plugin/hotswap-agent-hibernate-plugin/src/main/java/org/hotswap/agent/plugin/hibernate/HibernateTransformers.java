@@ -120,11 +120,19 @@ public class HibernateTransformers {
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             constructor.insertAfter(src.toString());
         }
-
-        ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
-                "   this.configuredBeans.clear(); " +
-                "}", ctClass));
-
+        try {
+            ctClass.getDeclaredField("configuredBeans");
+            ctClass.addMethod(CtNewMethod.make(
+                    "public void __resetCache() {"
+                  + "   this.configuredBeans.clear(); " + "}",
+                    ctClass));
+        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+            // Ignore, newer Hibernate versions have no cache
+            ctClass.addMethod(CtNewMethod.make(
+                    "public void __resetCache() {"
+                  + "}",
+                    ctClass));
+        }
         LOGGER.debug("org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider - added method __resetCache().");
     }
 
