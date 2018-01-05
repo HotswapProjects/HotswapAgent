@@ -3,11 +3,11 @@ package org.hotswap.agent.plugin.owb.testBeans;
 import javax.enterprise.context.Dependent;
 
 /**
- * Basic bean
+ * Basic dependant bean
  */
 @Dependent
-public class HelloProducer {
+public class HelloProducer1 {
     public String hello() {
-        return "Hello";
+        return "HelloProducer1.hello()";
     }
 }

@@ -3,8 +3,8 @@ package org.hotswap.agent.plugin.owb.testBeans;
 import javax.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class ProxyHello {
+public class ProxyHello1 {
     public String hello() {
-        return "ProxyHello:hello";
+        return "ProxyHello1.hello()";
     }
 }

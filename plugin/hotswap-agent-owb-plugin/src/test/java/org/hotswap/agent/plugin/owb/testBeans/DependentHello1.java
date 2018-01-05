@@ -7,11 +7,11 @@ import javax.inject.Inject;
  * Basic test bean with dependent scope.
  */
 @Dependent
-public class DependentHello {
+public class DependentHello1 {
     @Inject
-    HelloServiceImpl helloService;
+    HelloServiceImpl1 helloService;
 
     public String hello() {
-        return "Dependent:" + helloService.hello();
+        return "DependentHello1.hello():" + helloService.hello();
     }
 }

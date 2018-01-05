@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.owb;
+package org.hotswap.agent.plugin.owb.transformer;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
@@ -20,6 +20,8 @@ public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
 
+    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$haCustomContextTrackers";
+
     @OnClassLoadEvent(classNameRegexp = "(org.apache.webbeans.context.AbstractContext)|" +
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
                                         "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)")
@@ -36,40 +38,40 @@ public class CdiContextsTransformer {
         LOGGER.debug("Adding interface {} to {}.", OwbHotswapContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(OwbHotswapContext.class.getName()));
 
-        CtField toReloadFld = CtField.make("public transient java.util.Set __toReloadOwb = null;", clazz);
+        CtField toReloadFld = CtField.make("public transient java.util.Set $$toReloadOwb = null;", clazz);
         clazz.addField(toReloadFld);
 
-        CtField reloadingFld = CtField.make("public transient boolean __reloadingOwb = false;", clazz);
+        CtField reloadingFld = CtField.make("public transient boolean $$reloadingOwb = false;", clazz);
         clazz.addField(reloadingFld);
 
         CtMethod addBeanToReload = CtMethod.make(
-                "public void __addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean) {" +
-                "    if (__toReloadOwb == null)" +
-                "        __toReloadOwb = new java.util.HashSet();" +
-                "    __toReloadOwb.add(bean);" +
+                "public void $$addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean) {" +
+                "    if ($$toReloadOwb == null)" +
+                "        $$toReloadOwb = new java.util.HashSet();" +
+                "    $$toReloadOwb.add(bean);" +
                 "}",
                 clazz
         );
         clazz.addMethod(addBeanToReload);
 
-        CtMethod getBeansToReload = CtMethod.make("public java.util.Set __getBeansToReloadOwb(){return __toReloadOwb;}", clazz);
+        CtMethod getBeansToReload = CtMethod.make("public java.util.Set $$getBeansToReloadOwb(){return $$toReloadOwb;}", clazz);
         clazz.addMethod(getBeansToReload);
 
-        CtMethod reload = CtMethod.make("public void __reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
+        CtMethod reload = CtMethod.make("public void $$reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
         clazz.addMethod(reload);
 
-        CtMethod isActiveCopy = CtMethod.make("public boolean __isActiveOwb(){return false;}", clazz);
+        CtMethod isActiveCopy = CtMethod.make("public boolean $$isActiveOwb(){return false;}", clazz);
         isActiveCopy.setBody(clazz.getDeclaredMethod("isActive"), null);
         clazz.addMethod(isActiveCopy);
 
         CtMethod isActive = clazz.getDeclaredMethod("isActive");
         isActive.setBody(
                 "{  " +
-                "    boolean active = __isActiveOwb(); " +
-                "    if(active && !__reloadingOwb ) { " +
-                "        __reloadingOwb = true;" +
-                "        __reloadOwb();" +
-                "        __reloadingOwb = false;" +
+                "    boolean active = $$isActiveOwb(); " +
+                "    if(active && !$$reloadingOwb ) { " +
+                "        $$reloadingOwb = true;" +
+                "        $$reloadOwb();" +
+                "        $$reloadingOwb = false;" +
                 "    }" +
                 "    return active;" +
                 "}"
@@ -102,4 +104,13 @@ public class CdiContextsTransformer {
         }
     }
     */
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.SessionContext")
+    public static void transformOwbContexts(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+
+        CtField trackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", clazz);
+        clazz.addField(trackerFld);
+
+        LOGGER.debug("Class '{}' patched with hot-swapping support", clazz.getName() );
+    }
 }

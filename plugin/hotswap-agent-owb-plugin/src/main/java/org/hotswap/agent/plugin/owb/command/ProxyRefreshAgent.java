@@ -30,7 +30,6 @@ public class ProxyRefreshAgent {
      * @throws IOException error working with classDefinition
      */
     public static void recreateProxy(ClassLoader appClassLoader, String beanClassName, String oldSignatureForProxyCheck) throws IOException {
-
         try {
             Class<?> beanClass = appClassLoader.loadClass(beanClassName);
             if (oldSignatureForProxyCheck != null) {
@@ -40,7 +39,7 @@ public class ProxyRefreshAgent {
                 }
             }
         } catch (ClassNotFoundException e) {
-            LOGGER.error("Bean class not found.", e);
+            LOGGER.error("Bean class '{}' not found.", beanClassName, e);
         }
     }
 

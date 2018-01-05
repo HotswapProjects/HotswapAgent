@@ -20,13 +20,10 @@ package org.hotswap.agent.plugin.owb;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.Extension;
 
 import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.config.WebBeansFinder;
@@ -47,7 +44,6 @@ public abstract class HAAbstractUnitTest
 
     protected HAAbstractUnitTest()
     {
-
     }
 
     @Before

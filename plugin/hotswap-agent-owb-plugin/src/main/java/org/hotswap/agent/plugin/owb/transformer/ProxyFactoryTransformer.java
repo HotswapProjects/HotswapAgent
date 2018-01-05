@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.owb;
+package org.hotswap.agent.plugin.owb.transformer;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

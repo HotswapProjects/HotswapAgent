@@ -130,7 +130,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
             } catch (NoSuchMethodException e) {
                 throw new IllegalStateException("Plugin error, method not found", e);
             } catch (InvocationTargetException e) {
-                LOGGER.error("Error recreateProxy class {} in classLoader {}", e, className, appClassLoader);
+                LOGGER.error("Error recreateProxy class '{}' in classLoader '{}'", e, className, appClassLoader);
             } catch (IllegalAccessException e) {
                 throw new IllegalStateException("Plugin error, illegal access", e);
             } catch (ClassNotFoundException e) {
@@ -167,7 +167,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
             } catch (NoSuchMethodException e) {
                 throw new IllegalStateException("Plugin error, method not found", e);
             } catch (InvocationTargetException e) {
-                LOGGER.error("Error reloadBean class {} in classLoader {}", e, className, appClassLoader);
+                LOGGER.error("Error reloadBean class '{}' in classLoader '{}'", e, className, appClassLoader);
             } catch (IllegalAccessException e) {
                 throw new IllegalStateException("Plugin error, illegal access", e);
             } catch (ClassNotFoundException e) {

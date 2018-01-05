@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.deltaspike.transformer.RepositoryTransformer;
 
 public class PartialBeanClassRefreshCommand extends MergeableCommand  {
 
@@ -14,7 +15,6 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
     Object partialBean;
     String className;
     Object repositoryComponent;
-
 
     public PartialBeanClassRefreshCommand(ClassLoader classLoader, Object partialBean, String className) {
         this.classLoader = classLoader;
@@ -47,7 +47,8 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
         if (reloaded) {
             if (repositoryComponent != null) {
                 try {
-                    Method reinitializeMethod = resolveClass("org.apache.deltaspike.data.impl.meta.RepositoryComponent").getDeclaredMethod("__reinitialize");
+                    Method reinitializeMethod = resolveClass("org.apache.deltaspike.data.impl.meta.RepositoryComponent")
+                            .getDeclaredMethod(RepositoryTransformer.REINITIALIZE_METHOD);
                     reinitializeMethod.invoke(repositoryComponent);
                 } catch (Exception e) {
                     LOGGER.error("Error reinitializing repository {}", e, className);

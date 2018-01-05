@@ -22,7 +22,8 @@ import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.manager.BeanManagerImpl;
 
 /**
- * Handles creating and redefinition of bean classes in BeanDeploymentArchive
+ * Handles definition and redefinition of bean classes in BeanManager. If the bean class already exists than according reloading policy
+ * either bean instance re-injection or bean context reloading is processed.
  *
  * @author Vladimir Dvorak
  * @author alpapad@gmail.com
@@ -32,9 +33,8 @@ public class BeanDeploymentArchiveAgent {
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanDeploymentArchiveAgent.class);
 
     /**
-     * Flag to check the reload status. In unit test we need to wait for reload
-     * finishing before the test can continue. Set flag to true in the test class
-     * and wait until the flag is false again.
+     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
+     * Set flag to true in the unit test class and wait until the flag is false again.
      */
     public static boolean reloadFlag = false;
 

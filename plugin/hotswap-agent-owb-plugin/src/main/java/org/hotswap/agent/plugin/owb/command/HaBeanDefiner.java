@@ -39,13 +39,13 @@ import org.apache.webbeans.util.WebBeansUtil;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * The Class HaBeanDeployer. Based on code from BeanDeployer
+ * The Class HaBeanDefiner. Based on code from org.apache.webbeans.config.BeansDeployer
  *
  * @author Vladimir Dvorak
  */
-public class HaBeanDeployer {
+public class HaBeanDefiner {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(HaBeanDeployer.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(HaBeanDefiner.class);
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static void doDefineManagedBean(BeanManagerImpl beanManager, Class<?> beanClass) {

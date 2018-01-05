@@ -23,6 +23,10 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
+import org.hotswap.agent.plugin.owb.transformer.BeansDeployerTransformer;
+import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
+import org.hotswap.agent.plugin.owb.transformer.ProxyFactoryTransformer;
+import org.hotswap.agent.plugin.owb.transformer.WebBeansContextsServiceTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -30,7 +34,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
 /**
- * OwbPlugin
+ * OwbPlugin (OpenWebBeans)
  *
  * @author Vladimir Dvorak
  */
@@ -38,14 +42,14 @@ import org.hotswap.agent.watch.Watcher;
         description = "Open Web Beans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"1.7.0"},
         expectedVersions = {"All between 1.7.0-1.7.0"},
-        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, WebBeansContextsServiceTransformer.class, ProxyFactoryTransformer.class })
+        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, WebBeansContextsServiceTransformer.class, ProxyFactoryTransformer.class})
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
 
-    /** True for UnitTests */
+    // True for UnitTests
     static boolean isTestEnvironment = false;
-    /** Store archive path for unit tests */
+    // Store archive path for unit tests
     static String archivePath = null;
 
     /**
@@ -69,11 +73,11 @@ public class OwbPlugin {
     @Init
     PluginConfiguration pluginConfiguration;
 
-    boolean initialized = false;
+    private boolean initialized = false;
 
-    BeanReloadStrategy beanReloadStrategy;
+    private BeanReloadStrategy beanReloadStrategy;
 
-    Map<URL, URL> registeredArchives = new HashMap<>();
+    private Map<URL, URL> registeredArchives = new HashMap<>();
 
     /**
      * Plugin initialization, called from archive registration,
@@ -112,7 +116,7 @@ public class OwbPlugin {
             String beansXmlPath = beanArchiveUrl.getPath();
 
             if (!beansXmlPath.endsWith("beans.xml")) {
-                LOGGER.debug("Skipping bda location: {} ", beanArchiveUrl);
+                LOGGER.debug("Skipping bda location: '{}' ", beanArchiveUrl);
                 continue;
             }
 
@@ -123,12 +127,12 @@ public class OwbPlugin {
             } else if (beansXmlPath.endsWith("WEB-INF/beans.xml")) {
                 archivePath = beansXmlPath.substring(0, beansXmlPath.length() - "beans.xml".length()) + "classes";
             } else {
-                LOGGER.warning("Unexpected beans.xml location {}", beansXmlPath);
+                LOGGER.warning("Unexpected beans.xml location '{}'", beansXmlPath);
                 continue;
             }
 
             if (archivePath.endsWith(".jar!/")) {
-                LOGGER.debug("Skipping unsupported jar beans.xml location {}", beansXmlPath);
+                LOGGER.debug("Skipping unsupported jar beans.xml location '{}'", beansXmlPath);
                 continue;
             }
 
@@ -185,34 +189,38 @@ public class OwbPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
         if (classLoader != appClassLoader) {
-            LOGGER.debug("Attempt to redefine class {} in unsupported classLoader{}.", original.getName(), classLoader);
+            LOGGER.debug("Attempt to redefine class '{}' in unsupported classLoader{}.", original.getName(), classLoader);
             return;
         }
-        if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
-            try {
-                String classUrl = ctClass.getURL().toExternalForm();
-                Iterator<Entry<URL, URL>> iterator = registeredArchives.entrySet().iterator();
-                while (iterator.hasNext()) {
-                    Entry<URL, URL> entry = iterator.next();
-                    if (classUrl.startsWith(entry.getKey().toExternalForm())) {
-                        LOGGER.debug("Class {} redefined in classLoader {}.", original.getName(), classLoader);
-                        String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
-                        String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
-                        scheduler.scheduleCommand(
-                            new BeanClassRefreshCommand(appClassLoader,
-                                original.getName(),
-                                oldSignForProxyCheck,
-                                oldSignByStrategy,
-                                entry.getValue(),
-                                beanReloadStrategy),
-                            WAIT_ON_REDEFINE
-                        );
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.error("classReload() exception {}.", e, e.getMessage());
+        if (original == null || isSyntheticCdiClass(ctClass.getName()) || isInnerNonPublicStaticClass(ctClass)) {
+            if (original != null) {
+                LOGGER.trace("Skipping synthetic or inner class {}.", original.getName());
             }
+            return;
+        }
+        try {
+            String classUrl = ctClass.getURL().toExternalForm();
+            Iterator<Entry<URL, URL>> iterator = registeredArchives.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Entry<URL, URL> entry = iterator.next();
+                if (classUrl.startsWith(entry.getKey().toExternalForm())) {
+                    LOGGER.debug("Class '{}' redefined in classLoader {}.", original.getName(), classLoader);
+                    String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
+                    String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
+                    scheduler.scheduleCommand(
+                            new BeanClassRefreshCommand(appClassLoader,
+                                    original.getName(),
+                                    oldSignForProxyCheck,
+                                    oldSignByStrategy,
+                                    entry.getValue(),
+                                    beanReloadStrategy),
+                            WAIT_ON_REDEFINE
+                            );
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("classReload() exception {}.", e, e.getMessage());
         }
     }
 

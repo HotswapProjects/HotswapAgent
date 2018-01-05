@@ -8,11 +8,11 @@ import javax.inject.Singleton;
  * Basic service bean
  */
 @Singleton
-public class HelloServiceImpl implements HelloService {
+public class HelloServiceImpl1 implements HelloService {
     @Inject
-    HelloProducer helloProducer;
+    HelloProducer1 helloProducer;
 
     public String hello() {
-        return "Service:" + helloProducer.hello();
+        return "HelloServiceImpl1.hello():" + helloProducer.hello();
     }
 }

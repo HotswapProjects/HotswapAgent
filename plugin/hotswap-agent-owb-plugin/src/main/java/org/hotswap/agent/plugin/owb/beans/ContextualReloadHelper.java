@@ -21,10 +21,10 @@ public class ContextualReloadHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ContextualReloadHelper.class);
 
     public static void reload(OwbHotswapContext ctx) {
-        Set<Contextual<Object>> beans = ctx.__getBeansToReloadOwb();
+        Set<Contextual<Object>> beans = ctx.$$getBeansToReloadOwb();
 
         if (beans != null && !beans.isEmpty()) {
-            LOGGER.debug("Starting re-loading Contextuals in {}, {}", ctx, beans.size());
+            LOGGER.debug("Starting re-loading {} beans in context '{}'", beans.size(), ctx);
 
             Iterator<Contextual<Object>> it = beans.iterator();
             while (it.hasNext()) {
@@ -32,7 +32,7 @@ public class ContextualReloadHelper {
                 destroy(ctx, managedBean);
             }
             beans.clear();
-            LOGGER.debug("Finished re-loading Contextuals in {}", ctx);
+            LOGGER.debug("Finished re-loading beans in context '{}'", ctx);
         }
     }
 
@@ -46,8 +46,8 @@ public class ContextualReloadHelper {
     @SuppressWarnings("unchecked")
     public static boolean addToReloadSet(Context ctx,  Contextual<?> managedBean)  {
         try {
-            LOGGER.debug("Adding bean in '{}' : {}", ctx.getClass(), managedBean);
-            Field toRedefine = ctx.getClass().getField("__toReloadOwb");
+            LOGGER.debug("Adding bean '{}' to context '{}'", managedBean, ctx.getClass());
+            Field toRedefine = ctx.getClass().getField("$$toReloadOwb");
             Set toReload = Set.class.cast(toRedefine.get(ctx));
             if (toReload == null) {
                 toReload = new HashSet();
@@ -56,7 +56,7 @@ public class ContextualReloadHelper {
             toReload.add(managedBean);
             return true;
         } catch(Exception e) {
-            LOGGER.warning("Context {} is not patched. Can not add {} to reload set", e, ctx, managedBean);
+            LOGGER.warning("Context '{}' is not patched. Can not add bean '{}' to reload set", e, ctx, managedBean);
         }
         return false;
     }
@@ -69,18 +69,18 @@ public class ContextualReloadHelper {
      */
     static void destroy(OwbHotswapContext ctx, Contextual<?> managedBean ) {
         try {
-            LOGGER.debug("Removing Contextual from Context........ {},: {}", managedBean, ctx);
+            LOGGER.debug("Removing bean '{}' from context '{}'", managedBean, ctx);
             Object get = ctx.get(managedBean);
             if (get != null) {
                 ctx.destroy(managedBean);
             }
             get = ctx.get(managedBean);
             if (get != null) {
-                LOGGER.error("Error removing ManagedBean {}, it still exists as instance {} ", managedBean, get);
+                LOGGER.error("Error removing ManagedBean '{}', it still exists as instance '{}'", managedBean, get);
                 ctx.destroy(managedBean);
             }
         } catch (Exception e) {
-            LOGGER.error("Error destoying bean {},: {}", e, managedBean, ctx);
+            LOGGER.error("Error destoying bean '{}' in context '{}'", e, managedBean, ctx);
         }
     }
 
@@ -94,7 +94,7 @@ public class ContextualReloadHelper {
     static void reinitialize(Context ctx, Contextual<Object> contextual) {
         try {
             ManagedBean<Object> managedBean = ManagedBean.class.cast(contextual);
-            LOGGER.debug("Re-Initializing........ {},: {}", managedBean, ctx);
+            LOGGER.debug("Re-Initializing bean '{}' in context '{}'", managedBean, ctx);
             Object get = ctx.get(managedBean);
             if (get != null) {
                 LOGGER.debug("Bean injection points are reinitialized '{}'", managedBean);
@@ -102,7 +102,7 @@ public class ContextualReloadHelper {
                 managedBean.getProducer().inject(get, creationalContext);
             }
         } catch (Exception e) {
-            LOGGER.error("Error reinitializing bean {},: {}", e, contextual, ctx);
+            LOGGER.error("Error reinitializing bean '{}' in context '{}'", e, contextual, ctx);
         }
     }
 }

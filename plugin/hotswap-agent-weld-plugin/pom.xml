@@ -11,7 +11,7 @@
     <artifactId>hotswap-agent-weld-plugin</artifactId>
 
     <properties>
-        <org.jboss.weld.version>2.4.2.Final</org.jboss.weld.version>
+        <org.jboss.weld.version>2.4.6.Final</org.jboss.weld.version>
     </properties>
 
     <dependencies>

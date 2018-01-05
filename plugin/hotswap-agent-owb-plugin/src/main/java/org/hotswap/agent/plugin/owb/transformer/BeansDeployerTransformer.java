@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.owb;
+package org.hotswap.agent.plugin.owb.transformer;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
@@ -7,6 +7,7 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.owb.OwbPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**

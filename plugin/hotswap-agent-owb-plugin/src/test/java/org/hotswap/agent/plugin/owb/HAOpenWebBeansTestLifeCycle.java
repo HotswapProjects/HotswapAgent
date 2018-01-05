@@ -6,6 +6,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.SessionScoped;
 import javax.inject.Singleton;
+import javax.servlet.http.HttpSession;
 
 import org.apache.webbeans.annotation.InitializedLiteral;
 import org.apache.webbeans.config.WebBeansContext;
@@ -15,11 +16,12 @@ import org.apache.webbeans.lifecycle.AbstractLifeCycle;
 import org.apache.webbeans.logger.WebBeansLoggerFacade;
 import org.apache.webbeans.spi.ContextsService;
 import org.apache.webbeans.web.context.WebContextsService;
+import org.apache.webbeans.web.lifecycle.test.MockHttpSession;
 
 public class HAOpenWebBeansTestLifeCycle extends AbstractLifeCycle
 {
     // private MockServletContextEvent servletContextEvent;
-    // private MockHttpSession mockHttpSession;
+    HttpSession mockHttpSession = new MockHttpSession();
 
     public HAOpenWebBeansTestLifeCycle()
     {
@@ -52,7 +54,7 @@ public class HAOpenWebBeansTestLifeCycle extends AbstractLifeCycle
         ContextsService contextsService = webBeansContext.getContextsService();
 
         contextsService.startContext(RequestScoped.class, null);
-        contextsService.startContext(SessionScoped.class, null);
+        contextsService.startContext(SessionScoped.class, mockHttpSession);
     }
 
     public void beforeStopApplication(Object endObject)
@@ -62,7 +64,7 @@ public class HAOpenWebBeansTestLifeCycle extends AbstractLifeCycle
         contextsService.endContext(Singleton.class, null);
         contextsService.endContext(ApplicationScoped.class, null);
         contextsService.endContext(RequestScoped.class, null);
-        contextsService.endContext(SessionScoped.class, null);
+        contextsService.endContext(SessionScoped.class, mockHttpSession);
 
         ELContextStore elStore = ELContextStore.getInstance(false);
         if (elStore == null)

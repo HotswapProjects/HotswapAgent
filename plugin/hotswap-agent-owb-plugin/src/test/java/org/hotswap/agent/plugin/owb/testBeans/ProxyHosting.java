@@ -5,7 +5,7 @@ import javax.inject.Inject;
 public class ProxyHosting {
 
     @Inject
-    public ProxyHello proxy;
+    public ProxyHello1 proxy;
 
     public String hello() {
         return proxy.hello();

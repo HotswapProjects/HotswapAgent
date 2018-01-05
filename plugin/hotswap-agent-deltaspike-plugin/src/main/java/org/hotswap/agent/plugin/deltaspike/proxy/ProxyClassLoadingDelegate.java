@@ -10,7 +10,8 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
- * Delegates proxy loading to AsmProxyClassGenerator or PluginManager.getInstance().hotswap
+ * Delegates proxy loading to AsmProxyClassGenerator or PluginManager.getInstance()
+ *
  * @author Vladimir Dvorak
  */
 public class ProxyClassLoadingDelegate {

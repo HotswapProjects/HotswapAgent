@@ -1,17 +1,19 @@
 package org.hotswap.agent.plugin.weld.testBeans;
 
+import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
 /**
  *
  * @author lysenko
  */
-public class HelloServiceDependant{
+@Dependent
+public class HelloServiceDependant {
 
     @Inject
-    HelloProducer helloProducer;
+    HelloProducer1 helloProducer;
 
     public String hello() {
-        return "Service:" + helloProducer.hello();
+        return "HelloServiceDependant.hello():" + helloProducer.hello();
     }
 }

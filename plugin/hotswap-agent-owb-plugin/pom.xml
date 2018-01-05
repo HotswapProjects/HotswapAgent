@@ -11,15 +11,17 @@
     <artifactId>hotswap-agent-owb-plugin</artifactId>
 
     <properties>
-        <owb.version>1.7.0</owb.version>
+        <owb.version>1.7.4</owb.version>
     </properties>
 
     <dependencies>
+
         <dependency>
             <groupId>org.hotswap.agent</groupId>
             <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -62,6 +64,12 @@
             <groupId>org.apache.openwebbeans</groupId>
             <artifactId>openwebbeans-web</artifactId>
             <version>${owb.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.0.1</version>
         </dependency>
 
     </dependencies>

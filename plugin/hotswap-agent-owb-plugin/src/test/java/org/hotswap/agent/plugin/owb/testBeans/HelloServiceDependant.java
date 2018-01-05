@@ -8,12 +8,12 @@ import javax.inject.Inject;
  * @author lysenko
  */
 @Dependent
-public class HelloServiceDependant{
+public class HelloServiceDependant {
 
     @Inject
-    HelloProducer helloProducer;
+    HelloProducer1 helloProducer;
 
     public String hello() {
-        return "Service:" + helloProducer.hello();
+        return "HelloServiceDependant.hello():" + helloProducer.hello();
     }
 }
