@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.deltaspike.context;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -31,7 +32,7 @@ public class WindowContextsTracker implements Iterable, Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$haCustomContextTrackers";
+    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$ha$customContextTrackers";
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WindowContextsTracker.class);
 
@@ -128,13 +129,25 @@ public class WindowContextsTracker implements Iterable, Serializable {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void register() {
         BeanManager beanManager = CDI.current().getBeanManager();
-        Context context = beanManager.getContext(SessionScoped.class);
+        Context context = null;
+
+        try {
+            Method m = beanManager.getClass().getMethod("getUnwrappedContext", Class.class);
+            context = (Context) m.invoke(beanManager, SessionScoped.class);
+        } catch (NoSuchMethodException e) {
+            context = beanManager.getContext(SessionScoped.class);
+        } catch (Exception e) {
+            assert(false);
+        }
+
         if (context != null) {
-            Map m = (Map) ReflectionHelper.get(context, CUSTOM_CONTEXT_TRACKER_FIELD);
-            if (m != null && !m.containsKey(WindowScoped.class.getName())) {
-                m.put(WindowScoped.class.getName(), new WindowContextsTracker());
-            } else {
-                LOGGER.error("Field '{}' not found in session context.", CUSTOM_CONTEXT_TRACKER_FIELD);
+            try {
+                Map m = (Map) ReflectionHelper.get(context, CUSTOM_CONTEXT_TRACKER_FIELD);
+                if (!m.containsKey(WindowScoped.class.getName())) {
+                    m.put(WindowScoped.class.getName(), new WindowContextsTracker());
+                }
+            } catch (IllegalArgumentException e) {
+                LOGGER.error("Field '{}' not found in context class '{}'.", CUSTOM_CONTEXT_TRACKER_FIELD, context.getClass().getName());
             }
         } else {
             LOGGER.error("No session context");

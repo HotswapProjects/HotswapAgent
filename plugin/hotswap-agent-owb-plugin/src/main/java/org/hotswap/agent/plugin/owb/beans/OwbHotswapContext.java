@@ -28,7 +28,7 @@ public interface OwbHotswapContext {
     /**
      * Determines if the context object is active.
      *
-     * If the context is active, then $$redefine() is called.
+     * If the context is active, then $$ha$redefine() is called.
      *
      * @definedIn Context
      * @return <tt>true</tt> if the context is active, or <tt>false</tt>
@@ -52,24 +52,24 @@ public interface OwbHotswapContext {
      *
      * @param bean
      */
-    void $$addBeanToReloadOwb(Contextual<Object> bean);
+    void $$ha$addBeanToReloadOwb(Contextual<Object> bean);
 
     /**
      * Gets the OWB beans to be reloaded.
      *
      * @return the OWB beans to be reloaded
      */
-    Set<Contextual<Object>> $$getBeansToReloadOwb();
+    Set<Contextual<Object>> $$ha$getBeansToReloadOwb();
 
     /**
      * reload the owb beans which have changed
      */
-    void $$reloadOwb();
+    void $$ha$reloadOwb();
 
     /**
      * the original isActive() method (renamed)
      *
      * @return
      */
-    boolean $$isActiveOwb();
+    boolean $$ha$isActiveOwb();
 }

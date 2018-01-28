@@ -25,7 +25,8 @@ import org.junit.Test;
  */
 public class DeltaspikePluginContextsTest extends HAAbstractUnitTest {
 
-    public <T> T getBean(Class<T> beanClass) {
+    @SuppressWarnings("unchecked")
+    public <T> T getBeanInstance(Class<T> beanClass) {
         BeanManager beanManager = CDI.current().getBeanManager();
         Bean<T> bean = (Bean<T>) beanManager.resolve(beanManager.getBeans(beanClass));
         T result = beanManager.getContext(bean.getScope()).get(bean, beanManager.createCreationalContext(bean));
@@ -35,13 +36,13 @@ public class DeltaspikePluginContextsTest extends HAAbstractUnitTest {
     @Before
     public void initContainer() {
         startContainer();
-        WindowContext windowContext = getBean(WindowContext.class);
+        WindowContext windowContext = getBeanInstance(WindowContext.class);
         windowContext.activateWindow("test");
     }
 
     @Test
     public void windowBeanTest() throws Exception {
-        WindowBean1 windowBean = getBean(WindowBean1.class);
+        WindowBean1 windowBean = getBeanInstance(WindowBean1.class);
         assertEquals("WindowBean1.hello():ProxyHello1.hello()", windowBean.hello());
         swapClasses(WindowBean1.class, WindowBean2.class.getName());
 
@@ -53,8 +54,12 @@ public class DeltaspikePluginContextsTest extends HAAbstractUnitTest {
     }
 
     private void swapClasses(Class original, String swap) throws Exception {
-        // use OWB plugin to reload class
-        final Class<?> clazz = getClass().getClassLoader().loadClass("org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent");
+        final Class<?> clazz;
+        if (System.getProperty("cdicontainer.version").startsWith("weld")) {
+            clazz = getClass().getClassLoader().loadClass("org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent");
+        } else {
+            clazz = getClass().getClassLoader().loadClass("org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent");
+        }
         ReflectionHelper.set(null, clazz, "reloadFlag", true);
         HotSwapper.swapClasses(original, swap);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {

@@ -26,7 +26,7 @@ public interface WeldHotswapContext {
 
     /**
      * Determines if the context object is active.
-     * If the context is active, then __reload() is called.
+     * If the context is active, then $$ha$reload() is called.
      *
      * @return <tt>true</tt> if the context is active, or <tt>false</tt>
      *         otherwise.
@@ -50,24 +50,24 @@ public interface WeldHotswapContext {
      *
      * @param bean
      */
-    void __addBeanToReloadWeld(Contextual<Object> bean);
+    void $$ha$addBeanToReloadWeld(Contextual<Object> bean);
 
     /**
      * Gets the Weld beans to be reloaded. The naming must be Weld-specific since OWB plugin patches the contexts as well.
      *
      * @return the Weld beans to be reloaded
      */
-    Set<Contextual<Object>> __getBeansToReloadWeld();
+    Set<Contextual<Object>> $$ha$getBeansToReloadWeld();
 
     /**
      * Redefines the beans which have changed. The naming must be Weld-specific since OWB plugin patches the contexts as well.
      */
-    void __reloadWeld();
+    void $$ha$reloadWeld();
 
     /**
      * The original isActive() method (renamed). The naming must be Weld-specific since OWB plugin patches the contexts as well.
      *
      * @return
      */
-    boolean __isActiveWeld();
+    boolean $$ha$isActiveWeld();
 }

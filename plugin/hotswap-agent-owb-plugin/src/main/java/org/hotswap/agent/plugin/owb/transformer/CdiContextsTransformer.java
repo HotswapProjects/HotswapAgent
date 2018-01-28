@@ -20,7 +20,7 @@ public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
 
-    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$haCustomContextTrackers";
+    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$ha$customContextTrackers";
 
     @OnClassLoadEvent(classNameRegexp = "(org.apache.webbeans.context.AbstractContext)|" +
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
@@ -38,43 +38,36 @@ public class CdiContextsTransformer {
         LOGGER.debug("Adding interface {} to {}.", OwbHotswapContext.class.getName(), clazz.getName());
         clazz.addInterface(classPool.get(OwbHotswapContext.class.getName()));
 
-        CtField toReloadFld = CtField.make("public transient java.util.Set $$toReloadOwb = null;", clazz);
+        CtField toReloadFld = CtField.make("public transient java.util.Set $$ha$toReloadOwb = null;", clazz);
         clazz.addField(toReloadFld);
 
-        CtField reloadingFld = CtField.make("public transient boolean $$reloadingOwb = false;", clazz);
+        CtField reloadingFld = CtField.make("public transient boolean $$ha$reloadingOwb = false;", clazz);
         clazz.addField(reloadingFld);
 
         CtMethod addBeanToReload = CtMethod.make(
-                "public void $$addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean) {" +
-                "    if ($$toReloadOwb == null)" +
-                "        $$toReloadOwb = new java.util.HashSet();" +
-                "    $$toReloadOwb.add(bean);" +
+                "public void $$ha$addBeanToReloadOwb(javax.enterprise.context.spi.Contextual bean){" +
+                "if ($$ha$toReloadOwb == null)" +
+                    "$$ha$toReloadOwb = new java.util.HashSet();" +
+                    "$$ha$toReloadOwb.add(bean);" +
                 "}",
                 clazz
         );
         clazz.addMethod(addBeanToReload);
 
-        CtMethod getBeansToReload = CtMethod.make("public java.util.Set $$getBeansToReloadOwb(){return $$toReloadOwb;}", clazz);
+        CtMethod getBeansToReload = CtMethod.make("public java.util.Set $$ha$getBeansToReloadOwb(){return $$toReloadOwb;}", clazz);
         clazz.addMethod(getBeansToReload);
 
-        CtMethod reload = CtMethod.make("public void $$reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
+        CtMethod reload = CtMethod.make("public void $$ha$reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
         clazz.addMethod(reload);
 
-        CtMethod isActiveCopy = CtMethod.make("public boolean $$isActiveOwb(){return false;}", clazz);
-        isActiveCopy.setBody(clazz.getDeclaredMethod("isActive"), null);
-        clazz.addMethod(isActiveCopy);
-
         CtMethod isActive = clazz.getDeclaredMethod("isActive");
-        isActive.setBody(
-                "{  " +
-                "    boolean active = $$isActiveOwb(); " +
-                "    if(active && !$$reloadingOwb ) { " +
-                "        $$reloadingOwb = true;" +
-                "        $$reloadOwb();" +
-                "        $$reloadingOwb = false;" +
-                "    }" +
-                "    return active;" +
-                "}"
+        isActive.insertAfter(
+                "if($_ && !$$ha$reloadingOwb ) { " +
+                    "$$ha$reloadingOwb = true;" +
+                    "$$ha$reloadOwb();" +
+                    "$$ha$reloadingOwb = false;" +
+                "}" +
+                "return $_;"
         );
 
         //addDestroyMethod(clazz, classPool);
@@ -105,12 +98,19 @@ public class CdiContextsTransformer {
     }
     */
 
+    /**
+     * Add custom tracker field to session context
+     *
+     * @param clazz the clazz
+     * @throws NotFoundException the not found exception
+     * @throws CannotCompileException the cannot compile exception
+     */
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.SessionContext")
-    public static void transformOwbContexts(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+    public static void transformSessionContext(CtClass clazz) throws NotFoundException, CannotCompileException {
 
         CtField trackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", clazz);
         clazz.addField(trackerFld);
 
-        LOGGER.debug("Class '{}' patched with hot-swapping support", clazz.getName() );
+        LOGGER.debug("Custom context tracker field added to '{}'.", clazz.getName() );
     }
 }

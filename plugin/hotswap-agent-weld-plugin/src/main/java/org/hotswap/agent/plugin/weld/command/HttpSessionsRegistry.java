@@ -1,8 +1,9 @@
 package org.hotswap.agent.plugin.weld.command;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpSession;
 
@@ -11,25 +12,23 @@ import javax.servlet.http.HttpSession;
  */
 public class HttpSessionsRegistry {
 
-    private static Map<HttpSession, Boolean> seenSessions = new java.util.WeakHashMap<>();
+    private static Set<HttpSession> seenSessions = Collections.newSetFromMap(new java.util.WeakHashMap<HttpSession, Boolean>());
 
-    /**
-     * Adds the seen session.
-     *
-     * @param session the session
-     */
     public static void addSeenSession(HttpSession session) {
-        seenSessions.put(session, Boolean.TRUE);
+        if (session != null) {
+            seenSessions.add(session);
+        }
     }
 
-    /**
-     * Gets the seen sessions.
-     *
-     * @return the seen sessions
-     */
+    public static void removeSession(HttpSession session) {
+        if (session != null) {
+            seenSessions.add(session);
+        }
+    }
+
     public static List<HttpSession> getSeenSessions() {
         List<HttpSession> result = new ArrayList<>();
-        result.addAll(seenSessions.keySet());
+        result.addAll(seenSessions);
         return result;
     }
 

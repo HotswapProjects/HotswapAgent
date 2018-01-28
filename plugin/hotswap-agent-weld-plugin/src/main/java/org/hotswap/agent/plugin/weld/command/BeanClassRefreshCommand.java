@@ -16,7 +16,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
  * BeanClassRefreshCommand. Collect all classes definitions/redefinitions for single archive
  *
  * 1. Merge all commands (definition, redefinition) for single archive to single command.
- * 2. Call proxy redefinitions in BeanDeploymentArchiveAgent for all merged commands
+ * 2. Call proxy redefinitions in BeanClassRefreshAgent for all merged commands
  * 3. Call bean class reload in BeanDepoymentArchiveAgent for all merged commands
  *
  * @author Vladimir Dvorak
@@ -100,8 +100,8 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
         if (className != null) {
             try {
-                LOGGER.debug("Executing BeanDeploymentArchiveAgent.recreateProxy('{}')", className);
-                Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, classLoader);
+                LOGGER.debug("Executing BeanClassRefreshAgent.recreateProxy('{}')", className);
+                Class<?> bdaAgentClazz = Class.forName(BeanClassRefreshAgent.class.getName(), true, classLoader);
                 Method recreateProxy  = bdaAgentClazz.getDeclaredMethod("recreateProxy",
                         new Class[] { ClassLoader.class,
                                       String.class,
@@ -138,8 +138,8 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
         if (className != null) {
             try {
-                LOGGER.debug("Executing BeanDeploymentArchiveAgent.reloadBean('{}')", className);
-                Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, classLoader);
+                LOGGER.debug("Executing BeanClassRefreshAgent.reloadBean('{}')", className);
+                Class<?> bdaAgentClazz = Class.forName(BeanClassRefreshAgent.class.getName(), true, classLoader);
                 Method refreshBean  = bdaAgentClazz.getDeclaredMethod("reloadBean",
                         new Class[] { ClassLoader.class,
                                       String.class,
@@ -153,7 +153,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                         archivePath,
                         className,
                         classSignatureByStrategy,
-                        strBeanReloadStrategy // passed as String since BeanDeploymentArchiveAgent has different classloader
+                        strBeanReloadStrategy // passed as String since BeanClassRefreshAgent has different classloader
                 );
             } catch (NoSuchMethodException e) {
                 throw new IllegalStateException("Plugin error, method not found", e);

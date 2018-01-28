@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.weld;
+package org.hotswap.agent.plugin.weld.transformer;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;

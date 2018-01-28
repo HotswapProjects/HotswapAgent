@@ -21,7 +21,7 @@ public class ContextualReloadHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ContextualReloadHelper.class);
 
     public static void reload(WeldHotswapContext ctx) {
-        Set<Contextual<Object>> beans = ctx.__getBeansToReloadWeld();
+        Set<Contextual<Object>> beans = ctx.$$ha$getBeansToReloadWeld();
 
         if (beans != null && !beans.isEmpty()) {
             LOGGER.debug("Starting re-loading Contextuals in {}, {}", ctx, beans.size());
@@ -46,7 +46,7 @@ public class ContextualReloadHelper {
     public static boolean addToReloadSet(Context ctx,  Contextual<Object> managedBean)  {
         try {
             LOGGER.debug("Adding bean in '{}' : {}", ctx.getClass(), managedBean);
-            Field toRedefine = ctx.getClass().getDeclaredField("__toReloadWeld");
+            Field toRedefine = ctx.getClass().getDeclaredField("$$ha$toReloadWeld");
             Set toReload = Set.class.cast(toRedefine.get(ctx));
             if (toReload == null) {
                 toReload = new HashSet();

@@ -2,7 +2,6 @@ package org.hotswap.agent.plugin.owb.transformer;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtField;
@@ -19,28 +18,22 @@ public class WebBeansContextsServiceTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WebBeansContextsServiceTransformer.class);
 
-    public static final String SESSION_CONTEXTS_TRACKER_FIELD = "$$haSessionContextsTracker";
+    public static final String SESSION_CONTEXTS_TRACKER_FIELD = "$$ha$sessionContextsTracker";
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.web.context.WebContextsService")
-    public static void transform(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+    public static void transform(CtClass ctClass) throws NotFoundException, CannotCompileException {
 
         CtField trackerFld =
                 CtField.make("public org.hotswap.agent.plugin.owb.command.SessionContextsTracker " + SESSION_CONTEXTS_TRACKER_FIELD + ";", ctClass);
 
         ctClass.addField(trackerFld);
 
-        CtClass[] constructorParams = new CtClass[] {
-            classPool.get("org.apache.webbeans.config.WebBeansContext")
-        };
-
-        CtConstructor declaredConstructor = ctClass.getDeclaredConstructor(constructorParams);
-
-        declaredConstructor.insertAfter(
-                "{ " +
-                        "this." + SESSION_CONTEXTS_TRACKER_FIELD + " = new org.hotswap.agent.plugin.owb.command.SessionContextsTracker();" +
-                        "this." + SESSION_CONTEXTS_TRACKER_FIELD + ".sessionContexts = this.sessionContexts; " +
-                "}"
-        );
+        for (CtConstructor constructor: ctClass.getConstructors()) {
+            constructor.insertAfter(
+                "this." + SESSION_CONTEXTS_TRACKER_FIELD + " = new org.hotswap.agent.plugin.owb.command.SessionContextsTracker();" +
+                "this." + SESSION_CONTEXTS_TRACKER_FIELD + ".sessionContexts = this.sessionContexts; "
+            );
+        }
 
         CtMethod initSessionContextMethod = ctClass.getDeclaredMethod("initSessionContext");
         initSessionContextMethod.insertAfter("this." + SESSION_CONTEXTS_TRACKER_FIELD + ".addSessionContext();");
