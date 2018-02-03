@@ -30,6 +30,7 @@ import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
+import org.apache.webbeans.intercept.SessionScopedBeanInterceptorHandler;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
 import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
 import org.apache.webbeans.spi.ContextsService;
@@ -232,6 +233,7 @@ public class BeanClassRefreshAgent {
                     } else {
                         doReinjectCustomScopedBean(beanManager, beanClass, bean, sessionContext);
                     }
+                    SessionScopedBeanInterceptorHandler.removeThreadLocals();
                 }
             } finally {
                 contextsService.removeThreadLocals();
