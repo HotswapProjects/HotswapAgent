@@ -54,7 +54,7 @@ public class CdiContextsTransformer {
         );
         clazz.addMethod(addBeanToReload);
 
-        CtMethod getBeansToReload = CtMethod.make("public java.util.Set $$ha$getBeansToReloadOwb(){return $$toReloadOwb;}", clazz);
+        CtMethod getBeansToReload = CtMethod.make("public java.util.Set $$ha$getBeansToReloadOwb(){return $$ha$toReloadOwb;}", clazz);
         clazz.addMethod(getBeansToReload);
 
         CtMethod reload = CtMethod.make("public void $$ha$reloadOwb() {" + ContextualReloadHelper.class.getName() +".reload(this);}", clazz);
