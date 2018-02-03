@@ -126,7 +126,9 @@ public class WindowContextsTracker implements Iterable, Serializable {
         return (Bean<T>) beanManager.resolve(beans);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    /**
+     * Register to current session's tracker field
+     */
     public static void register() {
         BeanManager beanManager = CDI.current().getBeanManager();
         Context context = null;
@@ -141,16 +143,26 @@ public class WindowContextsTracker implements Iterable, Serializable {
         }
 
         if (context != null) {
-            try {
-                Map m = (Map) ReflectionHelper.get(context, CUSTOM_CONTEXT_TRACKER_FIELD);
-                if (!m.containsKey(WindowScoped.class.getName())) {
-                    m.put(WindowScoped.class.getName(), new WindowContextsTracker());
-                }
-            } catch (IllegalArgumentException e) {
-                LOGGER.error("Field '{}' not found in context class '{}'.", CUSTOM_CONTEXT_TRACKER_FIELD, context.getClass().getName());
-            }
+            attach(context);
         } else {
             LOGGER.error("No session context");
+        }
+    }
+
+    /**
+     * Attach to tracker field in session context
+     *
+     * @param context the context
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static void attach(Object context) {
+        try {
+            Map m = (Map) ReflectionHelper.get(context, CUSTOM_CONTEXT_TRACKER_FIELD);
+            if (!m.containsKey(WindowScoped.class.getName())) {
+                m.put(WindowScoped.class.getName(), new WindowContextsTracker());
+            }
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Field '{}' not found in context class '{}'.", CUSTOM_CONTEXT_TRACKER_FIELD, context.getClass().getName());
         }
     }
 }

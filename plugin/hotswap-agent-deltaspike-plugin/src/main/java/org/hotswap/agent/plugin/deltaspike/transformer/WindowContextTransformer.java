@@ -5,6 +5,7 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -14,6 +15,8 @@ import org.hotswap.agent.logging.AgentLogger;
 public class WindowContextTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WindowContextTransformer.class);
+
+    public static final String ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD = "$$ha$attachCustomContextTracker";
 
 //    @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.core.api.scope.WindowScoped")
 //    public static void patchWindowScoped(CtClass ctClass, ClassPool classPool) throws CannotCompileException, NotFoundException {
@@ -41,9 +44,14 @@ public class WindowContextTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.core.impl.scope.window.WindowBeanHolder")
     public static void patchWindowBeanHolder(CtClass ctClass) throws CannotCompileException, NotFoundException {
 
-        CtMethod methInit = ctClass.getDeclaredMethod("init");
-        methInit.insertAfter("org.hotswap.agent.plugin.deltaspike.context.WindowContextsTracker.register();");
-        LOGGER.debug("org.apache.deltaspike.core.impl.scope.window.WindowBeanHolder - patched by window context tracker definition.");
+        ctClass.getDeclaredMethod("init")
+            .insertAfter("org.hotswap.agent.plugin.deltaspike.context.WindowContextsTracker.register();");
+
+        ctClass.addMethod(CtNewMethod.make("public void " + ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD + "(Object ctx) {" +
+                    "org.hotswap.agent.plugin.deltaspike.context.WindowContextsTracker.attach(ctx);" +
+                "}", ctClass));
+
+        LOGGER.debug("org.apache.deltaspike.core.impl.scope.window.WindowBeanHolder - patched by window context tracker hooks.");
     }
 
 }
