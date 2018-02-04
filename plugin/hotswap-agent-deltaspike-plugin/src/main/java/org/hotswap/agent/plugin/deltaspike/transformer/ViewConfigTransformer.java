@@ -51,22 +51,25 @@ public class ViewConfigTransformer {
         CtMethod generateProxyClassMethod = ctClass.getDeclaredMethod("transformMetaDataTree");
 
         generateProxyClassMethod.instrument(
-                new ExprEditor() {
-                    public void edit(NewExpr e) throws CannotCompileException {
-                        if (e.getClassName().equals("org.apache.deltaspike.jsf.impl.config.view.DefaultViewConfigResolver"))
-                        e.replace("{ " +
-                                "   java.lang.Object _resolver = new org.apache.deltaspike.jsf.impl.config.view.DefaultViewConfigResolver($$); " +
-                                "   if (this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + "==null) {" +
-                                "       this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + "=new org.hotswap.agent.plugin.deltaspike.jsf.ViewConfigResolverProxy();" +
-                                "   }" +
-                                "   this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + ".setViewConfigResolver(_resolver);" +
-                                "   java.util.List _list = org.hotswap.agent.plugin.deltaspike.jsf.ViewConfigResolverUtils.findViewConfigRootClasses(this.rootViewConfigNode);" +
-                                    PluginManagerInvoker.buildCallPluginMethod(DeltaSpikePlugin.class, "registerViewConfigRootClasses",
-                                        "this", "java.lang.Object", "_list", "java.util.List") +
-                                "   $_ = this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + ";" +
-                        "}");
-                    }
-                });
+            new ExprEditor() {
+                public void edit(NewExpr e) throws CannotCompileException {
+                    if (e.getClassName().equals("org.apache.deltaspike.jsf.impl.config.view.DefaultViewConfigResolver"))
+                    e.replace(
+                        "{ " +
+                            "java.lang.Object _resolver = new org.apache.deltaspike.jsf.impl.config.view.DefaultViewConfigResolver($$); " +
+                            "if (this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + "==null) {" +
+                                "this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + "=new org.hotswap.agent.plugin.deltaspike.jsf.ViewConfigResolverProxy();" +
+                            "}" +
+                            "this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + ".setViewConfigResolver(_resolver);" +
+                            "java.util.List _list = org.hotswap.agent.plugin.deltaspike.jsf.ViewConfigResolverUtils.findViewConfigRootClasses(this.rootViewConfigNode);" +
+                            PluginManagerInvoker.buildCallPluginMethod(DeltaSpikePlugin.class, "registerViewConfigRootClasses",
+                                "this", "java.lang.Object", "_list", "java.util.List") +
+                            "   $_ = this." + VIEW_CONFIG_RESOLVER_PROXY_FIELD + ";" +
+                        "}"
+                    );
+                }
+            }
+        );
     }
 
 }

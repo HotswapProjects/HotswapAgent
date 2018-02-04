@@ -160,6 +160,7 @@ public class WindowContextsTracker implements Iterable, Serializable {
             Map m = (Map) ReflectionHelper.get(context, CUSTOM_CONTEXT_TRACKER_FIELD);
             if (!m.containsKey(WindowScoped.class.getName())) {
                 m.put(WindowScoped.class.getName(), new WindowContextsTracker());
+                LOGGER.debug("WindowContextsTracker added to context '{}'", context);
             }
         } catch (IllegalArgumentException e) {
             LOGGER.error("Field '{}' not found in context class '{}'.", CUSTOM_CONTEXT_TRACKER_FIELD, context.getClass().getName());

@@ -68,7 +68,7 @@ public class ELResolverPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ELResolverPlugin.class);
 
-    public static final String PURGE_CLASS_CACHE_METHOD_NAME = "__resetCache";
+    public static final String PURGE_CLASS_CACHE_METHOD_NAME = "$$ha$resetCache";
 
     @Init
     Scheduler scheduler;
@@ -117,22 +117,22 @@ public class ELResolverPlugin {
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.el.util.ReflectionUtil")
     public static void patchJBossReflectionUtil(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        CtField ctField = new CtField(CtClass.booleanType, "__haInitialized", ctClass);
+        CtField ctField = new CtField(CtClass.booleanType, "$$ha$haInitialized", ctClass);
         ctField.setModifiers(org.hotswap.agent.javassist.Modifier.PRIVATE | org.hotswap.agent.javassist.Modifier.STATIC);
         ctClass.addField(ctField, CtField.Initializer.constant(false));
 
         String buildInitializePlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class, "base.getClass().getClassLoader()");
-        String registerJBossReflectionUtil = PluginManagerInvoker.buildCallPluginMethod("base.getClass().getClassLoader()", ELResolverPlugin.class, "registerJBossReflectionUtil");
+        String registerJBossReflectionUtil = PluginManagerInvoker.buildCallPluginMethod("base.getClass().getClassLoader()",
+                ELResolverPlugin.class, "registerJBossReflectionUtil");
 
-        StringBuilder src = new StringBuilder("{");
-        src.append("    if(!__haInitialized) {");
-        src.append("        __haInitialized=true;");
-        src.append("        " + buildInitializePlugin);
-        src.append("        " + registerJBossReflectionUtil);
-        src.append("    }");
-        src.append("}");
         CtMethod mFindMethod = ctClass.getDeclaredMethod("findMethod");
-        mFindMethod.insertAfter(src.toString());
+        mFindMethod.insertAfter(
+                "if(!$$ha$haInitialized) {" +
+                    "$$ha$haInitialized=true;" +
+                    buildInitializePlugin +
+                    registerJBossReflectionUtil +
+                "}"
+        );
         LOGGER.debug("org.jboss.el.util.ReflectionUtil enhanced with resource bundles registration.");
     }
 
@@ -141,8 +141,9 @@ public class ELResolverPlugin {
             // JUEL, (JSF BeanELResolver[s])
             // check if we have purgeBeanClasses method
             CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
-            ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                    "   purgeBeanClasses(classLoader); " +
+            ctClass.addMethod(CtNewMethod.make(
+                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                        "purgeBeanClasses(classLoader);" +
                     "}", ctClass));
             return true;
         } catch (NotFoundException | CannotCompileException e) {
@@ -155,19 +156,22 @@ public class ELResolverPlugin {
     private static boolean checkApacheEL(CtClass ctClass)
     {
         try {
+            // ApacheEL has field cache
             CtField field = ctClass.getField("cache");
             // Apache BeanELResolver (has cache property)
-            ctClass.addField(new CtField(CtClass.booleanType, "__purgeRequested", ctClass), CtField.Initializer.constant(false));
+            ctClass.addField(new CtField(CtClass.booleanType, "$$ha$purgeRequested", ctClass), CtField.Initializer.constant(false));
 
-            ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                    "   __purgeRequested=true;" +
+            ctClass.addMethod(CtNewMethod.make(
+                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                        "$$ha$purgeRequested=true;" +
                     "}", ctClass));
             CtMethod mGetBeanProperty = ctClass.getDeclaredMethod("property");
             mGetBeanProperty.insertBefore(
-                "   if(__purgeRequested) {" +
-                "       __purgeRequested=false;" +
-                "       this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-                "   }");
+                "if($$ha$purgeRequested) {" +
+                    "$$ha$purgeRequested=false;" +
+                    "this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                "}"
+            );
             return true;
         } catch(NotFoundException e1) {
         } catch (CannotCompileException e2) {
@@ -198,19 +202,20 @@ public class ELResolverPlugin {
      */
     private static void patchJBossEl(CtClass ctClass) {
         try {
-            ctClass.addField(new CtField(CtClass.booleanType, "__purgeRequested", ctClass), CtField.Initializer.constant(false));
+            ctClass.addField(new CtField(CtClass.booleanType, "$$ha$purgeRequested", ctClass), CtField.Initializer.constant(false));
 
-            ctClass.addMethod(CtNewMethod.make("public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                    "   __purgeRequested=true;" +
+            ctClass.addMethod(CtNewMethod.make(
+                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                        "$$ha$purgeRequested=true;" +
                     "}", ctClass));
             try {
                 CtMethod mGetBeanProperty = ctClass.getDeclaredMethod("getBeanProperty");
                 mGetBeanProperty.insertBefore(
-                    "   if(__purgeRequested) {" +
-                    "       __purgeRequested=false;" +
-                    "       java.lang.reflect.Method meth = javax.el.BeanELResolver.SoftConcurrentHashMap.class.getDeclaredMethod(\"__createNewInstance\", null);" +
-                    "       properties = (javax.el.BeanELResolver.SoftConcurrentHashMap) meth.invoke(properties, null);" +
-                    "   }");
+                    "if($$ha$purgeRequested) {" +
+                        "$$ha$purgeRequested=false;" +
+                        "java.lang.reflect.Method meth = javax.el.BeanELResolver.SoftConcurrentHashMap.class.getDeclaredMethod(\"$$ha$createNewInstance\", null);" +
+                        "properties = (javax.el.BeanELResolver.SoftConcurrentHashMap) meth.invoke(properties, null);" +
+                    "}");
             } catch (NotFoundException e) {
                 LOGGER.debug("FIXME : checkJBoss_3_0_EL() 'getBeanProperty(...)' not found in javax.el.BeanELResolver.");
             }
@@ -223,9 +228,10 @@ public class ELResolverPlugin {
     @OnClassLoadEvent(classNameRegexp = "javax.el.BeanELResolver\\$SoftConcurrentHashMap")
     public static void patchJbossElSoftConcurrentHashMap(CtClass ctClass) throws CannotCompileException {
         try {
-            ctClass.addMethod(CtNewMethod.make("public javax.el.BeanELResolver.SoftConcurrentHashMap __createNewInstance() {" +
-                    "   return new javax.el.BeanELResolver.SoftConcurrentHashMap();" +
-                    "}", ctClass));
+            ctClass.addMethod(CtNewMethod.make(
+                "public javax.el.BeanELResolver.SoftConcurrentHashMap $$ha$createNewInstance() {" +
+                    "return new javax.el.BeanELResolver.SoftConcurrentHashMap();" +
+                "}", ctClass));
         } catch (CannotCompileException e) {
             LOGGER.error("patchJbossElSoftConcurrentHashMap() exception {}", e.getMessage());
         }

@@ -51,7 +51,7 @@ public class WildFlyELResolverPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(WildFlyELResolverPlugin.class);
 
     /** The Constant PURGE_CLASS_CACHE_METHOD_NAME. */
-    public static final String PURGE_CLASS_CACHE_METHOD_NAME = "__resetCache";
+    public static final String PURGE_CLASS_CACHE_METHOD_NAME = "$$ha$resetCache";
 
     /** The scheduler. */
     @Init

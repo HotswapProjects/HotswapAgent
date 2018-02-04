@@ -60,6 +60,6 @@ public class PurgeBeanELResolverCacheCommand extends MergeableCommand {
 
     @Override
     public String toString() {
-        return "PurgeBeanELResolverCacheCommand{" + "appClassLoader=" + appClassLoader + '}';
+        return "PurgeBeanELResolverCacheCommand{appClassLoader=" + appClassLoader + '}';
     }
 }
