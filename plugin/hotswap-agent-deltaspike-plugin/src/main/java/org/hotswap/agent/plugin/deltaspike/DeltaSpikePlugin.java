@@ -21,7 +21,7 @@ import org.hotswap.agent.plugin.deltaspike.transformer.DeltaSpikeProxyTransforme
 import org.hotswap.agent.plugin.deltaspike.transformer.PartialBeanTransformer;
 import org.hotswap.agent.plugin.deltaspike.transformer.RepositoryTransformer;
 import org.hotswap.agent.plugin.deltaspike.transformer.ViewConfigTransformer;
-import org.hotswap.agent.plugin.deltaspike.transformer.WindowContextTransformer;
+import org.hotswap.agent.plugin.deltaspike.transformer.DeltaspikeContextsTransformer;
 import org.hotswap.agent.util.AnnotationHelper;
 
 /**
@@ -34,7 +34,7 @@ import org.hotswap.agent.util.AnnotationHelper;
         expectedVersions = {"1.5-1.7"},
         supportClass = {
             DeltaSpikeProxyTransformer.class, PartialBeanTransformer.class, RepositoryTransformer.class, ViewConfigTransformer.class,
-            WindowContextTransformer.class
+            DeltaspikeContextsTransformer.class
         }
 )
 public class DeltaSpikePlugin {

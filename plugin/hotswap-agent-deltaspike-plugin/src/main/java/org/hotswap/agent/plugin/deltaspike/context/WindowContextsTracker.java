@@ -17,10 +17,12 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
+import org.apache.deltaspike.core.api.scope.GroupedConversationScoped;
 import org.apache.deltaspike.core.api.scope.WindowScoped;
 import org.apache.deltaspike.core.impl.scope.window.WindowBeanHolder;
 import org.apache.deltaspike.core.util.context.ContextualStorage;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.deltaspike.transformer.DeltaspikeContextsTransformer;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -31,8 +33,6 @@ import org.hotswap.agent.util.ReflectionHelper;
 public class WindowContextsTracker implements Iterable, Serializable {
 
     private static final long serialVersionUID = 1L;
-
-    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$ha$customContextTrackers";
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WindowContextsTracker.class);
 
@@ -157,13 +157,16 @@ public class WindowContextsTracker implements Iterable, Serializable {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void attach(Object context) {
         try {
-            Map m = (Map) ReflectionHelper.get(context, CUSTOM_CONTEXT_TRACKER_FIELD);
+            Map m = (Map) ReflectionHelper.get(context, DeltaspikeContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
             if (!m.containsKey(WindowScoped.class.getName())) {
                 m.put(WindowScoped.class.getName(), new WindowContextsTracker());
                 LOGGER.debug("WindowContextsTracker added to context '{}'", context);
             }
+            // Add mapping grouped conversation to window scoped
+            m.put(GroupedConversationScoped.class.getName(), WindowScoped.class.getName());
         } catch (IllegalArgumentException e) {
-            LOGGER.error("Field '{}' not found in context class '{}'.", CUSTOM_CONTEXT_TRACKER_FIELD, context.getClass().getName());
+            LOGGER.error("Field '{}' not found in context class '{}'.", DeltaspikeContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD,
+                    context.getClass().getName());
         }
     }
 }

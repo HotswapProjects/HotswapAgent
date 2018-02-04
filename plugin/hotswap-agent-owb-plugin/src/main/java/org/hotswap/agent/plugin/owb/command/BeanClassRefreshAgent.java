@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -16,12 +17,14 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.SessionScoped;
 import javax.enterprise.context.spi.Context;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.InjectionTarget;
 import javax.enterprise.inject.spi.InjectionTargetFactory;
+import javax.enterprise.util.AnnotationLiteral;
 
 import org.apache.webbeans.component.BeanAttributesImpl;
 import org.apache.webbeans.component.InjectionTargetBean;
@@ -30,6 +33,7 @@ import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
+import org.apache.webbeans.context.CustomPassivatingContextImpl;
 import org.apache.webbeans.intercept.SessionScopedBeanInterceptorHandler;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
 import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
@@ -57,6 +61,14 @@ public class BeanClassRefreshAgent {
      * Set flag to true in the unit test class and wait until the flag is false again.
      */
     public static boolean reloadFlag = false;
+
+    private static final Set<String> trackableSessionBasedScopes = new HashSet<>();
+
+    static {
+        trackableSessionBasedScopes.add("javax.enterprise.context.SessionScoped");
+        trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.WindowScoped");
+        trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.GroupedConversationScoped");
+    }
 
     /**
      * Reload bean in existing bean manager. Called by a reflection command from BeanRefreshCommand transformer.
@@ -114,7 +126,7 @@ public class BeanClassRefreshAgent {
 
                 if (!beanArchiveInfo.isClassExcluded(beanClass.getName())) {
 
-                    Set<Bean<?>> beans = beanManager.getBeans(beanClass);
+                    Set<Bean<?>> beans = beanManager.getBeans(beanClass, new AnnotationLiteral<Any>() {});
 
                     if (beans != null && !beans.isEmpty()) {
                         for (Bean<?> bean : beans) {
@@ -163,7 +175,7 @@ public class BeanClassRefreshAgent {
 
     private static void doReinjectBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean) {
         try {
-            if (isTrackableSessionBasedScope(bean.getScope())) {
+            if (trackableSessionBasedScopes.contains(bean.getScope().getName())) {
                 doReinjectSessionBasedBean(beanManager, beanClass, bean);
             } else {
                 doReinjectBeanInstance(beanManager, beanClass, bean, beanManager.getContext(bean.getScope()));
@@ -171,17 +183,6 @@ public class BeanClassRefreshAgent {
         } catch (ContextNotActiveException e) {
             LOGGER.info("No active contexts for bean '{}'", beanClass.getName());
         }
-    }
-
-    private static boolean isTrackableSessionBasedScope(Class<?> scope) {
-        if (scope == SessionScoped.class) {
-            return true;
-        }
-        // TODO : find out another way how to mark the scope is trackable from HA
-        if ("org.apache.deltaspike.core.api.scope.WindowScoped".equals(scope.getName())) {
-            return true;
-        }
-        return false;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -244,36 +245,54 @@ public class BeanClassRefreshAgent {
         }
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private static void doReinjectCustomScopedBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean,
-            Context sessionContext) {
+            Context parentContext) {
 
         // Get custom context tracker from map stored in session context
-        Map trackerMap = (Map) ReflectionHelper.get(sessionContext, CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
+        Map trackerMap = (Map) ReflectionHelper.get(parentContext, CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
         if (trackerMap == null) {
-            LOGGER.error("Custom context tracker field '{}' not found in session context.", CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
+            LOGGER.error("Custom context tracker field '{}' not found in context '{}'.", CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD,
+                    parentContext.getClass().getName());
             return;
         }
 
-        Class<? extends Annotation> beanScope = bean.getScope();
-        Object customContextTracker = trackerMap.get(beanScope.getName());
+        String scopeClassName = bean.getScope().getName();
+        Object tracker = trackerMap.get(scopeClassName);
 
-        if (customContextTracker == null) {
-            LOGGER.debug("Custom context tracker for scope '{}' not found.", beanScope.getName());
-            return;
-        }
-        if (! (customContextTracker instanceof Iterable)) {
-            LOGGER.error("Tracker '{}' is not Iterable.", customContextTracker.getClass().getName());
-            return;
+        if (tracker != null && tracker instanceof String) {
+            scopeClassName = (String) tracker;
+            tracker = trackerMap.get(scopeClassName);
         }
 
-        Iterator<?> contextIterator = ((Iterable<?>) customContextTracker).iterator();
+        if (tracker == null) {
+            LOGGER.debug("Tracker not found for scope '{}' not found.", scopeClassName);
+            return;
+        }
+
+        if (! (tracker instanceof Iterable)) {
+            LOGGER.error("Tracker '{}' is not Iterable.", tracker.getClass().getName());
+            return;
+        }
+
+        Iterator<?> contextIterator = ((Iterable<?>) tracker).iterator();
         try {
+            Class<? extends Annotation> scope =
+                    (Class<? extends Annotation>) beanManager.getClass().getClassLoader().loadClass(scopeClassName);
             while (contextIterator.hasNext()) {
                 contextIterator.next(); // Set active session context
-                Context customContext = beanManager.getContext(beanScope);
-                doReinjectBeanInstance(beanManager, beanClass, bean, customContext);
+                Context context = beanManager.getContext(scope);
+                if (context instanceof CustomPassivatingContextImpl) {
+                   context = (Context) ReflectionHelper.get(context, "context");
+                }
+                if (scopeClassName.equals(bean.getScope().getName())) {
+                    doReinjectBeanInstance(beanManager, beanClass, bean, context);
+                } else {
+                    doReinjectCustomScopedBean(beanManager, beanClass, bean, context);
+                }
             }
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("Context iteration failed.", e);
         } finally {
             // iterator can implement closeable to finalize iteration
             if (contextIterator instanceof Closeable) {

@@ -15,6 +15,7 @@ import org.hotswap.agent.plugin.owb.beans.OwbHotswapContext;
  * The Class CdiContextsTransformer.
  *
  * @author alpapad@gmail.com
+ * @author Vladimir Dvorak
  */
 public class CdiContextsTransformer {
 
