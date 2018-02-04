@@ -134,12 +134,17 @@ public class WindowContextsTracker implements Iterable, Serializable {
         Context context = null;
 
         try {
-            Method m = beanManager.getClass().getMethod("getUnwrappedContext", Class.class);
-            context = (Context) m.invoke(beanManager, SessionScoped.class);
-        } catch (NoSuchMethodException e) {
             context = beanManager.getContext(SessionScoped.class);
+            for (int i=1; i<10; i++) {
+                Context delegate = (Context) ReflectionHelper.invoke(context, context.getClass(), "$$ha$delegate", null);
+                if (delegate == null || delegate == context) {
+                    break;
+                }
+                context = delegate;
+            }
+        } catch (IllegalArgumentException e) {
         } catch (Exception e) {
-            assert(false);
+            LOGGER.error("Delegate failed.", e);
         }
 
         if (context != null) {

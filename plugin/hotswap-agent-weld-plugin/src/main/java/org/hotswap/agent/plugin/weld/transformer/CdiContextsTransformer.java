@@ -16,6 +16,7 @@ import org.hotswap.agent.plugin.weld.beans.WeldHotswapContext;
  * The Class CdiContextsTransformer.
  *
  * @author alpapad@gmail.com
+ * @author Vladimir Dvorak
  */
 public class CdiContextsTransformer {
 
@@ -25,11 +26,10 @@ public class CdiContextsTransformer {
     public static final String BOUND_SESSION_BEAN_STORE_REGISTRY = "$$ha$boundSessionBeanStoreRegistry";
 
     /**
-     * Add context reloading functionality to base contexts classes
+     * Add context reloading functionality to base contexts classes.
      *
      * @param ctClass the class
      * @param classPool the class pool
-     * @param cl the class loader
      * @throws NotFoundException the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
@@ -40,7 +40,7 @@ public class CdiContextsTransformer {
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
                                         "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)"
                                         )
-    public static void transformReloadingWeldContexts(CtClass ctClass, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
+    public static void transformReloadingWeldContexts(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         LOGGER.debug("Adding interface {} to {}.", WeldHotswapContext.class.getName(), ctClass.getName());
         ctClass.addInterface(classPool.get(WeldHotswapContext.class.getName()));
@@ -82,8 +82,15 @@ public class CdiContextsTransformer {
         LOGGER.debug("Class '{}' patched with hot-swapping support", ctClass.getName() );
     }
 
+    /**
+     * Transform lazy session bean store.
+     *
+     * @param ctClass the class
+     * @throws NotFoundException the not found exception
+     * @throws CannotCompileException the cannot compile exception
+     */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.beanstore.http.LazySessionBeanStore")
-    public static void transformLazySessionBeanStore(CtClass ctClass, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
+    public static void transformLazySessionBeanStore(CtClass ctClass) throws NotFoundException, CannotCompileException {
 
         CtMethod getSession = ctClass.getDeclaredMethod("getSession");
         getSession.insertAfter(
@@ -111,14 +118,14 @@ public class CdiContextsTransformer {
     }
 
     /**
-     * Add custom tracker field to bound session context
+     * Add custom tracker field to bound session context.
      *
      * @param ctClass the class
      * @throws NotFoundException the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.bound.BoundSessionContextImpl")
-    public static void transformBoundSessionContext(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+    public static void transformBoundSessionContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
 
         // Add custom contexts tracker for extensions contexts
         CtField customTrackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "=new java.util.HashMap();", ctClass);
@@ -155,4 +162,25 @@ public class CdiContextsTransformer {
         LOGGER.debug("Custom context tracker field added to '{}'.", ctClass.getName() );
     }
 
+    /**
+     * Add ha-delegate to passivation context
+     *
+     * @param ctClass the class
+     * @throws NotFoundException the not found exception
+     * @throws CannotCompileException the cannot compile exception
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.PassivatingContextWrapper\\$AbstractPassivatingContextWrapper")
+    public static void transformAbstractPassivatingContextWrapper(CtClass ctClass) throws NotFoundException, CannotCompileException {
+
+        CtMethod delegateMethod = CtMethod.make(
+                "public java.lang.Object $$ha$delegate() {" +
+                    "return this.context;" +
+                "}",
+                ctClass
+        );
+
+        ctClass.addMethod(delegateMethod);
+
+        LOGGER.debug("$$ha$delegate added to '{}'.", ctClass.getName() );
+    }
 }

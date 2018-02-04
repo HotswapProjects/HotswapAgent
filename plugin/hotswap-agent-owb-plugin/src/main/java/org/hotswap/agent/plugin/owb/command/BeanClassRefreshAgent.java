@@ -101,6 +101,7 @@ public class BeanClassRefreshAgent {
         }
     }
 
+    @SuppressWarnings("serial")
     private static void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, String oldSignatureByStrategy,
             BeanReloadStrategy reloadStrategy, URL beanArchiveUrl) {
 
@@ -266,7 +267,7 @@ public class BeanClassRefreshAgent {
         }
 
         if (tracker == null) {
-            LOGGER.debug("Tracker not found for scope '{}' not found.", scopeClassName);
+            LOGGER.warning("Tracker for scope '{}' not found in context '{}'.", scopeClassName, parentContext);
             return;
         }
 

@@ -14,7 +14,7 @@ public class HttpSessionsRegistry {
 
     private static Set<HttpSession> seenSessions = Collections.newSetFromMap(new java.util.WeakHashMap<HttpSession, Boolean>());
 
-    public static void addSeenSession(HttpSession session) {
+    public static void addSession(HttpSession session) {
         if (session != null) {
             seenSessions.add(session);
         }
@@ -26,7 +26,7 @@ public class HttpSessionsRegistry {
         }
     }
 
-    public static List<HttpSession> getSeenSessions() {
+    public static List<HttpSession> getSessions() {
         List<HttpSession> result = new ArrayList<>();
         result.addAll(seenSessions);
         return result;
