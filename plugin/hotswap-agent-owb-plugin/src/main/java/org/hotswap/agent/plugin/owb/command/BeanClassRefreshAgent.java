@@ -68,6 +68,7 @@ public class BeanClassRefreshAgent {
         trackableSessionBasedScopes.add("javax.enterprise.context.SessionScoped");
         trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.WindowScoped");
         trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.GroupedConversationScoped");
+        trackableSessionBasedScopes.add("org.omnifaces.cdi.ViewScoped");
     }
 
     /**
