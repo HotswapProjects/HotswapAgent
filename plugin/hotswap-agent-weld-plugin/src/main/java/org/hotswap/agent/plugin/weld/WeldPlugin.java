@@ -127,10 +127,10 @@ public class WeldPlugin {
             resource = resourceNameToURL(archivePath);
             URI uri = resource.toURI();
             if (!IOUtils.isDirectoryURL(uri.toURL())) {
-                LOGGER.trace("Weld - unable to watch files on URL '{}' for changes (JAR file?)", archivePath);
+                LOGGER.trace("Unable to watch for new files. Archive '{}' is not directory.", archivePath);
                 return;
             } else {
-                LOGGER.info("Registering archive path {}", archivePath);
+                LOGGER.info("Registering archive path '{}'", archivePath);
 
                 watcher.addEventListener(appClassLoader, uri, new WatchEventListener() {
                     @Override
@@ -147,7 +147,7 @@ public class WeldPlugin {
                             }
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || isTestEnvironment) {
                                 // refresh weld only for new classes
-                                LOGGER.trace("register reload command: {} ", className);
+                                LOGGER.trace("Register reload command: {} ", className);
                                 if (isBdaRegistered(appClassLoader, archivePath)) {
                                     // TODO : Create proxy factory
                                     scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, event), WAIT_ON_CREATE);
@@ -179,7 +179,7 @@ public class WeldPlugin {
     public void registerProxyFactory(Object proxyFactory, Object bean, ClassLoader classLoader, Class<?> proxiedBeanType) {
         synchronized(registeredProxiedBeans) {
             if (!registeredProxiedBeans.containsKey(bean)) {
-                LOGGER.debug("ProxyFactory for {} registered.", proxiedBeanType.getName());
+                LOGGER.debug("ProxyFactory for '{}' registered.", bean);
             }
             registeredProxiedBeans.put(bean, proxyFactory);
         }
@@ -197,7 +197,7 @@ public class WeldPlugin {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             try {
                 String archivePath = getArchivePath(classLoader, ctClass, original.getName());
-                LOGGER.debug("Class {} redefined for archive {} ", original.getName(), archivePath);
+                LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
                 if (isBdaRegistered(classLoader, archivePath)) {
                     String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
                     String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);

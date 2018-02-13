@@ -3,7 +3,6 @@ package org.hotswap.agent.plugin.deltaspike.context;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -135,11 +134,8 @@ public class WindowContextsTracker implements Iterable, Serializable {
 
         try {
             context = beanManager.getContext(SessionScoped.class);
-            for (int i=1; i<10; i++) {
-                Context delegate = (Context) ReflectionHelper.invoke(context, context.getClass(), "$$ha$delegate", null);
-                if (delegate == null || delegate == context) {
-                    break;
-                }
+            Context delegate = (Context) ReflectionHelper.invoke(context, context.getClass(), "$$ha$delegate", null);
+            if (delegate != null && delegate != context) {
                 context = delegate;
             }
         } catch (IllegalArgumentException e) {
