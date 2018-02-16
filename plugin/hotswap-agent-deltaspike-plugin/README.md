@@ -1,11 +1,11 @@
 Deltaspike plugin
 ==================
 Process following actions on class change or class definition
-* Reinject @WindowScoped, @GroupedConversationScoped beans on class change
-* Redefine repository components on repository class change
-* Reload Messages + JsfMessages on resource bundle file change
-* Reload ViewConfig on view config class change
-* Redefine DeltaSpike proxy class on base class change
+* Reinject @WindowScoped, @GroupedConversationScoped beans on class redefinition
+* Redefine repository components on repository class redefinition
+* Reload Messages + JsfMessages on resource bundle file redefinition
+* Reload ViewConfig on view config class redefinition
+* Redefine DeltaSpike proxy class on base class redefinition
 * Redefine Partial Beans
 
 #### Implementation notes:
