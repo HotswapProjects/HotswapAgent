@@ -25,7 +25,8 @@
         <module>plugin/hotswap-agent-zk-plugin</module>
         <module>plugin/hotswap-agent-logback-plugin</module>
         <module>plugin/hotswap-agent-log4j2-plugin</module>
-        <module>plugin/hotswap-agent-jsf-plugin</module>
+        <module>plugin/hotswap-agent-myfaces-plugin</module>
+        <module>plugin/hotswap-agent-mojarra-plugin</module>
         <module>plugin/hotswap-agent-seam-plugin</module>
         <module>plugin/hotswap-agent-el-resolver-plugin</module>
         <module>plugin/hotswap-agent-osgiequinox-plugin</module>

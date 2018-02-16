@@ -84,7 +84,13 @@
 
         <dependency>
             <groupId>org.hotswap.agent</groupId>
-            <artifactId>hotswap-agent-jsf-plugin</artifactId>
+            <artifactId>hotswap-agent-myfaces-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-mojarra-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 

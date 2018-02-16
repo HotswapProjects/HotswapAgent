@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.jsf;
+package org.hotswap.agent.plugin.mojarra;
 
 import java.lang.reflect.Method;
 import java.util.Collections;

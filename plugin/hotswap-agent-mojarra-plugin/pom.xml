@@ -9,7 +9,10 @@
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>hotswap-agent-jsf-plugin</artifactId>
+    <artifactId>hotswap-agent-mojarra-plugin</artifactId>
+
+    <properties>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -17,5 +20,19 @@
             <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+            <version>1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.faces</groupId>
+            <artifactId>jsf-api</artifactId>
+            <version>2.2.16</version>
+        </dependency>
+
     </dependencies>
+
 </project>

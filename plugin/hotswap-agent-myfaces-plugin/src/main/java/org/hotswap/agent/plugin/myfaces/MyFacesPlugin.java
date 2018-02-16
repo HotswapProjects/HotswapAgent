@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.jsf;
+package org.hotswap.agent.plugin.myfaces;
 
 import java.lang.reflect.Method;
 
@@ -20,6 +20,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
         testedVersions = {"2.2.10"},
         expectedVersions = {"2.2"})
 public class MyFacesPlugin {
+
     private static AgentLogger LOGGER = AgentLogger.getLogger(MyFacesPlugin.class);
 
     @Init
