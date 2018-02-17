@@ -9,6 +9,7 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 
 /**
  * Patch WindowContextImpl to handle external windowId
@@ -19,14 +20,10 @@ public class DeltaspikeContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(DeltaspikeContextsTransformer.class);
 
-    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$ha$customContextTrackers";
-    public static final String ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD = "$$ha$attachCustomContextTracker";
-
-
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.core.impl.scope.window.WindowContextImpl")
     public static void patchWindowContext(CtClass ctClass) throws CannotCompileException, NotFoundException {
 
-        CtField trackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", ctClass);
+        CtField trackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", ctClass);
         ctClass.addField(trackerFld);
 
         CtMethod methInit = ctClass.getDeclaredMethod("init");
@@ -38,7 +35,7 @@ public class DeltaspikeContextsTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.core.impl.scope.conversation.GroupedConversationContext")
     public static void patchGroupedConversationContext(CtClass ctClass) throws CannotCompileException, NotFoundException {
 
-        CtField trackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", ctClass);
+        CtField trackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", ctClass);
         ctClass.addField(trackerFld);
 
         ctClass.getDeclaredMethod("init")
@@ -54,7 +51,7 @@ public class DeltaspikeContextsTransformer {
         ctClass.getDeclaredMethod("init")
             .insertAfter("org.hotswap.agent.plugin.deltaspike.context.WindowContextsTracker.register();");
 
-        ctClass.addMethod(CtNewMethod.make("public void " + ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD + "(Object ctx) {" +
+        ctClass.addMethod(CtNewMethod.make("public void " + HaCdiCommons.ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD + "(Object ctx) {" +
                     "org.hotswap.agent.plugin.deltaspike.context.WindowContextsTracker.attach(ctx);" +
                 "}", ctClass));
 

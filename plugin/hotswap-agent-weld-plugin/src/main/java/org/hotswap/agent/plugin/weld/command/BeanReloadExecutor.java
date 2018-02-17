@@ -23,6 +23,7 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.servlet.http.HttpSession;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
 import org.hotswap.agent.plugin.weld.WeldClassSignatureHelper;
 import org.hotswap.agent.plugin.weld.beans.ContextualReloadHelper;
@@ -56,15 +57,6 @@ import org.jboss.weld.util.Beans;
 public class BeanReloadExecutor {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanReloadExecutor.class);
-
-    private static final Set<String> trackableSessionBasedScopes = new HashSet<>();
-
-    static {
-        trackableSessionBasedScopes.add("javax.enterprise.context.SessionScoped");
-        trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.WindowScoped");
-        trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.GroupedConversationScoped");
-        trackableSessionBasedScopes.add("org.omnifaces.cdi.ViewScoped");
-    }
 
     /**
      * Reload bean in existing bean manager.
@@ -162,7 +154,7 @@ public class BeanReloadExecutor {
 
     private static void doReinjectBean(BeanManagerImpl beanManager, Class<?> beanClass, AbstractClassBean<?> bean) {
         try {
-            if (trackableSessionBasedScopes.contains(bean.getScope().getName())) {
+            if (HaCdiCommons.isTrackableScope(bean.getScope())) {
                 doReinjectSessionBasedBean(beanManager, beanClass, bean);
             } else {
                 doReinjectBeanInstance(beanManager, beanClass, bean, beanManager.getContext(bean.getScope()));
@@ -269,9 +261,9 @@ public class BeanReloadExecutor {
     private static void doReinjectCustomScopedBean(BeanManagerImpl beanManager, Class<?> beanClass, AbstractClassBean<?> bean, Context parentContext) {
 
         // Get custom context tracker from map stored in session context
-        Map trackerMap = (Map) ReflectionHelper.get(parentContext, CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
+        Map trackerMap = (Map) ReflectionHelper.get(parentContext, HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD);
         if (trackerMap == null) {
-            LOGGER.error("Custom context tracker field '{}' not found in context '{}'.", CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD,
+            LOGGER.error("Custom context tracker field '{}' not found in context '{}'.", HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD,
                     parentContext.getClass().getName());
             return;
         }

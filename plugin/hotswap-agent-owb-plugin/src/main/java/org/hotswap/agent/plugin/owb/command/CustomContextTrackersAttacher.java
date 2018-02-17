@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.apache.webbeans.context.creational.BeanInstanceBag;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -29,7 +29,7 @@ public class CustomContextTrackersAttacher {
                     if (instance != null) {
                        try {
                            ReflectionHelper.invoke(instance, instance.getClass(),
-                                   CdiContextsTransformer.ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD,
+                                   HaCdiCommons.ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD,
                                    new Class[] {java.lang.Object.class},
                                    context);
                        } catch (IllegalArgumentException e) {

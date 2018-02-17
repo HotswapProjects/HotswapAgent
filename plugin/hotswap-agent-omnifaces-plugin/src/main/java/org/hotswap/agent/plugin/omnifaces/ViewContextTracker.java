@@ -11,13 +11,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.enterprise.context.SessionScoped;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.omnifaces.cdi.BeanStorage;
 import org.omnifaces.cdi.ViewScoped;
@@ -114,20 +114,7 @@ public class ViewContextTracker implements Iterable, Serializable {
      * Register to current session's tracker field
      */
     public static void register() {
-        BeanManager beanManager = CDI.current().getBeanManager();
-        Context context = null;
-
-        try {
-            context = beanManager.getContext(SessionScoped.class);
-            Context delegate = (Context) ReflectionHelper.invoke(context, context.getClass(), "$$ha$delegate", null);
-            if (delegate != null && delegate != context) {
-                context = delegate;
-            }
-        } catch (IllegalArgumentException e) {
-        } catch (Exception e) {
-            LOGGER.error("Delegate failed.", e);
-        }
-
+        Context context = HaCdiCommons.getSessionContext();
         if (context != null) {
             attach(context);
         } else {
@@ -143,13 +130,13 @@ public class ViewContextTracker implements Iterable, Serializable {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void attach(Object context) {
         try {
-            Map m = (Map) ReflectionHelper.get(context, OmnifacesTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
+            Map m = (Map) ReflectionHelper.get(context, HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD);
             if (!m.containsKey(ViewScoped.class.getName())) {
                 m.put(ViewScoped.class.getName(), new ViewContextTracker());
                 LOGGER.debug("ViewContextTracker added to context '{}'", context);
             }
         } catch (IllegalArgumentException e) {
-            LOGGER.error("Field '{}' not found in context class '{}'.", OmnifacesTransformer.CUSTOM_CONTEXT_TRACKER_FIELD,
+            LOGGER.error("Field '{}' not found in context class '{}'.", HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD,
                     context.getClass().getName());
         }
     }

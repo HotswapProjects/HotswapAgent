@@ -8,6 +8,7 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
 import org.hotswap.agent.plugin.owb.beans.OwbHotswapContext;
 
@@ -20,9 +21,6 @@ import org.hotswap.agent.plugin.owb.beans.OwbHotswapContext;
 public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
-
-    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$ha$customContextTrackers";
-    public static final String ATTACH_CUSTOM_CONTEXT_TRACKER_METHOD = "$$ha$attachCustomContextTracker";
 
     @OnClassLoadEvent(classNameRegexp = "(org.apache.webbeans.context.AbstractContext)|" +
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
@@ -110,7 +108,7 @@ public class CdiContextsTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.SessionContext")
     public static void transformSessionContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
 
-        CtField trackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", ctClass);
+        CtField trackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", ctClass);
         ctClass.addField(trackerFld);
 
         LOGGER.debug("org.apache.webbeans.context.SessionContext - patched by custom context tracking.");

@@ -7,7 +7,7 @@ import java.util.Map;
 import org.apache.deltaspike.core.api.scope.GroupedConversationScoped;
 import org.apache.deltaspike.core.impl.scope.window.WindowContextImpl;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.deltaspike.transformer.DeltaspikeContextsTransformer;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -52,13 +52,13 @@ public class GroupedConversationContextTracker implements Iterable, Serializable
      */
     public static void register(WindowContextImpl windowContext) {
         try {
-            Map m = (Map) ReflectionHelper.get(windowContext, DeltaspikeContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
+            Map m = (Map) ReflectionHelper.get(windowContext, HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD);
             if (!m.containsKey(GroupedConversationScoped.class.getName())) {
                 m.put(GroupedConversationScoped.class.getName(), new GroupedConversationContextTracker());
                 LOGGER.debug("GroupedConversationContextTracker added to context '{}'", windowContext);
             }
         } catch (IllegalArgumentException e) {
-            LOGGER.error("Field '{}' not found in context class '{}'.", DeltaspikeContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD,
+            LOGGER.error("Field '{}' not found in context class '{}'.", HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD,
                     windowContext.getClass().getName());
         }
     }

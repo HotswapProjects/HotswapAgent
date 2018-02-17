@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.enterprise.context.SessionScoped;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -21,7 +20,7 @@ import org.apache.deltaspike.core.api.scope.WindowScoped;
 import org.apache.deltaspike.core.impl.scope.window.WindowBeanHolder;
 import org.apache.deltaspike.core.util.context.ContextualStorage;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.deltaspike.transformer.DeltaspikeContextsTransformer;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -129,20 +128,7 @@ public class WindowContextsTracker implements Iterable, Serializable {
      * Register to current session's tracker field
      */
     public static void register() {
-        BeanManager beanManager = CDI.current().getBeanManager();
-        Context context = null;
-
-        try {
-            context = beanManager.getContext(SessionScoped.class);
-            Context delegate = (Context) ReflectionHelper.invoke(context, context.getClass(), "$$ha$delegate", null);
-            if (delegate != null && delegate != context) {
-                context = delegate;
-            }
-        } catch (IllegalArgumentException e) {
-        } catch (Exception e) {
-            LOGGER.error("Delegate failed.", e);
-        }
-
+        Context context = HaCdiCommons.getSessionContext();
         if (context != null) {
             attach(context);
         } else {
@@ -158,7 +144,7 @@ public class WindowContextsTracker implements Iterable, Serializable {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void attach(Object context) {
         try {
-            Map m = (Map) ReflectionHelper.get(context, DeltaspikeContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
+            Map m = (Map) ReflectionHelper.get(context, HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD);
             if (!m.containsKey(WindowScoped.class.getName())) {
                 m.put(WindowScoped.class.getName(), new WindowContextsTracker());
                 LOGGER.debug("WindowContextsTracker added to context '{}'", context);
@@ -166,7 +152,7 @@ public class WindowContextsTracker implements Iterable, Serializable {
             // Add mapping grouped conversation to window scoped
             m.put(GroupedConversationScoped.class.getName(), WindowScoped.class.getName());
         } catch (IllegalArgumentException e) {
-            LOGGER.error("Field '{}' not found in context class '{}'.", DeltaspikeContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD,
+            LOGGER.error("Field '{}' not found in context class '{}'.", HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD,
                     context.getClass().getName());
         }
     }

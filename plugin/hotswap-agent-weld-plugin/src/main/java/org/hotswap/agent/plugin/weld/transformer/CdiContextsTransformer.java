@@ -9,6 +9,7 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.weld.beans.ContextualReloadHelper;
 import org.hotswap.agent.plugin.weld.beans.WeldHotswapContext;
 
@@ -22,7 +23,6 @@ public class CdiContextsTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CdiContextsTransformer.class);
 
-    public static final String CUSTOM_CONTEXT_TRACKER_FIELD = "$$ha$customContextTrackers";
     public static final String BOUND_SESSION_BEAN_STORE_REGISTRY = "$$ha$boundSessionBeanStoreRegistry";
 
     /**
@@ -111,7 +111,7 @@ public class CdiContextsTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.http.HttpSessionContextImpl")
     public static void transformHttpSessionContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
 
-        CtField trackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "=new java.util.HashMap();", ctClass);
+        CtField trackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "=new java.util.HashMap();", ctClass);
         ctClass.addField(trackerFld);
 
         LOGGER.debug("Custom context tracker field added to '{}'.", ctClass.getName() );
@@ -128,7 +128,7 @@ public class CdiContextsTransformer {
     public static void transformBoundSessionContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
 
         // Add custom contexts tracker for extensions contexts
-        CtField customTrackerFld = CtField.make("public java.util.Map " + CUSTOM_CONTEXT_TRACKER_FIELD + "=new java.util.HashMap();", ctClass);
+        CtField customTrackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "=new java.util.HashMap();", ctClass);
         ctClass.addField(customTrackerFld);
 
         // Add bean store registry
@@ -173,7 +173,7 @@ public class CdiContextsTransformer {
     public static void transformAbstractPassivatingContextWrapper(CtClass ctClass) throws NotFoundException, CannotCompileException {
 
         CtMethod delegateMethod = CtMethod.make(
-                "public java.lang.Object $$ha$delegate() {" +
+                "public java.lang.Object " + HaCdiCommons.HA_DELEGATE + "() {" +
                     "return this.context;" +
                 "}",
                 ctClass
@@ -181,6 +181,6 @@ public class CdiContextsTransformer {
 
         ctClass.addMethod(delegateMethod);
 
-        LOGGER.debug("$$ha$delegate added to '{}'.", ctClass.getName() );
+        LOGGER.debug(HaCdiCommons.HA_DELEGATE + " added to '{}'.", ctClass.getName() );
     }
 }

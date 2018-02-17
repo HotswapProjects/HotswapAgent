@@ -1,7 +1,12 @@
 package org.hotswap.agent.plugin.omnifaces;
 
+import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
  * Omnifaces (http://omnifaces.org/)
@@ -26,5 +31,14 @@ public class OmnifacesPlugin {
         }
     }
 
+    @OnClassLoadEvent(classNameRegexp = "org.omnifaces.ApplicationListener")
+    public static void patchApplicationListener(CtClass ctClass) throws CannotCompileException, NotFoundException {
+        ctClass.getDeclaredMethod("contextInitialized").insertAfter(
+            "{" +
+                PluginManagerInvoker.buildInitializePlugin(OmnifacesPlugin.class) +
+                PluginManagerInvoker.buildCallPluginMethod(OmnifacesPlugin.class, "init") +
+            "}"
+        );
+    }
 }
 

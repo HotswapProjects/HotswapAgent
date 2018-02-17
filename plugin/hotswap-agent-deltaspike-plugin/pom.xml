@@ -23,6 +23,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-cdi-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>

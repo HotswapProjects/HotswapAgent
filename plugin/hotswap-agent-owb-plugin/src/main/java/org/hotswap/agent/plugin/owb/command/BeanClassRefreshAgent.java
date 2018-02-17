@@ -6,7 +6,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,10 +38,10 @@ import org.apache.webbeans.portable.AnnotatedElementFactory;
 import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
 import org.apache.webbeans.spi.ContextsService;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
 import org.hotswap.agent.plugin.owb.OwbClassSignatureHelper;
 import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
-import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
 import org.hotswap.agent.plugin.owb.transformer.WebBeansContextsServiceTransformer;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -61,15 +60,6 @@ public class BeanClassRefreshAgent {
      * Set flag to true in the unit test class and wait until the flag is false again.
      */
     public static boolean reloadFlag = false;
-
-    private static final Set<String> trackableSessionBasedScopes = new HashSet<>();
-
-    static {
-        trackableSessionBasedScopes.add("javax.enterprise.context.SessionScoped");
-        trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.WindowScoped");
-        trackableSessionBasedScopes.add("org.apache.deltaspike.core.api.scope.GroupedConversationScoped");
-        trackableSessionBasedScopes.add("org.omnifaces.cdi.ViewScoped");
-    }
 
     /**
      * Reload bean in existing bean manager. Called by a reflection command from BeanRefreshCommand transformer.
@@ -177,7 +167,7 @@ public class BeanClassRefreshAgent {
 
     private static void doReinjectBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean) {
         try {
-            if (trackableSessionBasedScopes.contains(bean.getScope().getName())) {
+            if (HaCdiCommons.isTrackableScope(bean.getScope())) {
                 doReinjectSessionBasedBean(beanManager, beanClass, bean);
             } else {
                 doReinjectBeanInstance(beanManager, beanClass, bean, beanManager.getContext(bean.getScope()));
@@ -252,9 +242,9 @@ public class BeanClassRefreshAgent {
             Context parentContext) {
 
         // Get custom context tracker from map stored in session context
-        Map trackerMap = (Map) ReflectionHelper.get(parentContext, CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD);
+        Map trackerMap = (Map) ReflectionHelper.get(parentContext, HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD);
         if (trackerMap == null) {
-            LOGGER.error("Custom context tracker field '{}' not found in context '{}'.", CdiContextsTransformer.CUSTOM_CONTEXT_TRACKER_FIELD,
+            LOGGER.error("Custom context tracker field '{}' not found in context '{}'.", HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD,
                     parentContext.getClass().getName());
             return;
         }
