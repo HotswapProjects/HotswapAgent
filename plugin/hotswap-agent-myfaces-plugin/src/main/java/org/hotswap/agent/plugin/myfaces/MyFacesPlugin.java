@@ -18,7 +18,9 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 @Plugin(name = "MyFaces",
         description = "JSF/MyFaces. Clear resource bundle cache when *.properties files are changed.",
         testedVersions = {"2.2.10"},
-        expectedVersions = {"2.2"})
+        expectedVersions = {"2.2"},
+        supportClass = { MyFacesTransformer.class }
+        )
 public class MyFacesPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(MyFacesPlugin.class);

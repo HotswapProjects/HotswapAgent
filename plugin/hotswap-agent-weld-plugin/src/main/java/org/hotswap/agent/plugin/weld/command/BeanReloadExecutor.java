@@ -2,7 +2,6 @@ package org.hotswap.agent.plugin.weld.command;
 
 import java.io.Closeable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -316,10 +315,10 @@ public class BeanReloadExecutor {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static void doReinjectBeanInstance(BeanManagerImpl beanManager, Class<?> beanClass, AbstractClassBean bean, Context context) {
-        Object get = context.get(bean);
-        if (get != null) {
-            bean.getProducer().inject(get, beanManager.createCreationalContext(bean));
-            LOGGER.info("Bean '{}' injection points was reinjected.", beanClass.getName());
+        Object instance = context.get(bean);
+        if (instance != null) {
+            bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
+            LOGGER.debug("Bean instance '{}' injection points was reinjected.", instance);
         }
     }
 
@@ -375,15 +374,10 @@ public class BeanReloadExecutor {
                 EnhancedAnnotatedType eat = EnhancedAnnotatedTypeImpl.of(annotatedType, classTransformer);
                 BeanAttributes attributes = BeanAttributesFactory.forBean(eat, beanManager);
                 ManagedBean<?> bean = ManagedBean.of(attributes, eat, beanManager);
-                Field field = beanManager.getClass().getDeclaredField("beanSet");
-                field.setAccessible(true);
-                field.set(beanManager, Collections.synchronizedSet(new HashSet<Bean<?>>()));
-                // TODO:
+                ReflectionHelper.set(beanManager, beanManager.getClass(), "beanSet", Collections.synchronizedSet(new HashSet<Bean<?>>()));
                 beanManager.addBean(bean);
                 beanManager.getBeanResolver().clear();
                 bean.initializeAfterBeanDiscovery();
-                // define managed bean
-                // beanManager.cleanupAfterBoot();
                 LOGGER.debug("Bean defined '{}'", beanClass.getName());
             } else {
                 // TODO : define session bean

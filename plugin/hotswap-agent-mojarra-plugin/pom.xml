@@ -22,6 +22,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hotswap.agent</groupId>
+            <artifactId>hotswap-agent-cdi-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>javax.enterprise</groupId>
             <artifactId>cdi-api</artifactId>
             <version>1.2</version>
@@ -30,6 +36,12 @@
         <dependency>
             <groupId>com.sun.faces</groupId>
             <artifactId>jsf-api</artifactId>
+            <version>2.2.16</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.faces</groupId>
+            <artifactId>jsf-impl</artifactId>
             <version>2.2.16</version>
         </dependency>
 

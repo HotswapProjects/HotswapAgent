@@ -26,9 +26,10 @@ public class HaCdiCommons {
 
     static {
         TRACKABLE_SESSION_BASED_SCOPES.add("javax.enterprise.context.SessionScoped");
+        TRACKABLE_SESSION_BASED_SCOPES.add("javax.faces.view.ViewScoped");
+        TRACKABLE_SESSION_BASED_SCOPES.add("org.omnifaces.cdi.ViewScoped");
         TRACKABLE_SESSION_BASED_SCOPES.add("org.apache.deltaspike.core.api.scope.WindowScoped");
         TRACKABLE_SESSION_BASED_SCOPES.add("org.apache.deltaspike.core.api.scope.GroupedConversationScoped");
-        TRACKABLE_SESSION_BASED_SCOPES.add("org.omnifaces.cdi.ViewScoped");
     }
 
     /**
