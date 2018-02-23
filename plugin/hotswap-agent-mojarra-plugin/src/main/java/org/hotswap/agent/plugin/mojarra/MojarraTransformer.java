@@ -1,6 +1,11 @@
 package org.hotswap.agent.plugin.mojarra;
 
-import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 
 /**
  * Patch ViewScopeBeanHolder and ViewScopeContextImpl
@@ -9,7 +14,10 @@ import org.hotswap.agent.logging.AgentLogger;
  */
 public class MojarraTransformer {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(MojarraTransformer.class);
-
+    @OnClassLoadEvent(classNameRegexp = "(com.sun.faces.application.view.ViewScopeContext)|" +
+                                        "(org.omnifaces.cdi.viewscope.ViewScopeContext)")
+    public static void patchViewScopeContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        HaCdiCommons.transformContext(classPool, ctClass);
+    }
 
 }

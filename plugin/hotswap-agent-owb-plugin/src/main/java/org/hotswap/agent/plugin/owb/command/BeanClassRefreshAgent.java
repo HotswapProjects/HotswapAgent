@@ -1,20 +1,18 @@
 package org.hotswap.agent.plugin.owb.command;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.SessionScoped;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.AnnotatedType;
@@ -32,17 +30,13 @@ import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
-import org.apache.webbeans.context.CustomPassivatingContextImpl;
-import org.apache.webbeans.intercept.SessionScopedBeanInterceptorHandler;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
 import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
-import org.apache.webbeans.spi.ContextsService;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
 import org.hotswap.agent.plugin.owb.OwbClassSignatureHelper;
 import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
-import org.hotswap.agent.plugin.owb.transformer.WebBeansContextsServiceTransformer;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -167,8 +161,8 @@ public class BeanClassRefreshAgent {
 
     private static void doReinjectBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean) {
         try {
-            if (HaCdiCommons.isTrackableScope(bean.getScope())) {
-                doReinjectSessionBasedBean(beanManager, beanClass, bean);
+            if (!bean.getScope().equals(ApplicationScoped.class) && HaCdiCommons.isRegisteredScope(bean.getScope())) {
+                doReinjectRegisteredBeanInstances(beanManager, beanClass, bean);
             } else {
                 doReinjectBeanInstance(beanManager, beanClass, bean, beanManager.getContext(bean.getScope()));
             }
@@ -206,93 +200,14 @@ public class BeanClassRefreshAgent {
         LOGGER.debug("New annotated type created for bean '{}'", beanClass.getName());
     }
 
-    private static void doReinjectSessionBasedBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean) {
-
-        ContextsService contextsService = beanManager.getWebBeansContext().getContextsService();
-
-        // SessionContextsTracker can't be directly used here, since it may not be in the visible class loader (Tomee)
-        // therefore inner Iterator is used as workaround
-        Object sessionContextsTracker =
-                ReflectionHelper.get(contextsService, WebBeansContextsServiceTransformer.SESSION_CONTEXTS_TRACKER_FIELD);
-
-        if (sessionContextsTracker != null) {
-            try {
-                Iterator<?> sessionContextIterator = ((Iterable<?> ) sessionContextsTracker).iterator();
-                while (sessionContextIterator.hasNext()) {
-                    sessionContextIterator.next(); // Set next active session context
-                    Context sessionContext = beanManager.getContext(SessionScoped.class);
-                    if (bean.getScope() == SessionScoped.class) {
-                        doReinjectBeanInstance(beanManager, beanClass, bean, sessionContext);
-                    } else {
-                        doReinjectCustomScopedBean(beanManager, beanClass, bean, sessionContext);
-                    }
-                    SessionScopedBeanInterceptorHandler.removeThreadLocals();
-                }
-            } finally {
-                contextsService.removeThreadLocals();
-            }
-        } else {
-            LOGGER.error("Field '{}' not found in class '{}'", WebBeansContextsServiceTransformer.SESSION_CONTEXTS_TRACKER_FIELD,
-                    contextsService.getClass().getName());
-        }
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static void doReinjectCustomScopedBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean,
-            Context parentContext) {
-
-        // Get custom context tracker from map stored in session context
-        Map trackerMap = (Map) ReflectionHelper.get(parentContext, HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD);
-        if (trackerMap == null) {
-            LOGGER.error("Custom context tracker field '{}' not found in context '{}'.", HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD,
-                    parentContext.getClass().getName());
-            return;
-        }
-
-        String scopeClassName = bean.getScope().getName();
-        Object tracker = trackerMap.get(scopeClassName);
-
-        if (tracker != null && tracker instanceof String) {
-            scopeClassName = (String) tracker;
-            tracker = trackerMap.get(scopeClassName);
-        }
-
-        if (tracker == null) {
-            LOGGER.warning("Tracker for scope '{}' not found in context '{}'.", scopeClassName, parentContext);
-            return;
-        }
-
-        if (! (tracker instanceof Iterable)) {
-            LOGGER.error("Tracker '{}' is not Iterable.", tracker.getClass().getName());
-            return;
-        }
-
-        Iterator<?> contextIterator = ((Iterable<?>) tracker).iterator();
-        try {
-            Class<? extends Annotation> scope =
-                    (Class<? extends Annotation>) beanManager.getClass().getClassLoader().loadClass(scopeClassName);
-            while (contextIterator.hasNext()) {
-                contextIterator.next(); // Set active session context
-                Context context = beanManager.getContext(scope);
-                if (context instanceof CustomPassivatingContextImpl) {
-                   context = (Context) ReflectionHelper.get(context, "context");
-                }
-                if (scopeClassName.equals(bean.getScope().getName())) {
-                    doReinjectBeanInstance(beanManager, beanClass, bean, context);
-                } else {
-                    doReinjectCustomScopedBean(beanManager, beanClass, bean, context);
-                }
-            }
-        } catch (ClassNotFoundException e) {
-            LOGGER.error("Context iteration failed.", e);
-        } finally {
-            // iterator can implement closeable to finalize iteration
-            if (contextIterator instanceof Closeable) {
-                try {
-                    ((Closeable) contextIterator).close();
-                } catch (Exception e) {
-                    LOGGER.error("Context iterator close() failed.", e);
-                }
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void doReinjectRegisteredBeanInstances(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean bean) {
+        for (Object instance: HaCdiCommons.getBeanInstances(bean)) {
+            if (instance != null) {
+                bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
+                LOGGER.info("Bean '{}' injection points was reinjected.", beanClass.getName());
+            } else {
+                LOGGER.info("Unexpected 'null' bean instance in registry. bean='{}'", beanClass.getName());
             }
         }
     }

@@ -4,7 +4,6 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
@@ -83,104 +82,14 @@ public class CdiContextsTransformer {
     }
 
     /**
-     * Transform lazy session bean store.
-     *
-     * @param ctClass the class
-     * @throws NotFoundException the not found exception
-     * @throws CannotCompileException the cannot compile exception
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.beanstore.http.LazySessionBeanStore")
-    public static void transformLazySessionBeanStore(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
-        CtMethod getSession = ctClass.getDeclaredMethod("getSession");
-        getSession.insertAfter(
-            "if($_!=null) {" +
-                "org.hotswap.agent.plugin.weld.command.HttpSessionsRegistry.addSession($_);" +
-            "}" +
-            "return $_;"
-        );
-    }
-
-    /**
      * Add custom tracker field to session context
      *
      * @param ctClass the class
      * @throws NotFoundException the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
-    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.http.HttpSessionContextImpl")
-    public static void transformHttpSessionContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
-        CtField trackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "=new java.util.HashMap();", ctClass);
-        ctClass.addField(trackerFld);
-
-        LOGGER.debug("Custom context tracker field added to '{}'.", ctClass.getName() );
-    }
-
-    /**
-     * Add custom tracker field to bound session context.
-     *
-     * @param ctClass the class
-     * @throws NotFoundException the not found exception
-     * @throws CannotCompileException the cannot compile exception
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.bound.BoundSessionContextImpl")
-    public static void transformBoundSessionContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
-        // Add custom contexts tracker for extensions contexts
-        CtField customTrackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "=new java.util.HashMap();", ctClass);
-        ctClass.addField(customTrackerFld);
-
-        // Add bean store registry
-        CtField trackerFld =
-                CtField.make("public org.hotswap.agent.plugin.weld.command.BoundSessionBeanStoreRegistry " + BOUND_SESSION_BEAN_STORE_REGISTRY + ";", ctClass);
-        ctClass.addField(trackerFld);
-        for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
-            constructor.insertAfter(
-                "this." + BOUND_SESSION_BEAN_STORE_REGISTRY + "=new org.hotswap.agent.plugin.weld.command.BoundSessionBeanStoreRegistry();"
-            );
-        }
-
-        CtMethod getSession = ctClass.getDeclaredMethod("associate");
-        getSession.insertAfter(
-            "if($_) {" +
-                BOUND_SESSION_BEAN_STORE_REGISTRY + ".addBeanStore($1);" +
-            "}" +
-            "return $_;"
-        );
-
-        CtMethod cleanupMethod = CtMethod.make(
-                "public void cleanup() {" +
-                    BOUND_SESSION_BEAN_STORE_REGISTRY + ".removeBeanStore(getBeanStore());" +
-                    "super.cleanup();" +
-                "}",
-                ctClass
-        );
-
-        ctClass.addMethod(cleanupMethod);
-
-        LOGGER.debug("Custom context tracker field added to '{}'.", ctClass.getName() );
-    }
-
-    /**
-     * Add ha-delegate to passivation context
-     *
-     * @param ctClass the class
-     * @throws NotFoundException the not found exception
-     * @throws CannotCompileException the cannot compile exception
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.PassivatingContextWrapper\\$AbstractPassivatingContextWrapper")
-    public static void transformAbstractPassivatingContextWrapper(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
-        CtMethod delegateMethod = CtMethod.make(
-                "public java.lang.Object " + HaCdiCommons.HA_DELEGATE + "() {" +
-                    "return this.context;" +
-                "}",
-                ctClass
-        );
-
-        ctClass.addMethod(delegateMethod);
-
-        LOGGER.debug(HaCdiCommons.HA_DELEGATE + " added to '{}'.", ctClass.getName() );
+    @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.AbstractContext")
+    public static void transformHttpSessionContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        HaCdiCommons.transformContext(classPool, ctClass);
     }
 }

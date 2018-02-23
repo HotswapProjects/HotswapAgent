@@ -98,38 +98,9 @@ public class CdiContextsTransformer {
     }
     */
 
-    /**
-     * Add custom tracker field to session context,
-     *
-     * @param ctClass the class
-     * @throws NotFoundException the not found exception
-     * @throws CannotCompileException the cannot compile exception
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.SessionContext")
-    public static void transformSessionContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
-        CtField trackerFld = CtField.make("public java.util.Map " + HaCdiCommons.CUSTOM_CONTEXT_TRACKER_FIELD + "= new java.util.HashMap();", ctClass);
-        ctClass.addField(trackerFld);
-
-        LOGGER.debug("org.apache.webbeans.context.SessionContext - patched by custom context tracking.");
+    @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.AbstractContext")
+    public static void transformAbstractContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        HaCdiCommons.transformContext(classPool, ctClass);
     }
-
-    /**
-     * Add re-attach hook to readExternal method
-     *
-     * @param ctClass the class
-     * @throws NotFoundException the not found exception
-     * @throws CannotCompileException the cannot compile exception
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.PassivatingContext")
-    public static void transformPassivatingContext(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
-        ctClass.getDeclaredMethod("readExternal").insertAfter(
-                "org.hotswap.agent.plugin.owb.command.CustomContextTrackersAttacher.attachTrackers(this,this.componentInstanceMap);"
-        );
-
-        LOGGER.debug("org.apache.webbeans.context.PassivatingContext - patched by custom context tracking.");
-    }
-
 
 }

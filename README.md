@@ -154,7 +154,6 @@ uses agent services to:
 * [Log4j2](plugin/hotswap-agent-log4j2-plugin/README.md) - Log4j2 configuration reload.
 * [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.1,2.2) - support for application resource bundle changes (properties files).
 * [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.2) - support for application resource bundle changes (properties files).
-* [OmniFaces](plugin/hotswap-agent-omnifaces-plugin/README.md) - ViewScoped beans reinjection.
 * [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
 * [Seam](plugin/hotswap-agent-seam-plugin/README.md) (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
