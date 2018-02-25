@@ -23,7 +23,9 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 @Plugin(name = "Mojarra",
         description = "JSF/Mojarra. Clear resource bundle cache when *.properties files are changed.",
         testedVersions = {"2.1.23, 2.2.8"},
-        expectedVersions = {"2.1", "2.2"})
+        expectedVersions = {"2.1", "2.2"},
+        supportClass = { MojarraTransformer.class }
+        )
 public class MojarraPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(MojarraPlugin.class);
 
