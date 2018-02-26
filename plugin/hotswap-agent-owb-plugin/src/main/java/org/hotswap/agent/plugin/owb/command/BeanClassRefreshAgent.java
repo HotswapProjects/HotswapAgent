@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +27,8 @@ import javax.enterprise.util.AnnotationLiteral;
 import org.apache.webbeans.component.BeanAttributesImpl;
 import org.apache.webbeans.component.InjectionTargetBean;
 import org.apache.webbeans.component.creation.BeanAttributesBuilder;
+import org.apache.webbeans.config.BeansDeployer;
+import org.apache.webbeans.config.BeansDeployer.ExtendedBeanAttributes;
 import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
@@ -131,7 +134,7 @@ public class BeanClassRefreshAgent {
                         }
                     } else {
                         // Define new bean
-                        BeanDefiner.doDefineNewManagedBean(beanManager, beanClass);
+                        doDefineNewBean(beanManager, beanClass);
                     }
                 }
             }
@@ -276,6 +279,31 @@ public class BeanClassRefreshAgent {
         } else {
             // fallback: try to reinitialize injection points instead...
             doReinjectBeanInstance(beanManager, beanClass, bean, context);
+        }
+    }
+
+    private static void doDefineNewBean(BeanManagerImpl beanManager, Class<?> beanClass) {
+        WebBeansContext wbc = beanManager.getWebBeansContext();
+
+        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
+        // Clear AnnotatedElementFactory caches (is it necessary for definition ?)
+        annotatedElementFactory.clear();
+
+        // Injection resolver cache must be cleared before / after definition
+        beanManager.getInjectionResolver().clearCaches();
+
+        AnnotatedType<?> annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
+        BeanAttributesImpl<?> attributes = BeanAttributesBuilder.forContext(wbc).newBeanAttibutes(annotatedType).build();
+        HashMap<AnnotatedType<?>, ExtendedBeanAttributes<?>> annotatedTypes = new HashMap<>();
+
+        BeansDeployer beansDeployer = new BeansDeployer(wbc);
+
+        try {
+            ReflectionHelper.invoke(beansDeployer, BeansDeployer.class, "defineManagedBean",
+                    new Class[] { javax.enterprise.inject.spi.AnnotatedType.class, javax.enterprise.inject.spi.BeanAttributes.class, java.util.Map.class },
+                    annotatedType, attributes, annotatedTypes);
+        } catch (Exception e) {
+            LOGGER.error("Bean '{}' definition failed", beanClass.getName(), e);
         }
     }
 
