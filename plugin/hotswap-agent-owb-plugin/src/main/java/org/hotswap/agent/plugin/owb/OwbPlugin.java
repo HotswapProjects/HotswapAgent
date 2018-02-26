@@ -26,7 +26,6 @@ import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.owb.transformer.BeansDeployerTransformer;
 import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
 import org.hotswap.agent.plugin.owb.transformer.ProxyFactoryTransformer;
-import org.hotswap.agent.plugin.owb.transformer.WebBeansContextsServiceTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -42,7 +41,7 @@ import org.hotswap.agent.watch.Watcher;
         description = "OpenWebBeans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"1.7.4"},
         expectedVersions = {"All between 1.7.0-1.7.4"},
-        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, WebBeansContextsServiceTransformer.class, ProxyFactoryTransformer.class})
+        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, ProxyFactoryTransformer.class})
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
