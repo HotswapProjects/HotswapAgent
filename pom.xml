@@ -28,6 +28,7 @@
         <module>plugin/hotswap-agent-cdi-plugin</module>
         <module>plugin/hotswap-agent-myfaces-plugin</module>
         <module>plugin/hotswap-agent-mojarra-plugin</module>
+        <module>plugin/hotswap-agent-omnifaces-plugin</module>
         <module>plugin/hotswap-agent-seam-plugin</module>
         <module>plugin/hotswap-agent-el-resolver-plugin</module>
         <module>plugin/hotswap-agent-osgiequinox-plugin</module>

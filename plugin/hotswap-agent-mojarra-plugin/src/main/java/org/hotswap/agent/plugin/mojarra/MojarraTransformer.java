@@ -14,8 +14,7 @@ import org.hotswap.agent.plugin.cdi.HaCdiCommons;
  */
 public class MojarraTransformer {
 
-    @OnClassLoadEvent(classNameRegexp = "(com.sun.faces.application.view.ViewScopeContext)|" +
-                                        "(org.omnifaces.cdi.viewscope.ViewScopeContext)")
+    @OnClassLoadEvent(classNameRegexp = "com.sun.faces.application.view.ViewScopeContext")
     public static void patchViewScopeContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
         HaCdiCommons.transformContext(classPool, ctClass);
     }

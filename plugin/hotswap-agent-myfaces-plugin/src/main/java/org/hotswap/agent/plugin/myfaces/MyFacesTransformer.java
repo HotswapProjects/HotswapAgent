@@ -14,8 +14,7 @@ import org.hotswap.agent.plugin.cdi.HaCdiCommons;
  */
 public class MyFacesTransformer {
 
-    @OnClassLoadEvent(classNameRegexp = "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)|" +
-                                        "(org.omnifaces.cdi.viewscope.ViewScopeContext)")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.myfaces.cdi.view.ViewScopeContextImpl")
     public static void patchViewScopeContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
         HaCdiCommons.transformContext(classPool, ctClass);
     }
