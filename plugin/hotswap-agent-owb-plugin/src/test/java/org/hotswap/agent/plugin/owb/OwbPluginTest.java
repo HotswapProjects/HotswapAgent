@@ -227,7 +227,7 @@ public class OwbPluginTest extends HAAbstractUnitTest {
             public boolean result() throws Exception {
                 return !BeanClassRefreshAgent.reloadFlag;
             }
-        }, 1000));
+        }));
 
         // TODO do not know why sleep is needed, maybe a separate thread in owb refresh?
         Thread.sleep(100);
