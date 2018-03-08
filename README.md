@@ -152,14 +152,16 @@ uses agent services to:
 * [Jersey2](plugin/hotswap-agent-jersey2-plugin/README.md) - reload Jersey2 container after root resource or provider class definition or redefinition.
 * [Logback](plugin/hotswap-agent-logback-plugin/README.md) - Logback configuration reload.
 * [Log4j2](plugin/hotswap-agent-log4j2-plugin/README.md) - Log4j2 configuration reload.
-* [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.1,2.2) - support for application resource bundle changes (properties files).
-* [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.2) - support for application resource bundle changes (properties files).
+* [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.1,2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
+* [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
+* [OmniFaces](plugin/hotswap-agent-owb-plugin/README.md) - support for ViewScoped beans reinjection/reloading.
+* [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.7.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
 * [Seam](plugin/hotswap-agent-seam-plugin/README.md) (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
 * [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3x, 4.x) - Reload Spring configuration after class definition/change.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
-* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2-2.4) - reload bean class definition after class definition/change. Support for weld proxy, EAR. Beans can be reloaded according strategy defined in property file.
+* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2-2.4) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [WildFlyELResolver](plugin/hotswap-agent-wildfly-el-plugin/README.md) - Clear BeanELResolver after any class redefinition.
 * [ZK](plugin/hotswap-agent-zk-plugin/README.md) (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and bean resolver cache.
 
@@ -234,7 +236,7 @@ Hotswap agent:
 * Jiri Bubnik - project coordinator, initial implementation
 * Alexandros Papadakis - Maven Versioning, Weld, JSF, Hibernate3, RestEasy, WildFly plugins
 * Erki Ehtla - Spring plugin, Proxy plugin
-* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld, Deltaspike, Jvm, Jdk, JBossModules, ClassInit
+* Vladimir Dvorak - ELResolver, OsgiEquinox, Weld, Owb, Deltaspike, Jvm, Jdk, JBossModules, ClassInit, JSF
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
