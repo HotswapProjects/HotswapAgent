@@ -17,6 +17,7 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 
 /**
  * Helper class for common names definition for CDI plugins
@@ -161,7 +162,25 @@ public class HaCdiCommons {
      * @param contextClass the context class
      */
     public static void registerContextClass(Class<? extends Annotation> scope, Class<? extends Context> contextClass) {
-        scopeToContextMap.put(scope, contextClass);
+
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Map currentScopeToContextMap = null;
+
+        if (classLoader != null) {
+            try {
+                Class<?> clazz = classLoader.loadClass(HaCdiCommons.class.getName());
+                currentScopeToContextMap = (Map) ReflectionHelper.get(null, clazz, "scopeToContextMap");
+            } catch (Exception e) {
+                LOGGER.error("registerContextClass '{}' failed",  contextClass.getName(), e.getMessage());
+            }
+        } else {
+            currentScopeToContextMap = scopeToContextMap;
+        }
+
+        if (!currentScopeToContextMap.containsKey(scope)) {
+            LOGGER.debug("Registering scope '{}' to scopeToContextMap@{}", scope.getName(), System.identityHashCode(currentScopeToContextMap));
+            currentScopeToContextMap.put(scope, contextClass);
+        }
     }
 
     /**
