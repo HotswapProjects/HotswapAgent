@@ -163,19 +163,7 @@ public class HaCdiCommons {
      */
     public static void registerContextClass(Class<? extends Annotation> scope, Class<? extends Context> contextClass) {
 
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Map currentScopeToContextMap = null;
-
-        if (classLoader != null) {
-            try {
-                Class<?> clazz = classLoader.loadClass(HaCdiCommons.class.getName());
-                currentScopeToContextMap = (Map) ReflectionHelper.get(null, clazz, "scopeToContextMap");
-            } catch (Exception e) {
-                LOGGER.error("registerContextClass '{}' failed",  contextClass.getName(), e.getMessage());
-            }
-        } else {
-            currentScopeToContextMap = scopeToContextMap;
-        }
+        Map<Class<? extends Annotation>, Class<? extends Context>> currentScopeToContextMap = getCurrentScopeToContextMap();
 
         if (!currentScopeToContextMap.containsKey(scope)) {
             LOGGER.debug("Registering scope '{}' to scopeToContextMap@{}", scope.getName(), System.identityHashCode(currentScopeToContextMap));
@@ -190,7 +178,7 @@ public class HaCdiCommons {
      * @return the context class
      */
     public static Class<? extends Context> getContextClass(Class<? extends Annotation> scope) {
-        return scopeToContextMap.get(scope);
+        return getCurrentScopeToContextMap().get(scope);
     }
 
     /**
@@ -201,6 +189,24 @@ public class HaCdiCommons {
      */
     public static boolean isRegisteredScope(Class<? extends Annotation> scope) {
         return getContextClass(scope) != null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<Class<? extends Annotation>, Class<? extends Context>> getCurrentScopeToContextMap() {
+
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        if (classLoader != null) {
+            try {
+                Class<?> clazz = classLoader.loadClass(HaCdiCommons.class.getName());
+                if (clazz != HaCdiCommons.class) {
+                    return (Map) ReflectionHelper.get(null, clazz, "scopeToContextMap");
+                }
+            } catch (Exception e) {
+                LOGGER.error("getCurrentScopeToContextMap '{}' failed",  e.getMessage());
+            }
+        }
+        return scopeToContextMap;
     }
 
 }
