@@ -39,6 +39,8 @@ public class TomcatPlugin {
 
     private static final String GLASSFISH_WEBAPP_CLASS_LOADER = "org.glassfish.web.loader.WebappClassLoader";
 
+    private static final String TOMEE_WEBAPP_CLASS_LOADER = "org.apache.tomee.catalina.TomEEWebappClassLoader";
+
     private static final String WEB_INF_CLASSES = "/WEB-INF/classes/";
 
     // resolved tomcat version (6/7/8).
@@ -60,7 +62,8 @@ public class TomcatPlugin {
         String classLoaderName = appClassLoader.getClass().getName();
         if (classLoaderName.equals(TOMCAT_WEBAPP_CLASS_LOADER)
                 || classLoaderName.equals(TOMCAT_PARALLEL_WEBAPP_CLASS_LOADER)
-                || classLoaderName.equals(GLASSFISH_WEBAPP_CLASS_LOADER)) {
+                || classLoaderName.equals(GLASSFISH_WEBAPP_CLASS_LOADER)
+                || classLoaderName.equals(TOMEE_WEBAPP_CLASS_LOADER)) {
             registeredResourcesMap.put(resource, appClassLoader);
 
             // create plugin configuration in advance to get extraClasspath and watchResources properties
