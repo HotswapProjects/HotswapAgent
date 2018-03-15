@@ -148,13 +148,12 @@ public class PluginRegistry {
         }
 
         // already initialized in this or parent classloader
-        if (hasPlugin(clazz, appClassLoader, false)) {
+        if (doHasPlugin(clazz, appClassLoader, false, true)) {
             LOGGER.debug("Plugin {} already initialized in parent classloader of {}.", clazz, appClassLoader );
             return getPlugin(clazz, appClassLoader);
         }
 
-        Object pluginInstance = instantiate(clazz);
-        registeredPlugins.get(clazz).put(appClassLoader, pluginInstance);
+        Object pluginInstance = registeredPlugins.get(clazz).get(appClassLoader);
 
         if (annotationProcessor.processAnnotations(pluginInstance)) {
             LOGGER.info("Plugin '{}' initialized in ClassLoader '{}'.", pluginClass, appClassLoader);
@@ -208,6 +207,10 @@ public class PluginRegistry {
      * @return true/false
      */
     public boolean hasPlugin(Class<?> pluginClass, ClassLoader classLoader, boolean checkParent) {
+        return doHasPlugin(pluginClass, classLoader,checkParent, false);
+    }
+
+    public boolean doHasPlugin(Class<?> pluginClass, ClassLoader classLoader, boolean checkParent, boolean createIfMissing) {
         if (!registeredPlugins.containsKey(pluginClass))
             return false;
 
@@ -219,6 +222,10 @@ public class PluginRegistry {
                 } else if (registeredClassLoaderEntry.getKey().equals(classLoader)) {
                     return true;
                 }
+            }
+            if (createIfMissing) {
+                Object pluginInstance = instantiate((Class<Object>) pluginClass);
+                pluginInstances.put(classLoader, pluginInstance);
             }
         }
         return false;
