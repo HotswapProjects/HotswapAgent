@@ -1,6 +1,6 @@
 [Apache Tomcat](http://tomcat.apache.org)
 ========================================
-Configure Apache Tomcat with extraClasspath property.
+Supports also Tomee, GlassFish and Payara. Configure Apache Tomcat with extraClasspath and webApp property. 
 
 Configuration
 -------------
@@ -27,6 +27,3 @@ ApplicationContext:
 * getResource(String path) - override webapp directory location
 * ClassLoader getClassLoader()  -> ClassLoader result = context.getLoader().getClassLoader();
 
-TODO
-----
-* add webappPath property
