@@ -30,14 +30,17 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     WatchFileEvent event;
     byte[] classDefinition;
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className, byte[] classDefinition) {
+    Object scannerAgent;
+
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, Object scannerAgent, String basePackage, String className, byte[] classDefinition) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
         this.className = className;
         this.classDefinition = classDefinition;
+        this.scannerAgent = scannerAgent;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, WatchFileEvent event) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, Object scannerAgent, String basePackage, WatchFileEvent event) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
         this.event = event;
@@ -47,6 +50,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         path = path.substring(path.indexOf(basePackage.replace(".", "/")));
         path = path.substring(0, path.indexOf(".class"));
         this.className = path;
+        this.scannerAgent = scannerAgent;
     }
 
     @Override
@@ -68,20 +72,31 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
 
             LOGGER.debug("Executing ClassPathBeanDefinitionScannerAgent.refreshClass('{}')", className);
 
-            Class<?> clazz = appClassLoader.loadClass(ClassPathBeanDefinitionScannerAgent.class.getName());
+            scannerAgent.getClass().getMethod("resolveAndDefineBeanDefinition", new Class[] {byte[].class}).invoke(scannerAgent, classDefinition);
+//            Class<?> clazz = loadClass("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent");
+
+            /*Class<?> clazz = appClassLoader.loadClass(ClassPathBeanDefinitionScannerAgent.class.getName());
             Method method  = clazz.getDeclaredMethod(
                     "refreshClass", new Class[] {String.class, byte[].class});
-            method.invoke(null, basePackage, classDefinition);
+            method.invoke(null, basePackage, classDefinition);*/
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
             LOGGER.error("Error refreshing class {} in classLoader {}", e, className, appClassLoader);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Plugin error, illegal access", e);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
+        }
+    }
+
+    private Class<?> loadClass(String className) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException {
+        //if jboss
+        if (appClassLoader.getClass().getName().equals("org.jboss.modules.ModuleClassLoader")) {
+            Method method = ClassLoader.class.getDeclaredMethod("findClass", String.class);
+            method.setAccessible(true);
+            return (Class<?>) method.invoke(appClassLoader, "org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent");
         }
 
+        return appClassLoader.loadClass(className);
     }
 
     /**
