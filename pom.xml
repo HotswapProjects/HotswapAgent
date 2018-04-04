@@ -91,4 +91,30 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <id>mikord</id>
+            <name>CG Repo</name>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <url>http://artifactory.center.cg/artifactory/all</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>mikord</id>
+            <name>ASD CG Release repository</name>
+            <url>http://artifactory.center.cg/artifactory/libs-releases-local</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>ASD CG Snapshots repository</name>
+            <url>http://artifactory.center.cg/artifactory/libs-snapshots-local</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
