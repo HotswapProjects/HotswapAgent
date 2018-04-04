@@ -70,17 +70,18 @@ public class SpringPlugin {
      *
      * @param basePackage only files in a basePackage
      */
-    public void registerComponentScanBasePackage(final String basePackage) {
+    public void registerComponentScanBasePackage(final String basePackage, final Object scannerAgent) {
         LOGGER.info("Registering basePackage {}", basePackage);
         final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
         hotswapTransformer.registerTransformer(appClassLoader, basePackage + ".*", new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if (classBeingRedefined != null) {
-                    if (analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer)) {
-                        scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
-                            basePackage, className, classfileBuffer));
-                    }
+                    boolean reloadNeeded = analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer);
+//          if (reloadNeeded) {
+                    scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(), scannerAgent,
+                        basePackage, className, classfileBuffer));
+//          }
                 }
                 return classfileBuffer;
             }
@@ -117,7 +118,7 @@ public class SpringPlugin {
                             }
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
                                 // refresh spring only for new classes
-                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
+                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, scannerAgent,
                                         basePackage, event), WAIT_ON_CREATE);
                             }
                         }
@@ -160,6 +161,39 @@ public class SpringPlugin {
         CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
         method.insertBefore(
                 "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
+                "setAllowRawInjectionDespiteWrapping(true); ");
+    }
+
+    /**
+     * Plugin initialization is after Spring has finished its startup and freezeConfiguration is called.
+     * <p>
+     * This will override freeze method to init plugin - plugin will be initialized and the configuration
+     * remains unfrozen, so bean (re)definition may be done by the plugin.
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
+    public static void patchDefalutListableBeanFactory(CtClass clazz) throws NotFoundException, CannotCompileException {
+        StringBuilder src = new StringBuilder("{");
+        src.append("setCacheBeanMetadata(false);");
+        src.append("}");
+
+        for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
+            constructor.insertBeforeBody(src.toString());
+        }
+
+        // freezeConfiguration cannot be disabled because of performance degradation
+        // instead call freezeConfiguration after each bean (re)definition and clear all caches.
+
+        // WARNING - allowRawInjectionDespiteWrapping is not safe, however without this
+        //   spring was not able to resolve circular references correctly.
+        //   However, the code in AbstractAutowireCapableBeanFactory.doCreateBean() in debugger always
+        //   showed that exposedObject == earlySingletonReference and hence everything is Ok.
+        // 				if (exposedObject == bean) {
+        //                  exposedObject = earlySingletonReference;
+        //   The waring is because I am not sure what is going on here.
+
+        CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
+        method.insertBefore(
+            "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
                 "setAllowRawInjectionDespiteWrapping(true); ");
     }
 

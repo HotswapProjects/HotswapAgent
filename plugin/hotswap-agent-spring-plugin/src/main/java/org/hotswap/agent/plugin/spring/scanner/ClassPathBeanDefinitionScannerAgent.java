@@ -66,14 +66,16 @@ public class ClassPathBeanDefinitionScannerAgent {
     // bean name generator obtained from the scanner
     BeanNameGenerator beanNameGenerator;
 
+    ClassLoader appClassLoader;
+
     /**
      * Return an agent instance for a scanner. If the instance does not exists yet, it is created.
      * @param scanner the scanner
      * @return agent instance
      */
-    public static ClassPathBeanDefinitionScannerAgent getInstance(ClassPathBeanDefinitionScanner scanner) {
+    public static ClassPathBeanDefinitionScannerAgent getInstance(ClassLoader appClassLoader, ClassPathBeanDefinitionScanner scanner) {
         if (!instances.containsKey(scanner)) {
-            instances.put(scanner, new ClassPathBeanDefinitionScannerAgent(scanner));
+            instances.put(scanner, new ClassPathBeanDefinitionScannerAgent(appClassLoader, scanner));
         }
         return instances.get(scanner);
     }
@@ -93,12 +95,13 @@ public class ClassPathBeanDefinitionScannerAgent {
     }
 
     // Create new instance from getInstance(ClassPathBeanDefinitionScanner scanner) and obtain services from the scanner
-    private ClassPathBeanDefinitionScannerAgent(ClassPathBeanDefinitionScanner scanner) {
+    private ClassPathBeanDefinitionScannerAgent(ClassLoader appClassLoader, ClassPathBeanDefinitionScanner scanner) {
         this.scanner = scanner;
 
         this.registry = scanner.getRegistry();
         this.scopeMetadataResolver = (ScopeMetadataResolver) ReflectionHelper.get(scanner, "scopeMetadataResolver");
         this.beanNameGenerator = (BeanNameGenerator) ReflectionHelper.get(scanner, "beanNameGenerator");
+        this.appClassLoader = appClassLoader;
     }
 
     /**
@@ -108,8 +111,8 @@ public class ClassPathBeanDefinitionScannerAgent {
     public void registerBasePackage(String basePackage) {
         this.basePackages.add(basePackage);
 
-        PluginManagerInvoker.callPluginMethod(SpringPlugin.class, getClass().getClassLoader(),
-                "registerComponentScanBasePackage", new Class[]{String.class}, new Object[]{basePackage});
+        PluginManagerInvoker.callPluginMethod(SpringPlugin.class, appClassLoader,
+                "registerComponentScanBasePackage", new Class[]{String.class, Object.class}, new Object[]{basePackage, this});
     }
 
     /**
@@ -126,14 +129,17 @@ public class ClassPathBeanDefinitionScannerAgent {
             return;
         }
 
-        BeanDefinition beanDefinition = scannerAgent.resolveBeanDefinition(classDefinition);
+        scannerAgent.resolveAndDefineBeanDefinition(classDefinition);
+    }
+
+    public void resolveAndDefineBeanDefinition(byte[] classDefinition) throws IOException {
+        BeanDefinition beanDefinition = resolveBeanDefinition(classDefinition);
         if (beanDefinition != null) {
-            scannerAgent.defineBean(beanDefinition);
+            defineBean(beanDefinition);
         }
 
         reloadFlag = false;
     }
-
 
     /**
      * Resolve candidate to a bean definition and (re)load in Spring.
