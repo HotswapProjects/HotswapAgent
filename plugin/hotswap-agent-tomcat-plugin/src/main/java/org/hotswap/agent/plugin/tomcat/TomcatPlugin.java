@@ -101,6 +101,20 @@ public class TomcatPlugin {
 
                 getExtraRepositories(appClassLoader).put("/", webappDirClassLoader);
             }
+            List<File> webappDirs = new ArrayList<File>();
+            for (URL url : pluginConfiguration.getExtraWebappContext()) {
+                try {
+                    File dir = new File(url.toURI());
+                    if (!dir.exists() || !dir.isDirectory()) {
+                        LOGGER.error("Invalid directory: " + url.toString());
+                    }
+                    webappDirs.add(dir);
+                } catch (URISyntaxException e) {
+                    LOGGER.error("Invalid directory: " + url.toString(), e);
+                }
+            }
+            Object fileDirContext = ReflectionHelper.get(resource, "dirContext");
+            EXTRA_WEB_APP_CONTEXT.put(fileDirContext, webappDirs);
         }
 
         Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
@@ -141,7 +155,18 @@ public class TomcatPlugin {
         for (int i = 0; i < currentRepositories.length; i++) {
             repositories[i+newRepositories.length] = currentRepositories[i];
         }
-        ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "repositories", repositories);
+	Class<?> superLoader = appClassLoader.getClass().getSuperclass();
+	if (superLoader.getName().equals("org.apache.catalina.loader.WebappClassLoaderBase")) {
+	    for (int i = 0; i < newRepositories.length; i++) {
+		ReflectionHelper.invoke(appClassLoader, superLoader, "addRepository", new Class[]{String.class}, newRepositories[i].toString());
+	    }
+	    ReflectionHelper.invoke(appClassLoader, superLoader, "setSearchExternalFirst", new Class[]{boolean.class}, true);
+
+	    URLClassPath ucp = (URLClassPath) ReflectionHelper.get(appClassLoader, URLClassLoader.class, "ucp");
+	    ReflectionHelper.set(appClassLoader, URLClassLoader.class, "ucp", new BlacklistClassPath(ucp));
+	} else {
+            ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "repositories", repositories);
+	}
 
         File[] files = (File[]) ReflectionHelper.get(appClassLoader, "files");
         File[] result2 = new File[files.length + newRepositories.length];
@@ -164,7 +189,9 @@ public class TomcatPlugin {
         for (int i = 0; i < files.length; i++) {
             result2[i+newRepositories.length] = files[i];
         }
-        ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "files", result2);
+	if (!superLoader.getName().equals("org.apache.catalina.loader.WebappClassLoaderBase")) {
+            ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "files", result2);
+        }
     }
 
     private static Map<String, ClassLoader> getExtraRepositories(ClassLoader appClassLoader) {
@@ -248,6 +275,23 @@ public class TomcatPlugin {
         return null;
     }
 
+    private static final Map<Object, List<File>> EXTRA_WEB_APP_CONTEXT = new ConcurrentHashMap<Object, List<File>>(16, 0.75f, 1);
+
+    public static File getExtraWebappResource(Object ctx, String name) {
+        if ("".equals(name) || name.endsWith(".class") || name.endsWith(".xml")) {
+            return null;
+        }
+        List<File> dirs = EXTRA_WEB_APP_CONTEXT.get(ctx);
+        if (dirs != null) {
+            for (File dir : dirs) {
+                File resource = new File(dir, name);
+                if (resource.exists()) {
+                    return resource;
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * Resolve the server version from ServerInfo class.

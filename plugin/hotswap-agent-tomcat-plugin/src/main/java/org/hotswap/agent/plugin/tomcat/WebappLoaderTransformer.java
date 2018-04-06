@@ -180,6 +180,14 @@ public class WebappLoaderTransformer {
         }
 
     }
+    
+    @SuppressWarnings("javadoc")
+    @OnClassLoadEvent(classNameRegexp = "org.apache.naming.resources.FileDirContext")
+    public static void patchFileDirContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        ctClass.getDeclaredMethod("file", new CtClass[]{classPool.get(String.class.getName())}).insertBefore(
+                "java.io.File extraJsp = " + TomcatPlugin.class.getName() + ".getExtraWebappResource(this, name);" //
+                        + "if (extraJsp != null) return extraJsp;");
+    }
 
     /**
      * Disable loader caches - Tomcat 7x

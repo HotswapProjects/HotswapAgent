@@ -1,5 +1,7 @@
 package org.hotswap.agent.plugin.spring;
 
+import static org.hotswap.agent.util.PluginManagerInvoker.buildCallPluginMethod;
+
 import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
@@ -203,7 +205,6 @@ public class SpringPlugin {
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
     public static void register(CtClass clazz) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
-        src.append("setCacheBeanMetadata(false);");
         // init a spring plugin with every appclassloader
         src.append(PluginManagerInvoker.buildInitializePlugin(SpringPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(SpringPlugin.class, "init",
@@ -229,6 +230,16 @@ public class SpringPlugin {
         method.insertBefore(
                 "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
                 "setAllowRawInjectionDespiteWrapping(true); ");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.context.support.AbstractApplicationContext")
+    public static void close(CtClass clazz) throws NotFoundException, CannotCompileException {
+        CtMethod method = clazz.getDeclaredMethod("close");
+        method.insertBefore(buildCallPluginMethod(SpringPlugin.class, "closeClassLoader"));
+    }
+
+    public void closeClassLoader() {
+        this.watcher.closeClassLoader(this.appClassLoader);
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")
