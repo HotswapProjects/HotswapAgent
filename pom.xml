@@ -41,6 +41,7 @@
         <module>plugin/hotswap-agent-deltaspike-plugin</module>
         <module>plugin/hotswap-agent-wildfly-el-plugin</module>
         <module>plugin/hotswap-agent-glassfish-plugin</module>
+        <module>plugin/hotswap-agent-vaadin-plugin</module>
         <module>hotswap-agent</module>
     </modules>
 
