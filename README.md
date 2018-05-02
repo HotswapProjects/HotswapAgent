@@ -166,7 +166,7 @@ uses agent services to:
 
 #### Servlet containers and application servers plugins:
 
-* [JBossModules](plugin/ihotswap-agent-jbossmodules-plugin/README.md) - add extra class path to JBoss's module class loader. (Wildfly)
+* [JBossModules](plugin/hotswap-agent-jbossmodules-plugin/README.md) - add extra class path to JBoss's module class loader. (Wildfly)
 * [Jetty](plugin/hotswap-agent-jetty-plugin/README.md) - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
 * [Tomcat](plugin/hotswap-agent-tomcat-plugin/README.md) (7.x, 8.x) configure Apache Tomcat with extraClasspath and webApp property. Supports also GlassFish, Payara and Tomee7.
 
