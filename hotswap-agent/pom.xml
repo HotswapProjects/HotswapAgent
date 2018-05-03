@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.hotswap.agent</groupId>
+        <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
         <version>1.2.1-SNAPSHOT</version>
         <relativePath>../hotswap-agent-parent/pom.xml</relativePath>
@@ -17,169 +17,169 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-hibernate-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-hibernate3-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-spring-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-jersey1-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-jersey2-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-jetty-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-tomcat-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-zk-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-logback-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-log4j2-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-cdi-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-myfaces-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-mojarra-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-omnifaces-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-seam-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-el-resolver-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-wildfly-el-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-osgiequinox-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-owb-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-proxy-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-webobjects-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-weld-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-jbossmodules-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-resteasy-registry-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-deltaspike-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-glassfish-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-vaadin-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
