@@ -200,7 +200,7 @@ agent JAR dependency to compile, but be careful NOT to add the JAR to your appli
 as a javaagent. Maven dependency:
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>HotswapAgent</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
