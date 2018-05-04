@@ -3,13 +3,11 @@ package org.hotswap.agent.plugin.spring;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinationScannerAgent;
-import org.hotswap.agent.plugin.spring.testBeans.BeanPrototype;
-import org.hotswap.agent.plugin.spring.testBeans.BeanRepository;
-import org.hotswap.agent.plugin.spring.testBeans.BeanService;
-import org.hotswap.agent.plugin.spring.testBeans.BeanServiceImpl;
+import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
+import org.hotswap.agent.plugin.spring.testBeansHotswap.Pojo2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
 import org.hotswap.agent.util.spring.io.resource.Resource;
@@ -19,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -45,15 +42,15 @@ import static org.junit.Assert.assertTrue;
 public class SpringPluginTest {
 
     @Autowired
-    AutowireCapableBeanFactory factory;
+    ApplicationContext applicationContext;
 
     /**
      * Check correct setup.
      */
     @Test
     public void basicTest() {
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanService.class).hello());
-        assertEquals("Hello from Repository ServiceWithAspect Prototype", factory.getBean(BeanPrototype.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(BeanService.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect Prototype", applicationContext.getBean(BeanPrototype.class).hello());
     }
 
 
@@ -62,12 +59,12 @@ public class SpringPluginTest {
      */
     @Test
     public void hotswapSeviceTest() throws Exception {
-        BeanServiceImpl bean = factory.getBean(BeanServiceImpl.class);
+        BeanServiceImpl bean = applicationContext.getBean(BeanServiceImpl.class);
 		assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
         assertEquals("Hello from ChangedRepository Service2WithAspect", bean.hello());
         // ensure that using interface is Ok as well
-        assertEquals("Hello from ChangedRepository Service2WithAspect", factory.getBean(BeanService.class).hello());
+        assertEquals("Hello from ChangedRepository Service2WithAspect", applicationContext.getBean(BeanService.class).hello());
 
         // return configuration
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class.getName());
@@ -82,22 +79,22 @@ public class SpringPluginTest {
     public void hotswapSeviceAddMethodTest() throws Exception {
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
 
-        String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(factory.getBean(BeanService.class),
+        String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(applicationContext.getBean(BeanService.class),
                 BeanServiceImpl.class, "helloNewMethod", new Class[] {});
         assertEquals("Hello from helloNewMethod Service2", helloNewMethodIfaceVal);
 
-        String helloNewMethodImplVal = (String) ReflectionHelper.invoke(factory.getBean(BeanServiceImpl.class),
+        String helloNewMethodImplVal = (String) ReflectionHelper.invoke(applicationContext.getBean(BeanServiceImpl.class),
                 BeanServiceImpl.class, "helloNewMethod", new Class[] {});
         assertEquals("Hello from helloNewMethod Service2", helloNewMethodImplVal);
 
         // return configuration
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class.getName());
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(BeanServiceImpl.class).hello());
     }
 
     @Test
     public void hotswapRepositoryTest() throws Exception {
-        BeanServiceImpl bean = factory.getBean(BeanServiceImpl.class);
+        BeanServiceImpl bean = applicationContext.getBean(BeanServiceImpl.class);
 		assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
         swapClasses(BeanRepository.class, BeanRepository2.class.getName());
         assertEquals("Hello from ChangedRepository2 ServiceWithAspect", bean.hello());
@@ -109,39 +106,39 @@ public class SpringPluginTest {
 
     @Test
     public void hotswapRepositoryNewMethodTest() throws Exception {
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(BeanServiceImpl.class).hello());
         swapClasses(BeanRepository.class, BeanRepository2.class.getName());
 
-        String helloNewMethodImplVal = (String) ReflectionHelper.invoke(factory.getBean("beanRepository",BeanRepository.class),
+        String helloNewMethodImplVal = (String) ReflectionHelper.invoke(applicationContext.getBean("beanRepository",BeanRepository.class),
                 BeanRepository.class, "helloNewMethod", new Class[] {});
         assertEquals("Repository new method", helloNewMethodImplVal);
 
         // return configuration
         swapClasses(BeanRepository.class, BeanRepository.class.getName());
-        assertEquals("Hello from Repository ServiceWithAspect", factory.getBean(BeanServiceImpl.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(BeanServiceImpl.class).hello());
     }
 
     @Test
     public void hotswapPrototypeTestNewInstance() throws Exception {
-        assertEquals("Hello from Repository ServiceWithAspect Prototype", factory.getBean(BeanPrototype.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect Prototype", applicationContext.getBean(BeanPrototype.class).hello());
 
         // swap service this prototype is dependent to
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
-        assertEquals("Hello from ChangedRepository Service2WithAspect Prototype", factory.getBean(BeanPrototype.class).hello());
+        assertEquals("Hello from ChangedRepository Service2WithAspect Prototype", applicationContext.getBean(BeanPrototype.class).hello());
 
         // swap autowired field
         swapClasses(BeanPrototype.class, BeanPrototype2.class.getName());
-        assertEquals("Hello from Repository Prototype2", factory.getBean(BeanPrototype.class).hello());
+        assertEquals("Hello from Repository Prototype2", applicationContext.getBean(BeanPrototype.class).hello());
 
         // return configuration
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class.getName());
         swapClasses(BeanPrototype.class, BeanPrototype.class.getName());
-        assertEquals("Hello from Repository ServiceWithAspect Prototype", factory.getBean(BeanPrototype.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect Prototype", applicationContext.getBean(BeanPrototype.class).hello());
     }
 
     @Test
     public void hotswapPrototypeTestExistingInstance() throws Exception {
-        BeanPrototype beanPrototypeInstance = factory.getBean(BeanPrototype.class);
+        BeanPrototype beanPrototypeInstance = applicationContext.getBean(BeanPrototype.class);
         assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
 
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
@@ -149,7 +146,19 @@ public class SpringPluginTest {
 
         // return configuration
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class.getName());
-        assertEquals("Hello from Repository ServiceWithAspect Prototype", factory.getBean(BeanPrototype.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect Prototype", applicationContext.getBean(BeanPrototype.class).hello());
+    }
+
+    @Test
+    public void pojoTest() throws Exception {
+        //Pojo pojo = applicationContext.getAutowireCapableBeanFactory().createBean(Pojo.class);
+
+        assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
+
+        swapClasses(Pojo.class, Pojo2.class.getName());
+
+
+        assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
     }
 
     private void swapClasses(Class original, String swap) throws Exception {
@@ -167,7 +176,7 @@ public class SpringPluginTest {
     }
 
 
-    private static ApplicationContext applicationContext;
+    private static ApplicationContext xmlApplicationContext;
     private static Resource xmlContext = new ClassPathResource("xmlContext.xml");
     private static Resource xmlContextWithRepo = new ClassPathResource("xmlContextWithRepository.xml");
     private static Resource xmlContextWithChangedRepo = new ClassPathResource("xmlContextWithChangedRepository.xml");
@@ -181,9 +190,9 @@ public class SpringPluginTest {
 
     @Before
     public void initApplicationCtx() throws IOException {
-        if (applicationContext == null) {
+        if (xmlApplicationContext == null) {
             writeRepositoryToXml();
-            applicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");
+            xmlApplicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");
         }
     }
 
@@ -203,7 +212,7 @@ public class SpringPluginTest {
 
     @Test
     public void swapXmlTest() throws IOException {
-        BeanService beanService = applicationContext.getBean("beanService", BeanService.class);
+        BeanService beanService = xmlApplicationContext.getBean("beanService", BeanService.class);
         Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
 
         XmlBeanDefinationScannerAgent.reloadFlag = true;

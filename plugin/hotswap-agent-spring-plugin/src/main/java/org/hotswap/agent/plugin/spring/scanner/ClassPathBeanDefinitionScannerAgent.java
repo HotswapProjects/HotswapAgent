@@ -126,7 +126,9 @@ public class ClassPathBeanDefinitionScannerAgent {
         }
 
         BeanDefinition beanDefinition = scannerAgent.resolveBeanDefinition(classDefinition);
-        scannerAgent.defineBean(beanDefinition);
+        if (beanDefinition != null) {
+            scannerAgent.defineBean(beanDefinition);
+        }
 
         reloadFlag = false;
     }
@@ -141,9 +143,11 @@ public class ClassPathBeanDefinitionScannerAgent {
      */
     public void defineBean(BeanDefinition candidate) {
         synchronized (getClass()) { // TODO sychronize on DefaultListableFactory.beanDefinitionMap?
+
             ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
             candidate.setScope(scopeMetadata.getScopeName());
             String beanName = this.beanNameGenerator.generateBeanName(candidate, registry);
+
             if (candidate instanceof AbstractBeanDefinition) {
                 postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
             }
@@ -152,18 +156,24 @@ public class ClassPathBeanDefinitionScannerAgent {
             }
 
             removeIfExists(beanName);
+            if (checkCandidate(beanName, candidate)) {
 
-            BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
-            definitionHolder = applyScopedProxyMode(scopeMetadata, definitionHolder, registry);
+                BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+                definitionHolder = applyScopedProxyMode(scopeMetadata, definitionHolder, registry);
 
-            LOGGER.reload("Registering Spring bean '{}'", beanName);
-            LOGGER.debug("Bean definition '{}'", beanName, candidate);
-            registerBeanDefinition(definitionHolder, registry);
+                LOGGER.reload("Registering Spring bean '{}'", beanName);
+                LOGGER.debug("Bean definition '{}'", beanName, candidate);
+                registerBeanDefinition(definitionHolder, registry);
 
-            freezeConfiguration();
+                DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
+                if (bf != null)
+                    ResetRequestMappingCaches.reset(bf);
+
+                ProxyReplacer.clearAllProxies();
+                freezeConfiguration();
+            }
         }
 
-        ProxyReplacer.clearAllProxies();
 
     }
 
@@ -217,10 +227,22 @@ public class ClassPathBeanDefinitionScannerAgent {
         Resource resource = new ByteArrayResource(bytes);
         resetCachingMetadataReaderFactoryCache();
         MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
-        ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
-        sbd.setResource(resource);
-        sbd.setSource(resource);
-        return sbd;
+
+        if (isCandidateComponent(metadataReader)) {
+            ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
+            sbd.setResource(resource);
+            sbd.setSource(resource);
+            if (isCandidateComponent(sbd)) {
+                LOGGER.debug("Identified candidate component class '{}'", metadataReader.getClassMetadata().getClassName());
+                return sbd;
+            } else {
+                LOGGER.debug("Ignored because not a concrete top-level class '{}'", metadataReader.getClassMetadata().getClassName());
+                return null;
+            }
+        } else {
+            LOGGER.trace("Ignored because not matching any filter '{}' ", metadataReader.getClassMetadata().getClassName());
+            return null;
+        }
     }
 
     private MetadataReaderFactory getMetadataReaderFactory() {
