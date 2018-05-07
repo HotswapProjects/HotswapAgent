@@ -1,17 +1,13 @@
 package org.hotswap.agent.plugin.spring.getbean;
 
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.logging.AgentLogger;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
-
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.javassist.LoaderClassPath;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.logging.AgentLogger;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Creates a Cglib proxy instance along with the neccessary Callback classes. Uses either the repackaged version of
@@ -26,7 +22,7 @@ public class EnhancerProxyCreater {
 	private static EnhancerProxyCreater INSTANCE;
 	public static final String SPRING_PACKAGE = "org.springframework.cglib.";
 	public static final String CGLIB_PACKAGE = "net.sf.cglib.";
-	
+
 	private Class<?> springProxy;
 	private Class<?> springCallback;
 	private Class<?> springNamingPolicy;
@@ -40,6 +36,8 @@ public class EnhancerProxyCreater {
 	private Object cglibLock = new Object();
 	private final ClassLoader loader;
 	private final ProtectionDomain pd;
+
+	final private Map<Object, Object> beanProxies = new WeakHashMap<>();
 	
 	public EnhancerProxyCreater(ClassLoader loader, ProtectionDomain pd) {
 		super();
@@ -79,23 +77,49 @@ public class EnhancerProxyCreater {
 	}
 	
 	private Object create(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
-		try {
-			Method proxyCreater = getProxyCreationMethod(bean);
-			if (proxyCreater == null) {
-				return bean;
+		Object proxyBean = null;
+		if (beanProxies.containsKey(bean)) {
+			proxyBean = beanProxies.get(bean);
+		} else {
+			synchronized (beanProxies) {
+				if (beanProxies.containsKey(bean)) {
+					proxyBean = bean;
+				} else {
+					proxyBean = doCreate(beanFactry, bean, paramClasses, paramValues);
+				}
+				beanProxies.put(bean, proxyBean);
 			}
-			return proxyCreater.invoke(null, beanFactry, bean, paramClasses, paramValues);
-		} catch (IllegalArgumentException | InvocationTargetException e) {
-			LOGGER.warning("Can't create proxy for " + bean.getClass().getSuperclass()
-					+ " because there is no default constructor,"
-					+ " which means your non-singleton bean created before won't get rewired with new props when update class.");
-			return bean;
-		} catch (IllegalAccessException  | CannotCompileException | NotFoundException e) {
-			LOGGER.error("Creating a proxy failed", e);
-			throw new RuntimeException(e);
 		}
+
+		// in case of HA proxy set the target. It might be cleared by clearProxies
+		//   but the underlying bean did not change. We need this to resolve target bean
+		//   in org.hotswap.agent.plugin.spring.getbean.DetachableBeanHolder.getBean()
+		if (proxyBean instanceof SpringHotswapAgentProxy) {
+			((SpringHotswapAgentProxy) proxyBean).$$ha$setTarget(bean);
+		}
+
+		return proxyBean;
 	}
-	
+
+	private Object doCreate(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+		try {
+            Method proxyCreater = getProxyCreationMethod(bean);
+            if (proxyCreater == null) {
+                return bean;
+            } else {
+				return proxyCreater.invoke(null, beanFactry, bean, paramClasses, paramValues);
+            }
+        } catch (IllegalArgumentException | InvocationTargetException e) {
+            LOGGER.warning("Can't create proxy for " + bean.getClass().getSuperclass()
+                    + " because there is no default constructor,"
+                    + " which means your non-singleton bean created before won't get rewired with new props when update class.");
+            return bean;
+        } catch (IllegalAccessException | CannotCompileException | NotFoundException e) {
+            LOGGER.error("Creating a proxy failed", e);
+            throw new RuntimeException(e);
+        }
+	}
+
 	private Method getProxyCreationMethod(Object bean) throws CannotCompileException, NotFoundException {
 		if (getCp(loader).find("org.springframework.cglib.proxy.MethodInterceptor") != null) {
 			if (createSpringProxy == null) {
@@ -154,17 +178,19 @@ public class EnhancerProxyCreater {
 		String rawBody = "public static Object create(Object beanFactry, Object bean, Class[] classes, Object[] params) {"
 				+ "{2} handler = new {2}(bean, beanFactry, classes, params);"//
 				+ "		{0}Enhancer e = new {0}Enhancer();"//
-				+ "		e.setUseCache(true);"//
-				+ "		Class[] proxyInterfaces = new Class[bean.getClass().getInterfaces().length];"//
+				+ "		e.setUseCache(false);"//
+				+ "		Class[] proxyInterfaces = new Class[bean.getClass().getInterfaces().length+1];"//
 				+ "		Class[] classInterfaces = bean.getClass().getInterfaces();"//
 				+ "		for (int i = 0; i < classInterfaces.length; i++) {"//
 				+ "			proxyInterfaces[i] = classInterfaces[i];"//
 				+ "		}"//
+				+ "		proxyInterfaces[proxyInterfaces.length-1] = org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy.class;"//
 				+ "		e.setInterfaces(proxyInterfaces);"//
 				+ "		e.setSuperclass(bean.getClass().getSuperclass());"//
-				+ "		e.setCallback(handler);"//
-				+ "		e.setCallbackType({2}.class);"//
 				+ "		e.setNamingPolicy(new {3}());"//
+				+ "		e.setCallbackType({2}.class);"//
+				+ tryObjenesisProxyCreation(cp)
+				+ "		e.setCallback(handler);"//
 				+ "		return e.create();"//
 				+ "	}";
 		String body = rawBody.replaceAll("\\{0\\}", proxy).replaceAll("\\{1\\}", core)
@@ -173,8 +199,31 @@ public class EnhancerProxyCreater {
 		ct.addMethod(m);
 		return ct.toClass(loader, pd);
 	}
-	
-	/**
+
+	// Spring 4: CGLIB-based proxy classes no longer require a default constructor. Support is provided
+    // via the objenesis library which is repackaged inline and distributed as part of the Spring Framework.
+    // With this strategy, no constructor at all is being invoked for proxy instances anymore.
+	// http://blog.codeleak.pl/2014/07/spring-4-cglib-based-proxy-classes-with-no-default-ctor.html
+    //
+    // If objenesis is not available (pre Spring 4), only beans with default constructor may by proxied
+    private String tryObjenesisProxyCreation(ClassPool cp) {
+        if (cp.find("org.springframework.objenesis.SpringObjenesis") == null) {
+            return "";
+        }
+
+		return	"		org.springframework.objenesis.SpringObjenesis objenesis = new org.springframework.objenesis.SpringObjenesis();\n" +
+                "		if (objenesis.isWorthTrying()) {\n" +
+//                "            try {\n" +
+				"                Class proxyClass = e.createClass();\n" +
+                "                Object proxyInstance = objenesis.newInstance(proxyClass, false);\n" +
+                "                ((org.springframework.cglib.proxy.Factory) proxyInstance).setCallbacks(new org.springframework.cglib.proxy.Callback[] {handler});\n" +
+                "                return proxyInstance;\n" +
+//                "            }\n" +
+//                "            catch (Throwable ex) {}\n" +
+                "        }";
+    }
+
+    /**
 	 * Creates a NamingPolicy for usage in buildProxyCreaterClass. Eventually a instance of this class will be used as
 	 * an argument for an Enhancer instances setNamingPolicy method. Classname prefix for proxies will be HOTSWAPAGENT_
 	 * 
@@ -224,8 +273,15 @@ public class EnhancerProxyCreater {
 		ct.addInterface(cp.get(proxyPackage + "MethodInterceptor"));
 		
 		String rawBody = "	public Object intercept(Object obj, java.lang.reflect.Method method, Object[] args, {0}MethodProxy proxy) throws Throwable {"//
-				+ "		if(method != null && method.getName().equals(\"finalize\") && method.getParameterTypes().length == 0)" //
+				+ "		if(method != null && method.getName().equals(\"finalize\") && method.getParameterTypes().length == 0) {" //
 				+ "			return null;" //
+				+ "		}" //
+				+ "		if(method != null && method.getName().equals(\"$$ha$getTarget\")) {" //
+				+ "			return getTarget();" //
+				+ "		}" //
+				+ "		if(method != null && method.getName().equals(\"$$ha$setTarget\")) {" //
+				+ "			setTarget(args[0]); return null;" //
+				+ "		}" //
 				+ "		return proxy.invoke(getBean(), args);" //
 				+ "	}";
 		String body = rawBody.replaceAll("\\{0\\}", proxyPackage);

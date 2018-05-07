@@ -74,6 +74,11 @@ public class ProxyReplacer {
 			}
 			return Proxy.newProxyInstance(beanFactry.getClass().getClassLoader(), interfaces, handler);
 		} else if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
+			// already a proxy, skip..
+			if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {
+				return bean;
+			}
+
 			return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
 		}
 
