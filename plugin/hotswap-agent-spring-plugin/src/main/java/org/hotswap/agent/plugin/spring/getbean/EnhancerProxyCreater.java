@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring.getbean;
 
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
+import org.springframework.core.SpringVersion;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -77,28 +78,29 @@ public class EnhancerProxyCreater {
 	}
 	
 	private Object create(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
-		Object proxyBean = null;
-		if (beanProxies.containsKey(bean)) {
-			proxyBean = beanProxies.get(bean);
-		} else {
-			synchronized (beanProxies) {
-				if (beanProxies.containsKey(bean)) {
-					proxyBean = bean;
-				} else {
-					proxyBean = doCreate(beanFactry, bean, paramClasses, paramValues);
-				}
-				beanProxies.put(bean, proxyBean);
-			}
-		}
-
-		// in case of HA proxy set the target. It might be cleared by clearProxies
-		//   but the underlying bean did not change. We need this to resolve target bean
-		//   in org.hotswap.agent.plugin.spring.getbean.DetachableBeanHolder.getBean()
-		if (proxyBean instanceof SpringHotswapAgentProxy) {
-			((SpringHotswapAgentProxy) proxyBean).$$ha$setTarget(bean);
-		}
-
-		return proxyBean;
+		return doCreate(beanFactry, bean, paramClasses, paramValues);
+//		Object proxyBean = null;
+//		if (beanProxies.containsKey(bean)) {
+//			proxyBean = beanProxies.get(bean);
+//		} else {
+//			synchronized (beanProxies) {
+//				if (beanProxies.containsKey(bean)) {
+//					proxyBean = bean;
+//				} else {
+//					proxyBean = doCreate(beanFactry, bean, paramClasses, paramValues);
+//				}
+//				beanProxies.put(bean, proxyBean);
+//			}
+//		}
+//
+//		// in case of HA proxy set the target. It might be cleared by clearProxies
+//		//   but the underlying bean did not change. We need this to resolve target bean
+//		//   in org.hotswap.agent.plugin.spring.getbean.DetachableBeanHolder.getBean()
+//		if (proxyBean instanceof SpringHotswapAgentProxy) {
+//			((SpringHotswapAgentProxy) proxyBean).$$ha$setTarget(bean);
+//		}
+//
+//		return proxyBean;
 	}
 
 	private Object doCreate(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
@@ -211,6 +213,12 @@ public class EnhancerProxyCreater {
             return "";
         }
 
+        // do not know why 4.2.6 AND 4.3.0 does not work, probably cglib version and cache problem
+        if (SpringVersion.getVersion().startsWith("4.2.6") ||
+				SpringVersion.getVersion().startsWith("4.3.0")) {
+            return "";
+        }
+
 		return	"		org.springframework.objenesis.SpringObjenesis objenesis = new org.springframework.objenesis.SpringObjenesis();\n" +
                 "		if (objenesis.isWorthTrying()) {\n" +
 //                "            try {\n" +
@@ -297,4 +305,6 @@ public class EnhancerProxyCreater {
 		cp.appendClassPath(new LoaderClassPath(loader));
 		return cp;
 	}
+
+
 }
