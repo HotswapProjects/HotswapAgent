@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.spring.getbean;
 
+import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -17,7 +18,7 @@ import org.hotswap.agent.logging.AgentLogger;
  * @author Erki Ehtla
  * 
  */
-public class DetachableBeanHolder {
+public class DetachableBeanHolder implements Serializable {
 	
 	private Object bean;
 	private Object beanFactory;
