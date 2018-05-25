@@ -165,6 +165,15 @@ public class PluginRegistry {
         return pluginInstance;
     }
 
+    public void initializePluginInstance(Object pluginInstance) {
+        registeredPlugins.put(pluginInstance.getClass(),
+                Collections.singletonMap(pluginInstance.getClass().getClassLoader(), pluginInstance));
+        if (!annotationProcessor.processAnnotations(pluginInstance)) {
+            throw new IllegalStateException("Unable to initialize plugin");
+        }
+
+    }
+
     /**
      * Returns plugin instance by it's type and classLoader.
      *

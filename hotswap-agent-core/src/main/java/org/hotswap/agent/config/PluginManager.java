@@ -80,9 +80,8 @@ public class PluginManager {
     /**
      * Check if plugin is initialized in classLoader.
      *
-     * @param pluginClass type of the plugin
+     * @param pluginClassName type of the plugin
      * @param classLoader classloader of the plugin
-     * @param checkParent for parent classloaders as well?
      * @return true/false
      */
     public boolean isPluginInitialized(String pluginClassName, ClassLoader classLoader) {

@@ -21,5 +21,5 @@ public interface Scanner {
      * @param visitor     visit each file on the path
      * @throws IOException any IO exception while scanning
      */
-    public void scan(ClassLoader classLoader, String path, ScannerVisitor visitor) throws IOException;
+    void scan(ClassLoader classLoader, String path, ScannerVisitor visitor) throws IOException;
 }
