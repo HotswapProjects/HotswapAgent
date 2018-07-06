@@ -18,6 +18,7 @@ import javax.enterprise.context.spi.Context;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.InjectionTarget;
@@ -282,6 +283,7 @@ public class BeanClassRefreshAgent {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private static void doDefineNewBean(BeanManagerImpl beanManager, Class<?> beanClass) {
         WebBeansContext wbc = beanManager.getWebBeansContext();
 
@@ -299,11 +301,22 @@ public class BeanClassRefreshAgent {
         BeansDeployer beansDeployer = new BeansDeployer(wbc);
 
         try {
+            // OWB 1.7
             ReflectionHelper.invoke(beansDeployer, BeansDeployer.class, "defineManagedBean",
-                    new Class[] { javax.enterprise.inject.spi.AnnotatedType.class, javax.enterprise.inject.spi.BeanAttributes.class, java.util.Map.class },
+                    new Class[] { javax.enterprise.inject.spi.AnnotatedType.class, BeanAttributes.class, java.util.Map.class },
                     annotatedType, attributes, annotatedTypes);
         } catch (Exception e) {
-            LOGGER.error("Bean '{}' definition failed", beanClass.getName(), e);
+            try {
+                // OWB 2.0
+                ExtendedBeanAttributes extendedBeanAttributes =
+                        ExtendedBeanAttributes.class.getConstructor(BeanAttributes.class, boolean.class, boolean.class)
+                        .newInstance(attributes, false, false);
+                ReflectionHelper.invoke(beansDeployer, BeansDeployer.class, "defineManagedBean",
+                        new Class[] { javax.enterprise.inject.spi.AnnotatedType.class, ExtendedBeanAttributes.class, java.util.Map.class },
+                        annotatedType, extendedBeanAttributes, annotatedTypes);
+            } catch (Exception ex) {
+                LOGGER.error("Bean '{}' definition failed {}", beanClass.getName(), ex.getMessage());
+            }
         }
     }
 

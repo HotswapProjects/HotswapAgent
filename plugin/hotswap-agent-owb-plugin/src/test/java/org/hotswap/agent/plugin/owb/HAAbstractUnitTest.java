@@ -79,11 +79,6 @@ public abstract class HAAbstractUnitTest
         }
     }
 
-    public void inject(final Object bean)
-    {
-        OWBInjector.inject(getBeanManager(), bean, null);
-    }
-
     protected ContainerLifecycle getLifecycle()
     {
         return testLifecycle;
