@@ -69,7 +69,7 @@ public class BeanClassRefreshAgent {
      * @param beanArchiveUrl the bean archive url
      * @throws IOException error working with classDefinition
      */
-    public static void reloadBean(ClassLoader appClassLoader, String beanClassName, String oldSignatureByStrategy,
+    public static synchronized void reloadBean(ClassLoader appClassLoader, String beanClassName, String oldSignatureByStrategy,
             String strReloadStrategy, URL beanArchiveUrl) throws IOException {
         try {
             BeanReloadStrategy reloadStrategy;
@@ -315,7 +315,7 @@ public class BeanClassRefreshAgent {
                         new Class[] { javax.enterprise.inject.spi.AnnotatedType.class, ExtendedBeanAttributes.class, java.util.Map.class },
                         annotatedType, extendedBeanAttributes, annotatedTypes);
             } catch (Exception ex) {
-                LOGGER.error("Bean '{}' definition failed {}", beanClass.getName(), ex.getMessage());
+                LOGGER.error("Bean '{}' definition failed.", beanClass.getName());
             }
         }
     }

@@ -29,7 +29,7 @@ public class ProxyRefreshAgent {
      * @param oldSignatureForProxyCheck the old signature for proxy check
      * @throws IOException error working with classDefinition
      */
-    public static void recreateProxy(ClassLoader appClassLoader, String beanClassName, String oldSignatureForProxyCheck) throws IOException {
+    public static synchronized void recreateProxy(ClassLoader appClassLoader, String beanClassName, String oldSignatureForProxyCheck) throws IOException {
         try {
             Class<?> beanClass = appClassLoader.loadClass(beanClassName);
             if (oldSignatureForProxyCheck != null) {
