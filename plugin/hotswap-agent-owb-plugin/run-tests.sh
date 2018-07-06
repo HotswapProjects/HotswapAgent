@@ -12,7 +12,7 @@ function test {
 }
 
 test 1.7.0
-test 1.7.1
-test 1.7.2
-test 1.7.3
-test 1.7.4
+test 1.7.5
+
+test 2.0.0
+test 2.0.6
