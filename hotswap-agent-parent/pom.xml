@@ -135,7 +135,7 @@
 	                <useManifestOnlyJar>false</useManifestOnlyJar>
                     <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswapagent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswapagent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
                      -->
-	                <argLine>-javaagent:${org.hotswapagent:hotswap-agent-core:jar}</argLine>
+	                <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswapagent:hotswap-agent-core:jar}</argLine>
                 </configuration>
             </plugin>
         </plugins>
