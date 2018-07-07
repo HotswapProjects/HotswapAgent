@@ -70,6 +70,7 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
 
         if (!classLoader.equals(that.classLoader)) return false;
         if (!partialBean.equals(that.partialBean)) return false;
+        if (!className.equals(that.className)) return false;
 
         return true;
     }

@@ -199,6 +199,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         BeanClassRefreshCommand that = (BeanClassRefreshCommand) o;
 
         if (!classLoader.equals(that.classLoader)) return false;
+        if (!className.equals(that.className)) return false;
         if (archivePath != null && !archivePath.equals(that.archivePath)) return false;
 
         return true;
