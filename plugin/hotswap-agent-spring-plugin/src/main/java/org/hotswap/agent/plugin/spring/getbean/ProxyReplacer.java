@@ -44,6 +44,9 @@ public class ProxyReplacer {
 	 * @return Proxied bean
 	 */
 	public static Object register(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+		if (bean == null) {
+			return bean;
+		}
 	    if (SpringPlugin.basePackagePrefixes != null) {
 	    	boolean hasMatch = false;
 			for (String basePackagePrefix : SpringPlugin.basePackagePrefixes) {
