@@ -51,7 +51,7 @@ public class SchedulerImpl implements Scheduler {
                 // get existing equals command and merge it
                 for (Command scheduledCommand : scheduledCommands.keySet()) {
                     if (command.equals(scheduledCommand)) {
-                        targetCommand = ((MergeableCommand) command).merge(scheduledCommand);
+                        targetCommand = ((MergeableCommand) scheduledCommand).merge(command);
                         break;
                     }
                 }
