@@ -64,12 +64,12 @@ public class BeanClassRefreshAgent {
      *
      * @param appClassLoader the application class loader
      * @param beanClassName the bean class name
-     * @param oldSignatureByStrategy the old signature by strategy
+     * @param oldSignatures the map of class name to old signature
      * @param strReloadStrategy the bean reload strategy
      * @param beanArchiveUrl the bean archive url
      * @throws IOException error working with classDefinition
      */
-    public static synchronized void reloadBean(ClassLoader appClassLoader, String beanClassName, String oldSignatureByStrategy,
+    public static synchronized void reloadBean(ClassLoader appClassLoader, String beanClassName, Map<String, String> oldSignatures,
             String strReloadStrategy, URL beanArchiveUrl) throws IOException {
         try {
             BeanReloadStrategy reloadStrategy;
@@ -81,7 +81,7 @@ public class BeanClassRefreshAgent {
             }
 
             Class<?> beanClass = appClassLoader.loadClass(beanClassName);
-            doReloadBean(appClassLoader, beanClass, oldSignatureByStrategy, reloadStrategy, beanArchiveUrl);
+            doReloadBean(appClassLoader, beanClass, oldSignatures, reloadStrategy, beanArchiveUrl);
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class '{}' not found.", e, beanClassName);
@@ -91,7 +91,7 @@ public class BeanClassRefreshAgent {
     }
 
     @SuppressWarnings("serial")
-    private static void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, String oldSignatureByStrategy,
+    private static void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, Map<String, String> oldSignatures,
             BeanReloadStrategy reloadStrategy, URL beanArchiveUrl) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -120,17 +120,20 @@ public class BeanClassRefreshAgent {
 
                     if (beans != null && !beans.isEmpty()) {
                         for (Bean<?> bean : beans) {
+                            if (bean.getBeanClass().isInterface()) {
+                                continue;
+                            }
                             // just now only managed beans
                             if (bean instanceof InjectionTargetBean) {
-                                createAnnotatedTypeForExistingBeanClass(beanManager, beanClass, (InjectionTargetBean) bean);
+                                createAnnotatedTypeForExistingBeanClass(beanManager, (InjectionTargetBean) bean);
                                 if (isReinjectingContext(bean)) {
-                                    doReloadInjectionTargetBean(beanManager, beanClass, (InjectionTargetBean) bean, oldSignatureByStrategy, reloadStrategy);
-                                    LOGGER.debug("Bean reloaded '{}'", beanClass.getName());
+                                    doReloadInjectionTargetBean(beanManager, (InjectionTargetBean) bean, oldSignatures, reloadStrategy);
+                                    LOGGER.debug("Bean reloaded '{}'.", bean.getBeanClass().getName());
                                 } else {
-                                    LOGGER.info("Bean '{}' redefined", beanClass.getName());
+                                    LOGGER.info("Bean '{}' redefined.", bean.getBeanClass().getName());
                                 }
                             }  else {
-                                LOGGER.warning("Class '{}' reloading not supported.", beanClass.getName());
+                                LOGGER.warning("Class '{}' reloading not supported.", bean.getBeanClass().getName());
                             }
                         }
                     } else {
@@ -148,35 +151,36 @@ public class BeanClassRefreshAgent {
         return bean.getScope() != RequestScoped.class && bean.getScope() != Dependent.class;
     }
 
-    private static void doReloadInjectionTargetBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean,
-            String oldSignatureByStrategy, BeanReloadStrategy reloadStrategy) {
+    private static void doReloadInjectionTargetBean(BeanManagerImpl beanManager, InjectionTargetBean<?> bean,
+            Map<String, String> oldSignatures, BeanReloadStrategy reloadStrategy) {
 
-        String signatureByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(reloadStrategy, beanClass);
+        String signatureByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(reloadStrategy, bean.getBeanClass());
+        String oldSignature = oldSignatures.get(bean.getBeanClass().getName());
 
         if (reloadStrategy == BeanReloadStrategy.CLASS_CHANGE ||
-                (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignatureByStrategy))) {
+                (reloadStrategy != BeanReloadStrategy.NEVER && signatureByStrategy != null && !signatureByStrategy.equals(oldSignature))) {
             // Reload bean in contexts - invalidates existing instances
-            doReloadBeanInBeanContexts(beanManager, beanClass, bean);
+            doReloadBeanInBeanContexts(beanManager, bean);
         } else {
             // keep beans in contexts, reinitialize bean injection points
-            doReinjectBean(beanManager, beanClass, bean);
+            doReinjectBean(beanManager, bean);
         }
     }
 
-    private static void doReinjectBean(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean) {
+    private static void doReinjectBean(BeanManagerImpl beanManager, InjectionTargetBean<?> bean) {
         try {
             if (!bean.getScope().equals(ApplicationScoped.class) && HaCdiCommons.isRegisteredScope(bean.getScope())) {
-                doReinjectRegisteredBeanInstances(beanManager, beanClass, bean);
+                doReinjectRegisteredBeanInstances(beanManager, bean);
             } else {
-                doReinjectBeanInstance(beanManager, beanClass, bean, beanManager.getContext(bean.getScope()));
+                doReinjectBeanInstance(beanManager, bean, beanManager.getContext(bean.getScope()));
             }
         } catch (ContextNotActiveException e) {
-            LOGGER.info("No active contexts for bean '{}'", beanClass.getName());
+            LOGGER.info("No active contexts for bean '{}'", bean.getBeanClass().getName());
         }
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static void createAnnotatedTypeForExistingBeanClass(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean bean) {
+    private static void createAnnotatedTypeForExistingBeanClass(BeanManagerImpl beanManager, InjectionTargetBean bean) {
 
         WebBeansContext wbc = beanManager.getWebBeansContext();
 
@@ -184,7 +188,7 @@ public class BeanClassRefreshAgent {
         // Clear AnnotatedElementFactory caches
         annotatedElementFactory.clear();
 
-        AnnotatedType annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
+        AnnotatedType annotatedType = annotatedElementFactory.newAnnotatedType(bean.getBeanClass());
 
         ReflectionHelper.set(bean, InjectionTargetBean.class, "annotatedType", annotatedType);
 
@@ -201,52 +205,52 @@ public class BeanClassRefreshAgent {
         InjectionTarget injectionTarget = factory.createInjectionTarget(bean);
         ReflectionHelper.set(bean, InjectionTargetBean.class, "injectionTarget", injectionTarget);
 
-        LOGGER.debug("New annotated type created for bean '{}'", beanClass.getName());
+        LOGGER.debug("New annotated type created for bean '{}'", bean.getBeanClass());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static void doReinjectRegisteredBeanInstances(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean bean) {
+    private static void doReinjectRegisteredBeanInstances(BeanManagerImpl beanManager, InjectionTargetBean bean) {
         for (Object instance: HaCdiCommons.getBeanInstances(bean)) {
             if (instance != null) {
                 bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
-                LOGGER.info("Bean '{}' injection points was reinjected.", beanClass.getName());
+                LOGGER.info("Bean '{}' injection points was reinjected.", bean.getBeanClass().getName());
             } else {
-                LOGGER.info("Unexpected 'null' bean instance in registry. bean='{}'", beanClass.getName());
+                LOGGER.info("Unexpected 'null' bean instance in registry. bean='{}'", bean.getBeanClass().getName());
             }
         }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static void doReinjectBeanInstance(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean bean, Context context) {
+    private static void doReinjectBeanInstance(BeanManagerImpl beanManager, InjectionTargetBean bean, Context context) {
         Object instance = context.get(bean);
         if (instance != null) {
             bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
-            LOGGER.info("Bean '{}' injection points was reinjected.", beanClass.getName());
+            LOGGER.info("Bean '{}' injection points was reinjected.", bean.getBeanClass().getName());
         }
     }
 
-    private static void doReloadBeanInBeanContexts(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean<?> bean) {
+    private static void doReloadBeanInBeanContexts(BeanManagerImpl beanManager, InjectionTargetBean<?> bean) {
         try {
             Map<Class<? extends Annotation>, Context> singleContextMap = getSingleContextMap(beanManager);
 
             Context context = singleContextMap.get(bean.getScope());
             if (context != null) {
-                doReloadBeanInContext(beanManager, beanClass, bean, context);
+                doReloadBeanInContext(beanManager, bean, context);
             } else {
                 Map<Class<? extends Annotation>, List<Context>> allContexts = getContextMap(beanManager);
                 List<Context> ctxList = allContexts.get(bean.getScope());
                 if (ctxList != null) {
                     for(Context ctx: ctxList) {
-                        doReloadBeanInContext(beanManager, beanClass, bean, ctx);
+                        doReloadBeanInContext(beanManager, bean, ctx);
                     }
                 } else {
-                    LOGGER.debug("No active contexts for bean '{}' in scope '{}'", beanClass.getName(),  bean.getScope());
+                    LOGGER.debug("No active contexts for bean '{}' in scope '{}'", bean.getBeanClass().getName(),  bean.getScope());
                 }
             }
         } catch (ContextNotActiveException e) {
-            LOGGER.warning("No active contexts for bean '{}'", e, beanClass.getName());
+            LOGGER.warning("No active contexts for bean '{}'", e, bean.getBeanClass().getName());
         } catch (Exception e) {
-            LOGGER.warning("Context for '{}' failed to reload", e, beanClass.getName());
+            LOGGER.warning("Context for '{}' failed to reload", e, bean.getBeanClass().getName());
         }
     }
 
@@ -274,12 +278,12 @@ public class BeanClassRefreshAgent {
         return Collections.emptyMap();
     }
 
-    private static void doReloadBeanInContext(BeanManagerImpl beanManager, Class<?> beanClass, InjectionTargetBean bean, Context context) {
+    private static void doReloadBeanInContext(BeanManagerImpl beanManager, InjectionTargetBean bean, Context context) {
         if (ContextualReloadHelper.addToReloadSet(context, bean)) {
             LOGGER.debug("Bean {}, added to reload set in context '{}'", bean, context.getClass());
         } else {
             // fallback: try to reinitialize injection points instead...
-            doReinjectBeanInstance(beanManager, beanClass, bean, context);
+            doReinjectBeanInstance(beanManager, bean, context);
         }
     }
 
@@ -296,7 +300,7 @@ public class BeanClassRefreshAgent {
 
         AnnotatedType<?> annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
         BeanAttributesImpl<?> attributes = BeanAttributesBuilder.forContext(wbc).newBeanAttibutes(annotatedType).build();
-        HashMap<AnnotatedType<?>, ExtendedBeanAttributes<?>> annotatedTypes = new HashMap<>();
+        Map<AnnotatedType<?>, ExtendedBeanAttributes<?>> annotatedTypes = new HashMap<>();
 
         BeansDeployer beansDeployer = new BeansDeployer(wbc);
 

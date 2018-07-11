@@ -148,12 +148,14 @@ public class BeanClassRefreshAgent {
     /**
      * Reload bean according strategy, reinject bean instances. Called from BeanClassRefreshCommand.
      *
-     * @param classLoader
-     * @param archivePath
-     * @param beanClassName
+     * @param classLoader the class loader
+     * @param archivePath the archive path
+     * @param beanClassName the bean class name
+     * @param oldSignatures the map of className to old signature
+     * @param strReloadStrategy the str reload strategy
      * @throws IOException error working with classDefinition
      */
-    public static void reloadBean(ClassLoader classLoader, String archivePath, String beanClassName, String oldSignatureByStrategy,
+    public static void reloadBean(ClassLoader classLoader, String archivePath, String beanClassName, Map<String, String> oldSignatures,
             String strReloadStrategy) throws IOException {
 
         BeanClassRefreshAgent bdaAgent = BdaAgentRegistry.get(archivePath);
@@ -185,8 +187,8 @@ public class BeanClassRefreshAgent {
             // Execute reload in BeanManagerClassLoader since reloading creates weld classes used for bean redefinition
             // (like EnhancedAnnotatedType)
             ReflectionHelper.invoke(null, bdaAgentClazz, "reloadBean",
-                    new Class[] {String.class, Class.class, String.class, String.class },
-                    bdaAgent.getBdaId(), beanClass, oldSignatureByStrategy, strReloadStrategy
+                    new Class[] {String.class, Class.class, Map.class, String.class },
+                    bdaAgent.getBdaId(), beanClass, oldSignatures, strReloadStrategy
             );
 
         } catch (Exception e) {
