@@ -35,12 +35,12 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
 /**
- * OSGI Equinox hotswap plugin. It watches class changes on extraClasspath and loads changed classes into appropriate equinox class loaders
+ * OSGI Equinox hotswap plugin. Watch class changes on extraClasspath and load modified classes into appropriate equinox class loader
  *
  * @author Vladimir Dvorak
  */
 @Plugin(name = "OsgiEquinox",
-        description = "Supports hotswapping in OSGI/Equinox class loaders therefore it can be used for hotswap in Eclipse RCP plugin development. ",
+        description = "Supports hotswapping in OSGI/Equinox class loader so it can be used for hotswap support in Eclipse RCP plugin development. ",
         testedVersions = {""},
         expectedVersions = {""})
 public class OsgiEquinoxPlugin {

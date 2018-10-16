@@ -16,11 +16,13 @@
 
 package org.hotswap.agent.javassist.util.proxy;
 
-import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.io.ObjectStreamException;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 
 /**
  * A proxy object is converted into an instance of this class
@@ -59,13 +61,14 @@ class SerializedProxy implements Serializable {
      */
     protected Class loadClass(final String className) throws ClassNotFoundException {
         try {
-            return (Class) AccessController.doPrivileged(new PrivilegedExceptionAction() {
-                public Object run() throws Exception {
+            return (Class)AccessController.doPrivileged(new PrivilegedExceptionAction(){
+                public Object run() throws Exception{
                     ClassLoader cl = Thread.currentThread().getContextClassLoader();
                     return Class.forName(className, true, cl);
                 }
             });
-        } catch (PrivilegedActionException pae) {
+        }
+        catch (PrivilegedActionException pae) {
             throw new RuntimeException("cannot load the class: " + className, pae.getException());
         }
     }
@@ -80,14 +83,23 @@ class SerializedProxy implements Serializable {
             ProxyFactory f = new ProxyFactory();
             f.setSuperclass(loadClass(superClass));
             f.setInterfaces(infs);
-            Proxy proxy = (Proxy) f.createClass(filterSignature).newInstance();
+            Proxy proxy = (Proxy)f.createClass(filterSignature).getConstructor().newInstance();
             proxy.setHandler(handler);
             return proxy;
-        } catch (ClassNotFoundException e) {
+        }
+        catch (NoSuchMethodException e) {
             throw new java.io.InvalidClassException(e.getMessage());
-        } catch (InstantiationException e2) {
+        }
+        catch (InvocationTargetException e) {
+            throw new java.io.InvalidClassException(e.getMessage());
+        }
+        catch (ClassNotFoundException e) {
+            throw new java.io.InvalidClassException(e.getMessage());
+        }
+        catch (InstantiationException e2) {
             throw new java.io.InvalidObjectException(e2.getMessage());
-        } catch (IllegalAccessException e3) {
+        }
+        catch (IllegalAccessException e3) {
             throw new java.io.InvalidClassException(e3.getMessage());
         }
     }

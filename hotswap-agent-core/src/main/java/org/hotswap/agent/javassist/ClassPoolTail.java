@@ -16,7 +16,13 @@
 
 package org.hotswap.agent.javassist;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.jar.JarEntry;
@@ -43,31 +49,30 @@ final class DirClassPath implements ClassPath {
         try {
             char sep = File.separatorChar;
             String filename = directory + sep
-                    + classname.replace('.', sep) + ".class";
+                + classname.replace('.', sep) + ".class";
             return new FileInputStream(filename.toString());
-        } catch (FileNotFoundException e) {
-        } catch (SecurityException e) {
         }
+        catch (FileNotFoundException e) {}
+        catch (SecurityException e) {}
         return null;
     }
 
     public URL find(String classname) {
         char sep = File.separatorChar;
         String filename = directory + sep
-                + classname.replace('.', sep) + ".class";
+            + classname.replace('.', sep) + ".class";
         File f = new File(filename);
         if (f.exists())
             try {
                 return f.getCanonicalFile().toURI().toURL();
-            } catch (MalformedURLException e) {
-            } catch (IOException e) {
             }
+            catch (MalformedURLException e) {}
+            catch (IOException e) {}
 
         return null;
     }
 
-    public void close() {
-    }
+    public void close() {}
 
     public String toString() {
         return directory;
@@ -129,15 +134,16 @@ final class JarClassPath implements ClassPath {
         try {
             jarfile = new JarFile(pathname);
             jarfileURL = new File(pathname).getCanonicalFile()
-                    .toURI().toURL().toString();
+                                           .toURI().toURL().toString();
             return;
-        } catch (IOException e) {
         }
+        catch (IOException e) {}
         throw new NotFoundException(pathname);
     }
 
     public InputStream openClassfile(String classname)
-            throws NotFoundException {
+        throws NotFoundException
+    {
         try {
             String jarname = classname.replace('.', '/') + ".class";
             JarEntry je = jarfile.getJarEntry(jarname);
@@ -145,10 +151,10 @@ final class JarClassPath implements ClassPath {
                 return jarfile.getInputStream(je);
             else
                 return null;    // not found
-        } catch (IOException e) {
         }
+        catch (IOException e) {}
         throw new NotFoundException("broken jar file?: "
-                + jarfile.getName());
+                                    + jarfile.getName());
     }
 
     public URL find(String classname) {
@@ -157,8 +163,8 @@ final class JarClassPath implements ClassPath {
         if (je != null)
             try {
                 return new URL("jar:" + jarfileURL + "!/" + jarname);
-            } catch (MalformedURLException e) {
             }
+            catch (MalformedURLException e) {}
 
         return null;            // not found
     }
@@ -167,8 +173,8 @@ final class JarClassPath implements ClassPath {
         try {
             jarfile.close();
             jarfile = null;
-        } catch (IOException e) {
         }
+        catch (IOException e) {}
     }
 
     public String toString() {
@@ -234,28 +240,32 @@ final class ClassPoolTail {
     }
 
     public ClassPath appendSystemPath() {
-        return appendClassPath(new ClassClassPath());
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        return appendClassPath(new LoaderClassPath(cl));
     }
 
     public ClassPath insertClassPath(String pathname)
-            throws NotFoundException {
+        throws NotFoundException
+    {
         return insertClassPath(makePathObject(pathname));
     }
 
     public ClassPath appendClassPath(String pathname)
-            throws NotFoundException {
+        throws NotFoundException
+    {
         return appendClassPath(makePathObject(pathname));
     }
 
     private static ClassPath makePathObject(String pathname)
-            throws NotFoundException {
+        throws NotFoundException
+    {
         String lower = pathname.toLowerCase();
         if (lower.endsWith(".jar") || lower.endsWith(".zip"))
             return new JarClassPath(pathname);
 
         int len = pathname.length();
         if (len > 2 && pathname.charAt(len - 1) == '*'
-                && (pathname.charAt(len - 2) == '/'
+            && (pathname.charAt(len - 2) == '/'
                 || pathname.charAt(len - 2) == File.separatorChar)) {
             String dir = pathname.substring(0, len - 2);
             return new JarDirClassPath(dir);
@@ -268,14 +278,16 @@ final class ClassPoolTail {
      * This method does not close the output stream.
      */
     void writeClassfile(String classname, OutputStream out)
-            throws NotFoundException, IOException, CannotCompileException {
+        throws NotFoundException, IOException, CannotCompileException
+    {
         InputStream fin = openClassfile(classname);
         if (fin == null)
             throw new NotFoundException(classname);
 
         try {
             copyStream(fin, out);
-        } finally {
+        }
+        finally {
             fin.close();
         }
     }
@@ -303,19 +315,21 @@ final class ClassPoolTail {
      * Opens the class file for the class specified by
      * <code>classname</code>.
      *
-     * @param classname a fully-qualified class name
+     * @param classname             a fully-qualified class name
      * @return null                 if the file has not been found.
-     * @throws NotFoundException if any error is reported by ClassPath.
+     * @throws NotFoundException    if any error is reported by ClassPath.
      */
     InputStream openClassfile(String classname)
-            throws NotFoundException {
+        throws NotFoundException
+    {
         ClassPathList list = pathList;
         InputStream ins = null;
         NotFoundException error = null;
         while (list != null) {
             try {
                 ins = list.path.openClassfile(classname);
-            } catch (NotFoundException e) {
+            }
+            catch (NotFoundException e) {
                 if (error == null)
                     error = e;
             }
@@ -337,7 +351,7 @@ final class ClassPoolTail {
      * specified by classname.  It is also used to determine whether
      * the class file exists.
      *
-     * @param classname a fully-qualified class name.
+     * @param classname     a fully-qualified class name.
      * @return null if the class file could not be found.
      */
     public URL find(String classname) {
@@ -357,7 +371,7 @@ final class ClassPoolTail {
     /**
      * Reads from an input stream until it reaches the end.
      *
-     * @return the contents of that input stream
+     * @return          the contents of that input stream
      */
     public static byte[] readStream(InputStream fin) throws IOException {
         byte[][] bufs = new byte[8][];
@@ -395,7 +409,8 @@ final class ClassPoolTail {
      * streams.
      */
     public static void copyStream(InputStream fin, OutputStream fout)
-            throws IOException {
+        throws IOException
+    {
         int bufsize = 4096;
         byte[] buf = null;
         for (int i = 0; i < 64; ++i) {

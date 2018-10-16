@@ -16,9 +16,16 @@
 
 package org.hotswap.agent.javassist.util.proxy;
 
-import java.io.*;
-import java.lang.reflect.Method;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.ProtectionDomain;
+
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 
 /**
  * A helper class for implementing <code>ProxyFactory</code>.
@@ -27,31 +34,10 @@ import java.security.ProtectionDomain;
  * @see ProxyFactory
  */
 public class FactoryHelper {
-    private static java.lang.reflect.Method defineClass1, defineClass2;
-
-    static {
-        try {
-            Class cl = Class.forName("java.lang.ClassLoader");
-            defineClass1 = SecurityActions.getDeclaredMethod(
-                    cl,
-                    "defineClass",
-                    new Class[]{String.class, byte[].class,
-                            int.class, int.class});
-
-            defineClass2 = SecurityActions.getDeclaredMethod(
-                    cl,
-                    "defineClass",
-                    new Class[]{String.class, byte[].class,
-                            int.class, int.class, ProtectionDomain.class});
-        } catch (Exception e) {
-            throw new RuntimeException("cannot initialize");
-        }
-    }
-
     /**
      * Returns an index for accessing arrays in this class.
      *
-     * @throws RuntimeException if a given type is not a primitive type.
+     * @throws RuntimeException     if a given type is not a primitive type.
      */
     public static final int typeIndex(Class type) {
         Class[] list = primitiveTypes;
@@ -67,25 +53,25 @@ public class FactoryHelper {
      * <code>Class</code> objects representing primitive types.
      */
     public static final Class[] primitiveTypes = {
-            Boolean.TYPE, Byte.TYPE, Character.TYPE, Short.TYPE, Integer.TYPE,
-            Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
+        Boolean.TYPE, Byte.TYPE, Character.TYPE, Short.TYPE, Integer.TYPE,
+        Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
     };
 
     /**
      * The fully-qualified names of wrapper classes for primitive types.
      */
     public static final String[] wrapperTypes = {
-            "java.lang.Boolean", "java.lang.Byte", "java.lang.Character",
-            "java.lang.Short", "java.lang.Integer", "java.lang.Long",
-            "java.lang.Float", "java.lang.Double", "java.lang.Void"
+        "java.lang.Boolean", "java.lang.Byte", "java.lang.Character",
+        "java.lang.Short", "java.lang.Integer", "java.lang.Long",
+        "java.lang.Float", "java.lang.Double", "java.lang.Void"
     };
 
     /**
      * The descriptors of the constructors of wrapper classes.
      */
     public static final String[] wrapperDesc = {
-            "(Z)V", "(B)V", "(C)V", "(S)V", "(I)V", "(J)V",
-            "(F)V", "(D)V"
+        "(Z)V", "(B)V", "(C)V", "(S)V", "(I)V", "(J)V",
+        "(F)V", "(D)V"
     };
 
     /**
@@ -95,8 +81,8 @@ public class FactoryHelper {
      * <code>java.lang.Integer</code> object.
      */
     public static final String[] unwarpMethods = {
-            "booleanValue", "byteValue", "charValue", "shortValue",
-            "intValue", "longValue", "floatValue", "doubleValue"
+        "booleanValue", "byteValue", "charValue", "shortValue",
+        "intValue", "longValue", "floatValue", "doubleValue"
     };
 
     /**
@@ -104,7 +90,7 @@ public class FactoryHelper {
      * in <code>unwrapMethods</code>.
      */
     public static final String[] unwrapDesc = {
-            "()Z", "()B", "()C", "()S", "()I", "()J", "()F", "()D"
+        "()Z", "()B", "()C", "()S", "()I", "()J", "()F", "()D"
     };
 
     /**
@@ -112,68 +98,52 @@ public class FactoryHelper {
      * and <code>double</code> are 2; the others are 1.
      */
     public static final int[] dataSize = {
-            1, 1, 1, 1, 1, 2, 1, 2
+        1, 1, 1, 1, 1, 2, 1, 2
     };
 
     /**
      * Loads a class file by a given class loader.
      * This method uses a default protection domain for the class
-     * but it may not work with a security manager or a sigend jar file.
+     * but it may not work with a security manager or a signed jar file.
      *
-     * @see #toClass(org.hotswap.agent.javassist.bytecode.ClassFile, ClassLoader, ProtectionDomain)
+     * @see #toClass(ClassFile,ClassLoader,ProtectionDomain)
      */
-    public static Class toClass(org.hotswap.agent.javassist.bytecode.ClassFile cf, ClassLoader loader)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+    public static Class toClass(ClassFile cf, ClassLoader loader)
+        throws CannotCompileException
+    {
         return toClass(cf, loader, null);
     }
 
     /**
      * Loads a class file by a given class loader.
      *
-     * @param domain if it is null, a default domain is used.
+     * @param domain        if it is null, a default domain is used.
      * @since 3.3
      */
-    public static Class toClass(org.hotswap.agent.javassist.bytecode.ClassFile cf, ClassLoader loader, ProtectionDomain domain)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+    public static Class toClass(ClassFile cf, ClassLoader loader, ProtectionDomain domain)
+        throws CannotCompileException
+    {
         try {
             byte[] b = toBytecode(cf);
-            Method method;
-            Object[] args;
-            if (domain == null) {
-                method = defineClass1;
-                args = new Object[]{cf.getName(), b, new Integer(0),
-                        new Integer(b.length)};
-            } else {
-                method = defineClass2;
-                args = new Object[]{cf.getName(), b, new Integer(0),
-                        new Integer(b.length), domain};
-            }
-
-            return toClass2(method, loader, args);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (java.lang.reflect.InvocationTargetException e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e.getTargetException());
-        } catch (Exception e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
+            /* TODO : HotswapAgent
+            if (ProxyFactory.onlyPublicMethods)
+                return DefineClassHelper.toPublicClass(cf.getName(), b);
+            else
+            */
+                return DefineClassHelper.toClass(cf.getName(), loader, domain, b);
         }
-    }
+        catch (IOException e) {
+            throw new CannotCompileException(e);
+        }
+     }
 
-    private static synchronized Class toClass2(Method method,
-                                               ClassLoader loader, Object[] args)
-            throws Exception {
-        SecurityActions.setAccessible(method, true);
-        Class clazz = (Class) method.invoke(loader, args);
-        SecurityActions.setAccessible(method, false);
-        return clazz;
-    }
-
-    private static byte[] toBytecode(org.hotswap.agent.javassist.bytecode.ClassFile cf) throws IOException {
+    private static byte[] toBytecode(ClassFile cf) throws IOException {
         ByteArrayOutputStream barray = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(barray);
         try {
             cf.write(out);
-        } finally {
+        }
+        finally {
             out.close();
         }
 
@@ -183,17 +153,18 @@ public class FactoryHelper {
     /**
      * Writes a class file.
      */
-    public static void writeFile(org.hotswap.agent.javassist.bytecode.ClassFile cf, String directoryName)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+    public static void writeFile(ClassFile cf, String directoryName)
+            throws CannotCompileException {
         try {
             writeFile0(cf, directoryName);
-        } catch (IOException e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
+        }
+        catch (IOException e) {
+            throw new CannotCompileException(e);
         }
     }
 
-    private static void writeFile0(org.hotswap.agent.javassist.bytecode.ClassFile cf, String directoryName)
-            throws org.hotswap.agent.javassist.CannotCompileException, IOException {
+    private static void writeFile0(ClassFile cf, String directoryName)
+            throws CannotCompileException, IOException {
         String classname = cf.getName();
         String filename = directoryName + File.separatorChar
                 + classname.replace('.', File.separatorChar) + ".class";
@@ -208,9 +179,11 @@ public class FactoryHelper {
                 new FileOutputStream(filename)));
         try {
             cf.write(out);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw e;
-        } finally {
+        }
+        finally {
             out.close();
         }
     }

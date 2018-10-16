@@ -8,8 +8,6 @@ Java unlimited runtime class and resource redefinition.
 The main purpose of this project is to avoid infamous change->restart + *wait*->check development lifecycle.
 Save&Reload during development should be standard and many other languages (including C#) contain this feature.
 
-This project is still in a beta version.
-
 ### Easy to start
 Download and install latest [DCEVM Java patch](https://github.com/dcevm/dcevm/releases) +
 [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) and launch your application server
@@ -145,33 +143,37 @@ uses agent services to:
 
 #### Java frameworks plugins:
 
-* [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x) - messages, ViewConfig, repository, proxy reloading.
+* [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x) - messages, ViewConfig, repository, proxy reloading. Deltaspike scoped CDI beans reinjection.
 * [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3x,4x,5x) - Reload Hibernate configuration after entity create/change.
 * [Jersey1](plugin/hotswap-agent-jersey1-plugin/README.md) - reload Jersey1 container after root resource or provider class definition or redefinition.
 * [Jersey2](plugin/hotswap-agent-jersey2-plugin/README.md) - reload Jersey2 container after root resource or provider class definition or redefinition.
-* [JSF](plugin/hotswap-agent-jsf-plugin/README.md) (mojarra 2.1, 2.2, MyFaces 2.2) - support for application resource bundle changes (properties files).
 * [Logback](plugin/hotswap-agent-logback-plugin/README.md) - Logback configuration reload.
 * [Log4j2](plugin/hotswap-agent-log4j2-plugin/README.md) - Log4j2 configuration reload.
+* [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.1,2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
+* [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
+* [OmniFaces](plugin/hotswap-agent-owb-plugin/README.md) - support for ViewScoped beans reinjection/reloading.
+* [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.7.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
 * [Seam](plugin/hotswap-agent-seam-plugin/README.md) (2.2, 2.3) - flush JBoss reference cache. Support for properties file change (messages[])
 * [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3x, 4.x) - Reload Spring configuration after class definition/change.
+* [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (10.x) - Update routes, template models and in practice anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
-* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2-2.4) - reload bean class definition after class definition/change. Support for weld proxy, EAR. Beans can be reloaded according strategy defined in property file.
+* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2-2.4) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [WildFlyELResolver](plugin/hotswap-agent-wildfly-el-plugin/README.md) - Clear BeanELResolver after any class redefinition.
 * [ZK](plugin/hotswap-agent-zk-plugin/README.md) (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and bean resolver cache.
 
 #### Servlet containers and application servers plugins:
 
-* [JBossModules](plugin/ihotswap-agent-jbossmodules-plugin/README.md) - add extra class path to JBoss's module class loader. (Wildfly)
+* [JBossModules](plugin/hotswap-agent-jbossmodules-plugin/README.md) - add extra class path to JBoss's module class loader. (Wildfly)
 * [Jetty](plugin/hotswap-agent-jetty-plugin/README.md) - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
-* [Tomcat](plugin/hotswap-agent-tomcat-plugin/README.md) (7.x, 8.x) configure Apache Tomcat with extraClasspath property.
+* [Tomcat](plugin/hotswap-agent-tomcat-plugin/README.md) (7.x, 8.x) configure Apache Tomcat with extraClasspath and webApp property. Supports also GlassFish, Payara and Tomee7.
 
 #### JVM plugins - hotswapping enhancements:
 
 * [AnonymousClassPatch](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - Swap anonymous inner class names to avoid not compatible changes.
-* [ClassInit](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM)
+* [ClassInit](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/jvm/README.md) - initializes new static members/enum values after class/enum redefinition and keeps surviving static values. (Fix of known DCEVM limitation)
 * [Hotswapper](hotswap-agent-core/src/main/java/org/hotswap/agent/plugin/hotswapper/README.md) - Watch for any class file change and reload (hotswap) it on the fly via Java Platform Debugger Architecture (JPDA)
 * [Proxy](plugin/hotswap-agent-proxy-plugin/README.md) (supported com.sun.proxy, CGlib) - redefines proxy classes that implement or extend changed interfaces or classes.
 
@@ -198,7 +200,7 @@ agent JAR dependency to compile, but be careful NOT to add the JAR to your appli
 as a javaagent. Maven dependency:
 
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>HotswapAgent</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -233,7 +235,7 @@ Hotswap agent:
 * Jiri Bubnik - project coordinator, initial implementation
 * Alexandros Papadakis - Maven Versioning, Weld, JSF, Hibernate3, RestEasy, WildFly plugins
 * Erki Ehtla - Spring plugin, Proxy plugin
-* Vladimir Dvorak - Seam, ELResolver, JSF, OsgiEquinox, Weld, Deltaspike, JavaBean, JBossModules, ClassInit
+* Vladimir Dvorak - ELResolver, OsgiEquinox, Weld, Owb, Deltaspike, Jvm, Jdk, JBossModules, ClassInit, JSF
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design

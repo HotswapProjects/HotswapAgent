@@ -48,15 +48,19 @@ public class PluginClassFileTransformer implements ClassFileTransformer {
         // can't tell
         return false;
     }
-    
+
     public boolean shouldCheckVersion(){
         return pluginAnnotation.shouldCheckVersion();
     }
-    
-    public boolean isDefaultPlugin(){
+
+    public boolean isFallbackPlugin(){
         return pluginAnnotation.isFallBack();
     }
-    
+
+    public String getPluginGroup() {
+        return pluginAnnotation.getGroup();
+    }
+
     public boolean versionMatches(ClassLoader loader){
         if (pluginAnnotation.shouldCheckVersion()) {
             DeploymentInfo info = DeploymentInfo.fromClassLoader(loader);
@@ -67,7 +71,7 @@ public class PluginClassFileTransformer implements ClassFileTransformer {
         }
         return true;
     }
-    
+
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
         if ((classBeingRedefined == null) ? !events.contains(LoadEvent.DEFINE) : !events.contains(LoadEvent.REDEFINE)) {
@@ -84,8 +88,8 @@ public class PluginClassFileTransformer implements ClassFileTransformer {
 
         return transform(pluginManager, pluginAnnotation, loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
     }
-    
-    
+
+
     @Override
     public String toString() {
         return "\n\t\t\tPluginClassFileTransformer [pluginAnnotation=" + pluginAnnotation + "]";

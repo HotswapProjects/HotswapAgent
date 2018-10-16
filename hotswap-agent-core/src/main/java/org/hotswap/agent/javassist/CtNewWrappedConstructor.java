@@ -16,6 +16,9 @@
 
 package org.hotswap.agent.javassist;
 
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.CtMethod.ConstParameter;
+
 class CtNewWrappedConstructor extends CtNewWrappedMethod {
     private static final int PASS_NONE = CtNewConstructor.PASS_NONE;
     // private static final int PASS_ARRAY = CtNewConstructor.PASS_ARRAY;
@@ -25,49 +28,55 @@ class CtNewWrappedConstructor extends CtNewWrappedMethod {
                                         CtClass[] exceptionTypes,
                                         int howToCallSuper,
                                         CtMethod body,
-                                        CtMethod.ConstParameter constParam,
+                                        ConstParameter constParam,
                                         CtClass declaring)
-            throws CannotCompileException {
+        throws CannotCompileException
+    {
         try {
             CtConstructor cons = new CtConstructor(parameterTypes, declaring);
             cons.setExceptionTypes(exceptionTypes);
-            org.hotswap.agent.javassist.bytecode.Bytecode code = makeBody(declaring, declaring.getClassFile2(),
-                    howToCallSuper, body,
-                    parameterTypes, constParam);
+            Bytecode code = makeBody(declaring, declaring.getClassFile2(),
+                                     howToCallSuper, body,
+                                     parameterTypes, constParam);
             cons.getMethodInfo2().setCodeAttribute(code.toCodeAttribute());
             // a stack map table is not needed.
             return cons;
-        } catch (NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             throw new CannotCompileException(e);
         }
     }
 
-    protected static org.hotswap.agent.javassist.bytecode.Bytecode makeBody(CtClass declaring, org.hotswap.agent.javassist.bytecode.ClassFile classfile,
-                                                                            int howToCallSuper,
-                                                                            CtMethod wrappedBody,
-                                                                            CtClass[] parameters,
-                                                                            CtMethod.ConstParameter cparam)
-            throws CannotCompileException {
+    protected static Bytecode makeBody(CtClass declaring, ClassFile classfile,
+                                       int howToCallSuper,
+                                       CtMethod wrappedBody,
+                                       CtClass[] parameters,
+                                       ConstParameter cparam)
+        throws CannotCompileException
+    {
         int stacksize, stacksize2;
 
         int superclazz = classfile.getSuperclassId();
-        org.hotswap.agent.javassist.bytecode.Bytecode code = new org.hotswap.agent.javassist.bytecode.Bytecode(classfile.getConstPool(), 0, 0);
+        Bytecode code = new Bytecode(classfile.getConstPool(), 0, 0);
         code.setMaxLocals(false, parameters, 0);
         code.addAload(0);
         if (howToCallSuper == PASS_NONE) {
             stacksize = 1;
             code.addInvokespecial(superclazz, "<init>", "()V");
-        } else if (howToCallSuper == PASS_PARAMS) {
+        }
+        else if (howToCallSuper == PASS_PARAMS) {
             stacksize = code.addLoadParameters(parameters, 1) + 1;
             code.addInvokespecial(superclazz, "<init>",
-                    org.hotswap.agent.javassist.bytecode.Descriptor.ofConstructor(parameters));
-        } else {
+                                  Descriptor.ofConstructor(parameters));
+        }
+        else {
             stacksize = compileParameterList(code, parameters, 1);
             String desc;
             if (cparam == null) {
                 stacksize2 = 2;
-                desc = CtMethod.ConstParameter.defaultConstDescriptor();
-            } else {
+                desc = ConstParameter.defaultConstDescriptor();
+            }
+            else {
                 stacksize2 = cparam.compile(code) + 2;
                 desc = cparam.constDescriptor();
             }
@@ -79,11 +88,11 @@ class CtNewWrappedConstructor extends CtNewWrappedMethod {
         }
 
         if (wrappedBody == null)
-            code.add(org.hotswap.agent.javassist.bytecode.Bytecode.RETURN);
+            code.add(Bytecode.RETURN);
         else {
             stacksize2 = makeBody0(declaring, classfile, wrappedBody,
-                    false, parameters, CtClass.voidType,
-                    cparam, code);
+                                   false, parameters, CtClass.voidType,
+                                   cparam, code);
             if (stacksize < stacksize2)
                 stacksize = stacksize2;
         }

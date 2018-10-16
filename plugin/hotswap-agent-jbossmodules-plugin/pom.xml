@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.hotswap.agent</groupId>
+        <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.0-cg-1</version>
+        <version>1.3.0</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
@@ -13,7 +13,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -25,16 +25,4 @@
             <version>1.3.7.Final</version>
         </dependency>
     </dependencies>
-   <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-eclipse-plugin</artifactId>
-                <configuration>
-                    <downloadSources>true</downloadSources>
-                    <downloadJavadocs>true</downloadJavadocs>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

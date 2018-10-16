@@ -5,6 +5,11 @@ import java.util.List;
 
 import org.apache.deltaspike.core.spi.config.view.ViewConfigNode;
 
+/**
+ * ViewConfigResolverUtils.
+ *
+ * @author Vladimir Dvorak
+ */
 public class ViewConfigResolverUtils {
 
     public static List findViewConfigRootClasses(ViewConfigNode configNode) {

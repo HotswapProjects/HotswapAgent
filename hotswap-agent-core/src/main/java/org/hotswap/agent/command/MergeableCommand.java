@@ -33,4 +33,15 @@ public abstract class MergeableCommand implements Command {
     public List<Command> getMergedCommands() {
         return mergedCommands;
     }
+
+    /**
+     * Return merged commands and clear internal list
+     *
+     * @return the list of merged commands
+     */
+    public List<Command> popMergedCommands() {
+        List<Command> result = new ArrayList<>(mergedCommands);
+        mergedCommands.clear();
+        return result;
+    }
 }

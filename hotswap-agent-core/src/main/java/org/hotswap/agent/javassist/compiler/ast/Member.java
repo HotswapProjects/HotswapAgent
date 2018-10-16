@@ -16,28 +16,25 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.CtField;
+
 /**
  * Member name.
  */
 public class Member extends Symbol {
     // cache maintained by fieldAccess() in TypeChecker.
     // this is used to obtain the value of a static final field.
-    private org.hotswap.agent.javassist.CtField field;
+    private CtField field;
 
     public Member(String name) {
         super(name);
         field = null;
     }
 
-    public void setField(org.hotswap.agent.javassist.CtField f) {
-        field = f;
-    }
+    public void setField(CtField f) { field = f; }
 
-    public org.hotswap.agent.javassist.CtField getField() {
-        return field;
-    }
+    public CtField getField() { return field; }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
-        v.atMember(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atMember(this); }
 }

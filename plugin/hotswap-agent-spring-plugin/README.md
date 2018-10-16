@@ -5,9 +5,19 @@ Reload Spring configuration after class definition/change.
 The plugin hooks for initialization into `DefaultListableBeanFactory` which is the default bean factory for
 all applicationContexts. This plugin should work for you if you use a standard Spring setup.
 
-Currently only component scan and annotation config is supported (as it is the most common configuration).
-At least XML-based bean definition will be available in a near future as well. For more complex configuration
-reload any help is warmly welcomed :-).
+Currently component scan and annotation config is supported (as it is the most common configuration).
+and XML-based bean definition is available (basePackagePrefix attribute is needed to improve performance).
+For more complex configuration reload any help is warmly welcomed :-).
+
+> Note
+>
+> Instances of non-singleton bean with no default constructor created before class file change won't be rewired with new props. It just cost too much pain too implement that with so little in return.
+>
+>  
+>
+> A bean defined by xml must have a id/name equals className with lowercase first letter or instances created before won't be rewired with new props (Updating corrsponding xml can trigger rewiring. For me, it's weird to define a bean in xml which have @Autowire props/methods).
+
+
 
 Component scan
 --------------
@@ -30,7 +40,14 @@ is enhanced to register hotswap reload and file creation events on basePackage p
 a method similar to `org.springframework.context.annotation.ClassPathBeanDefinitionScanner.doScan()` is invoked. There
 are two main differences - it scans only a single file and unregister bean definition from bean registry if required.
 
+---
+
+For xml defined bean:
+
+Hooked XmlBeanDefinitionReader.loadBeanDefinitions(URL url) method to get it's args, and use that method to loadBeanDefinition when xml changed.
+
+If you are running server using IDE, just change the xml and save it.
+If the server is running standalone, you need to change the xml under server's webapp path with autoHotswap on, because there is actually no hotswap for xml
 
 # TODO:
-* Add reload of beans defined in a XML file
 * ... a lot to do ...

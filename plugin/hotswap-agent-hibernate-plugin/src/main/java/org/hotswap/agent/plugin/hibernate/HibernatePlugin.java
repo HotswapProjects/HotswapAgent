@@ -27,12 +27,14 @@ import org.hotswap.agent.util.AnnotationHelper;
  *
  * @author Jiri Bubnik
  */
-@Plugin(name = "Hibernate", description = "Reload Hibernate configuration after entity create/change.",
+@Plugin(name = "Hibernate",
+        group = "groupHibernate",
+        fallback = true,
+        description = "Reload Hibernate configuration after entity create/change.",
         testedVersions = {"All between 4.0.1 - 4.2.13"},
         expectedVersions = {"4.0.x", "4.1.x", "4.2.x", "5.0.[0-4,7-x]", "5.1.x", "5.2.x" },
         supportClass = {HibernateTransformers.class})
 @Versions(
-        fallback = true,
         maven = {
             @Maven(value = "[4.0,6.0)", artifactId = "hibernate-core", groupId = "org.hibernate"),
             @Maven(value = "[4.0,6.0)", artifactId = "hibernate-entitymanager", groupId = "org.hibernate"),

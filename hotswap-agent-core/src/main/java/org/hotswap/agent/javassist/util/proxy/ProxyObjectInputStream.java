@@ -28,20 +28,21 @@ import java.io.ObjectStreamClass;
  *
  * @author Andrew Dinn
  */
-public class ProxyObjectInputStream extends ObjectInputStream {
+public class ProxyObjectInputStream extends ObjectInputStream
+{
     /**
      * create an input stream which can be used to deserialize an object graph which includes proxies created
      * using class ProxyFactory. the classloader used to resolve proxy superclass and interface names
      * read from the input stream will default to the current thread's context class loader or the system
      * classloader if the context class loader is null.
-     *
      * @param in
      * @throws java.io.StreamCorruptedException whenever ObjectInputStream would also do so
-     * @throws NullPointerException             if in is null
-     * @throws IOException whenever ObjectInputStream would also do so
-     * @throws SecurityException whenever ObjectInputStream would also do so
+     * @throws	IOException whenever ObjectInputStream would also do so
+     * @throws	SecurityException whenever ObjectInputStream would also do so
+     * @throws NullPointerException if in is null
      */
-    public ProxyObjectInputStream(InputStream in) throws IOException {
+    public ProxyObjectInputStream(InputStream in) throws IOException
+    {
         super(in);
         loader = Thread.currentThread().getContextClassLoader();
         if (loader == null) {
@@ -51,10 +52,10 @@ public class ProxyObjectInputStream extends ObjectInputStream {
 
     /**
      * Reset the loader to be
-     *
      * @param loader
      */
-    public void setClassLoader(ClassLoader loader) {
+    public void setClassLoader(ClassLoader loader)
+    {
         if (loader != null) {
             this.loader = loader;
         } else {
@@ -65,12 +66,12 @@ public class ProxyObjectInputStream extends ObjectInputStream {
     protected ObjectStreamClass readClassDescriptor() throws IOException, ClassNotFoundException {
         boolean isProxy = readBoolean();
         if (isProxy) {
-            String name = (String) readObject();
+            String name = (String)readObject();
             Class superClass = loader.loadClass(name);
             int length = readInt();
             Class[] interfaces = new Class[length];
             for (int i = 0; i < length; i++) {
-                name = (String) readObject();
+                name = (String)readObject();
                 interfaces[i] = loader.loadClass(name);
             }
             length = readInt();

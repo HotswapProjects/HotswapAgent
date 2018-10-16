@@ -15,9 +15,9 @@
  */
 package org.hotswap.agent.javassist.bytecode;
 
-import org.hotswap.agent.javassist.CtMethod;
-
 import java.io.PrintStream;
+
+import org.hotswap.agent.javassist.CtMethod;
 
 /**
  * Simple utility class for printing the bytecode instructions of a method.
@@ -47,8 +47,8 @@ public class InstructionPrinter implements Opcode {
      * Prints the bytecode instructions of a given method.
      */
     public void print(CtMethod method) {
-        org.hotswap.agent.javassist.bytecode.MethodInfo info = method.getMethodInfo2();
-        org.hotswap.agent.javassist.bytecode.ConstPool pool = info.getConstPool();
+        MethodInfo info = method.getMethodInfo2();
+        ConstPool pool = info.getConstPool();
         CodeAttribute code = info.getCodeAttribute();
         if (code == null)
             return;
@@ -58,7 +58,7 @@ public class InstructionPrinter implements Opcode {
             int pos;
             try {
                 pos = iterator.next();
-            } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
+            } catch (BadBytecode e) {
                 throw new RuntimeException(e);
             }
 
@@ -68,13 +68,13 @@ public class InstructionPrinter implements Opcode {
 
     /**
      * Gets a string representation of the bytecode instruction at the specified
-     * position.
+     * position. 
      */
-    public static String instructionString(CodeIterator iter, int pos, org.hotswap.agent.javassist.bytecode.ConstPool pool) {
+    public static String instructionString(CodeIterator iter, int pos, ConstPool pool) {
         int opcode = iter.byteAt(pos);
 
         if (opcode > opcodes.length || opcode < 0)
-            throw new IllegalArgumentException("Invalid opcode, opcode: " + opcode + " pos: " + pos);
+            throw new IllegalArgumentException("Invalid opcode, opcode: " + opcode + " pos: "+ pos);
 
         String opstring = opcodes[opcode];
         switch (opcode) {
@@ -84,8 +84,8 @@ public class InstructionPrinter implements Opcode {
                 return opstring + " " + iter.s16bitAt(pos + 1);
             case LDC:
                 return opstring + " " + ldc(pool, iter.byteAt(pos + 1));
-            case LDC_W:
-            case LDC2_W:
+            case LDC_W :
+            case LDC2_W :
                 return opstring + " " + ldc(pool, iter.u16bitAt(pos + 1));
             case ILOAD:
             case LLOAD:
@@ -116,7 +116,7 @@ public class InstructionPrinter implements Opcode {
             case IF_ICMPNE:
                 return opstring + " " + (iter.s16bitAt(pos + 1) + pos);
             case IINC:
-                return opstring + " " + iter.byteAt(pos + 1);
+                return opstring + " " + iter.byteAt(pos + 1) + ", " + iter.signedByteAt(pos + 2);
             case GOTO:
             case JSR:
                 return opstring + " " + (iter.s16bitAt(pos + 1) + pos);
@@ -152,7 +152,7 @@ public class InstructionPrinter implements Opcode {
                 return opstring + " " + classInfo(pool, iter.u16bitAt(pos + 1));
             case GOTO_W:
             case JSR_W:
-                return opstring + " " + (iter.s32bitAt(pos + 1) + pos);
+                return opstring + " " + (iter.s32bitAt(pos + 1)+ pos);
             default:
                 return opstring;
         }
@@ -206,19 +206,19 @@ public class InstructionPrinter implements Opcode {
     }
 
 
-    private static String classInfo(org.hotswap.agent.javassist.bytecode.ConstPool pool, int index) {
+    private static String classInfo(ConstPool pool, int index) {
         return "#" + index + " = Class " + pool.getClassInfo(index);
     }
 
 
-    private static String interfaceMethodInfo(org.hotswap.agent.javassist.bytecode.ConstPool pool, int index) {
+    private static String interfaceMethodInfo(ConstPool pool, int index) {
         return "#" + index + " = Method "
                 + pool.getInterfaceMethodrefClassName(index) + "."
                 + pool.getInterfaceMethodrefName(index) + "("
                 + pool.getInterfaceMethodrefType(index) + ")";
     }
 
-    private static String methodInfo(org.hotswap.agent.javassist.bytecode.ConstPool pool, int index) {
+    private static String methodInfo(ConstPool pool, int index) {
         return "#" + index + " = Method "
                 + pool.getMethodrefClassName(index) + "."
                 + pool.getMethodrefName(index) + "("
@@ -226,11 +226,11 @@ public class InstructionPrinter implements Opcode {
     }
 
 
-    private static String fieldInfo(org.hotswap.agent.javassist.bytecode.ConstPool pool, int index) {
+    private static String fieldInfo(ConstPool pool, int index) {
         return "#" + index + " = Field "
-                + pool.getFieldrefClassName(index) + "."
-                + pool.getFieldrefName(index) + "("
-                + pool.getFieldrefType(index) + ")";
+            + pool.getFieldrefClassName(index) + "."
+            + pool.getFieldrefName(index) + "("
+            + pool.getFieldrefType(index) + ")";
     }
 
 
@@ -273,20 +273,20 @@ public class InstructionPrinter implements Opcode {
     }
 
 
-    private static String ldc(org.hotswap.agent.javassist.bytecode.ConstPool pool, int index) {
+    private static String ldc(ConstPool pool, int index) {
         int tag = pool.getTag(index);
         switch (tag) {
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_String:
+            case ConstPool.CONST_String:
                 return "#" + index + " = \"" + pool.getStringInfo(index) + "\"";
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Integer:
+            case ConstPool.CONST_Integer:
                 return "#" + index + " = int " + pool.getIntegerInfo(index);
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Float:
+            case ConstPool.CONST_Float:
                 return "#" + index + " = float " + pool.getFloatInfo(index);
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Long:
+            case ConstPool.CONST_Long:
                 return "#" + index + " = long " + pool.getLongInfo(index);
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Double:
+            case ConstPool.CONST_Double:
                 return "#" + index + " = int " + pool.getDoubleInfo(index);
-            case org.hotswap.agent.javassist.bytecode.ConstPool.CONST_Class:
+            case ConstPool.CONST_Class:
                 return classInfo(pool, index);
             default:
                 throw new RuntimeException("bad LDC: " + tag);

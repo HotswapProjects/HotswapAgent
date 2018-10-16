@@ -9,7 +9,9 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
- * The Class ViewConfigReloader.
+ * ViewConfigReloader.
+ *
+ * @author Vladimir Dvorak
  */
 public class ViewConfigReloader {
 
@@ -28,7 +30,7 @@ public class ViewConfigReloader {
             }
             viewConfigExtension.buildViewConfig(null);
         } catch (ClassNotFoundException e) {
-            LOGGER.error("Deltaspike view config reloading failed", e);
+            LOGGER.error("Deltaspike view config reloading failed.", e);
         }
     }
 
@@ -46,7 +48,7 @@ public class ViewConfigReloader {
                     doAddPageDefinition(classLoader, viewConfigExtension, reloadedSubclass);
                 }
             } catch (ClassNotFoundException e) {
-                LOGGER.debug("ViewConfig subclass removed {} ", subClass.getName());
+                LOGGER.debug("ViewConfig subclass '{}' removed", subClass.getName());
             }
         }
     }

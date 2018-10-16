@@ -109,29 +109,32 @@ public class Lex implements TokenId {
 
     private int readLine(Token token) {
         int c = getNextNonWhiteChar();
-        if (c < 0)
+        if(c < 0)
             return c;
-        else if (c == '\n') {
+        else if(c == '\n') {
             ++lineNumber;
             return '\n';
-        } else if (c == '\'')
+        }
+        else if (c == '\'')
             return readCharConst(token);
         else if (c == '"')
             return readStringL(token);
         else if ('0' <= c && c <= '9')
             return readNumber(c, token);
-        else if (c == '.') {
+        else if(c == '.'){
             c = getc();
             if ('0' <= c && c <= '9') {
                 StringBuffer tbuf = textBuffer;
                 tbuf.setLength(0);
                 tbuf.append('.');
                 return readDouble(tbuf, c, token);
-            } else {
+            }
+            else{
                 ungetc(c);
                 return readSeparator('.');
             }
-        } else if (Character.isJavaIdentifierStart((char) c))
+        }
+        else if (Character.isJavaIdentifierStart((char)c))
             return readIdentifier(c, token);
         else
             return readSeparator(c);
@@ -156,7 +159,8 @@ public class Lex implements TokenId {
                             if ((c = getc()) == '/') {
                                 c = ' ';
                                 break;
-                            } else
+                            }
+                            else
                                 ungetc(c);
                     }
                 else {
@@ -164,7 +168,7 @@ public class Lex implements TokenId {
                     c = '/';
                 }
             }
-        } while (isBlank(c));
+        } while(isBlank(c));
         return c;
     }
 
@@ -179,7 +183,8 @@ public class Lex implements TokenId {
                     ++lineNumber;
 
                 return BadToken;
-            } else
+            }
+            else
                 value = c;
 
         token.longValue = value;
@@ -206,7 +211,7 @@ public class Lex implements TokenId {
         int c;
         StringBuffer tbuf = textBuffer;
         tbuf.setLength(0);
-        for (; ; ) {
+        for (;;) {
             while ((c = getc()) != '"') {
                 if (c == '\\')
                     c = readEscapeChar();
@@ -215,10 +220,10 @@ public class Lex implements TokenId {
                     return BadToken;
                 }
 
-                tbuf.append((char) c);
+                tbuf.append((char)c);
             }
 
-            for (; ; ) {
+            for (;;) {
                 c = getc();
                 if (c == '\n')
                     ++lineNumber;
@@ -241,14 +246,14 @@ public class Lex implements TokenId {
         int c2 = getc();
         if (c == '0')
             if (c2 == 'X' || c2 == 'x')
-                for (; ; ) {
+                for (;;) {
                     c = getc();
                     if ('0' <= c && c <= '9')
-                        value = value * 16 + (long) (c - '0');
+                        value = value * 16 + (long)(c - '0');
                     else if ('A' <= c && c <= 'F')
-                        value = value * 16 + (long) (c - 'A' + 10);
+                        value = value * 16 + (long)(c - 'A' + 10);
                     else if ('a' <= c && c <= 'f')
-                        value = value * 16 + (long) (c - 'a' + 10);
+                        value = value * 16 + (long)(c - 'a' + 10);
                     else {
                         token.longValue = value;
                         if (c == 'L' || c == 'l')
@@ -261,10 +266,10 @@ public class Lex implements TokenId {
                 }
             else if ('0' <= c2 && c2 <= '7') {
                 value = c2 - '0';
-                for (; ; ) {
+                for (;;) {
                     c = getc();
                     if ('0' <= c && c <= '7')
-                        value = value * 8 + (long) (c - '0');
+                        value = value * 8 + (long)(c - '0');
                     else {
                         token.longValue = value;
                         if (c == 'L' || c == 'l')
@@ -285,15 +290,17 @@ public class Lex implements TokenId {
 
         token.longValue = value;
         if (c2 == 'F' || c2 == 'f') {
-            token.doubleValue = (double) value;
+            token.doubleValue = (double)value;
             return FloatConstant;
-        } else if (c2 == 'E' || c2 == 'e'
-                || c2 == 'D' || c2 == 'd' || c2 == '.') {
+        }
+        else if (c2 == 'E' || c2 == 'e'
+                 || c2 == 'D' || c2 == 'd' || c2 == '.') {
             StringBuffer tbuf = textBuffer;
             tbuf.setLength(0);
             tbuf.append(value);
             return readDouble(tbuf, c2, token);
-        } else if (c2 == 'L' || c2 == 'l')
+        }
+        else if (c2 == 'L' || c2 == 'l')
             return LongConstant;
         else {
             ungetc(c2);
@@ -303,33 +310,34 @@ public class Lex implements TokenId {
 
     private int readDouble(StringBuffer sbuf, int c, Token token) {
         if (c != 'E' && c != 'e' && c != 'D' && c != 'd') {
-            sbuf.append((char) c);
-            for (; ; ) {
+            sbuf.append((char)c);
+            for (;;) {
                 c = getc();
                 if ('0' <= c && c <= '9')
-                    sbuf.append((char) c);
+                    sbuf.append((char)c);
                 else
                     break;
             }
         }
 
         if (c == 'E' || c == 'e') {
-            sbuf.append((char) c);
+            sbuf.append((char)c);
             c = getc();
             if (c == '+' || c == '-') {
-                sbuf.append((char) c);
+                sbuf.append((char)c);
                 c = getc();
             }
 
             while ('0' <= c && c <= '9') {
-                sbuf.append((char) c);
+                sbuf.append((char)c);
                 c = getc();
             }
         }
 
         try {
             token.doubleValue = Double.parseDouble(sbuf.toString());
-        } catch (NumberFormatException e) {
+        }
+        catch (NumberFormatException e) {
             return BadToken;
         }
 
@@ -345,70 +353,74 @@ public class Lex implements TokenId {
 
     // !"#$%&'(    )*+,-./0    12345678    9:;<=>?
     private static final int[] equalOps
-            = {NEQ, 0, 0, 0, MOD_E, AND_E, 0, 0,
-            0, MUL_E, PLUS_E, 0, MINUS_E, 0, DIV_E, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, LE, EQ, GE, 0};
+        =  { NEQ, 0, 0, 0, MOD_E, AND_E, 0, 0,
+             0, MUL_E, PLUS_E, 0, MINUS_E, 0, DIV_E, 0,
+             0, 0, 0, 0, 0, 0, 0, 0,
+             0, 0, 0, LE, EQ, GE, 0 };
 
     private int readSeparator(int c) {
         int c2, c3;
         if ('!' <= c && c <= '?') {
             int t = equalOps[c - '!'];
-            if (t == 0)
+            if (t == 0) 
                 return c;
             else {
                 c2 = getc();
                 if (c == c2)
                     switch (c) {
-                        case '=':
-                            return EQ;
-                        case '+':
-                            return PLUSPLUS;
-                        case '-':
-                            return MINUSMINUS;
-                        case '&':
-                            return ANDAND;
-                        case '<':
+                    case '=' :
+                        return EQ;
+                    case '+' :
+                        return PLUSPLUS;
+                    case '-' :
+                        return MINUSMINUS;
+                    case '&' :
+                        return ANDAND;
+                    case '<' :
+                        c3 = getc();
+                        if (c3 == '=')
+                            return LSHIFT_E;
+                        else {
+                            ungetc(c3);
+                            return LSHIFT;
+                        }
+                    case '>' :
+                        c3 = getc();
+                        if (c3 == '=')
+                            return RSHIFT_E;
+                        else if (c3 == '>') {
                             c3 = getc();
                             if (c3 == '=')
-                                return LSHIFT_E;
+                                return ARSHIFT_E;
                             else {
                                 ungetc(c3);
-                                return LSHIFT;
+                                return ARSHIFT;
                             }
-                        case '>':
-                            c3 = getc();
-                            if (c3 == '=')
-                                return RSHIFT_E;
-                            else if (c3 == '>') {
-                                c3 = getc();
-                                if (c3 == '=')
-                                    return ARSHIFT_E;
-                                else {
-                                    ungetc(c3);
-                                    return ARSHIFT;
-                                }
-                            } else {
-                                ungetc(c3);
-                                return RSHIFT;
-                            }
-                        default:
-                            break;
+                        }
+                        else {
+                            ungetc(c3);
+                            return RSHIFT;
+                        }
+                    default :
+                        break;
                     }
                 else if (c2 == '=')
                     return t;
             }
-        } else if (c == '^') {
+        }
+        else if (c == '^') {
             c2 = getc();
             if (c2 == '=')
                 return EXOR_E;
-        } else if (c == '|') {
+        }
+        else if (c == '|') {
             c2 = getc();
             if (c2 == '=')
                 return OR_E;
             else if (c2 == '|')
                 return OROR;
-        } else
+        }
+        else
             return c;
 
         ungetc(c2);
@@ -420,9 +432,9 @@ public class Lex implements TokenId {
         tbuf.setLength(0);
 
         do {
-            tbuf.append((char) c);
+            tbuf.append((char)c);
             c = getc();
-        } while (Character.isJavaIdentifierPart((char) c));
+        } while (Character.isJavaIdentifierPart((char)c));
 
         ungetc(c);
 
@@ -501,7 +513,7 @@ public class Lex implements TokenId {
 
     private static boolean isBlank(int c) {
         return c == ' ' || c == '\t' || c == '\f' || c == '\r'
-                || c == '\n';
+            || c == '\n';
     }
 
     private static boolean isDigit(int c) {

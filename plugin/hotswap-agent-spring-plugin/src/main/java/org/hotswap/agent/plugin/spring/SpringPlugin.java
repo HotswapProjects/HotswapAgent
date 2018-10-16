@@ -1,14 +1,13 @@
 package org.hotswap.agent.plugin.spring;
 
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.*;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -22,7 +21,10 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 
 /**
  * Spring plugin.
@@ -31,7 +33,7 @@ import java.util.Enumeration;
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
         testedVersions = {"All between 3.0.1 - 4.2.6"}, expectedVersions = {"3x", "4x"},
-        supportClass = {ClassPathBeanDefinitionScannerTransformer.class, ProxyReplacerTransformer.class})
+        supportClass = {ClassPathBeanDefinitionScannerTransformer.class, ProxyReplacerTransformer.class, XmlBeanDefinitionScannerTransformer.class})
 public class SpringPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
@@ -42,6 +44,8 @@ public class SpringPlugin {
      * Wait this this timeout after class file event.
      */
     private static final int WAIT_ON_CREATE = 600;
+
+    public static String[] basePackagePrefixes;
 
     @Init
     HotswapTransformer hotswapTransformer;
@@ -57,23 +61,48 @@ public class SpringPlugin {
 
     public void init() {
         LOGGER.info("Spring plugin initialized");
+        this.registerBasePackageFromConfiguration();
+        this.initBasePackagePrefixes();
     }
     public void init(String version) {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
+        this.registerBasePackageFromConfiguration();
+        this.initBasePackagePrefixes();
+    }
+
+    private void initBasePackagePrefixes() {
+        PluginConfiguration pluginConfiguration = new PluginConfiguration(this.appClassLoader);
+        if (basePackagePrefixes == null || basePackagePrefixes.length == 0) {
+            basePackagePrefixes = pluginConfiguration.getBasePackagePrefixes();
+        } else {
+            String[] newBasePackagePrefixes = pluginConfiguration.getBasePackagePrefixes();
+            List<String> both = new ArrayList<>(basePackagePrefixes.length + newBasePackagePrefixes.length);
+            Collections.addAll(both, basePackagePrefixes);
+            Collections.addAll(both, newBasePackagePrefixes);
+            basePackagePrefixes = both.toArray(new String[both.size()]);
+        }
+    }
+
+    @OnResourceFileEvent(path="/", filter = ".*.xml", events = {FileEvent.MODIFY})
+    public void registerResourceListeners(URL url) {
+        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, url));
     }
 
     /**
-     * Register both hotswap transformer AND watcher - in case of new file the file is not known
-     * to JVM and hence no hotswap is called. The file may even exist, but until is loaded by Spring
-     * it will not be known by the JVM. File events are processed only if the class is not known to the
-     * classloader yet.
-     *
-     * @param basePackage only files in a basePackage
+     * register base package prefix from configuration file
      */
-    public void registerComponentScanBasePackage(final String basePackage, final Object scannerAgent) {
-        LOGGER.info("Registering basePackage {}", basePackage);
-        final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
-        hotswapTransformer.registerTransformer(appClassLoader, basePackage + ".*", new ClassFileTransformer() {
+    public void registerBasePackageFromConfiguration() {
+        if (basePackagePrefixes != null) {
+            for (String basePackagePrefix : basePackagePrefixes) {
+                this.registerBasePackage(basePackagePrefix);
+            }
+        }
+    }
+
+    private void registerBasePackage(final String basePackage, final Object scannerAgent) {
+      LOGGER.info("Registering basePackage {}", basePackage);
+      final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
+        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage), new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if (classBeingRedefined != null) {
@@ -86,10 +115,24 @@ public class SpringPlugin {
                 return classfileBuffer;
             }
         });
+    }
+
+    /**
+     * Register both hotswap transformer AND watcher - in case of new file the file is not known
+     * to JVM and hence no hotswap is called. The file may even exist, but until is loaded by Spring
+     * it will not be known by the JVM. File events are processed only if the class is not known to the
+     * classloader yet.
+     *
+     * @param basePackage only files in a basePackage
+     */
+    public void registerComponentScanBasePackage(final String basePackage) {
+        LOGGER.info("Registering basePackage {}", basePackage);
+
+        this.registerBasePackage(basePackage);
 
         Enumeration<URL> resourceUrls = null;
         try {
-            resourceUrls = appClassLoader.getResources(basePackage.replace(".", "/"));
+            resourceUrls = getResources(basePackage);
         } catch (IOException e) {
             LOGGER.error("Unable to resolve base package {} in classloader {}.", basePackage, appClassLoader);
             return;
@@ -119,13 +162,38 @@ public class SpringPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
                                 // refresh spring only for new classes
                                 scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, scannerAgent,
-                                        basePackage, event), WAIT_ON_CREATE);
+                                        basePackage, className, event), WAIT_ON_CREATE);
                             }
                         }
                     }
                 });
             }
         }
+    }
+
+    private String getClassNameRegExp(String basePackage) {
+        String regexp = basePackage;
+        while (regexp.contains("**")) {
+            regexp = regexp.replace("**", ".*");
+        }
+        if (!regexp.endsWith(".*")) {
+            regexp += ".*";
+        }
+        return regexp;
+    }
+
+    private Enumeration<URL> getResources(String basePackage) throws IOException {
+        String resourceName = basePackage;
+        int index = resourceName.indexOf('*');
+        if (index != -1) {
+            resourceName = resourceName.substring(0, index);
+            index = resourceName.lastIndexOf('.');
+            if (index != -1) {
+                resourceName = resourceName.substring(0, index);
+            }
+        }
+        resourceName = resourceName.replace('.', '/');
+        return appClassLoader.getResources(resourceName);
     }
 
     /**
@@ -138,6 +206,7 @@ public class SpringPlugin {
     public static void register(CtClass clazz) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
         src.append("setCacheBeanMetadata(false);");
+        // init a spring plugin with every appclassloader
         src.append(PluginManagerInvoker.buildInitializePlugin(SpringPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(SpringPlugin.class, "init",
                 "org.springframework.core.SpringVersion.getVersion()", String.class.getName()));

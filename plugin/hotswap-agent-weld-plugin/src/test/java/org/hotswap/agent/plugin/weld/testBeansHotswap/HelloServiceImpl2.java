@@ -4,7 +4,6 @@ import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.hotswap.agent.plugin.weld.testBeans.ChangedHelloProducer;
 import org.hotswap.agent.plugin.weld.testBeans.HelloService;
 
 /**
@@ -16,17 +15,17 @@ public class HelloServiceImpl2 implements HelloService {
     String name;
 
     @Inject
-    ChangedHelloProducer helloChanged;
+    HelloProducer2 helloProducer;
 
     public String hello() {
-        return name + ":" + helloChanged.hello();
+        return name + ":" + helloProducer.hello();
     }
 
     public String helloNewMethod() {
-        return "Hello from helloNewMethod";
+        return "HelloServiceImpl2.helloNewMethod()";
     }
 
-    public void initName(){
-        this.name = "Service2";
+    public void initName() {
+        this.name = "HelloServiceImpl2.hello(initialized)";
     }
 }

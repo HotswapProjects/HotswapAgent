@@ -40,16 +40,11 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         this.scannerAgent = scannerAgent;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, Object scannerAgent, String basePackage, WatchFileEvent event) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, Object scannerAgent, String basePackage, String className, WatchFileEvent event) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
         this.event = event;
-
-        // strip from URI prefix up to basePackage and .class suffix.
-        String path = event.getURI().getPath();
-        path = path.substring(path.indexOf(basePackage.replace(".", "/")));
-        path = path.substring(0, path.indexOf(".class"));
-        this.className = path;
+        this.className = className;
         this.scannerAgent = scannerAgent;
     }
 
@@ -75,7 +70,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
             scannerAgent.getClass().getMethod("resolveAndDefineBeanDefinition", new Class[] {byte[].class}).invoke(scannerAgent, classDefinition);
 //            Class<?> clazz = loadClass("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent");
 
-            /*Class<?> clazz = appClassLoader.loadClass(ClassPathBeanDefinitionScannerAgent.class.getName());
+            /*Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent", true, appClassLoader);
             Method method  = clazz.getDeclaredMethod(
                     "refreshClass", new Class[] {String.class, byte[].class});
             method.invoke(null, basePackage, classDefinition);*/

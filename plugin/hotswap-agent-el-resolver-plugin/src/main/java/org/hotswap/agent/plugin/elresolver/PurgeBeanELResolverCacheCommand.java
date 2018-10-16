@@ -28,19 +28,16 @@ public class PurgeBeanELResolverCacheCommand extends MergeableCommand {
     public void executeCommand() {
         LOGGER.debug("Purging BeanELResolver cache.");
         try {
-            Method beanElResolverMethod = resolveClass("javax.el.BeanELResolver")
-                    .getDeclaredMethod(ELResolverPlugin.PURGE_CLASS_CACHE_METHOD_NAME, ClassLoader.class);
-
+            Class<?> beanElResolverClass = Class.forName("javax.el.BeanELResolver", true, appClassLoader);
+            Method beanElResolverMethod = beanElResolverClass.getDeclaredMethod(ELResolverPlugin.PURGE_CLASS_CACHE_METHOD_NAME, ClassLoader.class);
             for (Object registeredBeanELResolver : registeredBeanELResolvers) {
                 beanElResolverMethod.invoke(registeredBeanELResolver, appClassLoader);
             }
+        } catch (ClassNotFoundException e) {
+            LOGGER.debug("BeanELResolver class not found in class loader {}.", appClassLoader);
         } catch (Exception e) {
             LOGGER.error("Error purging BeanELResolver cache.", e);
         }
-    }
-
-    private Class<?> resolveClass(String name) throws ClassNotFoundException {
-        return Class.forName(name, true, appClassLoader);
     }
 
     @Override
@@ -63,6 +60,6 @@ public class PurgeBeanELResolverCacheCommand extends MergeableCommand {
 
     @Override
     public String toString() {
-        return "PurgeBeanELResolverCacheCommand{" + "appClassLoader=" + appClassLoader + '}';
+        return "PurgeBeanELResolverCacheCommand{appClassLoader=" + appClassLoader + '}';
     }
 }

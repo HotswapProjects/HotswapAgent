@@ -17,6 +17,7 @@
 package org.hotswap.agent.javassist.compiler.ast;
 
 import org.hotswap.agent.javassist.compiler.TokenId;
+import org.hotswap.agent.javassist.compiler.CompileError;
 
 /**
  * Cast expression.
@@ -39,31 +40,17 @@ public class CastExpr extends ASTList implements TokenId {
 
     /* Returns CLASS, BOOLEAN, INT, or ...
      */
-    public int getType() {
-        return castType;
-    }
+    public int getType() { return castType; }
 
-    public int getArrayDim() {
-        return arrayDim;
-    }
+    public int getArrayDim() { return arrayDim; }
 
-    public ASTList getClassName() {
-        return (ASTList) getLeft();
-    }
+    public ASTList getClassName() { return (ASTList)getLeft(); }
 
-    public ASTree getOprand() {
-        return getRight().getLeft();
-    }
+    public ASTree getOprand() { return getRight().getLeft(); }
 
-    public void setOprand(ASTree t) {
-        getRight().setLeft(t);
-    }
+    public void setOprand(ASTree t) { getRight().setLeft(t); }
 
-    public String getTag() {
-        return "cast:" + castType + ":" + arrayDim;
-    }
+    public String getTag() { return "cast:" + castType + ":" + arrayDim; }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
-        v.atCastExpr(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atCastExpr(this); }
 }

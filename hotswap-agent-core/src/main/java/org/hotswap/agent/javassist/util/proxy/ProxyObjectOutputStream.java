@@ -29,17 +29,18 @@ import java.io.OutputStream;
  *
  * @author Andrew Dinn
  */
-public class ProxyObjectOutputStream extends ObjectOutputStream {
+public class ProxyObjectOutputStream extends ObjectOutputStream
+{
     /**
      * create an output stream which can be used to serialize an object graph which includes proxies created
      * using class ProxyFactory
-     *
      * @param out
-     * @throws IOException          whenever ObjectOutputStream would also do so
-     * @throws SecurityException    whenever ObjectOutputStream would also do so
+     * @throws IOException whenever ObjectOutputStream would also do so
+     * @throws SecurityException whenever ObjectOutputStream would also do so
      * @throws NullPointerException if out is null
      */
-    public ProxyObjectOutputStream(OutputStream out) throws IOException {
+    public ProxyObjectOutputStream(OutputStream out) throws IOException
+    {
         super(out);
     }
 

@@ -16,17 +16,16 @@
 
 package org.hotswap.agent.javassist.tools.rmi;
 
-import java.applet.Applet;
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.net.Socket;
-import java.net.URL;
+import java.net.*;
+import java.applet.Applet;
+import java.lang.reflect.*;
 
 /**
  * The object importer enables applets to call a method on a remote
  * object running on the <code>Webserver</code> (the <b>main</b> class of this
  * package).
- * <p/>
+ *
  * <p>To access the remote
  * object, the applet first calls <code>lookupObject()</code> and
  * obtains a proxy object, which is a reference to that object.
@@ -39,22 +38,22 @@ import java.net.URL;
  * identical. The applet can access the object on the server
  * with the regular Java syntax without concern about the actual
  * location.
- * <p/>
+ *
  * <p>The methods remotely called by the applet must be <code>public</code>.
  * This is true even if the applet's class and the remote object's classs
  * belong to the same package.
- * <p/>
+ *
  * <p>If class X is a class of remote objects, a subclass of X must be
  * also a class of remote objects.  On the other hand, this restriction
  * is not applied to the superclass of X.  The class X does not have to
  * contain a constructor taking no arguments.
- * <p/>
+ *
  * <p>The parameters to a remote method is passed in the <i>call-by-value</i>
  * manner.  Thus all the parameter classes must implement
  * <code>java.io.Serializable</code>.  However, if the parameter is the
  * proxy object, the reference to the remote object instead of a copy of
  * the object is passed to the method.
- * <p/>
+ *
  * <p>Because of the limitations of the current implementation,
  * <ul>
  * <li>The parameter objects cannot contain the proxy
@@ -62,19 +61,19 @@ import java.net.URL;
  * <li>If class <code>C</code> is of the remote object, then
  * the applet cannot instantiate <code>C</code> locally or remotely.
  * </ul>
- * <p/>
+ *
  * <p>All the exceptions thrown by the remote object are converted
  * into <code>RemoteException</code>.  Since this exception is a subclass
  * of <code>RuntimeException</code>, the caller method does not need
  * to catch the exception.  However, good programs should catch
  * the <code>RuntimeException</code>.
  *
- * @see AppletServer
- * @see RemoteException
- * @see org.hotswap.agent.javassist.tools.web.Viewer
+ * @see javassist.tools.rmi.AppletServer
+ * @see javassist.tools.rmi.RemoteException
+ * @see javassist.tools.web.Viewer
  */
 public class ObjectImporter implements java.io.Serializable {
-    private final byte[] endofline = {0x0d, 0x0a};
+    private final byte[] endofline = { 0x0d, 0x0a };
     private String servername, orgServername;
     private int port, orgPort;
 
@@ -83,11 +82,11 @@ public class ObjectImporter implements java.io.Serializable {
 
     /**
      * Constructs an object importer.
-     * <p/>
+     *
      * <p>Remote objects are imported from the web server that the given
      * applet has been loaded from.
      *
-     * @param applet the applet loaded from the <code>Webserver</code>.
+     * @param applet    the applet loaded from the <code>Webserver</code>.
      */
     public ObjectImporter(Applet applet) {
         URL codebase = applet.getCodeBase();
@@ -97,16 +96,16 @@ public class ObjectImporter implements java.io.Serializable {
 
     /**
      * Constructs an object importer.
-     * <p/>
-     * <p>If you run a program with <code>Viewer</code>,
+     *
+     * <p>If you run a program with <code>javassist.tools.web.Viewer</code>,
      * you can construct an object importer as follows:
-     * <p/>
-     * <ul><pre>
+     *
+     * <pre>
      * Viewer v = (Viewer)this.getClass().getClassLoader();
      * ObjectImporter oi = new ObjectImporter(v.getServer(), v.getPort());
-     * </pre></ul>
+     * </pre>
      *
-     * @see org.hotswap.agent.javassist.tools.web.Viewer
+     * @see javassist.tools.web.Viewer
      */
     public ObjectImporter(String servername, int port) {
         this.orgServername = this.servername = servername;
@@ -117,13 +116,14 @@ public class ObjectImporter implements java.io.Serializable {
      * Finds the object exported by a server with the specified name.
      * If the object is not found, this method returns null.
      *
-     * @param name the name of the exported object.
-     * @return the proxy object or null.
+     * @param name      the name of the exported object.
+     * @return          the proxy object or null.
      */
     public Object getObject(String name) {
         try {
             return lookupObject(name);
-        } catch (ObjectNotFoundException e) {
+        }
+        catch (ObjectNotFoundException e) {
             return null;
         }
     }
@@ -147,10 +147,11 @@ public class ObjectImporter implements java.io.Serializable {
      * It sends a POST request to the server (via an http proxy server
      * if needed).
      *
-     * @param name the name of the exported object.
-     * @return the proxy object.
+     * @param name      the name of the exported object.
+     * @return          the proxy object.
      */
-    public Object lookupObject(String name) throws ObjectNotFoundException {
+    public Object lookupObject(String name) throws ObjectNotFoundException
+    {
         try {
             Socket sock = new Socket(servername, port);
             OutputStream out = sock.getOutputStream();
@@ -173,7 +174,8 @@ public class ObjectImporter implements java.io.Serializable {
 
             if (n >= 0)
                 return createProxy(n, classname);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
             throw new ObjectNotFoundException(name, e);
         }
@@ -182,23 +184,24 @@ public class ObjectImporter implements java.io.Serializable {
     }
 
     private static final Class[] proxyConstructorParamTypes
-            = new Class[]{ObjectImporter.class, int.class};
+        = new Class[] { ObjectImporter.class, int.class };
 
     private Object createProxy(int oid, String classname) throws Exception {
         Class c = Class.forName(classname);
         Constructor cons = c.getConstructor(proxyConstructorParamTypes);
-        return cons.newInstance(new Object[]{this, new Integer(oid)});
+        return cons.newInstance(new Object[] { this, Integer.valueOf(oid) });
     }
 
     /**
      * Calls a method on a remote object.
      * It sends a POST request to the server (via an http proxy server
      * if needed).
-     * <p/>
+     *
      * <p>This method is called by only proxy objects.
      */
     public Object call(int objectid, int methodid, Object[] args)
-            throws RemoteException {
+        throws RemoteException
+    {
         boolean result;
         Object rvalue;
         String errmsg;
@@ -221,7 +224,7 @@ public class ObjectImporter implements java.io.Serializable {
              */
             Socket sock = new Socket(servername, port);
             OutputStream out = new BufferedOutputStream(
-                    sock.getOutputStream());
+                                                sock.getOutputStream());
             out.write(rmiCommand);
             out.write(endofline);
             out.write(endofline);
@@ -247,15 +250,18 @@ public class ObjectImporter implements java.io.Serializable {
             dout.close();
             sock.close();
 
-            if (rvalue instanceof org.hotswap.agent.javassist.tools.rmi.RemoteRef) {
-                org.hotswap.agent.javassist.tools.rmi.RemoteRef ref = (org.hotswap.agent.javassist.tools.rmi.RemoteRef) rvalue;
+            if (rvalue instanceof RemoteRef) {
+                RemoteRef ref = (RemoteRef)rvalue;
                 rvalue = createProxy(ref.oid, ref.classname);
             }
-        } catch (ClassNotFoundException e) {
+        }
+        catch (ClassNotFoundException e) {
             throw new RemoteException(e);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RemoteException(e);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RemoteException(e);
         }
 
@@ -278,14 +284,16 @@ public class ObjectImporter implements java.io.Serializable {
     }
 
     private void writeParameters(ObjectOutputStream dout, Object[] params)
-            throws IOException {
+        throws IOException
+    {
         int n = params.length;
         dout.writeInt(n);
         for (int i = 0; i < n; ++i)
-            if (params[i] instanceof org.hotswap.agent.javassist.tools.rmi.Proxy) {
-                org.hotswap.agent.javassist.tools.rmi.Proxy p = (org.hotswap.agent.javassist.tools.rmi.Proxy) params[i];
-                dout.writeObject(new org.hotswap.agent.javassist.tools.rmi.RemoteRef(p._getObjectId()));
-            } else
+            if (params[i] instanceof Proxy) {
+                Proxy p = (Proxy)params[i];
+                dout.writeObject(new RemoteRef(p._getObjectId()));
+            }
+            else
                 dout.writeObject(params[i]);
     }
 }

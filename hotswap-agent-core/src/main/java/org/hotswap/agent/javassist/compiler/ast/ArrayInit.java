@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
+import org.hotswap.agent.javassist.compiler.CompileError;
+
 /**
  * Array initializer such as <code>{ 1, 2, 3 }</code>.
  */
@@ -24,11 +26,7 @@ public class ArrayInit extends ASTList {
         super(firstElement);
     }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
-        v.atArrayInit(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atArrayInit(this); }
 
-    public String getTag() {
-        return "array";
-    }
+    public String getTag() { return "array"; }
 }

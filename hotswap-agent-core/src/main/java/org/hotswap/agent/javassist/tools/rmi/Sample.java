@@ -30,7 +30,8 @@ public class Sample {
     }
 
     public static Object forwardStatic(Object[] args, int identifier)
-            throws RemoteException {
+        throws RemoteException
+    {
         throw new RemoteException("cannot call a static method.");
     }
 }

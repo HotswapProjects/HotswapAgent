@@ -50,3 +50,9 @@ test 2.3.4.Final
 test 2.3.5.Final
 
 test 2.4.0.Final
+test 2.4.1.Final
+test 2.4.2.Final
+test 2.4.3.Final
+test 2.4.4.Final
+test 2.4.5.Final
+test 2.4.6.Final

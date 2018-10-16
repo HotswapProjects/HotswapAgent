@@ -30,10 +30,10 @@ public interface Metalevel {
     /**
      * Obtains the metaobject associated with this object.
      */
-    org.hotswap.agent.javassist.tools.reflect.Metaobject _getMetaobject();
+    Metaobject _getMetaobject();
 
     /**
      * Changes the metaobject associated with this object.
      */
-    void _setMetaobject(org.hotswap.agent.javassist.tools.reflect.Metaobject m);
+    void _setMetaobject(Metaobject m);
 }

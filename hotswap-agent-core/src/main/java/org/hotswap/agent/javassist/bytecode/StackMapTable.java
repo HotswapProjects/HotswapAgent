@@ -16,12 +16,17 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
+import java.io.IOException;
 import java.util.Map;
+import org.hotswap.agent.javassist.CannotCompileException;
 
 /**
  * <code>stack_map</code> attribute.
- * <p/>
+ *
  * <p>This is an entry in the attributes table of a Code attribute.
  * It was introduced by J2SE 6 for the verification by
  * typechecking.
@@ -43,25 +48,29 @@ public class StackMapTable extends AttributeInfo {
     }
 
     StackMapTable(ConstPool cp, int name_id, DataInputStream in)
-            throws IOException {
+        throws IOException
+    {
         super(cp, name_id, in);
     }
 
     /**
      * Makes a copy.
      *
-     * @throws RuntimeCopyException if a <code>BadBytecode</code>
-     *                              exception is thrown while copying,
-     *                              it is converted into
-     *                              <code>RuntimeCopyException</code>.
+     * @exception RuntimeCopyException  if a <code>BadBytecode</code>
+     *                          exception is thrown while copying,
+     *                          it is converted into
+     *                          <code>RuntimeCopyException</code>.
+     *
      */
     public AttributeInfo copy(ConstPool newCp, Map classnames)
-            throws RuntimeCopyException {
+        throws RuntimeCopyException
+    {
         try {
             return new StackMapTable(newCp,
-                    new Copier(this.constPool, info, newCp, classnames).doit());
-        } catch (BadBytecode e) {
-            throw new RuntimeCopyException("bad bytecode. fatal?");
+                            new Copier(this.constPool, info, newCp, classnames).doit());
+        }
+        catch (BadBytecode e) {
+            throw new RuntimeCopyException("bad bytecode. fatal?"); 
         }
     }
 
@@ -137,8 +146,8 @@ public class StackMapTable extends AttributeInfo {
         /**
          * Constructs a walker.
          *
-         * @param smt the StackMapTable that this walker
-         *            walks around.
+         * @param smt       the StackMapTable that this walker
+         *                  walks around.
          */
         public Walker(StackMapTable smt) {
             this(smt.get());
@@ -147,10 +156,10 @@ public class StackMapTable extends AttributeInfo {
         /**
          * Constructs a walker.
          *
-         * @param data the <code>info</code> field of the
-         *             <code>attribute_info</code> structure.
-         *             It can be obtained by <code>get()</code>
-         *             in the <code>AttributeInfo</code> class.
+         * @param data      the <code>info</code> field of the
+         *                  <code>attribute_info</code> structure.
+         *                  It can be obtained by <code>get()</code>
+         *                  in the <code>AttributeInfo</code> class.
          */
         public Walker(byte[] data) {
             info = data;
@@ -160,12 +169,10 @@ public class StackMapTable extends AttributeInfo {
         /**
          * Returns the number of the entries.
          */
-        public final int size() {
-            return numOfEntries;
-        }
+        public final int size() { return numOfEntries; }
 
         /**
-         * Visits each entry of the stack map frames.
+         * Visits each entry of the stack map frames. 
          */
         public void parse() throws BadBytecode {
             int n = numOfEntries;
@@ -177,18 +184,19 @@ public class StackMapTable extends AttributeInfo {
         /**
          * Invoked when the next entry of the stack map frames is visited.
          *
-         * @param pos the position of the frame in the <code>info</code>
-         *            field of <code>attribute_info</code> structure.
-         * @param nth the frame is the N-th
-         *            (0, 1st, 2nd, 3rd, 4th, ...) entry.
-         * @return the position of the next frame.
+         * @param pos       the position of the frame in the <code>info</code>
+         *                  field of <code>attribute_info</code> structure.
+         * @param nth       the frame is the N-th
+         *                  (0, 1st, 2nd, 3rd, 4th, ...) entry. 
+         * @return          the position of the next frame.
          */
         int stackMapFrames(int pos, int nth) throws BadBytecode {
             int type = info[pos] & 0xff;
             if (type < 64) {
                 sameFrame(pos, type);
                 pos++;
-            } else if (type < 128)
+            }
+            else if (type < 128)
                 pos = sameLocals(pos, type);
             else if (type < 247)
                 throw new BadBytecode("bad frame_type in StackMapTable");
@@ -198,11 +206,13 @@ public class StackMapTable extends AttributeInfo {
                 int offset = ByteArray.readU16bit(info, pos + 1);
                 chopFrame(pos, offset, 251 - type);
                 pos += 3;
-            } else if (type == 251) { // SAME_FRAME_EXTENDED
+            }
+            else if (type == 251) { // SAME_FRAME_EXTENDED
                 int offset = ByteArray.readU16bit(info, pos + 1);
                 sameFrame(pos, offset);
                 pos += 3;
-            } else if (type < 255)
+            }
+            else if (type < 255)
                 pos = appendFrame(pos, type);
             else    // FULL_FRAME
                 pos = fullFrame(pos);
@@ -214,12 +224,11 @@ public class StackMapTable extends AttributeInfo {
          * Invoked if the visited frame is a <code>same_frame</code> or
          * a <code>same_frame_extended</code>.
          *
-         * @param pos         the position of this frame in the <code>info</code>
-         *                    field of <code>attribute_info</code> structure.
+         * @param pos       the position of this frame in the <code>info</code>
+         *                  field of <code>attribute_info</code> structure.
          * @param offsetDelta
          */
-        public void sameFrame(int pos, int offsetDelta) throws BadBytecode {
-        }
+        public void sameFrame(int pos, int offsetDelta) throws BadBytecode {}
 
         private int sameLocals(int pos, int type) throws BadBytecode {
             int top = pos;
@@ -247,27 +256,25 @@ public class StackMapTable extends AttributeInfo {
          * Invoked if the visited frame is a <code>same_locals_1_stack_item_frame</code>
          * or a <code>same_locals_1_stack_item_frame_extended</code>.
          *
-         * @param pos         the position.
+         * @param pos               the position.
          * @param offsetDelta
-         * @param stackTag    <code>stack[0].tag</code>.
-         * @param stackData   <code>stack[0].cpool_index</code>
-         *                    if the tag is <code>OBJECT</code>,
-         *                    or <code>stack[0].offset</code>
-         *                    if the tag is <code>UNINIT</code>.
+         * @param stackTag          <code>stack[0].tag</code>.
+         * @param stackData         <code>stack[0].cpool_index</code>
+         *                          if the tag is <code>OBJECT</code>,
+         *                          or <code>stack[0].offset</code>
+         *                          if the tag is <code>UNINIT</code>.
          */
         public void sameLocals(int pos, int offsetDelta, int stackTag, int stackData)
-                throws BadBytecode {
-        }
+            throws BadBytecode {}
 
         /**
          * Invoked if the visited frame is a <code>chop_frame</code>.
-         *
-         * @param pos         the position.
+         * 
+         * @param pos               the position.
          * @param offsetDelta
-         * @param k           the <cod>k</code> last locals are absent.
+         * @param k                 the <code>k</code> last locals are absent. 
          */
-        public void chopFrame(int pos, int offsetDelta, int k) throws BadBytecode {
-        }
+        public void chopFrame(int pos, int offsetDelta, int k) throws BadBytecode {}
 
         private int appendFrame(int pos, int type) throws BadBytecode {
             int k = type - 251;
@@ -282,7 +289,8 @@ public class StackMapTable extends AttributeInfo {
                     data[i] = ByteArray.readU16bit(info, p + 1);
                     objectOrUninitialized(tag, data[i], p + 1);
                     p += 3;
-                } else {
+                }
+                else {
                     data[i] = 0;
                     p++;
                 }
@@ -295,15 +303,14 @@ public class StackMapTable extends AttributeInfo {
         /**
          * Invoked if the visited frame is a <code>append_frame</code>.
          *
-         * @param pos         the position.
+         * @param pos           the position.
          * @param offsetDelta
-         * @param tags        <code>locals[i].tag</code>.
-         * @param data        <code>locals[i].cpool_index</code>
-         *                    or <cod>locals[i].offset</code>.
+         * @param tags          <code>locals[i].tag</code>.
+         * @param data          <code>locals[i].cpool_index</code>
+         *                      or <code>locals[i].offset</code>.
          */
         public void appendFrame(int pos, int offsetDelta, int[] tags, int[] data)
-                throws BadBytecode {
-        }
+            throws BadBytecode {} 
 
         private int fullFrame(int pos) throws BadBytecode {
             int offset = ByteArray.readU16bit(info, pos + 1);
@@ -322,19 +329,18 @@ public class StackMapTable extends AttributeInfo {
         /**
          * Invoked if the visited frame is <code>full_frame</code>.
          *
-         * @param pos         the position.
+         * @param pos               the position.
          * @param offsetDelta
-         * @param localTags   <code>locals[i].tag</code>
-         * @param localData   <code>locals[i].cpool_index</code>
-         *                    or <code>locals[i].offset</code>
-         * @param stackTags   <code>stack[i].tag</code>
-         * @param stackData   <code>stack[i].cpool_index</code>
-         *                    or <code>stack[i].offset</code>
+         * @param localTags         <code>locals[i].tag</code>
+         * @param localData         <code>locals[i].cpool_index</code>
+         *                          or <code>locals[i].offset</code>
+         * @param stackTags         <code>stack[i].tag</code>
+         * @param stackData         <code>stack[i].cpool_index</code>
+         *                          or <code>stack[i].offset</code>
          */
         public void fullFrame(int pos, int offsetDelta, int[] localTags, int[] localData,
                               int[] stackTags, int[] stackData)
-                throws BadBytecode {
-        }
+            throws BadBytecode {}
 
         private int verifyTypeInfo(int pos, int n, int[] tags, int[] data) {
             for (int i = 0; i < n; i++) {
@@ -354,12 +360,11 @@ public class StackMapTable extends AttributeInfo {
          * Invoked if <code>Object_variable_info</code>
          * or <code>Uninitialized_variable_info</code> is visited.
          *
-         * @param tag  <code>OBJECT</code> or <code>UNINIT</code>.
-         * @param data the value of <code>cpool_index</code> or <code>offset</code>.
-         * @param pos  the position of <code>cpool_index</code> or <code>offset</code>.
+         * @param tag		<code>OBJECT</code> or <code>UNINIT</code>.
+         * @param data		the value of <code>cpool_index</code> or <code>offset</code>.
+         * @param pos		the position of <code>cpool_index</code> or <code>offset</code>.
          */
-        public void objectOrUninitialized(int tag, int data, int pos) {
-        }
+        public void objectOrUninitialized(int tag, int data, int pos) {}
     }
 
     static class SimpleCopy extends Walker {
@@ -394,7 +399,7 @@ public class StackMapTable extends AttributeInfo {
         public void fullFrame(int pos, int offsetDelta, int[] localTags, int[] localData,
                               int[] stackTags, int[] stackData) {
             writer.fullFrame(offsetDelta, localTags, copyData(localTags, localData),
-                    stackTags, copyData(stackTags, stackData));
+                             stackTags, copyData(stackTags, stackData));
         }
 
         protected int copyData(int tag, int data) {
@@ -419,7 +424,7 @@ public class StackMapTable extends AttributeInfo {
 
         protected int copyData(int tag, int data) {
             if (tag == OBJECT)
-                return srcPool.copy(data, destPool, classnames);
+                return srcPool.copy(data, destPool, classnames); 
             else
                 return data;
         }
@@ -440,17 +445,19 @@ public class StackMapTable extends AttributeInfo {
      * Updates this stack map table when a new local variable is inserted
      * for a new parameter.
      *
-     * @param index     the index of the added local variable.
-     * @param tag       the type tag of that local variable.
-     * @param classInfo the index of the <code>CONSTANT_Class_info</code> structure
-     *                  in a constant pool table.  This should be zero unless the tag
-     *                  is <code>ITEM_Object</code>.
-     * @see org.hotswap.agent.javassist.CtBehavior#addParameter(org.hotswap.agent.javassist.CtClass)
+     * @param index          the index of the added local variable.
+     * @param tag            the type tag of that local variable. 
+     * @param classInfo      the index of the <code>CONSTANT_Class_info</code> structure
+     *                       in a constant pool table.  This should be zero unless the tag
+     *                       is <code>ITEM_Object</code>.
+     *
+     * @see javassist.CtBehavior#addParameter(javassist.CtClass)
      * @see #typeTagOf(char)
      * @see ConstPool
      */
     public void insertLocal(int index, int tag, int classInfo)
-            throws BadBytecode {
+        throws BadBytecode
+    {
         byte[] data = new InsertLocal(this.get(), index, tag, classInfo).doit();
         this.set(data);
     }
@@ -461,23 +468,23 @@ public class StackMapTable extends AttributeInfo {
      * unless the descriptor is either D (double), F (float),
      * J (long), L (class type), or [ (array).
      *
-     * @param descriptor the type descriptor.
+     * @param descriptor        the type descriptor.
      * @see Descriptor
      */
     public static int typeTagOf(char descriptor) {
         switch (descriptor) {
-            case 'D':
-                return DOUBLE;
-            case 'F':
-                return FLOAT;
-            case 'J':
-                return LONG;
-            case 'L':
-            case '[':
-                return OBJECT;
-            // case 'V' :
-            default:
-                return INTEGER;
+        case 'D' :
+            return DOUBLE;
+        case 'F' :
+            return FLOAT;
+        case 'J' :
+            return LONG;
+        case 'L' :
+        case '[' :
+            return OBJECT;
+        // case 'V' :
+        default :
+            return INTEGER;
         }
     }
 
@@ -538,8 +545,7 @@ public class StackMapTable extends AttributeInfo {
 
         /**
          * Constructs a writer.
-         *
-         * @param size the initial buffer size.
+         * @param size      the initial buffer size.
          */
         public Writer(int size) {
             output = new ByteArrayOutputStream(size);
@@ -561,8 +567,8 @@ public class StackMapTable extends AttributeInfo {
          * Constructs and a return a stack map table containing
          * the written stack map entries.
          *
-         * @param cp the constant pool used to write
-         *           the stack map entries.
+         * @param cp        the constant pool used to write
+         *                  the stack map entries.
          */
         public StackMapTable toStackMapTable(ConstPool cp) {
             return new StackMapTable(cp, toByteArray());
@@ -585,12 +591,12 @@ public class StackMapTable extends AttributeInfo {
          * Writes a <code>same_locals_1_stack_item</code>
          * or a <code>same_locals_1_stack_item_extended</code>.
          *
-         * @param tag  <code>stack[0].tag</code>.
-         * @param data <code>stack[0].cpool_index</code>
-         *             if the tag is <code>OBJECT</code>,
-         *             or <cod>stack[0].offset</code>
-         *             if the tag is <code>UNINIT</code>.
-         *             Otherwise, this parameter is not used.
+         * @param tag           <code>stack[0].tag</code>.
+         * @param data          <code>stack[0].cpool_index</code>
+         *                      if the tag is <code>OBJECT</code>,
+         *                      or <code>stack[0].offset</code>
+         *                      if the tag is <code>UNINIT</code>.
+         *                      Otherwise, this parameter is not used.
          */
         public void sameLocals(int offsetDelta, int tag, int data) {
             numOfEntries++;
@@ -607,7 +613,7 @@ public class StackMapTable extends AttributeInfo {
         /**
          * Writes a <code>chop_frame</code>.
          *
-         * @param k the number of absent locals. 1, 2, or 3.
+         * @param k                 the number of absent locals. 1, 2, or 3.
          */
         public void chopFrame(int offsetDelta, int k) {
             numOfEntries++;
@@ -619,14 +625,14 @@ public class StackMapTable extends AttributeInfo {
          * Writes a <code>append_frame</code>.  The number of the appended
          * locals is specified by the length of <code>tags</code>.
          *
-         * @param tags <code>locals[].tag</code>.
-         *             The length of this array must be
-         *             either 1, 2, or 3.
-         * @param data <code>locals[].cpool_index</code>
-         *             if the tag is <code>OBJECT</code>,
-         *             or <cod>locals[].offset</code>
-         *             if the tag is <code>UNINIT</code>.
-         *             Otherwise, this parameter is not used.
+         * @param tags           <code>locals[].tag</code>.
+         *                      The length of this array must be
+         *                      either 1, 2, or 3.
+         * @param data          <code>locals[].cpool_index</code>
+         *                      if the tag is <code>OBJECT</code>,
+         *                      or <code>locals[].offset</code>
+         *                      if the tag is <code>UNINIT</code>.
+         *                      Otherwise, this parameter is not used.
          */
         public void appendFrame(int offsetDelta, int[] tags, int[] data) {
             numOfEntries++;
@@ -643,18 +649,18 @@ public class StackMapTable extends AttributeInfo {
          * are specified by the the length of <code>localTags</code> and
          * <code>stackTags</code>.
          *
-         * @param localTags <code>locals[].tag</code>.
-         * @param localData <code>locals[].cpool_index</code>
-         *                  if the tag is <code>OBJECT</code>,
-         *                  or <cod>locals[].offset</code>
-         *                  if the tag is <code>UNINIT</code>.
-         *                  Otherwise, this parameter is not used.
-         * @param stackTags <code>stack[].tag</code>.
-         * @param stackData <code>stack[].cpool_index</code>
-         *                  if the tag is <code>OBJECT</code>,
-         *                  or <cod>stack[].offset</code>
-         *                  if the tag is <code>UNINIT</code>.
-         *                  Otherwise, this parameter is not used.
+         * @param localTags     <code>locals[].tag</code>.
+         * @param localData     <code>locals[].cpool_index</code>
+         *                      if the tag is <code>OBJECT</code>,
+         *                      or <code>locals[].offset</code>
+         *                      if the tag is <code>UNINIT</code>.
+         *                      Otherwise, this parameter is not used.
+         * @param stackTags     <code>stack[].tag</code>.
+         * @param stackData     <code>stack[].cpool_index</code>
+         *                      if the tag is <code>OBJECT</code>,
+         *                      or <code>stack[].offset</code>
+         *                      if the tag is <code>UNINIT</code>.
+         *                      Otherwise, this parameter is not used.
          */
         public void fullFrame(int offsetDelta, int[] localTags, int[] localData,
                               int[] stackTags, int[] stackData) {
@@ -694,7 +700,7 @@ public class StackMapTable extends AttributeInfo {
     /**
      * Prints the stack table map.
      *
-     * @param ps a print stream such as <code>System.out</code>.
+     * @param ps    a print stream such as <code>System.out</code>.
      */
     public void println(java.io.PrintStream ps) {
         Printer.print(this, new java.io.PrintWriter(ps, true));
@@ -710,7 +716,8 @@ public class StackMapTable extends AttributeInfo {
         public static void print(StackMapTable smt, PrintWriter writer) {
             try {
                 new Printer(smt.get(), writer).parse();
-            } catch (BadBytecode e) {
+            }
+            catch (BadBytecode e) {
                 writer.println(e.getMessage());
             }
         }
@@ -760,33 +767,33 @@ public class StackMapTable extends AttributeInfo {
         private void printTypeInfo(int tag, int data) {
             String msg = null;
             switch (tag) {
-                case TOP:
-                    msg = "top";
-                    break;
-                case INTEGER:
-                    msg = "integer";
-                    break;
-                case FLOAT:
-                    msg = "float";
-                    break;
-                case DOUBLE:
-                    msg = "double";
-                    break;
-                case LONG:
-                    msg = "long";
-                    break;
-                case NULL:
-                    msg = "null";
-                    break;
-                case THIS:
-                    msg = "this";
-                    break;
-                case OBJECT:
-                    msg = "object (cpool_index " + data + ")";
-                    break;
-                case UNINIT:
-                    msg = "uninitialized (offset " + data + ")";
-                    break;
+            case TOP :
+                msg = "top";
+                break;
+            case INTEGER :
+                msg = "integer";
+                break;
+            case FLOAT :
+                msg = "float";
+                break;
+            case DOUBLE :
+                msg = "double";
+                break;
+            case LONG :
+                msg = "long";
+                break;
+            case NULL :
+                msg = "null";
+                break;
+            case THIS :
+                msg = "this";
+                break;
+            case OBJECT :
+                msg = "object (cpool_index " + data + ")";
+                break;
+            case UNINIT :
+                msg = "uninitialized (offset " + data + ")";
+                break;
             }
 
             writer.print("    ");
@@ -795,25 +802,26 @@ public class StackMapTable extends AttributeInfo {
     }
 
     void shiftPc(int where, int gapSize, boolean exclusive)
-            throws BadBytecode {
-        new OffsetShifter(this, where, gapSize).parse();
+        throws BadBytecode
+    {
+    	new OffsetShifter(this, where, gapSize).parse();
         new Shifter(this, where, gapSize, exclusive).doit();
     }
 
     static class OffsetShifter extends Walker {
-        int where, gap;
+    	int where, gap;
 
-        public OffsetShifter(StackMapTable smt, int where, int gap) {
-            super(smt);
-            this.where = where;
-            this.gap = gap;
-        }
+    	public OffsetShifter(StackMapTable smt, int where, int gap) {
+    		super(smt);
+    		this.where = where;
+    		this.gap = gap;
+    	}
 
-        public void objectOrUninitialized(int tag, int data, int pos) {
-            if (tag == UNINIT)
-                if (where <= data)
-                    ByteArray.write16bit(data + gap, info, pos);
-        }
+    	public void objectOrUninitialized(int tag, int data, int pos) {
+    		if (tag == UNINIT)
+    			if (where <= data)
+    				ByteArray.write16bit(data + gap, info, pos);
+    	}
     }
 
     static class Shifter extends Walker {
@@ -852,21 +860,22 @@ public class StackMapTable extends AttributeInfo {
             position = oldPos + offsetDelta + (oldPos == 0 ? 0 : 1);
             boolean match;
             if (exclusive)
-                match = oldPos < where && where <= position;
+                match = oldPos < where  && where <= position;
             else
-                match = oldPos <= where && where < position;
+                match = oldPos <= where  && where < position;
 
             if (match) {
                 int newDelta = offsetDelta + gap;
                 position += gap;
                 if (newDelta < 64)
-                    info[pos] = (byte) (newDelta + base);
+                    info[pos] = (byte)(newDelta + base);
                 else if (offsetDelta < 64) {
                     byte[] newinfo = insertGap(info, pos, 2);
-                    newinfo[pos] = (byte) entry;
+                    newinfo[pos] = (byte)entry;
                     ByteArray.write16bit(newDelta, newinfo, pos + 1);
                     updatedInfo = newinfo;
-                } else
+                }
+                else
                     ByteArray.write16bit(newDelta, info, pos + 1);
             }
         }
@@ -898,9 +907,9 @@ public class StackMapTable extends AttributeInfo {
             position = oldPos + offsetDelta + (oldPos == 0 ? 0 : 1);
             boolean match;
             if (exclusive)
-                match = oldPos < where && where <= position;
+                match = oldPos < where  && where <= position;
             else
-                match = oldPos <= where && where < position;
+                match = oldPos <= where  && where < position;
 
             if (match) {
                 int newDelta = offsetDelta + gap;
@@ -935,19 +944,21 @@ public class StackMapTable extends AttributeInfo {
 
             if (offsetDelta < 64)
                 if (newDelta < 64)
-                    info[pos] = (byte) (newDelta + base);
+                    info[pos] = (byte)(newDelta + base);
                 else {
                     byte[] newinfo = insertGap(info, pos, 2);
-                    newinfo[pos] = (byte) entry;
+                    newinfo[pos] = (byte)entry;
                     ByteArray.write16bit(newDelta, newinfo, pos + 1);
                     updatedInfo = newinfo;
                 }
-            else if (newDelta < 64) {
-                byte[] newinfo = deleteGap(info, pos, 2);
-                newinfo[pos] = (byte) (newDelta + base);
-                updatedInfo = newinfo;
-            } else
-                ByteArray.write16bit(newDelta, info, pos + 1);
+            else
+                if (newDelta < 64) {
+                    byte[] newinfo = deleteGap(info, pos, 2);
+                    newinfo[pos] = (byte)(newDelta + base);
+                    updatedInfo = newinfo;
+                }
+                else
+                    ByteArray.write16bit(newDelta, info, pos + 1);
         }
 
         static byte[] deleteGap(byte[] info, int where, int gap) {
@@ -977,19 +988,20 @@ public class StackMapTable extends AttributeInfo {
 
     /**
      * Undocumented method.  Do not use; internal-use only.
-     * <p/>
-     * <p>This method is for TransformNew.
-     * It is called to update the stack map table when
-     * the NEW opcode (and the following DUP) is removed.
      *
-     * @param where the position of the removed NEW opcode.
+     * <p>This method is for javassist.convert.TransformNew.
+     * It is called to update the stack map table when
+     * the NEW opcode (and the following DUP) is removed. 
+     *
+     * @param where     the position of the removed NEW opcode.
      */
-    public void removeNew(int where) throws org.hotswap.agent.javassist.CannotCompileException {
+     public void removeNew(int where) throws CannotCompileException {
         try {
             byte[] data = new NewRemover(this.get(), where).doit();
             this.set(data);
-        } catch (BadBytecode e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException("bad stack map table", e);
+        }
+        catch (BadBytecode e) {
+            throw new CannotCompileException("bad stack map table", e);
         }
     }
 
@@ -1013,7 +1025,7 @@ public class StackMapTable extends AttributeInfo {
             int n = stackTags.length - 1;
             for (int i = 0; i < n; i++)
                 if (stackTags[i] == UNINIT && stackData[i] == posOfNew
-                        && stackTags[i + 1] == UNINIT && stackData[i + 1] == posOfNew) {
+                    && stackTags[i + 1] == UNINIT && stackData[i + 1] == posOfNew) {
                     n++;
                     int[] stackTags2 = new int[n - 2];
                     int[] stackData2 = new int[n - 2];

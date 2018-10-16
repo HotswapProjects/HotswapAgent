@@ -15,6 +15,8 @@
  */
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -32,7 +34,7 @@ public class ArrayMemberValue extends MemberValue {
     /**
      * Constructs an array.  The initial value or type are not specified.
      */
-    public ArrayMemberValue(org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public ArrayMemberValue(ConstPool cp) {
         super('[', cp);
         type = null;
         values = null;
@@ -41,19 +43,20 @@ public class ArrayMemberValue extends MemberValue {
     /**
      * Constructs an array.  The initial value is not specified.
      *
-     * @param t the type of the array elements.
+     * @param t         the type of the array elements.
      */
-    public ArrayMemberValue(MemberValue t, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public ArrayMemberValue(MemberValue t, ConstPool cp) {
         super('[', cp);
         type = t;
         values = null;
     }
 
-    Object getValue(ClassLoader cl, org.hotswap.agent.javassist.ClassPool cp, Method method)
-            throws ClassNotFoundException {
+    Object getValue(ClassLoader cl, ClassPool cp, Method method)
+        throws ClassNotFoundException
+    {
         if (values == null)
             throw new ClassNotFoundException(
-                    "no array elements found: " + method.getName());
+                        "no array elements found: " + method.getName());
 
         int size = values.length;
         Class clazz;
@@ -61,8 +64,9 @@ public class ArrayMemberValue extends MemberValue {
             clazz = method.getReturnType().getComponentType();
             if (clazz == null || size > 0)
                 throw new ClassNotFoundException("broken array type: "
-                        + method.getName());
-        } else
+                                                 + method.getName());
+        }
+        else
             clazz = type.getType(cl);
 
         Object a = Array.newInstance(clazz, size);
@@ -115,7 +119,7 @@ public class ArrayMemberValue extends MemberValue {
                 buf.append(values[i].toString());
                 if (i + 1 < values.length)
                     buf.append(", ");
-            }
+                }
         }
 
         buf.append("}");
@@ -126,7 +130,7 @@ public class ArrayMemberValue extends MemberValue {
      * Writes the value.
      */
     public void write(AnnotationsWriter writer) throws IOException {
-        int num = values.length;
+        int num = values == null ? 0 : values.length;
         writer.arrayValue(num);
         for (int i = 0; i < num; ++i)
             values[i].write(writer);
@@ -135,7 +139,7 @@ public class ArrayMemberValue extends MemberValue {
     /**
      * Accepts a visitor.
      */
-    public void accept(org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor visitor) {
+    public void accept(MemberValueVisitor visitor) {
         visitor.visitArrayMemberValue(this);
     }
 }

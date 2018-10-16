@@ -37,7 +37,9 @@ public class HotswapTransformer implements ClassFileTransformer {
      * Exclude these classLoaders from initialization (system classloaders). Note that
      */
     private static final Set<String> excludedClassLoaders = new HashSet<String>(Arrays.asList(
-            "sun.reflect.DelegatingClassLoader"
+            "sun.reflect.DelegatingClassLoader",
+            "org.apache.felix.framework.BundleWiringImpl$BundleClassLoader", // delegating ClassLoader in GlassFish
+            "org.apache.felix.framework.BundleWiringImpl$BundleClassLoaderJava5" // delegating ClassLoader in_GlassFish
     ));
 
     private static class RegisteredTransformersRecord {
@@ -51,6 +53,16 @@ public class HotswapTransformer implements ClassFileTransformer {
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<ClassFileTransformer, ClassLoader>();
 
     protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<ClassLoader, Object>();
+
+    private List<Pattern> excludedClassLoaderPatterns;
+
+    /**
+     * @param excludedClassLoaderPatterns
+     *            the excludedClassLoaderPatterns to set
+     */
+    public void setExcludedClassLoaderPatterns(List<Pattern> excludedClassLoaderPatterns) {
+        this.excludedClassLoaderPatterns = excludedClassLoaderPatterns;
+    }
 
     /**
      * Register a transformer for a regexp matching class names.
@@ -186,26 +198,32 @@ public class HotswapTransformer implements ClassFileTransformer {
     LinkedList<PluginClassFileTransformer> reduce(final ClassLoader classLoader, List<PluginClassFileTransformer> pluginCalls, String className) {
         LinkedList<PluginClassFileTransformer> reduced = new LinkedList<>();
 
-        PluginClassFileTransformer def = null;
+        Map<String, PluginClassFileTransformer> fallbackMap = new HashMap<>();
 
         for (PluginClassFileTransformer pcft : pluginCalls) {
             try {
+                String pluginGroup = pcft.getPluginGroup();
                 if(pcft.versionMatches(classLoader)){
+                    if (pluginGroup != null) {
+                        fallbackMap.put(pluginGroup, null);
+                    }
                     reduced.add(pcft);
-                } else if(pcft.isDefaultPlugin()){
-                    def = pcft;
+                } else if(pcft.isFallbackPlugin()){
+                    if (pluginGroup != null && !fallbackMap.containsKey(pluginGroup)) {
+                        fallbackMap.put(pluginGroup, pcft);
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.warning("Error evaluating aplicability of plugin", e);
             }
         }
 
-        if(reduced.isEmpty() && def != null) {
-            reduced.add(def);
+        for (PluginClassFileTransformer pcft: fallbackMap.values()) {
+            if (pcft != null) {
+                reduced.add(pcft);
+            }
         }
-//        if(reduced.size() >1){
-//            LOGGER.warn("Multiple plugins will attempt patching for class {}, {}", className, reduced);
-//        }
+
         return reduced;
     }
     /**
@@ -228,32 +246,12 @@ public class HotswapTransformer implements ClassFileTransformer {
                 PluginManager.getInstance().initClassLoader(null, protectionDomain);
             } else {
                 // ensure the classloader should not be excluded
-                if (!excludedClassLoaders.contains(classLoader.getClass().getName())) {
+                if (shouldScheduleClassLoader(classLoader)) {
                     // schedule the excecution
                     PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
                         @Override
                         public void executeCommand() {
-//                            //
-//                            // Synchronize class loader to avoid DEADLOCKs on PluginManager.INSTANCE.
-//                            //
-//                            // Explanation:
-//                            // There are 2 possible places from which the PluginManager.getInstance().initClassLoader() can be called:
-//                            // 1. sun.instrument.TransformerManager.transform ->
-//                            //                   org.hotswap.agent.util.HotswapTransformer.transform ->
-//                            //                              PluginClassFileTransformer.transform() ->
-//                            //                                          PluginManager.initClassLoader()
-//                            //    In this case class loader is locked before call sun.instrument.TransformerManager.transform, subsequently
-//                            //    an attempt to get PluginManager.INSTANCE lock is done in  PluginManager.initClassLoader()
-//                            // 2. From this fallback. The lock is acquired in PluginManager.initClassLoader(), then an attempt to get ClassLoader
-//                            //    lock is done when ClassLoaderDefineClassPatcher makes copy of HA'classes in the new classloader.
-//                            //
-//                            // conclusion : classloader must be locked before PluginManager.getInstance().initClassLoader is called.
-//                            synchronized (classLoader) {
-                                PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
-//                            }
-                            //
-                            //
-                            //
+                            PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
                         }
 
                         @Override
@@ -264,6 +262,21 @@ public class HotswapTransformer implements ClassFileTransformer {
                 }
             }
         }
+    }
+
+    private boolean shouldScheduleClassLoader(final ClassLoader classLoader) {
+        String name = classLoader.getClass().getName();
+        if (excludedClassLoaders.contains(name)) {
+            return false;
+        }
+        if (excludedClassLoaderPatterns != null) {
+            for (Pattern pattern : excludedClassLoaderPatterns) {
+                if (pattern.matcher(name).matches()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
 

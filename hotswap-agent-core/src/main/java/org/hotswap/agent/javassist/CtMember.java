@@ -29,55 +29,21 @@ public abstract class CtMember {
      * at the same time.
      */
     static class Cache extends CtMember {
-        protected void extendToString(StringBuffer buffer) {
-        }
-
-        public boolean hasAnnotation(Class clz) {
-            return false;
-        }
-
+        protected void extendToString(StringBuffer buffer) {}
+        public boolean hasAnnotation(String clz) { return false; }
         public Object getAnnotation(Class clz)
-                throws ClassNotFoundException {
-            return null;
-        }
-
+            throws ClassNotFoundException { return null; }
         public Object[] getAnnotations()
-                throws ClassNotFoundException {
-            return null;
-        }
-
-        public byte[] getAttribute(String name) {
-            return null;
-        }
-
-        public Object[] getAvailableAnnotations() {
-            return null;
-        }
-
-        public int getModifiers() {
-            return 0;
-        }
-
-        public String getName() {
-            return null;
-        }
-
-        public String getSignature() {
-            return null;
-        }
-
-        public void setAttribute(String name, byte[] data) {
-        }
-
-        public void setModifiers(int mod) {
-        }
-
-        public String getGenericSignature() {
-            return null;
-        }
-
-        public void setGenericSignature(String sig) {
-        }
+            throws ClassNotFoundException { return null; }
+        public byte[] getAttribute(String name) { return null; }
+        public Object[] getAvailableAnnotations() { return null; }
+        public int getModifiers() { return 0; }
+        public String getName() { return null; }
+        public String getSignature() { return null; }
+        public void setAttribute(String name, byte[] data) {}
+        public void setModifiers(int mod) {}
+        public String getGenericSignature() { return null; }
+        public void setGenericSignature(String sig) {}
 
         private CtMember methodTail;
         private CtMember consTail;     // constructor tail
@@ -91,29 +57,12 @@ public abstract class CtMember {
             fieldTail.next = this;
         }
 
-        CtMember methodHead() {
-            return this;
-        }
-
-        CtMember lastMethod() {
-            return methodTail;
-        }
-
-        CtMember consHead() {
-            return methodTail;
-        }      // may include a static initializer
-
-        CtMember lastCons() {
-            return consTail;
-        }
-
-        CtMember fieldHead() {
-            return consTail;
-        }
-
-        CtMember lastField() {
-            return fieldTail;
-        }
+        CtMember methodHead() { return this; }
+        CtMember lastMethod() { return methodTail; }
+        CtMember consHead() { return methodTail; }      // may include a static initializer
+        CtMember lastCons() { return consTail; }
+        CtMember fieldHead() { return consTail; }
+        CtMember lastField() { return fieldTail; }
 
         void addMethod(CtMember method) {
             method.next = methodTail.next;
@@ -170,7 +119,8 @@ public abstract class CtMember {
                         fieldTail = m;
 
                     break;
-                } else
+                }
+                else
                     m = m.next;
             }
         }
@@ -181,9 +131,7 @@ public abstract class CtMember {
         next = null;
     }
 
-    final CtMember next() {
-        return next;
-    }
+    final CtMember next() { return next; }
 
     /**
      * This method is invoked when setName() or replaceClassName()
@@ -191,8 +139,7 @@ public abstract class CtMember {
      *
      * @see CtMethod#nameReplaced()
      */
-    void nameReplaced() {
-    }
+    void nameReplaced() {}
 
     public String toString() {
         StringBuffer buffer = new StringBuffer(getClass().getName());
@@ -217,9 +164,7 @@ public abstract class CtMember {
     /**
      * Returns the class that declares this member.
      */
-    public CtClass getDeclaringClass() {
-        return declaringClass;
-    }
+    public CtClass getDeclaringClass() { return declaringClass; }
 
     /**
      * Returns true if this member is accessible from the given class.
@@ -249,8 +194,8 @@ public abstract class CtMember {
     /**
      * Obtains the modifiers of the member.
      *
-     * @return modifiers encoded with
-     * <code>Modifier</code>.
+     * @return          modifiers encoded with
+     *                  <code>javassist.Modifier</code>.
      * @see Modifier
      */
     public abstract int getModifiers();
@@ -263,26 +208,37 @@ public abstract class CtMember {
     public abstract void setModifiers(int mod);
 
     /**
-     * Returns true if the class has the specified annotation class.
+     * Returns true if the class has the specified annotation type.
      *
-     * @param clz the annotation class.
+     * @param clz the annotation type.
      * @return <code>true</code> if the annotation is found, otherwise <code>false</code>.
      * @since 3.11
      */
-    public abstract boolean hasAnnotation(Class clz);
+    public boolean hasAnnotation(Class clz) {
+        return hasAnnotation(clz.getName());
+    }
 
     /**
-     * Returns the annotation if the class has the specified annotation class.
+     * Returns true if the class has the specified annotation type.
+     *
+     * @param annotationTypeName the name of annotation type.
+     * @return <code>true</code> if the annotation is found, otherwise <code>false</code>.
+     * @since 3.21
+     */
+    public abstract boolean hasAnnotation(String annotationTypeName);
+
+    /**
+     * Returns the annotation if the class has the specified annotation type.
      * For example, if an annotation <code>@Author</code> is associated
      * with this member, an <code>Author</code> object is returned.
      * The member values can be obtained by calling methods on
      * the <code>Author</code> object.
      *
-     * @param clz the annotation class.
+     * @param annotationType    the annotation type.
      * @return the annotation if found, otherwise <code>null</code>.
      * @since 3.11
      */
-    public abstract Object getAnnotation(Class clz) throws ClassNotFoundException;
+    public abstract Object getAnnotation(Class annotationType) throws ClassNotFoundException;
 
     /**
      * Returns the annotations associated with this member.
@@ -311,7 +267,7 @@ public abstract class CtMember {
 
     /**
      * Obtains the name of the member.
-     * <p/>
+     *
      * <p>As for constructor names, see <code>getName()</code>
      * in <code>CtConstructor</code>.
      *
@@ -329,8 +285,8 @@ public abstract class CtMember {
     /**
      * Returns the generic signature of the member.
      *
-     * @see org.hotswap.agent.javassist.bytecode.SignatureAttribute#toFieldSignature(String)
-     * @see org.hotswap.agent.javassist.bytecode.SignatureAttribute#toMethodSignature(String)
+     * @see javassist.bytecode.SignatureAttribute#toFieldSignature(String)
+     * @see javassist.bytecode.SignatureAttribute#toMethodSignature(String)
      * @see CtClass#getGenericSignature()
      * @since 3.17
      */
@@ -339,9 +295,9 @@ public abstract class CtMember {
     /**
      * Sets the generic signature of the member.
      *
-     * @param sig a new generic signature.
-     * @see org.hotswap.agent.javassist.bytecode.SignatureAttribute.ObjectType#encode()
-     * @see org.hotswap.agent.javassist.bytecode.SignatureAttribute.MethodSignature#encode()
+     * @param sig   a new generic signature.
+     * @see javassist.bytecode.SignatureAttribute.ObjectType#encode()
+     * @see javassist.bytecode.SignatureAttribute.MethodSignature#encode()
      * @see CtClass#setGenericSignature(String)
      * @since 3.17
      */
@@ -351,24 +307,24 @@ public abstract class CtMember {
      * Obtains a user-defined attribute with the given name.
      * If that attribute is not found in the class file, this
      * method returns null.
-     * <p/>
+     *
      * <p>Note that an attribute is a data block specified by
      * the class file format.
-     * See {@link org.hotswap.agent.javassist.bytecode.AttributeInfo}.
+     * See {@link javassist.bytecode.AttributeInfo}.
      *
-     * @param name attribute name
+     * @param name              attribute name
      */
     public abstract byte[] getAttribute(String name);
 
     /**
      * Adds a user-defined attribute. The attribute is saved in the class file.
-     * <p/>
+     *
      * <p>Note that an attribute is a data block specified by
      * the class file format.
-     * See {@link org.hotswap.agent.javassist.bytecode.AttributeInfo}.
+     * See {@link javassist.bytecode.AttributeInfo}.
      *
-     * @param name attribute name
-     * @param data attribute value
+     * @param name      attribute name
+     * @param data      attribute value
      */
     public abstract void setAttribute(String name, byte[] data);
 }

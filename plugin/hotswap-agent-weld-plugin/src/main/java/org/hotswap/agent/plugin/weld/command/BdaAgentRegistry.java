@@ -5,17 +5,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * BdaAgentRegistry - maps archivePath to BeanDeploymentArchiveAgent. This class is separated from BeanDeploymentArchiveAgent
+ * BdaAgentRegistry - maps archivePath to BeanClassRefreshAgent. This class is separated from BeanClassRefreshAgent
  * to avoid "class not found exception" when map is accessed from ClassPathBeanRefreshCommand.
  *
  * @author Vladimir Dvorak
  */
 public class BdaAgentRegistry {
 
-    // map archive path -> BeanDeploymentArchiveAgent
-    private static Map<String, BeanDeploymentArchiveAgent> INSTANCES = new ConcurrentHashMap<String, BeanDeploymentArchiveAgent>();
+    // map archive path -> BeanClassRefreshAgent
+    private static Map<String, BeanClassRefreshAgent> INSTANCES = new ConcurrentHashMap<String, BeanClassRefreshAgent>();
 
-    public static Map<String, BeanDeploymentArchiveAgent> getInstances() {
+    public static Map<String, BeanClassRefreshAgent> getInstances() {
         return INSTANCES;
     }
 
@@ -23,15 +23,15 @@ public class BdaAgentRegistry {
         return INSTANCES.containsKey(archivePath);
     }
 
-    public static void put(String archivePath, BeanDeploymentArchiveAgent bdaAgent) {
+    public static void put(String archivePath, BeanClassRefreshAgent bdaAgent) {
         INSTANCES.put(archivePath, bdaAgent);
     }
 
-    public static BeanDeploymentArchiveAgent get(String archivePath) {
+    public static BeanClassRefreshAgent get(String archivePath) {
         return INSTANCES.get(archivePath);
     }
 
-    public static Collection<BeanDeploymentArchiveAgent> values() {
+    public static Collection<BeanClassRefreshAgent> values() {
         return INSTANCES.values();
     }
 
@@ -42,7 +42,7 @@ public class BdaAgentRegistry {
      * @return
      */
     public static String getArchiveByClassName(String className){
-        for(BeanDeploymentArchiveAgent agent: INSTANCES.values()) {
+        for(BeanClassRefreshAgent agent: INSTANCES.values()) {
             if(agent.getDeploymentArchive().getBeanClasses().contains(className)) {
                 return agent.getArchivePath();
             }

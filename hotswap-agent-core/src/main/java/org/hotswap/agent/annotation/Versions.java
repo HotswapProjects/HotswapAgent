@@ -1,18 +1,18 @@
 /*
  * Copyright 2016 the original author or authors.
- * 
+ *
  * This file is part of HotswapAgent.
- * 
+ *
  * HotswapAgent is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 2 of the License, or (at your
  * option) any later version.
- * 
+ *
  * HotswapAgent is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
 /**
  * Defines an artifact (jar) which needs to be matched against Maven coordinates
  * of Manifest file information for this plugin to be enabled
- * 
+ *
  * The above are matched as OR (any of).
  *
  * @author alpapad@gmail.com
@@ -38,11 +38,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD })
 public @interface Versions {
 
-    /**
-     * If no other plugin matches and fallback is set to true, then use this plugin
-     * @return
-     */
-    boolean fallback() default false;
     /**
      * A list of maven coordinates to be matched.
      *

@@ -16,10 +16,14 @@
 
 package org.hotswap.agent.javassist.scopedpool;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.LoaderClassPath;
-
-import java.util.*;
 
 /**
  * An implementation of <code>ScopedClassPoolRepository</code>.
@@ -28,44 +32,32 @@ import java.util.*;
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  * @version $Revision: 1.4 $
  */
-public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassist.scopedpool.ScopedClassPoolRepository {
-    /**
-     * The instance
-     */
+public class ScopedClassPoolRepositoryImpl implements ScopedClassPoolRepository {
+    /** The instance */
     private static final ScopedClassPoolRepositoryImpl instance = new ScopedClassPoolRepositoryImpl();
 
-    /**
-     * Whether to prune
-     */
+    /** Whether to prune */
     private boolean prune = true;
 
-    /**
-     * Whether to prune when added to the classpool's cache
-     */
+    /** Whether to prune when added to the classpool's cache */
     boolean pruneWhenCached;
 
-    /**
-     * The registered classloaders
-     */
+    /** The registered classloaders */
     protected Map registeredCLs = Collections
             .synchronizedMap(new WeakHashMap());
 
-    /**
-     * The default class pool
-     */
+    /** The default class pool */
     protected ClassPool classpool;
 
-    /**
-     * The factory for creating class pools
-     */
-    protected org.hotswap.agent.javassist.scopedpool.ScopedClassPoolFactory factory = new ScopedClassPoolFactoryImpl();
+    /** The factory for creating class pools */
+    protected ScopedClassPoolFactory factory = new ScopedClassPoolFactoryImpl();
 
     /**
      * Get the instance.
-     *
+     * 
      * @return the instance.
      */
-    public static org.hotswap.agent.javassist.scopedpool.ScopedClassPoolRepository getInstance() {
+    public static ScopedClassPoolRepository getInstance() {
         return instance;
     }
 
@@ -81,7 +73,7 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
 
     /**
      * Returns the value of the prune attribute.
-     *
+     * 
      * @return the prune.
      */
     public boolean isPrune() {
@@ -90,8 +82,8 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
 
     /**
      * Set the prune attribute.
-     *
-     * @param prune a new value.
+     * 
+     * @param prune     a new value.
      */
     public void setPrune(boolean prune) {
         this.prune = prune;
@@ -99,12 +91,12 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
 
     /**
      * Create a scoped classpool.
-     *
-     * @param cl  the classloader.
-     * @param src the original classpool.
+     * 
+     * @param cl    the classloader.
+     * @param src   the original classpool.
      * @return the classpool
      */
-    public org.hotswap.agent.javassist.scopedpool.ScopedClassPool createScopedClassPool(ClassLoader cl, ClassPool src) {
+    public ScopedClassPool createScopedClassPool(ClassLoader cl, ClassPool src) {
         return factory.create(cl, src, this);
     }
 
@@ -117,8 +109,8 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
 
     /**
      * Register a classloader.
-     *
-     * @param ucl the classloader.
+     * 
+     * @param ucl       the classloader.
      * @return the classpool
      */
     public ClassPool registerClassLoader(ClassLoader ucl) {
@@ -129,9 +121,9 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
             // a
             // ClassPool.classpath
             if (registeredCLs.containsKey(ucl)) {
-                return (ClassPool) registeredCLs.get(ucl);
+                return (ClassPool)registeredCLs.get(ucl);
             }
-            org.hotswap.agent.javassist.scopedpool.ScopedClassPool pool = createScopedClassPool(ucl, classpool);
+            ScopedClassPool pool = createScopedClassPool(ucl, classpool);
             registeredCLs.put(ucl, pool);
             return pool;
         }
@@ -154,7 +146,7 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
         synchronized (registeredCLs) {
             Iterator it = registeredCLs.values().iterator();
             while (it.hasNext()) {
-                org.hotswap.agent.javassist.scopedpool.ScopedClassPool pool = (org.hotswap.agent.javassist.scopedpool.ScopedClassPool) it.next();
+                ScopedClassPool pool = (ScopedClassPool)it.next();
                 if (pool.isUnloadedClassLoader()) {
                     it.remove();
                     ClassLoader cl = pool.getClassLoader();
@@ -168,7 +160,7 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
             }
             if (toUnregister != null) {
                 for (int i = 0; i < toUnregister.size(); i++) {
-                    unregisterClassLoader((ClassLoader) toUnregister.get(i));
+                    unregisterClassLoader((ClassLoader)toUnregister.get(i));
                 }
             }
         }
@@ -176,21 +168,21 @@ public class ScopedClassPoolRepositoryImpl implements org.hotswap.agent.javassis
 
     public void unregisterClassLoader(ClassLoader cl) {
         synchronized (registeredCLs) {
-            org.hotswap.agent.javassist.scopedpool.ScopedClassPool pool = (org.hotswap.agent.javassist.scopedpool.ScopedClassPool) registeredCLs.remove(cl);
+            ScopedClassPool pool = (ScopedClassPool)registeredCLs.remove(cl);
             if (pool != null)
                 pool.close();
         }
     }
 
-    public void insertDelegate(org.hotswap.agent.javassist.scopedpool.ScopedClassPoolRepository delegate) {
+    public void insertDelegate(ScopedClassPoolRepository delegate) {
         // Noop - this is the end
     }
 
-    public void setClassPoolFactory(org.hotswap.agent.javassist.scopedpool.ScopedClassPoolFactory factory) {
+    public void setClassPoolFactory(ScopedClassPoolFactory factory) {
         this.factory = factory;
     }
 
-    public org.hotswap.agent.javassist.scopedpool.ScopedClassPoolFactory getClassPoolFactory() {
+    public ScopedClassPoolFactory getClassPoolFactory() {
         return factory;
     }
 }

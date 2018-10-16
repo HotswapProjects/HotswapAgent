@@ -15,20 +15,24 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ExceptionTable;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
 
 /**
  * Discovers the subroutines in a method, and tracks all callers.
  *
  * @author Jason T. Greene
  */
-public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.Opcode {
+public class SubroutineScanner implements Opcode {
 
     private Subroutine[] subroutines;
     Map subTable = new HashMap();
@@ -36,8 +40,8 @@ public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.O
 
 
     public Subroutine[] scan(MethodInfo method) throws BadBytecode {
-        org.hotswap.agent.javassist.bytecode.CodeAttribute code = method.getCodeAttribute();
-        org.hotswap.agent.javassist.bytecode.CodeIterator iter = code.iterator();
+        CodeAttribute code = method.getCodeAttribute();
+        CodeIterator iter = code.iterator();
 
         subroutines = new Subroutine[code.getCodeLength()];
         subTable.clear();
@@ -45,7 +49,7 @@ public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.O
 
         scan(0, iter, null);
 
-        org.hotswap.agent.javassist.bytecode.ExceptionTable exceptions = code.getExceptionTable();
+        ExceptionTable exceptions = code.getExceptionTable();
         for (int i = 0; i < exceptions.size(); i++) {
             int handler = exceptions.handlerPc(i);
             // If an exception is thrown in subroutine, the handler
@@ -56,12 +60,12 @@ public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.O
         return subroutines;
     }
 
-    private void scan(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iter, Subroutine sub) throws BadBytecode {
+    private void scan(int pos, CodeIterator iter, Subroutine sub) throws BadBytecode {
         // Skip already processed blocks
-        if (done.contains(new Integer(pos)))
+        if (done.contains(Integer.valueOf(pos)))
             return;
 
-        done.add(new Integer(pos));
+        done.add(Integer.valueOf(pos));
 
         int old = iter.lookAhead();
         iter.move(pos);
@@ -75,7 +79,7 @@ public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.O
         iter.move(old);
     }
 
-    private boolean scanOp(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iter, Subroutine sub) throws BadBytecode {
+    private boolean scanOp(int pos, CodeIterator iter, Subroutine sub) throws BadBytecode {
         subroutines[pos] = sub;
 
         int opcode = iter.byteAt(pos);
@@ -99,10 +103,10 @@ public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.O
         if (Util.isJumpInstruction(opcode)) {
             int target = Util.getJumpTarget(pos, iter);
             if (opcode == JSR || opcode == JSR_W) {
-                Subroutine s = (Subroutine) subTable.get(new Integer(target));
+                Subroutine s = (Subroutine) subTable.get(Integer.valueOf(target));
                 if (s == null) {
                     s = new Subroutine(target, pos);
-                    subTable.put(new Integer(target), s);
+                    subTable.put(Integer.valueOf(target), s);
                     scan(target, iter, s);
                 } else {
                     s.addCaller(pos);
@@ -119,7 +123,7 @@ public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.O
         return true;
     }
 
-    private void scanLookupSwitch(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iter, Subroutine sub) throws BadBytecode {
+    private void scanLookupSwitch(int pos, CodeIterator iter, Subroutine sub) throws BadBytecode {
         int index = (pos & ~3) + 4;
         // default
         scan(pos + iter.s32bitAt(index), iter, sub);
@@ -133,7 +137,7 @@ public class SubroutineScanner implements org.hotswap.agent.javassist.bytecode.O
         }
     }
 
-    private void scanTableSwitch(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iter, Subroutine sub) throws BadBytecode {
+    private void scanTableSwitch(int pos, CodeIterator iter, Subroutine sub) throws BadBytecode {
         // Skip 4 byte alignment padding
         int index = (pos & ~3) + 4;
         // default

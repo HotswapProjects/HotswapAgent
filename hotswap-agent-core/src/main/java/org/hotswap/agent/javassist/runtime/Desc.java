@@ -26,16 +26,17 @@ public class Desc {
 
     /**
      * Specifies how a <code>java.lang.Class</code> object is loaded.
-     * <p/>
+     *
      * <p>If true, it is loaded by:
-     * <ul><pre>Thread.currentThread().getContextClassLoader().loadClass()</pre></ul>
+     * <pre>Thread.currentThread().getContextClassLoader().loadClass()</pre>
      * <p>If false, it is loaded by <code>Class.forName()</code>.
      * The default value is false.
      */
     public static boolean useContextClassLoader = false;
 
     private static Class getClassObject(String name)
-            throws ClassNotFoundException {
+        throws ClassNotFoundException
+    {
         if (useContextClassLoader)
             return Class.forName(name, true, Thread.currentThread().getContextClassLoader());
         else
@@ -49,11 +50,12 @@ public class Desc {
     public static Class getClazz(String name) {
         try {
             return getClassObject(name);
-        } catch (ClassNotFoundException e) {
+        }
+        catch (ClassNotFoundException e) {
             throw new RuntimeException(
-                    "$class: internal error, could not find class '" + name
-                            + "' (Desc.useContextClassLoader: "
-                            + Boolean.toString(useContextClassLoader) + ")", e);
+                    "$class: internal error, could not find class '" + name 
+                    + "' (Desc.useContextClassLoader: " 
+                    + Boolean.toString(useContextClassLoader) + ")", e); 
         }
     }
 
@@ -88,38 +90,38 @@ public class Desc {
 
         char c = desc.charAt(start);
         switch (c) {
-            case 'Z':
-                clazz = Boolean.TYPE;
-                break;
-            case 'C':
-                clazz = Character.TYPE;
-                break;
-            case 'B':
-                clazz = Byte.TYPE;
-                break;
-            case 'S':
-                clazz = Short.TYPE;
-                break;
-            case 'I':
-                clazz = Integer.TYPE;
-                break;
-            case 'J':
-                clazz = Long.TYPE;
-                break;
-            case 'F':
-                clazz = Float.TYPE;
-                break;
-            case 'D':
-                clazz = Double.TYPE;
-                break;
-            case 'V':
-                clazz = Void.TYPE;
-                break;
-            case 'L':
-            case '[':
-                return getClassType(desc, descLen, start, num);
-            default:
-                return new Class[num];
+        case 'Z' :
+            clazz = Boolean.TYPE;
+            break;
+        case 'C' :
+            clazz = Character.TYPE;
+            break;
+        case 'B' :
+            clazz = Byte.TYPE;
+            break;
+        case 'S' :
+            clazz = Short.TYPE;
+            break;
+        case 'I' :
+            clazz = Integer.TYPE;
+            break;
+        case 'J' :
+            clazz = Long.TYPE;
+            break;
+        case 'F' :
+            clazz = Float.TYPE;
+            break;
+        case 'D' :
+            clazz = Double.TYPE;
+            break;
+        case 'V' :
+            clazz = Void.TYPE;
+            break;
+        case 'L' :
+        case '[' :
+            return getClassType(desc, descLen, start, num);
+        default :
+            return new Class[num];
         }
 
         Class[] result = getType(desc, descLen, start + 1, num + 1);
@@ -148,7 +150,8 @@ public class Desc {
         Class[] result = getType(desc, descLen, end + 1, num + 1);
         try {
             result[num] = getClassObject(cname.replace('/', '.'));
-        } catch (ClassNotFoundException e) {
+        }
+        catch (ClassNotFoundException e) {
             // "new RuntimeException(e)" is not available in JDK 1.3.
             throw new RuntimeException(e.getMessage());
         }

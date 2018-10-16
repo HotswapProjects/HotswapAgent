@@ -155,23 +155,28 @@ public class JettyPlugin {
         }
 
         // set different resource
-        URL webappDir = pluginConfiguration.getWebappDir();
-        if (webappDir != null) {
-            LOGGER.debug("Setting webappDir to directory '{}' for Jetty webapp {}.", webappDir, contextHandler);
+        URL[] webappDir = pluginConfiguration.getWebappDir();
+        if (webappDir.length > 0) {
             try {
-                Object originalBaseResource = ReflectionHelper.invoke(contextHandler, contextHandlerClass, "getBaseResource", new Class[] {});
-                Object fileResource = fileResourceClass.getDeclaredConstructor(URL.class).newInstance(webappDir);
-                Object resourceArray = Array.newInstance(resourceClass, 2);
-                Array.set(resourceArray, 0, fileResource);
-                Array.set(resourceArray, 1, originalBaseResource);
-
-                Object resourceCollection = resourceCollectionClass.getDeclaredConstructor(resourceArray.getClass()).newInstance(resourceArray);
+                Object originalBaseResource = ReflectionHelper.invoke(contextHandler, contextHandlerClass,
+                        "getBaseResource", new Class[] {});
+                Object resourceArray = Array.newInstance(resourceClass, webappDir.length + 1);
+                for (int i = 0; i < webappDir.length; i++) {
+                    LOGGER.debug("Watching 'webappDir' for changes: {} in Jetty webapp: {}", webappDir[i],
+                            contextHandler);
+                    Object fileResource = fileResourceClass.getDeclaredConstructor(URL.class).newInstance(webappDir[i]);
+                    Array.set(resourceArray, i, fileResource);
+                }
+                Array.set(resourceArray, webappDir.length, originalBaseResource);
+                Object resourceCollection = resourceCollectionClass.getDeclaredConstructor(resourceArray.getClass())
+                        .newInstance(resourceArray);
 
                 ReflectionHelper.invoke(contextHandler, contextHandlerClass, "setBaseResource",
-                        new Class[] {resourceClass}, resourceCollection);
-
+                        new Class[] { resourceClass }, resourceCollection);
             } catch (Exception e) {
-                LOGGER.error("Unable to set webappDir to directory '{}' for Jetty webapp {}. This configuration will not work.", e, webappDir, contextHandler);
+                LOGGER.error(
+                        "Unable to set webappDir to directory '{}' for Jetty webapp {}. This configuration will not work.",
+                        e, webappDir[0], contextHandler);
             }
         }
 

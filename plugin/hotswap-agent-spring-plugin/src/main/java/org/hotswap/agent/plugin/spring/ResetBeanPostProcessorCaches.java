@@ -53,7 +53,7 @@ public class ResetBeanPostProcessorCaches {
                     ((Map)declaredFieldsCache.get(null)).clear();
 
                 } catch (Exception version40Failed) {
-                    LOGGER.debug("Failed to clear Spring 4.x internal method/field cache", version40Failed);
+                    LOGGER.debug("Failed to clear internal method/field cache, it's normal with spring 4.1x or lower", version40Failed);
                 }
 			}
 			LOGGER.trace("Cleared Spring 4.2+ internal method/field cache.");

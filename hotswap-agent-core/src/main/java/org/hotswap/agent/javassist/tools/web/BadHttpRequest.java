@@ -22,13 +22,9 @@ package org.hotswap.agent.javassist.tools.web;
 public class BadHttpRequest extends Exception {
     private Exception e;
 
-    public BadHttpRequest() {
-        e = null;
-    }
+    public BadHttpRequest() { e = null; }
 
-    public BadHttpRequest(Exception _e) {
-        e = _e;
-    }
+    public BadHttpRequest(Exception _e) { e = _e; }
 
     public String toString() {
         if (e == null)

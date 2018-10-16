@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
+import org.hotswap.agent.javassist.compiler.CompileError;
+
 /**
  * Variable.
  */
@@ -27,15 +29,11 @@ public class Variable extends Symbol {
         declarator = d;
     }
 
-    public Declarator getDeclarator() {
-        return declarator;
-    }
+    public Declarator getDeclarator() { return declarator; }
 
     public String toString() {
         return identifier + ":" + declarator.getType();
     }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
-        v.atVariable(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atVariable(this); }
 }

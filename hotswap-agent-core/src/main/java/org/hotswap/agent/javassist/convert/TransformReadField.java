@@ -16,7 +16,12 @@
 
 package org.hotswap.agent.javassist.convert;
 
-import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.Modifier;
 
 public class TransformReadField extends Transformer {
     protected String fieldname;
@@ -25,7 +30,8 @@ public class TransformReadField extends Transformer {
     protected String methodClassname, methodName;
 
     public TransformReadField(Transformer next, CtField field,
-                              String methodClassname, String methodName) {
+                              String methodClassname, String methodName)
+    {
         super(next);
         this.fieldClass = field.getDeclaringClass();
         this.fieldname = field.getName();
@@ -34,7 +40,7 @@ public class TransformReadField extends Transformer {
         this.isPrivate = Modifier.isPrivate(field.getModifiers());
     }
 
-    static String isField(ClassPool pool, org.hotswap.agent.javassist.bytecode.ConstPool cp, CtClass fclass,
+    static String isField(ClassPool pool, ConstPool cp, CtClass fclass,
                           String fname, boolean is_private, int index) {
         if (!cp.getFieldrefName(index).equals(fname))
             return null;
@@ -43,8 +49,8 @@ public class TransformReadField extends Transformer {
             CtClass c = pool.get(cp.getFieldrefClassName(index));
             if (c == fclass || (!is_private && isFieldInSuper(c, fclass, fname)))
                 return cp.getFieldrefType(index);
-        } catch (NotFoundException e) {
         }
+        catch (NotFoundException e) {}
         return null;
     }
 
@@ -55,18 +61,19 @@ public class TransformReadField extends Transformer {
         try {
             CtField f = clazz.getField(fname);
             return f.getDeclaringClass() == fclass;
-        } catch (NotFoundException e) {
         }
+        catch (NotFoundException e) {}
         return false;
     }
 
-    public int transform(CtClass tclazz, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator,
-                         org.hotswap.agent.javassist.bytecode.ConstPool cp) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int transform(CtClass tclazz, int pos, CodeIterator iterator,
+                         ConstPool cp) throws BadBytecode
+    {
         int c = iterator.byteAt(pos);
         if (c == GETFIELD || c == GETSTATIC) {
             int index = iterator.u16bitAt(pos + 1);
             String typedesc = isField(tclazz.getClassPool(), cp,
-                    fieldClass, fieldname, isPrivate, index);
+                                fieldClass, fieldname, isPrivate, index);
             if (typedesc != null) {
                 if (c == GETSTATIC) {
                     iterator.move(pos);

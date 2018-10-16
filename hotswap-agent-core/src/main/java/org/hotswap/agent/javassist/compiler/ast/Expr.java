@@ -17,6 +17,7 @@
 package org.hotswap.agent.javassist.compiler.ast;
 
 import org.hotswap.agent.javassist.compiler.TokenId;
+import org.hotswap.agent.javassist.compiler.CompileError;
 
 /**
  * Expression.
@@ -48,38 +49,28 @@ public class Expr extends ASTList implements TokenId {
         return new Expr(op, oprand1);
     }
 
-    public int getOperator() {
-        return operatorId;
-    }
+    public int getOperator() { return operatorId; }
 
-    public void setOperator(int op) {
-        operatorId = op;
-    }
+    public void setOperator(int op) { operatorId = op; }
 
-    public ASTree oprand1() {
-        return getLeft();
-    }
+    public ASTree oprand1() { return getLeft(); }
 
     public void setOprand1(ASTree expr) {
         setLeft(expr);
     }
 
-    public ASTree oprand2() {
-        return getRight().getLeft();
-    }
+    public ASTree oprand2() { return getRight().getLeft(); }
 
     public void setOprand2(ASTree expr) {
         getRight().setLeft(expr);
     }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
-        v.atExpr(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atExpr(this); }
 
     public String getName() {
         int id = operatorId;
         if (id < 128)
-            return String.valueOf((char) id);
+            return String.valueOf((char)id);
         else if (NEQ <= id && id <= ARSHIFT_E)
             return opNames[id - NEQ];
         else if (id == INSTANCEOF)

@@ -16,28 +16,34 @@
 
 package org.hotswap.agent.javassist.convert;
 
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.Modifier;
+
 final public class TransformFieldAccess extends Transformer {
     private String newClassname, newFieldname;
     private String fieldname;
-    private org.hotswap.agent.javassist.CtClass fieldClass;
+    private CtClass fieldClass;
     private boolean isPrivate;
 
     /* cache */
     private int newIndex;
-    private org.hotswap.agent.javassist.bytecode.ConstPool constPool;
+    private ConstPool constPool;
 
-    public TransformFieldAccess(Transformer next, org.hotswap.agent.javassist.CtField field,
-                                String newClassname, String newFieldname) {
+    public TransformFieldAccess(Transformer next, CtField field,
+                                String newClassname, String newFieldname)
+    {
         super(next);
         this.fieldClass = field.getDeclaringClass();
         this.fieldname = field.getName();
-        this.isPrivate = org.hotswap.agent.javassist.Modifier.isPrivate(field.getModifiers());
+        this.isPrivate = Modifier.isPrivate(field.getModifiers());
         this.newClassname = newClassname;
         this.newFieldname = newFieldname;
         this.constPool = null;
     }
 
-    public void initialize(org.hotswap.agent.javassist.bytecode.ConstPool cp, org.hotswap.agent.javassist.bytecode.CodeAttribute attr) {
+    public void initialize(ConstPool cp, CodeAttribute attr) {
         if (constPool != cp)
             newIndex = 0;
     }
@@ -48,21 +54,22 @@ final public class TransformFieldAccess extends Transformer {
      * in a superclass of the class in which the original field is
      * declared.
      */
-    public int transform(org.hotswap.agent.javassist.CtClass clazz, int pos,
-                         org.hotswap.agent.javassist.bytecode.CodeIterator iterator, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public int transform(CtClass clazz, int pos,
+                         CodeIterator iterator, ConstPool cp)
+    {
         int c = iterator.byteAt(pos);
         if (c == GETFIELD || c == GETSTATIC
-                || c == PUTFIELD || c == PUTSTATIC) {
+                                || c == PUTFIELD || c == PUTSTATIC) {
             int index = iterator.u16bitAt(pos + 1);
             String typedesc
-                    = TransformReadField.isField(clazz.getClassPool(), cp,
-                    fieldClass, fieldname, isPrivate, index);
+                = TransformReadField.isField(clazz.getClassPool(), cp,
+                                fieldClass, fieldname, isPrivate, index);
             if (typedesc != null) {
                 if (newIndex == 0) {
                     int nt = cp.addNameAndTypeInfo(newFieldname,
-                            typedesc);
+                                                   typedesc);
                     newIndex = cp.addFieldrefInfo(
-                            cp.addClassInfo(newClassname), nt);
+                                        cp.addClassInfo(newClassname), nt);
                     constPool = cp;
                 }
 

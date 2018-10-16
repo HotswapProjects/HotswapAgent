@@ -16,32 +16,31 @@
 
 package org.hotswap.agent.javassist.bytecode.analysis;
 
+import java.util.ArrayList;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.javassist.bytecode.stackmap.BasicBlock;
 
-import java.util.ArrayList;
-
 /**
  * Represents the control flow graph of a given method.
- * <p/>
+ *
  * <p>To obtain the control flow graph, do the following:</p>
- * <p/>
+ *
  * <pre>CtMethod m = ...
  * ControlFlow cf = new ControlFlow(m);
  * Block[] blocks = cf.basicBlocks();
  * </pre>
- * <p/>
+ *
  * <p><code>blocks</code> is an array of basic blocks in
  * that method body.</p>
  *
- * @author Shigeru Chiba
- * @see org.hotswap.agent.javassist.CtMethod
+ * @see javassist.CtMethod
  * @see Block
  * @see Frame
- * @see org.hotswap.agent.javassist.bytecode.analysis.Analyzer
+ * @see Analyzer
+ * @author Shigeru Chiba
  * @since 3.16
  */
 public class ControlFlow {
@@ -64,15 +63,16 @@ public class ControlFlow {
         clazz = ctclazz;
         methodInfo = minfo;
         frames = null;
-        basicBlocks = (Block[]) new BasicBlock.Maker() {
+        basicBlocks = (Block[])new BasicBlock.Maker() {
             protected BasicBlock makeBlock(int pos) {
                 return new Block(pos, methodInfo);
             }
-
             protected BasicBlock[] makeArray(int size) {
                 return new Block[size];
             }
         }.make(minfo);
+        if (basicBlocks == null)
+            basicBlocks = new Block[0];
         int size = basicBlocks.length;
         int[] counters = new int[size];
         for (int i = 0; i < size; i++) {
@@ -88,11 +88,20 @@ public class ControlFlow {
                 Block e = b.exit(k);
                 e.entrances[counters[e.index]++] = b;
             }
+
+            ControlFlow.Catcher[] catchers = b.catchers();
+            for (int k = 0; k < catchers.length; k++) {
+                Block catchBlock = catchers[k].node;
+                catchBlock.entrances[counters[catchBlock.index]++] = b;
+            }
         }
     }
 
     /**
      * Returns all the basic blocks in the method body.
+     *
+     * @return an array of basic blocks, the array has length 0 if
+     * the method doesn't have code.
      */
     public Block[] basicBlocks() {
         return basicBlocks;
@@ -104,11 +113,11 @@ public class ControlFlow {
      * not the first byte of an instruction, then this method returns
      * null.
      *
-     * @param pos the position.
+     * @param pos       the position.
      */
     public Frame frameAt(int pos) throws BadBytecode {
         if (frames == null)
-            frames = new org.hotswap.agent.javassist.bytecode.analysis.Analyzer().analyze(clazz, methodInfo);
+            frames = new Analyzer().analyze(clazz, methodInfo);
 
         return frames[pos];
     }
@@ -117,19 +126,19 @@ public class ControlFlow {
      * Constructs a dominator tree.  This method returns an array of
      * the tree nodes.  The first element of the array is the root
      * of the tree.
-     * <p/>
+     * 
      * <p> The order of the elements is the same as that
      * of the elements in the <code>Block</code> array returned
      * by the <code>basicBlocks</code>
      * method.  If a <code>Block</code> object is at the i-th position
-     * in the <code>Block</code> array, then
+     * in the <code>Block</code> array, then  
      * the <code>Node</code> object referring to that
      * <code>Block</code> object is at the i-th position in the
      * array returned by this method.
      * For every array element <code>node</code>, its index in the
-     * array is equivalent to <code>node.block().index()</code>.
+     * array is equivalent to <code>node.block().index()</code>. 
      *
-     * @return an array of the tree nodes, or null if the method is abstract.
+     * @return an array of the tree nodes, or null if the method doesn't have code.
      * @see Node#block()
      * @see Block#index()
      */
@@ -147,13 +156,8 @@ public class ControlFlow {
         }
 
         Access access = new Access(nodes) {
-            BasicBlock[] exits(Node n) {
-                return n.block.getExit();
-            }
-
-            BasicBlock[] entrances(Node n) {
-                return n.block.entrances;
-            }
+            BasicBlock[] exits(Node n) { return n.block.getExit(); }
+            BasicBlock[] entrances(Node n) { return n.block.entrances; }
         };
         nodes[0].makeDepth1stTree(null, visited, 0, distance, access);
         do {
@@ -168,19 +172,19 @@ public class ControlFlow {
      * Constructs a post dominator tree.  This method returns an array of
      * the tree nodes.  Note that the tree has multiple roots.
      * The parent of the root nodes is null.
-     * <p/>
+     * 
      * <p> The order of the elements is the same as that
      * of the elements in the <code>Block</code> array returned
      * by the <code>basicBlocks</code>
      * method.  If a <code>Block</code> object is at the i-th position
-     * in the <code>Block</code> array, then
+     * in the <code>Block</code> array, then  
      * the <code>Node</code> object referring to that
      * <code>Block</code> object is at the i-th position in the
      * array returned by this method.
      * For every array element <code>node</code>, its index in the
      * array is equivalent to <code>node.block().index()</code>.
      *
-     * @return an array of the tree nodes, or null if the method is abstract.
+     * @return an array of the tree nodes, or null if the method doesn't have code.
      * @see Node#block()
      * @see Block#index()
      */
@@ -198,13 +202,8 @@ public class ControlFlow {
         }
 
         Access access = new Access(nodes) {
-            BasicBlock[] exits(Node n) {
-                return n.block.entrances;
-            }
-
-            BasicBlock[] entrances(Node n) {
-                return n.block.getExit();
-            }
+            BasicBlock[] exits(Node n) { return n.block.entrances; }
+            BasicBlock[] entrances(Node n) { return n.block.getExit(); }
         };
 
         int counter = 0;
@@ -257,14 +256,12 @@ public class ControlFlow {
             super.toString2(sbuf);
             sbuf.append(", incoming{");
             for (int i = 0; i < entrances.length; i++)
-                sbuf.append(entrances[i].position).append(", ");
+                    sbuf.append(entrances[i].position).append(", ");
 
             sbuf.append("}");
         }
 
-        BasicBlock[] getExit() {
-            return exit;
-        }
+        BasicBlock[] getExit() { return exit; }
 
         /**
          * Returns the position of this block in the array of
@@ -273,31 +270,23 @@ public class ControlFlow {
          *
          * @see #basicBlocks()
          */
-        public int index() {
-            return index;
-        }
+        public int index() { return index; }
 
         /**
          * Returns the position of the first instruction
          * in this block.
          */
-        public int position() {
-            return position;
-        }
+        public int position() { return position; }
 
         /**
          * Returns the length of this block.
          */
-        public int length() {
-            return length;
-        }
+        public int length() { return length; }
 
         /**
          * Returns the number of the control paths entering this block.
          */
-        public int incomings() {
-            return incoming;
-        }
+        public int incomings() { return incoming; }
 
         /**
          * Returns the block that the control may jump into this block from.
@@ -310,23 +299,19 @@ public class ControlFlow {
          * Return the number of the blocks that may be executed
          * after this block.
          */
-        public int exits() {
-            return exit == null ? 0 : exit.length;
-        }
+        public int exits() { return exit == null ? 0 : exit.length; }
 
         /**
          * Returns the n-th block that may be executed after this
          * block.
          *
-         * @param n an index in the array of exit blocks.
+         * @param n     an index in the array of exit blocks.
          */
-        public Block exit(int n) {
-            return (Block) exit[n];
-        }
+        public Block exit(int n) { return (Block)exit[n]; }
 
         /**
          * Returns catch clauses that will catch an exception thrown
-         * in this block.
+         * in this block. 
          */
         public Catcher[] catchers() {
             ArrayList catchers = new ArrayList();
@@ -336,28 +321,20 @@ public class ControlFlow {
                 c = c.next;
             }
 
-            return (Catcher[]) catchers.toArray(new Catcher[catchers.size()]);
+            return (Catcher[])catchers.toArray(new Catcher[catchers.size()]);
         }
     }
 
     static abstract class Access {
         Node[] all;
-
-        Access(Node[] nodes) {
-            all = nodes;
-        }
-
-        Node node(BasicBlock b) {
-            return all[((Block) b).index];
-        }
-
+        Access(Node[] nodes) { all = nodes; }
+        Node node(BasicBlock b) { return all[((Block)b).index]; } 
         abstract BasicBlock[] exits(Node n);
-
         abstract BasicBlock[] entrances(Node n);
     }
 
     /**
-     * A node of (post) dominator trees.
+     * A node of (post) dominator trees. 
      */
     public static class Node {
         private Block block;
@@ -388,32 +365,24 @@ public class ControlFlow {
         /**
          * Returns the basic block indicated by this node.
          */
-        public Block block() {
-            return block;
-        }
+        public Block block() { return block; }
 
         /**
          * Returns the parent of this node.
          */
-        public Node parent() {
-            return parent;
-        }
+        public Node parent() { return parent; }
 
         /**
          * Returns the number of the children of this node.
          */
-        public int children() {
-            return children.length;
-        }
+        public int children() { return children.length; }
 
         /**
          * Returns the n-th child of this node.
-         *
-         * @param n an index in the array of children.
+         *  
+         * @param n     an index in the array of children.
          */
-        public Node child(int n) {
-            return children[n];
-        }
+        public Node child(int n) { return children[n]; }
 
         /*
          * After executing this method, distance[] represents the post order of the tree nodes.
@@ -504,7 +473,7 @@ public class ControlFlow {
                 Node n = all[i];
                 Node p = n.parent;
                 if (p != null)
-                    p.children[nchildren[p.block.index]++] = n;
+                    p.children[nchildren[p.block.index]++] = n;            
             }
         }
     }
@@ -517,16 +486,14 @@ public class ControlFlow {
         private int typeIndex;
 
         Catcher(BasicBlock.Catch c) {
-            node = (Block) c.body;
+            node = (Block)c.body;
             typeIndex = c.typeIndex;
         }
 
         /**
-         * Returns the first block of the catch clause.
+         * Returns the first block of the catch clause. 
          */
-        public Block block() {
-            return node;
-        }
+        public Block block() { return node; }
 
         /**
          * Returns the name of the exception type that

@@ -30,14 +30,15 @@ public class SyntheticAttribute extends AttributeInfo {
     public static final String tag = "Synthetic";
 
     SyntheticAttribute(ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+        throws IOException
+    {
         super(cp, n, in);
     }
 
     /**
      * Constructs a Synthetic attribute.
      *
-     * @param cp a constant pool table.
+     * @param cp                a constant pool table.
      */
     public SyntheticAttribute(ConstPool cp) {
         super(cp, tag, new byte[0]);
@@ -46,8 +47,8 @@ public class SyntheticAttribute extends AttributeInfo {
     /**
      * Makes a copy.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames should be null.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        should be null.
      */
     public AttributeInfo copy(ConstPool newCp, Map classnames) {
         return new SyntheticAttribute(newCp);

@@ -10,6 +10,11 @@ import org.apache.deltaspike.partialbean.impl.PartialBeanProxyFactory;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 
+/**
+ * The Class PartialBeanClassRefreshAgent.
+ *
+ * @author Vladimir Dvorak
+ */
 public class PartialBeanClassRefreshAgent {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(PartialBeanClassRefreshAgent.class);

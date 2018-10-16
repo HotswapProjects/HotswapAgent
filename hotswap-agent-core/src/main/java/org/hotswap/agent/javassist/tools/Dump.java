@@ -16,29 +16,28 @@
 
 package org.hotswap.agent.javassist.tools;
 
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.PrintWriter;
+import java.io.*;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.ClassFilePrinter;
 
 /**
  * Dump is a tool for viewing the class definition in the given
  * class file.  Unlike the JDK javap tool, Dump works even if
  * the class file is broken.
- * <p/>
+ *
  * <p>For example,
- * <ul><pre>% java Dump foo.class</pre></ul>
- * <p/>
+ * <pre>% java javassist.tools.Dump foo.class</pre>
+ *
  * <p>prints the contents of the constant pool and the list of methods
  * and fields.
  */
 public class Dump {
-    private Dump() {
-    }
+    private Dump() {}
 
     /**
      * Main method.
      *
-     * @param args <code>args[0]</code> is the class file name.
+     * @param args           <code>args[0]</code> is the class file name.
      */
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -47,13 +46,13 @@ public class Dump {
         }
 
         DataInputStream in = new DataInputStream(
-                new FileInputStream(args[0]));
-        org.hotswap.agent.javassist.bytecode.ClassFile w = new org.hotswap.agent.javassist.bytecode.ClassFile(in);
+                                         new FileInputStream(args[0]));
+        ClassFile w = new ClassFile(in);
         PrintWriter out = new PrintWriter(System.out, true);
         out.println("*** constant pool ***");
         w.getConstPool().print(out);
         out.println();
         out.println("*** members ***");
-        org.hotswap.agent.javassist.bytecode.ClassFilePrinter.print(w, out);
+        ClassFilePrinter.print(w, out);
     }
 }

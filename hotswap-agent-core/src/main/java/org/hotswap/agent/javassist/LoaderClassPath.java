@@ -17,23 +17,28 @@
 package org.hotswap.agent.javassist;
 
 import java.io.InputStream;
-import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.lang.ref.WeakReference;
 
 /**
  * A class search-path representing a class loader.
- * <p/>
+ *
  * <p>It is used for obtaining a class file from the given
  * class loader by <code>getResourceAsStream()</code>.
  * The <code>LoaderClassPath</code> refers to the class loader through
  * <code>WeakReference</code>.  If the class loader is garbage collected,
  * the other search pathes are examined.
- * <p/>
+ *
  * <p>The given class loader must have both <code>getResourceAsStream()</code>
  * and <code>getResource()</code>.
+ * 
+ * <p>Class files in a named module are private to that module.
+ * This method cannot obtain class files in named modules.
+ * </p>
  *
  * @author <a href="mailto:bill@jboss.org">Bill Burke</a>
  * @author Shigeru Chiba
+ *
  * @see ClassPool#insertClassPath(ClassPath)
  * @see ClassPool#appendClassPath(ClassPath)
  * @see ClassClassPath
@@ -61,13 +66,15 @@ public class LoaderClassPath implements ClassPath {
      * This method calls <code>getResourceAsStream(String)</code>
      * on the class loader.
      */
-    public InputStream openClassfile(String classname) {
+    public InputStream openClassfile(String classname) throws NotFoundException {
         String cname = classname.replace('.', '/') + ".class";
-        ClassLoader cl = (ClassLoader) clref.get();
+        ClassLoader cl = (ClassLoader)clref.get();
         if (cl == null)
             return null;        // not found
-        else
-            return cl.getResourceAsStream(cname);
+        else {
+            InputStream is = cl.getResourceAsStream(cname);
+            return is;
+        }
     }
 
     /**
@@ -75,15 +82,17 @@ public class LoaderClassPath implements ClassPath {
      * This method calls <code>getResource(String)</code>
      * on the class loader.
      *
-     * @return null if the class file could not be found.
+     * @return null if the class file could not be found. 
      */
     public URL find(String classname) {
         String cname = classname.replace('.', '/') + ".class";
-        ClassLoader cl = (ClassLoader) clref.get();
+        ClassLoader cl = (ClassLoader)clref.get();
         if (cl == null)
             return null;        // not found
-        else
-            return cl.getResource(cname);
+        else {
+            URL url = cl.getResource(cname);
+            return url;
+        }
     }
 
     /**
