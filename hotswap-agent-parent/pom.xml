@@ -106,9 +106,9 @@
 	                <!--
 	                <useSystemClassLoader>true</useSystemClassLoader>
 	                <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswap.agent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswap.agent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
+                    <argLine>-XXaltjvm=${dcevm} -javaagent:${org.hotswapagent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswap.agent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
                      -->
-	                <argLine>-javaagent:${org.hotswap.agent:hotswap-agent-core:jar}</argLine>
+	                <argLine>-javaagent:${org.hotswapagent:hotswap-agent-core:jar}</argLine>
                 </configuration>
             </plugin>
         </plugins>
