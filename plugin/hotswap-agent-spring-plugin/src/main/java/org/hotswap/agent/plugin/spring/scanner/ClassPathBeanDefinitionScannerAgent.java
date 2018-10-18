@@ -111,7 +111,7 @@ public class ClassPathBeanDefinitionScannerAgent {
         this.basePackages.add(basePackage);
 
         PluginManagerInvoker.callPluginMethod(SpringPlugin.class, appClassLoader,
-                "registerComponentScanBasePackage", new Class[]{String.class, Object.class}, new Object[]{basePackage, this});
+                "registerComponentScanBasePackage", new Class[]{String.class}, new Object[]{basePackage});
     }
 
     /**

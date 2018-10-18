@@ -3,7 +3,6 @@ package org.hotswap.agent.plugin.spring;
 import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
@@ -99,7 +98,7 @@ public class SpringPlugin {
         }
     }
 
-    private void registerBasePackage(final String basePackage, final Object scannerAgent) {
+    private void registerBasePackage(final String basePackage) {
       LOGGER.info("Registering basePackage {}", basePackage);
       final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
         hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage), new ClassFileTransformer() {
@@ -108,7 +107,7 @@ public class SpringPlugin {
                 if (classBeingRedefined != null) {
                     boolean reloadNeeded = analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer);
 //          if (reloadNeeded) {
-                    scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(), scannerAgent,
+                    scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
                         basePackage, className, classfileBuffer));
 //          }
                 }
@@ -161,8 +160,8 @@ public class SpringPlugin {
                             }
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
                                 // refresh spring only for new classes
-                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader, scannerAgent,
-                                        basePackage, className, event), WAIT_ON_CREATE);
+                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
+                                    basePackage, className, event), WAIT_ON_CREATE);
                             }
                         }
                     }
