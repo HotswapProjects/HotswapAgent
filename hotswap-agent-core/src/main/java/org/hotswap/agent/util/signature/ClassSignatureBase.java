@@ -20,6 +20,8 @@ public abstract class ClassSignatureBase {
 
     private final Set<ClassSignatureElement> elements = new HashSet<>();
 
+    protected static final String SWITCH_TABLE_METHOD_PREFIX = "$SWITCH_TABLE$"; // java stores switch table to class field, signature should ingore it
+
     /**
      * Evaluate and return signature value
      *

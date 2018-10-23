@@ -42,6 +42,8 @@ public class CtClassSignature extends ClassSignatureBase {
                     continue;
                 if (!useStaticMethod && Modifier.isStatic(method.getModifiers()))
                     continue;
+                if (method.getName().startsWith(SWITCH_TABLE_METHOD_PREFIX))
+                    continue;
                 strings.add(getMethodString(method));
             }
         }
@@ -75,6 +77,8 @@ public class CtClassSignature extends ClassSignatureBase {
             boolean useFieldAnnotation = hasElement(ClassSignatureElement.FIELD_ANNOTATION);
             for (CtField field : ctClass.getDeclaredFields()) {
                 if (!useStaticField && Modifier.isStatic(field.getModifiers()))
+                    continue;
+                if (field.getName().startsWith(SWITCH_TABLE_METHOD_PREFIX))
                     continue;
                 String fieldSignature = field.getType().getName() + " " + field.getName();
                 if (useFieldAnnotation) {

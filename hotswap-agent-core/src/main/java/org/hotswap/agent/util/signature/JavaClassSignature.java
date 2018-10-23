@@ -37,6 +37,8 @@ public class JavaClassSignature extends ClassSignatureBase {
                     continue;
                 if (!useStaticMethod && Modifier.isStatic(method.getModifiers()))
                     continue;
+                if (method.getName().startsWith(SWITCH_TABLE_METHOD_PREFIX))
+                    continue;
                 strings.add(getMethodString(method));
             }
         }
@@ -70,6 +72,8 @@ public class JavaClassSignature extends ClassSignatureBase {
             boolean useFieldAnnotation = hasElement(ClassSignatureElement.FIELD_ANNOTATION);
             for (Field field : clazz.getDeclaredFields()) {
                 if (!useStaticField && Modifier.isStatic(field.getModifiers()))
+                    continue;
+                if (field.getName().startsWith(SWITCH_TABLE_METHOD_PREFIX))
                     continue;
                 String fieldSignature = field.getType().getName() + " " + field.getName();
                 if (useFieldAnnotation) {

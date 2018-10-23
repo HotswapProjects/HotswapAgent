@@ -277,4 +277,12 @@ public class SignatureTest {
         String actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
         assertEquals("Signatures not equal", expected, actual);
     }
+
+    @Test
+    public void switchSignatureTest() throws Exception {
+        CtClass makeClass = ClassPool.getDefault().get(SwitchTestClass.class.getName());
+        String expected = ClassSignatureComparerHelper.getJavaClassSignature(SwitchTestClass.class, SIGNATURE_ELEMENTS);
+        String actual = ClassSignatureComparerHelper.getCtClassSignature(makeClass, SIGNATURE_ELEMENTS);
+        assertEquals("Signatures not equal", expected, actual);
+    }
 }
