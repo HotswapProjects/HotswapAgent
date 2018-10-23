@@ -51,6 +51,12 @@ public class OwbPlugin {
 
     // True for UnitTests
     static boolean isTestEnvironment = false;
+    /**
+     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
+     * Set flag to true in the unit test class and wait until the flag is false again.
+     */
+    public static boolean reloadFlag = false;
+
     // Store archive path for unit tests
     static String archivePath = null;
 
@@ -201,7 +207,7 @@ public class OwbPlugin {
             return;
         }
         if (!ClassSignatureComparerHelper.isDifferent(ctClass, original, ClassSignatureElement.values())) {
-            BeanClassRefreshAgent.reloadFlag = false;
+            OwbPlugin.reloadFlag = false;
             LOGGER.trace("Bean redefinition skipped. Full signature was not changed.", original.getName());
             return;
         }

@@ -20,7 +20,6 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
-import org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent;
 import org.hotswap.agent.plugin.weld.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.weld.transformer.AbstractClassBeanTransformer;
 import org.hotswap.agent.plugin.weld.transformer.BeanDeploymentArchiveTransformer;
@@ -51,6 +50,12 @@ public class WeldPlugin {
 
     /** True for UnitTests */
     static boolean isTestEnvironment = false;
+
+    /**
+     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
+     * Set flag to true in the unit test class and wait until the flag is false again.
+     */
+    public static boolean reloadFlag = false;
 
     /**
      * If a class is modified in IDE, sequence of multiple events is generated -
@@ -199,7 +204,7 @@ public class WeldPlugin {
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             if (!ClassSignatureComparerHelper.isDifferent(ctClass, original, ClassSignatureElement.values())) {
-                BeanClassRefreshAgent.reloadFlag = false;
+                WeldPlugin.reloadFlag = false;
                 LOGGER.trace("Bean redefinition skipped. Full signature was not changed.", original.getName());
                 return;
             }

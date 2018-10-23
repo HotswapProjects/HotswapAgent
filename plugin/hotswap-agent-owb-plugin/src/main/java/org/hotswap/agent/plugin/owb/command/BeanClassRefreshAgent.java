@@ -40,6 +40,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
 import org.hotswap.agent.plugin.owb.OwbClassSignatureHelper;
+import org.hotswap.agent.plugin.owb.OwbPlugin;
 import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -52,12 +53,6 @@ import org.hotswap.agent.util.ReflectionHelper;
 public class BeanClassRefreshAgent {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshAgent.class);
-
-    /**
-     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
-     * Set flag to true in the unit test class and wait until the flag is false again.
-     */
-    public static boolean reloadFlag = false;
 
     /**
      * Reload bean in existing bean manager. Called by a reflection command from BeanRefreshCommand transformer.
@@ -86,7 +81,7 @@ public class BeanClassRefreshAgent {
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class '{}' not found.", e, beanClassName);
         } finally {
-            reloadFlag = false;
+            OwbPlugin.reloadFlag = false;
         }
     }
 

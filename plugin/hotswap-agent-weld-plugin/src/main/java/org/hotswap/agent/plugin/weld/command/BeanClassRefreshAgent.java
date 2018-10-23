@@ -32,12 +32,6 @@ public class BeanClassRefreshAgent {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshAgent.class);
 
-    /**
-     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
-     * Set flag to true in the unit test class and wait until the flag is false again.
-     */
-    public static boolean reloadFlag = false;
-
     private BeanDeploymentArchive deploymentArchive;
 
     private String archivePath;
@@ -194,7 +188,7 @@ public class BeanClassRefreshAgent {
         } catch (Exception e) {
             LOGGER.error("Bean reloading failed.", e);
         } finally {
-            reloadFlag = false;
+            WeldPlugin.reloadFlag = false;
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
         }
     }
