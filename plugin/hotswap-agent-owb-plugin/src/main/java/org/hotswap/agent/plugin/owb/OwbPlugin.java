@@ -22,12 +22,15 @@ import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent;
 import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.owb.transformer.BeansDeployerTransformer;
 import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
 import org.hotswap.agent.plugin.owb.transformer.ProxyFactoryTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
+import org.hotswap.agent.util.signature.ClassSignatureComparerHelper;
+import org.hotswap.agent.util.signature.ClassSignatureElement;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
@@ -195,6 +198,11 @@ public class OwbPlugin {
             if (original != null) {
                 LOGGER.trace("Skipping synthetic or inner class {}.", original.getName());
             }
+            return;
+        }
+        if (!ClassSignatureComparerHelper.isDifferent(ctClass, original, ClassSignatureElement.values())) {
+            BeanClassRefreshAgent.reloadFlag = false;
+            LOGGER.trace("Bean redefinition skipped. Full signature was not changed.", original.getName());
             return;
         }
         try {

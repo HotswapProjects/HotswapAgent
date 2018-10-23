@@ -20,6 +20,7 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
+import org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent;
 import org.hotswap.agent.plugin.weld.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.weld.transformer.AbstractClassBeanTransformer;
 import org.hotswap.agent.plugin.weld.transformer.BeanDeploymentArchiveTransformer;
@@ -28,6 +29,8 @@ import org.hotswap.agent.plugin.weld.transformer.ProxyFactoryTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
+import org.hotswap.agent.util.signature.ClassSignatureComparerHelper;
+import org.hotswap.agent.util.signature.ClassSignatureElement;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
@@ -195,6 +198,11 @@ public class WeldPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
+            if (!ClassSignatureComparerHelper.isDifferent(ctClass, original, ClassSignatureElement.values())) {
+                BeanClassRefreshAgent.reloadFlag = false;
+                LOGGER.trace("Bean redefinition skipped. Full signature was not changed.", original.getName());
+                return;
+            }
             try {
                 String archivePath = getArchivePath(classLoader, ctClass, original.getName());
                 LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
