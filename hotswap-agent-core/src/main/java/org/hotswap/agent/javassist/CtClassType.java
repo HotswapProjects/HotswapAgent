@@ -840,6 +840,11 @@ class CtClassType extends CtClass {
     }
 
     @Override
+    public String getSuperclassName() throws NotFoundException {
+        return getClassFile2().getSuperclass();
+    }
+
+    @Override
     public void setSuperclass(CtClass clazz) throws CannotCompileException {
         checkModify();
         if (isInterface())
@@ -908,6 +913,33 @@ class CtClassType extends CtClass {
             }
 
         return null;
+    }
+
+    public boolean isInnerClass() throws NotFoundException {
+        ClassFile cf = getClassFile2();
+        InnerClassesAttribute ica = (InnerClassesAttribute)cf.getAttribute(
+                                                InnerClassesAttribute.tag);
+        if (ica == null)
+            return false;
+
+        String name = getName();
+        int n = ica.tableLength();
+        for (int i = 0; i < n; ++i)
+            if (name.equals(ica.innerClass(i))) {
+                String outName = ica.outerClass(i);
+                if (outName != null)
+                    return true;
+                else {
+                    // maybe anonymous or local class.
+                    EnclosingMethodAttribute ema
+                        = (EnclosingMethodAttribute)cf.getAttribute(
+                                                    EnclosingMethodAttribute.tag);
+                    if (ema != null)
+                        return true;
+                }
+            }
+
+        return false;
     }
 
     @Override

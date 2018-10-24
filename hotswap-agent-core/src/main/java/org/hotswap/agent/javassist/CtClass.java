@@ -725,6 +725,10 @@ public abstract class CtClass {
         return null;
     }
 
+    public String getSuperclassName() throws NotFoundException {
+        return null;
+    }
+
     /**
      * Changes a super class unless this object represents an interface.
      * The new super class must be compatible with the old one; for example,
@@ -781,6 +785,16 @@ public abstract class CtClass {
      */
     public CtClass getDeclaringClass() throws NotFoundException {
         return null;
+    }
+
+    /**
+     * Checks if ctClass is inner class.
+     *
+     * @return true, if is inner class
+     * @throws NotFoundException the not found exception
+     */
+    public boolean isInnerClass()  throws NotFoundException {
+        return false;
     }
 
     /**
