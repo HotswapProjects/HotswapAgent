@@ -40,9 +40,10 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
 import org.hotswap.agent.plugin.owb.OwbClassSignatureHelper;
-import org.hotswap.agent.plugin.owb.OwbPlugin;
 import org.hotswap.agent.plugin.owb.beans.ContextualReloadHelper;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.signature.ClassSignatureComparerHelper;
+import org.hotswap.agent.util.signature.ClassSignatureElement;
 
 /**
  * Handle definition and redefinition of bean classes in BeanManager. If the bean class already exists than, according reloading policy,
@@ -55,17 +56,24 @@ public class BeanClassRefreshAgent {
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshAgent.class);
 
     /**
+     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
+     * Set flag to true in the unit test class and wait until the flag is false again.
+     */
+    public static boolean reloadFlag = false;
+
+    /**
      * Reload bean in existing bean manager. Called by a reflection command from BeanRefreshCommand transformer.
      *
      * @param appClassLoader the application class loader
      * @param beanClassName the bean class name
+     * @param oldFullSignatures the old full signatures
      * @param oldSignatures the map of class name to old signature
      * @param strReloadStrategy the bean reload strategy
      * @param beanArchiveUrl the bean archive url
      * @throws IOException error working with classDefinition
      */
-    public static synchronized void reloadBean(ClassLoader appClassLoader, String beanClassName, Map<String, String> oldSignatures,
-            String strReloadStrategy, URL beanArchiveUrl) throws IOException {
+    public static synchronized void reloadBean(ClassLoader appClassLoader, String beanClassName, Map<String, String> oldFullSignatures,
+            Map<String, String> oldSignatures, String strReloadStrategy, URL beanArchiveUrl) throws IOException {
         try {
             BeanReloadStrategy reloadStrategy;
 
@@ -76,18 +84,18 @@ public class BeanClassRefreshAgent {
             }
 
             Class<?> beanClass = appClassLoader.loadClass(beanClassName);
-            doReloadBean(appClassLoader, beanClass, oldSignatures, reloadStrategy, beanArchiveUrl);
+            doReloadBean(appClassLoader, beanClass, oldFullSignatures, oldSignatures, reloadStrategy, beanArchiveUrl);
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class '{}' not found.", e, beanClassName);
         } finally {
-            OwbPlugin.reloadFlag = false;
+            reloadFlag = false;
         }
     }
 
     @SuppressWarnings("serial")
-    private static void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, Map<String, String> oldSignatures,
-            BeanReloadStrategy reloadStrategy, URL beanArchiveUrl) {
+    private static void doReloadBean(ClassLoader appClassLoader, Class<?> beanClass, Map<String, String> oldFullSignatures,
+            Map<String, String> oldSignatures, BeanReloadStrategy reloadStrategy, URL beanArchiveUrl) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -118,6 +126,11 @@ public class BeanClassRefreshAgent {
                             if (bean.getBeanClass().isInterface()) {
                                 continue;
                             }
+                            if (!fullSignatureChanged(bean, oldFullSignatures)) {
+                                LOGGER.debug("Skipping bean redefinition. Bean '{}' signature was not changed.", bean.getBeanClass().getName());
+                                continue;
+                            }
+
                             // just now only managed beans
                             if (bean instanceof InjectionTargetBean) {
                                 createAnnotatedTypeForExistingBeanClass(beanManager, (InjectionTargetBean) bean);
@@ -140,6 +153,18 @@ public class BeanClassRefreshAgent {
         } finally {
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
         }
+    }
+    
+    private static boolean fullSignatureChanged(Bean<?> bean, Map<String, String> oldFullSignatures) {
+
+        try {
+            String newSignature = ClassSignatureComparerHelper.getJavaClassSignature(bean.getBeanClass(), ClassSignatureElement.values());
+            String oldSignature = oldFullSignatures.get(bean.getBeanClass().getName());
+            return oldSignature != null && newSignature != null && !oldSignature.equals(newSignature);
+        } catch (Exception e) {
+            LOGGER.error("Full signature evaluation failed beanClass='{}'", e, bean.getBeanClass().getName());
+        }
+        return true;
     }
 
     private static boolean isReinjectingContext(Bean<?> bean) {

@@ -31,6 +31,8 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
     String className;
 
+    private String oldFullSignature;
+
     String oldSignatureForProxyCheck;
 
     String oldSignatureByStrategy;
@@ -45,11 +47,12 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     WatchFileEvent event;
 
     public BeanClassRefreshCommand(ClassLoader classLoader, String archivePath, Map<Object, Object> registeredProxiedBeans,
-            String className, String oldSignatureForProxyCheck, String oldSignatureByStrategy, BeanReloadStrategy beanReloadStrategy) {
+            String className, String oldFullSignature, String oldSignatureForProxyCheck, String oldSignatureByStrategy, BeanReloadStrategy beanReloadStrategy) {
         this.classLoader = classLoader;
         this.archivePath = archivePath;
         this.registeredProxiedBeans = registeredProxiedBeans;
         this.className = className;
+        this.oldFullSignature = oldFullSignature;
         this.oldSignatureForProxyCheck = oldSignatureForProxyCheck;
         this.oldSignatureByStrategy = oldSignatureByStrategy;
         this.strBeanReloadStrategy = beanReloadStrategy != null ? beanReloadStrategy.toString() : null;
@@ -95,10 +98,12 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                 ((BeanClassRefreshCommand)cmd).recreateProxy(mergedCommands);
             }
 
+            Map<String, String> oldFullSignatures = new HashMap<String, String>();
             Map<String, String> oldSignatures = new HashMap<String, String>();
 
             for (Command cmd: mergedCommands) {
                 BeanClassRefreshCommand bcrCmd = (BeanClassRefreshCommand) cmd;
+                oldFullSignatures.put(bcrCmd.className, bcrCmd.oldFullSignature);
                 oldSignatures.put(bcrCmd.className, bcrCmd.oldSignatureByStrategy);
             }
 
@@ -113,7 +118,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                     }
                 }
                 if (!found) {
-                    bcrCmd1.reloadBean(mergedCommands, oldSignatures);
+                    bcrCmd1.reloadBean(mergedCommands, oldFullSignatures, oldSignatures);
                 }
             }
             mergedCommands = popMergedCommands();
@@ -158,7 +163,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         }
     }
 
-    private void reloadBean(List<Command> mergedCommands, Map<String, String> oldSignatures) {
+    private void reloadBean(List<Command> mergedCommands, Map<String, String> oldFullSignatures, Map<String, String> oldSignatures) {
 
         if (isDeleteEvent(mergedCommands)) {
             LOGGER.trace("Skip WELD refresh bean class for delete event on class '{}'", className);
@@ -174,6 +179,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                                       String.class,
                                       String.class,
                                       Map.class,
+                                      Map.class,
                                       String.class
                         }
                 );
@@ -181,6 +187,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                         classLoader,
                         archivePath,
                         className,
+                        oldFullSignatures,
                         oldSignatures,
                         strBeanReloadStrategy // passed as String since BeanClassRefreshAgent has different classloader
                 );

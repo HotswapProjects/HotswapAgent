@@ -210,12 +210,12 @@ public class WeldPluginTest {
     }
 
     private void swapClasses(Class original, String swap) throws Exception {
-        WeldPlugin.reloadFlag = true;
+        BeanClassRefreshAgent.reloadFlag = true;
         HotSwapper.swapClasses(original, swap);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !WeldPlugin.reloadFlag;
+                return !BeanClassRefreshAgent.reloadFlag;
             }
         }));
 

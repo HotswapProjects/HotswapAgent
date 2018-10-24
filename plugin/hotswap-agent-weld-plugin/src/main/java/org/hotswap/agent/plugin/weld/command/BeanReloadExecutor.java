@@ -24,6 +24,8 @@ import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
 import org.hotswap.agent.plugin.weld.WeldClassSignatureHelper;
 import org.hotswap.agent.plugin.weld.beans.ContextualReloadHelper;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.signature.ClassSignatureComparerHelper;
+import org.hotswap.agent.util.signature.ClassSignatureElement;
 import org.jboss.weld.annotated.enhanced.EnhancedAnnotatedType;
 import org.jboss.weld.annotated.enhanced.jlr.EnhancedAnnotatedTypeImpl;
 import org.jboss.weld.annotated.slim.SlimAnnotatedType;
@@ -47,13 +49,14 @@ public class BeanReloadExecutor {
     /**
      * Reload bean in existing bean manager.
      *
-     * @param reloadStrategy
-     * @param oldSignatureByStrategy
-     *
      * @param bdaId the Bean Deployment Archive ID
-     * @param beanClassName
+     * @param beanClass the bean class
+     * @param oldFullSignatures the old full signatures
+     * @param oldSignatures the old signatures
+     * @param strReloadStrategy the str reload strategy
      */
-    public static void reloadBean(String bdaId, Class<?> beanClass, Map<String, String> oldSignatures, String strReloadStrategy) {
+    public static void reloadBean(String bdaId, Class<?> beanClass, Map<String, String> oldFullSignatures,
+            Map<String, String> oldSignatures, String strReloadStrategy) {
 
         BeanReloadStrategy reloadStrategy;
 
@@ -68,11 +71,12 @@ public class BeanReloadExecutor {
             reloadStrategy = BeanReloadStrategy.NEVER;
         }
 
-        doReloadBean(bdaId, beanClass, oldSignatures, reloadStrategy);
+        doReloadBean(bdaId, beanClass, oldFullSignatures, oldSignatures, reloadStrategy);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
-    private static void doReloadBean(String bdaId, Class<?> beanClass, Map<String, String> oldSignatures, BeanReloadStrategy reloadStrategy) {
+    private static void doReloadBean(String bdaId, Class<?> beanClass, Map<String, String> oldFullSignatures,
+            Map<String, String> oldSignatures, BeanReloadStrategy reloadStrategy) {
 
         BeanManagerImpl beanManager = null;
         BeanManager bm = CDI.current().getBeanManager();
@@ -92,6 +96,10 @@ public class BeanReloadExecutor {
         if (beans != null && !beans.isEmpty()) {
             for (Bean<?> bean : beans) {
                 if (bean.getBeanClass().isInterface()) {
+                    continue;
+                }
+                if (!fullSignatureChanged(bean, oldFullSignatures)) {
+                    LOGGER.debug("Skipping bean redefinition. Bean '{}' signature was not changed.", bean.getBeanClass().getName());
                     continue;
                 }
                 if (bean instanceof AbstractClassBean) {
@@ -116,6 +124,18 @@ public class BeanReloadExecutor {
 
     private static boolean isReinjectingContext(Bean<?> bean) {
         return bean.getScope() != RequestScoped.class && bean.getScope() != Dependent.class;
+    }
+
+    private static boolean fullSignatureChanged(Bean<?> bean, Map<String, String> oldFullSignatures) {
+
+        try {
+            String newSignature = ClassSignatureComparerHelper.getJavaClassSignature(bean.getBeanClass(), ClassSignatureElement.values());
+            String oldSignature = oldFullSignatures.get(bean.getBeanClass().getName());
+            return oldSignature != null && newSignature != null && !oldSignature.equals(newSignature);
+        } catch (Exception e) {
+            LOGGER.error("Full signature evaluation failed beanClass='{}'", e, bean.getBeanClass().getName());
+        }
+        return true;
     }
 
     private static EnhancedAnnotatedType<?> createAnnotatedTypeForExistingBeanClass(String bdaId, Bean<?> bean) {

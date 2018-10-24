@@ -32,6 +32,12 @@ public class BeanClassRefreshAgent {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshAgent.class);
 
+    /**
+     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
+     * Set flag to true in the unit test class and wait until the flag is false again.
+     */
+    public static boolean reloadFlag = false;
+
     private BeanDeploymentArchive deploymentArchive;
 
     private String archivePath;
@@ -145,12 +151,13 @@ public class BeanClassRefreshAgent {
      * @param classLoader the class loader
      * @param archivePath the archive path
      * @param beanClassName the bean class name
+     * @param oldFullSignatures the old full signatures
      * @param oldSignatures the map of className to old signature
      * @param strReloadStrategy the str reload strategy
      * @throws IOException error working with classDefinition
      */
-    public static void reloadBean(ClassLoader classLoader, String archivePath, String beanClassName, Map<String, String> oldSignatures,
-            String strReloadStrategy) throws IOException {
+    public static void reloadBean(ClassLoader classLoader, String archivePath, String beanClassName, Map<String, String> oldFullSignatures,
+            Map<String, String> oldSignatures, String strReloadStrategy) throws IOException {
 
         BeanClassRefreshAgent bdaAgent = BdaAgentRegistry.get(archivePath);
 
@@ -181,14 +188,14 @@ public class BeanClassRefreshAgent {
             // Execute reload in BeanManagerClassLoader since reloading creates weld classes used for bean redefinition
             // (like EnhancedAnnotatedType)
             ReflectionHelper.invoke(null, bdaAgentClazz, "reloadBean",
-                    new Class[] {String.class, Class.class, Map.class, String.class },
-                    bdaAgent.getBdaId(), beanClass, oldSignatures, strReloadStrategy
+                    new Class[] {String.class, Class.class, Map.class, Map.class, String.class },
+                    bdaAgent.getBdaId(), beanClass, oldFullSignatures, oldSignatures, strReloadStrategy
             );
 
         } catch (Exception e) {
             LOGGER.error("Bean reloading failed.", e);
         } finally {
-            WeldPlugin.reloadFlag = false;
+            reloadFlag = false;
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
         }
     }

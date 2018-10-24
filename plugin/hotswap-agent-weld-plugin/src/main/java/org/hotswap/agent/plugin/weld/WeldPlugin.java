@@ -20,6 +20,7 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
+import org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent;
 import org.hotswap.agent.plugin.weld.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.weld.transformer.AbstractClassBeanTransformer;
 import org.hotswap.agent.plugin.weld.transformer.BeanDeploymentArchiveTransformer;
@@ -50,12 +51,6 @@ public class WeldPlugin {
 
     /** True for UnitTests */
     static boolean isTestEnvironment = false;
-
-    /**
-     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
-     * Set flag to true in the unit test class and wait until the flag is false again.
-     */
-    public static boolean reloadFlag = false;
 
     /**
      * If a class is modified in IDE, sequence of multiple events is generated -
@@ -203,19 +198,15 @@ public class WeldPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
-            if (!ClassSignatureComparerHelper.isDifferent(ctClass, original, ClassSignatureElement.values())) {
-                WeldPlugin.reloadFlag = false;
-                LOGGER.trace("Bean redefinition skipped. Full signature was not changed.", original.getName());
-                return;
-            }
             try {
                 String archivePath = getArchivePath(classLoader, ctClass, original.getName());
                 LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
                 if (isBdaRegistered(classLoader, archivePath)) {
                     String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
                     String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
+                    String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
                     scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
-                            original.getName(), oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
+                            original.getName(), oldFullSignature, oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
                 }
             } catch (Exception e) {
                 LOGGER.error("classReload() exception {}.", e, e.getMessage());

@@ -22,7 +22,6 @@ import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent;
 import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.owb.transformer.BeansDeployerTransformer;
 import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
@@ -51,12 +50,6 @@ public class OwbPlugin {
 
     // True for UnitTests
     static boolean isTestEnvironment = false;
-    /**
-     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
-     * Set flag to true in the unit test class and wait until the flag is false again.
-     */
-    public static boolean reloadFlag = false;
-
     // Store archive path for unit tests
     static String archivePath = null;
 
@@ -206,11 +199,6 @@ public class OwbPlugin {
             }
             return;
         }
-        if (!ClassSignatureComparerHelper.isDifferent(ctClass, original, ClassSignatureElement.values())) {
-            OwbPlugin.reloadFlag = false;
-            LOGGER.trace("Bean redefinition skipped. Full signature was not changed.", original.getName());
-            return;
-        }
         try {
             String classUrl = ctClass.getURL().toExternalForm();
             Iterator<Entry<URL, URL>> iterator = registeredArchives.entrySet().iterator();
@@ -220,9 +208,11 @@ public class OwbPlugin {
                     LOGGER.debug("Class '{}' redefined in classLoader {}.", original.getName(), classLoader);
                     String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
                     String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
+                    String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
                     scheduler.scheduleCommand(
                             new BeanClassRefreshCommand(appClassLoader,
                                     original.getName(),
+                                    oldFullSignature,
                                     oldSignForProxyCheck,
                                     oldSignByStrategy,
                                     entry.getValue(),

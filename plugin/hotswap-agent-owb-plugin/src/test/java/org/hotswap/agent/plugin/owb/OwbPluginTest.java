@@ -220,12 +220,12 @@ public class OwbPluginTest extends HAAbstractUnitTest {
     }
 
     private void swapClasses(Class original, String swap) throws Exception {
-        OwbPlugin.reloadFlag = true;
+        BeanClassRefreshAgent.reloadFlag = true;
         HotSwapper.swapClasses(original, swap);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !OwbPlugin.reloadFlag;
+                return !BeanClassRefreshAgent.reloadFlag;
             }
         }));
 
