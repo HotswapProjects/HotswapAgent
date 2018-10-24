@@ -773,6 +773,16 @@ public abstract class CtClass {
     }
 
     /**
+     * Checks if ctClass is inner class.
+     *
+     * @return true, if is inner class
+     * @throws NotFoundException the not found exception
+     */
+    public boolean isInnerClass()  throws NotFoundException {
+        return false;
+    }
+
+    /**
      * Returns the immediately enclosing method of this class.
      * This method works only with JDK 1.5 or later.
      *

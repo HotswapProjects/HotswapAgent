@@ -252,8 +252,7 @@ public class WeldPlugin {
     // Non static inner class is not allowed to be bean class
     private boolean isInnerNonPublicStaticClass(CtClass ctClass) {
         try {
-            CtClass declaringClass = ctClass.getDeclaringClass();
-            if (declaringClass != null && (
+            if (ctClass.isInnerClass() && (
                     (ctClass.getModifiers() & Modifier.STATIC) == 0 ||
                     (ctClass.getModifiers() & Modifier.PUBLIC) == 0)) {
                 return true;
