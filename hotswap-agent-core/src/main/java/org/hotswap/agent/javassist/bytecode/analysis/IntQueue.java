@@ -21,12 +21,10 @@ class IntQueue {
     private static class Entry {
         private IntQueue.Entry next;
         private int value;
-
         private Entry(int value) {
             this.value = value;
         }
     }
-
     private IntQueue.Entry head;
 
     private IntQueue.Entry tail;

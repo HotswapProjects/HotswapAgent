@@ -16,22 +16,28 @@
 
 package org.hotswap.agent.javassist.convert;
 
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.bytecode.*;
+
 final public class TransformWriteField extends TransformReadField {
-    public TransformWriteField(Transformer next, org.hotswap.agent.javassist.CtField field,
-                               String methodClassname, String methodName) {
+    public TransformWriteField(Transformer next, CtField field,
+                               String methodClassname, String methodName)
+    {
         super(next, field, methodClassname, methodName);
     }
 
-    public int transform(org.hotswap.agent.javassist.CtClass tclazz, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator,
-                         org.hotswap.agent.javassist.bytecode.ConstPool cp) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int transform(CtClass tclazz, int pos, CodeIterator iterator,
+                         ConstPool cp) throws BadBytecode
+    {
         int c = iterator.byteAt(pos);
         if (c == PUTFIELD || c == PUTSTATIC) {
             int index = iterator.u16bitAt(pos + 1);
             String typedesc = isField(tclazz.getClassPool(), cp,
-                    fieldClass, fieldname, isPrivate, index);
+                                fieldClass, fieldname, isPrivate, index);
             if (typedesc != null) {
                 if (c == PUTSTATIC) {
-                    org.hotswap.agent.javassist.bytecode.CodeAttribute ca = iterator.get();
+                    CodeAttribute ca = iterator.get();
                     iterator.move(pos);
                     char c0 = typedesc.charAt(0);
                     if (c0 == 'J' || c0 == 'D') {       // long or double
@@ -41,7 +47,8 @@ final public class TransformWriteField extends TransformReadField {
                         iterator.writeByte(DUP_X2, pos + 1);
                         iterator.writeByte(POP, pos + 2);
                         ca.setMaxStack(ca.getMaxStack() + 2);
-                    } else {
+                    }
+                    else {
                         // insertGap() may insert 4 bytes.
                         pos = iterator.insertGap(2);
                         iterator.writeByte(ACONST_NULL, pos);

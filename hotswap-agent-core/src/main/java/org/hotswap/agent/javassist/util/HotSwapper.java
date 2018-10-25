@@ -16,71 +16,66 @@
 
 package org.hotswap.agent.javassist.util;
 
-import com.sun.jdi.Bootstrap;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.connect.AttachingConnector;
-import com.sun.jdi.connect.Connector;
-import com.sun.jdi.connect.IllegalConnectorArgumentsException;
+import com.sun.jdi.*;
+import com.sun.jdi.connect.*;
 import com.sun.jdi.event.*;
-import com.sun.jdi.request.EventRequest;
-import com.sun.jdi.request.EventRequestManager;
-import com.sun.jdi.request.MethodEntryRequest;
-
-import java.io.IOException;
+import com.sun.jdi.request.*;
+import java.io.*;
 import java.util.*;
 
 class Trigger {
-    void doSwap() {
-    }
+    void doSwap() {}
 }
 
 /**
  * A utility class for dynamically reloading a class by
- * the Java Platform Debugger Architecture (JPDA), or <it>HotSwap</code>.
+ * the Java Platform Debugger Architecture (JPDA), or <i>HotSwap</i>.
  * It works only with JDK 1.4 and later.
- * <p/>
+ *
  * <p><b>Note:</b> The new definition of the reloaded class must declare
  * the same set of methods and fields as the original definition.  The
  * schema change between the original and new definitions is not allowed
- * by the JPDA.
- * <p/>
+ * by the JPDA. 
+ *
  * <p>To use this class, the JVM must be launched with the following
  * command line options:
- * <p/>
- * <ul>
+ *
  * <p>For Java 1.4,<br>
  * <pre>java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000</pre>
  * <p>For Java 5,<br>
  * <pre>java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000</pre>
- * </ul>
- * <p/>
- * <p>Note that 8000 is the port number used by <code>HotSwapperJpda</code>.
- * Any port number can be specified.  Since <code>HotSwapperJpda</code> does not
+ *
+ * <p>Note that 8000 is the port number used by <code>HotSwapper</code>.
+ * Any port number can be specified.  Since <code>HotSwapper</code> does not
  * launch another JVM for running a target application, this port number
  * is used only for inter-thread communication.
- * <p/>
+ *
  * <p>Furthermore, <code>JAVA_HOME/lib/tools.jar</code> must be included
  * in the class path.
- * <p/>
- * <p>Using <code>HotSwapperJpda</code> is easy.  See the following example:
- * <p/>
- * <ul><pre>
+ *
+ * <p>Using <code>HotSwapper</code> is easy.  See the following example:
+ *
+ * <pre>
  * CtClass clazz = ...
  * byte[] classFile = clazz.toBytecode();
- * HotSwapperJpda hs = new HostSwapper(8000);  // 8000 is a port number.
+ * HotSwapper hs = new HostSwapper(8000);  // 8000 is a port number.
  * hs.reload("Test", classFile);
- * </pre></ul>
- * <p/>
+ * </pre>
+ *
  * <p><code>reload()</code>
  * first unload the <code>Test</code> class and load a new version of
  * the <code>Test</code> class.
  * <code>classFile</code> is a byte array containing the new contents of
  * the class file for the <code>Test</code> class.  The developers can
- * repatedly call <code>reload()</code> on the same <code>HotSwapperJpda</code>
+ * repatedly call <code>reload()</code> on the same <code>HotSwapper</code>
  * object so that they can reload a number of classes.
  *
+ * <p>{@code HotSwap} depends on the debug agent to perform hot-swapping
+ * but it is reported that the debug agent is buggy under massively multithreaded
+ * environments.  If you encounter a problem, try {@link HotSwapAgent}.
+ *
  * @since 3.1
+ * @see HotSwapAgent
  */
 public class HotSwapper {
     private VirtualMachine jvm;
@@ -95,30 +90,32 @@ public class HotSwapper {
     /**
      * Connects to the JVM.
      *
-     * @param port the port number used for the connection to the JVM.
+     * @param port	the port number used for the connection to the JVM.
      */
     public HotSwapper(int port)
-            throws IOException, IllegalConnectorArgumentsException {
+        throws IOException, IllegalConnectorArgumentsException
+    {
         this(Integer.toString(port));
     }
 
     /**
      * Connects to the JVM.
      *
-     * @param port the port number used for the connection to the JVM.
+     * @param port	the port number used for the connection to the JVM.
      */
     public HotSwapper(String port)
-            throws IOException, IllegalConnectorArgumentsException {
+        throws IOException, IllegalConnectorArgumentsException
+    {
         jvm = null;
         request = null;
         newClassFiles = null;
         trigger = new Trigger();
         AttachingConnector connector
-                = (AttachingConnector) findConnector("com.sun.jdi.SocketAttach");
+            = (AttachingConnector)findConnector("com.sun.jdi.SocketAttach");
 
         Map arguments = connector.defaultArguments();
-        ((Connector.Argument) arguments.get("hostname")).setValue(HOST_NAME);
-        ((Connector.Argument) arguments.get("port")).setValue(port);
+        ((Connector.Argument)arguments.get("hostname")).setValue(HOST_NAME);
+        ((Connector.Argument)arguments.get("port")).setValue(port);
         jvm = connector.attach(arguments);
         EventRequestManager manager = jvm.eventRequestManager();
         request = methodEntryRequests(manager, TRIGGER_NAME);
@@ -128,7 +125,7 @@ public class HotSwapper {
         List connectors = Bootstrap.virtualMachineManager().allConnectors();
         Iterator iter = connectors.iterator();
         while (iter.hasNext()) {
-            Connector con = (Connector) iter.next();
+            Connector con = (Connector)iter.next();
             if (con.name().equals(connector)) {
                 return con;
             }
@@ -138,8 +135,8 @@ public class HotSwapper {
     }
 
     private static MethodEntryRequest methodEntryRequests(
-            EventRequestManager manager,
-            String classpattern) {
+                                EventRequestManager manager,
+                                String classpattern) {
         MethodEntryRequest mereq = manager.createMethodEntryRequest();
         mereq.addClassFilter(classpattern);
         mereq.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
@@ -156,8 +153,8 @@ public class HotSwapper {
     /**
      * Reloads a class.
      *
-     * @param className the fully-qualified class name.
-     * @param classFile the contents of the class file.
+     * @param className		the fully-qualified class name.
+     * @param classFile		the contents of the class file.
      */
     public void reload(String className, byte[] classFile) {
         ReferenceType classtype = toRefType(className);
@@ -169,10 +166,10 @@ public class HotSwapper {
     /**
      * Reloads a class.
      *
-     * @param classFiles a map between fully-qualified class names
-     *                   and class files.  The type of the class names
-     *                   is <code>String</code> and the type of the
-     *                   class files is <code>byte[]</code>.
+     * @param classFiles	a map between fully-qualified class names
+     *				and class files.  The type of the class names
+     *				is <code>String</code> and the type of the
+     *				class files is <code>byte[]</code>.
      */
     public void reload(Map classFiles) {
         Set set = classFiles.entrySet();
@@ -180,8 +177,8 @@ public class HotSwapper {
         Map map = new HashMap();
         String className = null;
         while (it.hasNext()) {
-            Map.Entry e = (Map.Entry) it.next();
-            className = (String) e.getKey();
+            Map.Entry e = (Map.Entry)it.next();
+            className = (String)e.getKey();
             map.put(toRefType(className), e.getValue());
         }
 
@@ -194,7 +191,7 @@ public class HotSwapper {
         if (list == null || list.isEmpty())
             throw new RuntimeException("no such class: " + className);
         else
-            return (ReferenceType) list.get(0);
+            return (ReferenceType)list.get(0);
     }
 
     private void reload2(Map map, String msg) {
@@ -231,13 +228,15 @@ public class HotSwapper {
                             break;
                         }
                     }
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     errorMsg(e);
                 }
                 try {
                     if (events != null)
                         events.resume();
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     errorMsg(e);
                 }
             }

@@ -28,7 +28,7 @@ public class Version {
             prop.load(in);
             in.close();
 
-            return prop.getProperty("version");
+            return prop.getProperty("version") == null ? "unkown" : prop.getProperty("version");
         } catch (IOException e) {
             return "unknown";
         }

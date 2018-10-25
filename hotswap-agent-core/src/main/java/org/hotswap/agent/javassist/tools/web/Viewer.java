@@ -16,22 +16,20 @@
 
 package org.hotswap.agent.javassist.tools.web;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.*;
+import java.net.*;
 
 /**
  * A sample applet viewer.
- * <p/>
+ *
  * <p>This is a sort of applet viewer that can run any program even if
  * the main class is not a subclass of <code>Applet</code>.
  * This viewwer first calls <code>main()</code> in the main class.
- * <p/>
+ *
  * <p>To run, you should type:
- * <p/>
- * <ul><code>% java Viewer <i>host port</i> Main arg1, ...</code></ul>
- * <p/>
+ *
+ * <pre>% java javassist.tools.web.Viewer <i>host port</i> Main arg1, ...</pre>
+ *
  * <p>This command calls <code>Main.main()</code> with <code>arg1,...</code>
  * All classes including <code>Main</code> are fetched from
  * a server http://<i>host</i>:<i>port</i>.
@@ -39,15 +37,16 @@ import java.net.URLConnection;
  * on a local file system at the client side; even other
  * <code>javassist.*</code> classes are not needed at the client side.
  * <code>Viewer</code> uses only Java core API classes.
- * <p/>
+ *
  * <p>Note: since a <code>Viewer</code> object is a class loader,
  * a program loaded by this object can call a method in <code>Viewer</code>.
  * For example, you can write something like this:
- * <p/>
- * <ul><pre>
+ *
+ * <pre>
  * Viewer v = (Viewer)this.getClass().getClassLoader();
  * String port = v.getPort();
- * </pre></ul>
+ * </pre>
+ *
  */
 public class Viewer extends ClassLoader {
     private String server;
@@ -62,16 +61,17 @@ public class Viewer extends ClassLoader {
             String[] args2 = new String[args.length - 3];
             System.arraycopy(args, 3, args2, 0, args.length - 3);
             cl.run(args[2], args2);
-        } else
+        }
+        else
             System.err.println(
-                    "Usage: java Viewer <host> <port> class [args ...]");
+        "Usage: java javassist.tools.web.Viewer <host> <port> class [args ...]");
     }
 
     /**
      * Constructs a viewer.
      *
-     * @param host server name
-     * @param p    port number
+     * @param host              server name
+     * @param p                 port number
      */
     public Viewer(String host, int p) {
         server = host;
@@ -81,30 +81,28 @@ public class Viewer extends ClassLoader {
     /**
      * Returns the server name.
      */
-    public String getServer() {
-        return server;
-    }
+    public String getServer() { return server; }
 
     /**
      * Returns the port number.
      */
-    public int getPort() {
-        return port;
-    }
+    public int getPort() { return port; }
 
     /**
      * Invokes main() in the class specified by <code>classname</code>.
      *
-     * @param classname executed class
-     * @param args      the arguments passed to <code>main()</code>.
+     * @param classname         executed class
+     * @param args              the arguments passed to <code>main()</code>.
      */
     public void run(String classname, String[] args)
-            throws Throwable {
+        throws Throwable
+    {
         Class c = loadClass(classname);
         try {
-            c.getDeclaredMethod("main", new Class[]{String[].class})
-                    .invoke(null, new Object[]{args});
-        } catch (java.lang.reflect.InvocationTargetException e) {
+            c.getDeclaredMethod("main", new Class[] { String[].class })
+                .invoke(null, new Object[] { args });
+        }
+        catch (java.lang.reflect.InvocationTargetException e) {
             throw e.getTargetException();
         }
     }
@@ -113,7 +111,8 @@ public class Viewer extends ClassLoader {
      * Requests the class loader to load a class.
      */
     protected synchronized Class loadClass(String name, boolean resolve)
-            throws ClassNotFoundException {
+        throws ClassNotFoundException
+    {
         Class c = findLoadedClass(name);
         if (c == null)
             c = findClass(name);
@@ -133,14 +132,14 @@ public class Viewer extends ClassLoader {
      * either <code>java.*</code>, <code>javax.*</code>, or
      * <code>Viewer</code>, then it is loaded by the parent class
      * loader.
-     * <p/>
+     *
      * <p>This method can be overridden by a subclass of
      * <code>Viewer</code>.
      */
     protected Class findClass(String name) throws ClassNotFoundException {
         Class c = null;
         if (name.startsWith("java.") || name.startsWith("javax.")
-                || name.equals("Viewer"))
+            || name.equals("javassist.tools.web.Viewer"))
             c = findSystemClass(name);
 
         if (c == null)
@@ -148,8 +147,9 @@ public class Viewer extends ClassLoader {
                 byte[] b = fetchClass(name);
                 if (b != null)
                     c = defineClass(name, b, 0, b.length);
-            } catch (Exception e) {
             }
+        catch (Exception e) {
+        }
 
         return c;
     }
@@ -158,10 +158,11 @@ public class Viewer extends ClassLoader {
      * Fetches the class file of the specified class from the http
      * server.
      */
-    protected byte[] fetchClass(String classname) throws Exception {
+    protected byte[] fetchClass(String classname) throws Exception
+    {
         byte[] b;
         URL url = new URL("http", server, port,
-                "/" + classname.replace('.', '/') + ".class");
+                          "/" + classname.replace('.', '/') + ".class");
         URLConnection con = url.openConnection();
         con.connect();
         int size = con.getContentLength();
@@ -176,7 +177,7 @@ public class Viewer extends ClassLoader {
                 if (n < 0) {
                     s.close();
                     throw new IOException("the stream was closed: "
-                            + classname);
+                                          + classname);
                 }
                 len += n;
             } while (len < size);

@@ -15,6 +15,8 @@
  */
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
@@ -30,7 +32,7 @@ public class AnnotationMemberValue extends MemberValue {
     /**
      * Constructs an annotation member.  The initial value is not specified.
      */
-    public AnnotationMemberValue(org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public AnnotationMemberValue(ConstPool cp) {
         this(null, cp);
     }
 
@@ -38,13 +40,14 @@ public class AnnotationMemberValue extends MemberValue {
      * Constructs an annotation member.  The initial value is specified by
      * the first parameter.
      */
-    public AnnotationMemberValue(Annotation a, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public AnnotationMemberValue(Annotation a, ConstPool cp) {
         super('@', cp);
         value = a;
     }
 
-    Object getValue(ClassLoader cl, org.hotswap.agent.javassist.ClassPool cp, Method m)
-            throws ClassNotFoundException {
+    Object getValue(ClassLoader cl, ClassPool cp, Method m)
+        throws ClassNotFoundException
+    {
         return AnnotationImpl.make(cl, getType(cl), cp, value);
     }
 

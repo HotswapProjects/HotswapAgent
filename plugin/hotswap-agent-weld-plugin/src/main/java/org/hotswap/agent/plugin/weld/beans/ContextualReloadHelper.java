@@ -17,10 +17,11 @@ import org.jboss.weld.bean.ManagedBean;
  * @author alpapad@gmail.com
  */
 public class ContextualReloadHelper {
+
     private static AgentLogger LOGGER = AgentLogger.getLogger(ContextualReloadHelper.class);
 
-    public static void reload(HotSwappingContext ctx) {
-        Set<Contextual<Object>> beans = ctx.getBeans();
+    public static void reload(WeldHotswapContext ctx) {
+        Set<Contextual<Object>> beans = ctx.$$ha$getBeansToReloadWeld();
 
         if (beans != null && !beans.isEmpty()) {
             LOGGER.debug("Starting re-loading Contextuals in {}, {}", ctx, beans.size());
@@ -35,10 +36,6 @@ public class ContextualReloadHelper {
         }
     }
 
-    public static void addBean(Contextual<Object> bean, HotSwappingContext ctx) {
-        ctx.addBean(bean);
-    }
-
     /**
      * Tries to add the bean in the context so it is reloaded in the next activation of the context.
      *
@@ -49,7 +46,7 @@ public class ContextualReloadHelper {
     public static boolean addToReloadSet(Context ctx,  Contextual<Object> managedBean)  {
         try {
             LOGGER.debug("Adding bean in '{}' : {}", ctx.getClass(), managedBean);
-            Field toRedefine = ctx.getClass().getField("_toReload");
+            Field toRedefine = ctx.getClass().getDeclaredField("$$ha$toReloadWeld");
             Set toReload = Set.class.cast(toRedefine.get(ctx));
             if (toReload == null) {
                 toReload = new HashSet();
@@ -69,7 +66,7 @@ public class ContextualReloadHelper {
      * @param ctx
      * @param managedBean
      */
-    static void destroy(HotSwappingContext ctx, Contextual<?> managedBean ) {
+    public static void destroy(WeldHotswapContext ctx, Contextual<?> managedBean ) {
         try {
             LOGGER.debug("Removing Contextual from Context........ {},: {}", managedBean, ctx);
             Object get = ctx.get(managedBean);
@@ -92,7 +89,7 @@ public class ContextualReloadHelper {
      * @param ctx
      * @param managedBean
      */
-    static void reinitialize(Context ctx, Contextual<Object> contextual) {
+    public static void reinitialize(Context ctx, Contextual<Object> contextual) {
         try {
             ManagedBean<Object> managedBean = ManagedBean.class.cast(contextual);
             LOGGER.debug("Re-Initializing........ {},: {}", managedBean, ctx);

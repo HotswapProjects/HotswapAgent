@@ -16,15 +16,17 @@
 
 package org.hotswap.agent.javassist.expr;
 
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CannotCompileException;
 
 /**
  * A translator of method bodies.
- * <p/>
+ *
  * <p>The users can define a subclass of this class to customize how to
  * modify a method body.  The overall architecture is similar to the
  * strategy pattern.
- * <p/>
+ *
  * <p>If <code>instrument()</code> is called in
  * <code>CtMethod</code>, the method body is scanned from the beginning
  * to the end.
@@ -35,10 +37,10 @@ import org.hotswap.agent.javassist.CannotCompileException;
  * The modification is reflected on the original method body.  If
  * <code>edit()</code> does nothing, the original method body is not
  * changed.
- * <p/>
+ *
  * <p>The following code is an example:
- * <p/>
- * <ul><pre>
+ *
+ * <pre>
  * CtMethod cm = ...;
  * cm.instrument(new ExprEditor() {
  *     public void edit(MethodCall m) throws CannotCompileException {
@@ -47,8 +49,8 @@ import org.hotswap.agent.javassist.CannotCompileException;
  *                                + m.getLineNumber());
  *     }
  * });
- * </pre></ul>
- * <p/>
+ * </pre>
+ *
  * <p>This code inspects all method calls appearing in the method represented
  * by <code>cm</code> and it prints the names and the line numbers of the
  * methods declared in class <code>Point</code>.  This code does not modify
@@ -56,31 +58,32 @@ import org.hotswap.agent.javassist.CannotCompileException;
  * body must be modified, call <code>replace()</code>
  * in <code>MethodCall</code>.
  *
- * @see org.hotswap.agent.javassist.CtClass#instrument(ExprEditor)
- * @see org.hotswap.agent.javassist.CtMethod#instrument(ExprEditor)
- * @see org.hotswap.agent.javassist.CtConstructor#instrument(ExprEditor)
+ * @see javassist.CtClass#instrument(ExprEditor)
+ * @see javassist.CtMethod#instrument(ExprEditor)
+ * @see javassist.CtConstructor#instrument(ExprEditor)
  * @see MethodCall
  * @see NewExpr
  * @see FieldAccess
- * @see org.hotswap.agent.javassist.CodeConverter
+ *
+ * @see javassist.CodeConverter
  */
 public class ExprEditor {
     /**
      * Default constructor.  It does nothing.
      */
-    public ExprEditor() {
-    }
+    public ExprEditor() {}
 
     /**
      * Undocumented method.  Do not use; internal-use only.
      */
-    public boolean doit(org.hotswap.agent.javassist.CtClass clazz, org.hotswap.agent.javassist.bytecode.MethodInfo minfo)
-            throws CannotCompileException {
-        org.hotswap.agent.javassist.bytecode.CodeAttribute codeAttr = minfo.getCodeAttribute();
+    public boolean doit(CtClass clazz, MethodInfo minfo)
+        throws CannotCompileException
+    {
+        CodeAttribute codeAttr = minfo.getCodeAttribute();
         if (codeAttr == null)
             return false;
 
-        org.hotswap.agent.javassist.bytecode.CodeIterator iterator = codeAttr.iterator();
+        CodeIterator iterator = codeAttr.iterator();
         boolean edited = false;
         LoopContext context = new LoopContext(codeAttr.getMaxLocals());
 
@@ -88,10 +91,10 @@ public class ExprEditor {
             if (loopBody(iterator, clazz, minfo, context))
                 edited = true;
 
-        org.hotswap.agent.javassist.bytecode.ExceptionTable et = codeAttr.getExceptionTable();
+        ExceptionTable et = codeAttr.getExceptionTable();
         int n = et.size();
         for (int i = 0; i < n; ++i) {
-            org.hotswap.agent.javassist.expr.Handler h = new org.hotswap.agent.javassist.expr.Handler(et, i, iterator, clazz, minfo);
+            Handler h = new Handler(et, i, iterator, clazz, minfo);
             edit(h);
             if (h.edited()) {
                 edited = true;
@@ -108,8 +111,9 @@ public class ExprEditor {
         try {
             if (edited)
                 minfo.rebuildStackMapIf6(clazz.getClassPool(),
-                        clazz.getClassFile2());
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode b) {
+                                         clazz.getClassFile2());
+        }
+        catch (BadBytecode b) {
             throw new CannotCompileException(b.getMessage(), b);
         }
 
@@ -117,11 +121,12 @@ public class ExprEditor {
     }
 
     /**
-     * Visits each bytecode in the given range.
+     * Visits each bytecode in the given range. 
      */
-    boolean doit(org.hotswap.agent.javassist.CtClass clazz, org.hotswap.agent.javassist.bytecode.MethodInfo minfo, LoopContext context,
-                 org.hotswap.agent.javassist.bytecode.CodeIterator iterator, int endPos)
-            throws CannotCompileException {
+    boolean doit(CtClass clazz, MethodInfo minfo, LoopContext context,
+                 CodeIterator iterator, int endPos)
+        throws CannotCompileException
+    {
         boolean edited = false;
         while (iterator.hasNext() && iterator.lookAhead() < endPos) {
             int size = iterator.getCodeLength();
@@ -168,72 +173,83 @@ public class ExprEditor {
         }
     }
 
-    final boolean loopBody(org.hotswap.agent.javassist.bytecode.CodeIterator iterator, org.hotswap.agent.javassist.CtClass clazz,
-                           org.hotswap.agent.javassist.bytecode.MethodInfo minfo, LoopContext context)
-            throws CannotCompileException {
+    final boolean loopBody(CodeIterator iterator, CtClass clazz,
+                           MethodInfo minfo, LoopContext context)
+        throws CannotCompileException
+    {
         try {
             Expr expr = null;
             int pos = iterator.next();
             int c = iterator.byteAt(pos);
 
-            if (c < org.hotswap.agent.javassist.bytecode.Opcode.GETSTATIC)   // c < 178
-                /* skip */ ;
-            else if (c < org.hotswap.agent.javassist.bytecode.Opcode.NEWARRAY) { // c < 188
-                if (c == org.hotswap.agent.javassist.bytecode.Opcode.INVOKESTATIC
-                        || c == org.hotswap.agent.javassist.bytecode.Opcode.INVOKEINTERFACE
-                        || c == org.hotswap.agent.javassist.bytecode.Opcode.INVOKEVIRTUAL) {
+            if (c < Opcode.GETSTATIC)   // c < 178
+                /* skip */;
+            else if (c < Opcode.NEWARRAY) { // c < 188
+                if (c == Opcode.INVOKESTATIC
+                    || c == Opcode.INVOKEINTERFACE
+                    || c == Opcode.INVOKEVIRTUAL) {
                     expr = new MethodCall(pos, iterator, clazz, minfo);
-                    edit((MethodCall) expr);
-                } else if (c == org.hotswap.agent.javassist.bytecode.Opcode.GETFIELD || c == org.hotswap.agent.javassist.bytecode.Opcode.GETSTATIC
-                        || c == org.hotswap.agent.javassist.bytecode.Opcode.PUTFIELD
-                        || c == org.hotswap.agent.javassist.bytecode.Opcode.PUTSTATIC) {
+                    edit((MethodCall)expr);
+                }
+                else if (c == Opcode.GETFIELD || c == Opcode.GETSTATIC
+                         || c == Opcode.PUTFIELD
+                         || c == Opcode.PUTSTATIC) {
                     expr = new FieldAccess(pos, iterator, clazz, minfo, c);
-                    edit((FieldAccess) expr);
-                } else if (c == org.hotswap.agent.javassist.bytecode.Opcode.NEW) {
+                    edit((FieldAccess)expr);
+                }
+                else if (c == Opcode.NEW) {
                     int index = iterator.u16bitAt(pos + 1);
                     context.newList = new NewOp(context.newList, pos,
-                            minfo.getConstPool().getClassInfo(index));
-                } else if (c == org.hotswap.agent.javassist.bytecode.Opcode.INVOKESPECIAL) {
+                                        minfo.getConstPool().getClassInfo(index));
+                }
+                else if (c == Opcode.INVOKESPECIAL) {
                     NewOp newList = context.newList;
                     if (newList != null
-                            && minfo.getConstPool().isConstructor(newList.type,
-                            iterator.u16bitAt(pos + 1)) > 0) {
+                        && minfo.getConstPool().isConstructor(newList.type,
+                                            iterator.u16bitAt(pos + 1)) > 0) {
                         expr = new NewExpr(pos, iterator, clazz, minfo,
-                                newList.type, newList.pos);
-                        edit((NewExpr) expr);
+                                           newList.type, newList.pos);
+                        edit((NewExpr)expr);
                         context.newList = newList.next;
-                    } else {
+                    }
+                    else {
                         MethodCall mcall = new MethodCall(pos, iterator, clazz, minfo);
-                        if (mcall.getMethodName().equals(org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit)) {
+                        if (mcall.getMethodName().equals(MethodInfo.nameInit)) {
                             ConstructorCall ccall = new ConstructorCall(pos, iterator, clazz, minfo);
                             expr = ccall;
                             edit(ccall);
-                        } else {
+                        }
+                        else {
                             expr = mcall;
                             edit(mcall);
                         }
                     }
                 }
-            } else {  // c >= 188
-                if (c == org.hotswap.agent.javassist.bytecode.Opcode.NEWARRAY || c == org.hotswap.agent.javassist.bytecode.Opcode.ANEWARRAY
-                        || c == org.hotswap.agent.javassist.bytecode.Opcode.MULTIANEWARRAY) {
+            }
+            else {  // c >= 188
+                if (c == Opcode.NEWARRAY || c == Opcode.ANEWARRAY
+                    || c == Opcode.MULTIANEWARRAY) {
                     expr = new NewArray(pos, iterator, clazz, minfo, c);
-                    edit((NewArray) expr);
-                } else if (c == org.hotswap.agent.javassist.bytecode.Opcode.INSTANCEOF) {
+                    edit((NewArray)expr);
+                }
+                else if (c == Opcode.INSTANCEOF) {
                     expr = new Instanceof(pos, iterator, clazz, minfo);
-                    edit((Instanceof) expr);
-                } else if (c == org.hotswap.agent.javassist.bytecode.Opcode.CHECKCAST) {
-                    expr = new org.hotswap.agent.javassist.expr.Cast(pos, iterator, clazz, minfo);
-                    edit((org.hotswap.agent.javassist.expr.Cast) expr);
+                    edit((Instanceof)expr);
+                }
+                else if (c == Opcode.CHECKCAST) {
+                    expr = new Cast(pos, iterator, clazz, minfo);
+                    edit((Cast)expr);
                 }
             }
 
             if (expr != null && expr.edited()) {
                 context.updateMax(expr.locals(), expr.stack());
                 return true;
-            } else
+            }
+            else
                 return false;
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
+        }
+        catch (BadBytecode e) {
             throw new CannotCompileException(e);
         }
     }
@@ -242,68 +258,60 @@ public class ExprEditor {
      * Edits a <tt>new</tt> expression (overridable).
      * The default implementation performs nothing.
      *
-     * @param e the <tt>new</tt> expression creating an object.
+     * @param e         the <tt>new</tt> expression creating an object.
      */
-    public void edit(NewExpr e) throws CannotCompileException {
-    }
+    public void edit(NewExpr e) throws CannotCompileException {}
 
     /**
      * Edits an expression for array creation (overridable).
      * The default implementation performs nothing.
      *
-     * @param a the <tt>new</tt> expression for creating an array.
+     * @param a         the <tt>new</tt> expression for creating an array.
      * @throws CannotCompileException
      */
-    public void edit(NewArray a) throws CannotCompileException {
-    }
+    public void edit(NewArray a) throws CannotCompileException {}
 
     /**
      * Edits a method call (overridable).
-     * <p/>
+     *
      * The default implementation performs nothing.
      */
-    public void edit(MethodCall m) throws CannotCompileException {
-    }
+    public void edit(MethodCall m) throws CannotCompileException {}
 
     /**
      * Edits a constructor call (overridable).
      * The constructor call is either
      * <code>super()</code> or <code>this()</code>
      * included in a constructor body.
-     * <p/>
+     *
      * The default implementation performs nothing.
      *
      * @see #edit(NewExpr)
      */
-    public void edit(ConstructorCall c) throws CannotCompileException {
-    }
+    public void edit(ConstructorCall c) throws CannotCompileException {}
 
     /**
      * Edits a field-access expression (overridable).
      * Field access means both read and write.
      * The default implementation performs nothing.
      */
-    public void edit(FieldAccess f) throws CannotCompileException {
-    }
+    public void edit(FieldAccess f) throws CannotCompileException {}
 
     /**
      * Edits an instanceof expression (overridable).
      * The default implementation performs nothing.
      */
-    public void edit(Instanceof i) throws CannotCompileException {
-    }
+    public void edit(Instanceof i) throws CannotCompileException {}
 
     /**
      * Edits an expression for explicit type casting (overridable).
      * The default implementation performs nothing.
      */
-    public void edit(org.hotswap.agent.javassist.expr.Cast c) throws CannotCompileException {
-    }
+    public void edit(Cast c) throws CannotCompileException {}
 
     /**
      * Edits a catch clause (overridable).
      * The default implementation performs nothing.
      */
-    public void edit(org.hotswap.agent.javassist.expr.Handler h) throws CannotCompileException {
-    }
+    public void edit(Handler h) throws CannotCompileException {}
 }

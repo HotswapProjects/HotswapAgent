@@ -145,7 +145,7 @@ public class ClassFileWriter {
             output.writeShort(fields.size());
             fields.write(output);
 
-            output.writeShort(methods.size());
+            output.writeShort(methods.numOfMethods());
             methods.write(output);
         }
         catch (IOException e) {}
@@ -171,7 +171,7 @@ public class ClassFileWriter {
     public void end(DataOutputStream out,
                     int accessFlags, int thisClass, int superClass,
                     int[] interfaces, AttributeWriter aw)
-            throws IOException
+        throws IOException
     {
         constPool.end();
         output.writeTo(out);
@@ -190,7 +190,7 @@ public class ClassFileWriter {
         out.writeShort(fields.size());
         fields.write(out);
 
-        out.writeShort(methods.size());
+        out.writeShort(methods.numOfMethods());
         methods.write(out);
         if (aw == null)
             out.writeShort(0);
@@ -343,7 +343,7 @@ public class ClassFileWriter {
          * @param aw                attributes to the <code>Method_info</code>.                         
          */
         public void begin(int accessFlags, String name, String descriptor,
-                          String[] exceptions, AttributeWriter aw) {
+                        String[] exceptions, AttributeWriter aw) {
             int nameIndex = constPool.addUtf8Info(name);
             int descIndex = constPool.addUtf8Info(descriptor);
             int[] intfs;
@@ -503,7 +503,15 @@ public class ClassFileWriter {
             output.writeInt(startPos + 2, output.getPos() - startPos - 6);
         }
 
-        int size() { return methodCount; }
+        /**
+         * Returns the length of the bytecode that has been added so far.
+         *
+         * @return      the length in bytes.
+         * @since 3.19
+         */
+        public int size() { return output.getPos() - startPos - 14; } 
+
+        int numOfMethods() { return methodCount; }
 
         int dataSize() { return output.size(); }
 

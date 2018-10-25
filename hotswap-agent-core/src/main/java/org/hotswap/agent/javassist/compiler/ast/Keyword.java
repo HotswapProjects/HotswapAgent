@@ -28,15 +28,9 @@ public class Keyword extends ASTree {
         tokenId = token;
     }
 
-    public int get() {
-        return tokenId;
-    }
+    public int get() { return tokenId; }
 
-    public String toString() {
-        return "id:" + tokenId;
-    }
+    public String toString() { return "id:" + tokenId; }
 
-    public void accept(Visitor v) throws CompileError {
-        v.atKeyword(this);
-    }
+    public void accept(Visitor v) throws CompileError { v.atKeyword(this); }
 }

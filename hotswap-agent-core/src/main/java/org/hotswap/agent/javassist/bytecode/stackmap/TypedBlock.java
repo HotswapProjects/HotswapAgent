@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
+import org.hotswap.agent.javassist.bytecode.*;
+
 public class TypedBlock extends BasicBlock {
     public int stackTop, numLocals;
     // localsTypes is set to non-null when this block is first visited by a MapMaker.
@@ -27,22 +29,23 @@ public class TypedBlock extends BasicBlock {
      * Divides the method body into basic blocks.
      * The type information of the first block is initialized.
      *
-     * @param optmize if it is true and the method does not include
-     *                branches, this method returns null.
+     * @param optimize       if it is true and the method does not include
+     *                      branches, this method returns null.
      */
-    public static TypedBlock[] makeBlocks(org.hotswap.agent.javassist.bytecode.MethodInfo minfo, org.hotswap.agent.javassist.bytecode.CodeAttribute ca,
+    public static TypedBlock[] makeBlocks(MethodInfo minfo, CodeAttribute ca,
                                           boolean optimize)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
-        TypedBlock[] blocks = (TypedBlock[]) new Maker().make(minfo);
+        throws BadBytecode
+    {
+        TypedBlock[] blocks = (TypedBlock[])new Maker().make(minfo);
         if (optimize && blocks.length < 2)
             if (blocks.length == 0 || blocks[0].incoming == 0)
                 return null;
 
-        org.hotswap.agent.javassist.bytecode.ConstPool pool = minfo.getConstPool();
-        boolean isStatic = (minfo.getAccessFlags() & org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC) != 0;
+        ConstPool pool = minfo.getConstPool();
+        boolean isStatic = (minfo.getAccessFlags() & AccessFlag.STATIC) != 0;
         blocks[0].initFirstBlock(ca.getMaxStack(), ca.getMaxLocals(),
-                pool.getClassName(), minfo.getDescriptor(),
-                isStatic, minfo.isConstructor());
+                                 pool.getClassName(), minfo.getDescriptor(),
+                                 isStatic, minfo.isConstructor());
         return blocks;
     }
 
@@ -79,7 +82,8 @@ public class TypedBlock extends BasicBlock {
     }
 
     public void setStackMap(int st, TypeData[] stack, int nl, TypeData[] locals)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         stackTop = st;
         stackTypes = stack;
         numLocals = nl;
@@ -92,7 +96,7 @@ public class TypedBlock extends BasicBlock {
     public void resetNumLocals() {
         if (localsTypes != null) {
             int nl = localsTypes.length;
-            while (nl > 0 && localsTypes[nl - 1].isBasicType() == org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.TOP) {
+            while (nl > 0 && localsTypes[nl - 1].isBasicType() == TypeTag.TOP) {
                 if (nl > 1) {
                     if (localsTypes[nl - 2].is2WordType())
                         break;
@@ -118,18 +122,19 @@ public class TypedBlock extends BasicBlock {
     /**
      * Initializes the first block by the given method descriptor.
      *
-     * @param block         the first basic block that this method initializes.
-     * @param className     a dot-separated fully qualified class name.
-     *                      For example, <code>BasicBlock</code>.
-     * @param methodDesc    method descriptor.
-     * @param isStatic      true if the method is a static method.
-     * @param isConstructor true if the method is a constructor.
+     * @param block             the first basic block that this method initializes.
+     * @param className         a dot-separated fully qualified class name.
+     *                          For example, <code>javassist.bytecode.stackmap.BasicBlock</code>.
+     * @param methodDesc        method descriptor.
+     * @param isStatic          true if the method is a static method.
+     * @param isConstructor     true if the method is a constructor.
      */
     void initFirstBlock(int maxStack, int maxLocals, String className,
                         String methodDesc, boolean isStatic, boolean isConstructor)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         if (methodDesc.charAt(0) != '(')
-            throw new org.hotswap.agent.javassist.bytecode.BadBytecode("no method descriptor: " + methodDesc);
+            throw new BadBytecode("no method descriptor: " + methodDesc);
 
         stackTop = 0;
         stackTypes = TypeData.make(maxStack);
@@ -144,10 +149,11 @@ public class TypedBlock extends BasicBlock {
         try {
             while ((i = descToTag(methodDesc, i, ++n, locals)) > 0)
                 if (locals[n].is2WordType())
-                    locals[++n] = org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.TOP;
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new org.hotswap.agent.javassist.bytecode.BadBytecode("bad method descriptor: "
-                    + methodDesc);
+                    locals[++n] = TypeTag.TOP;
+        }
+        catch (StringIndexOutOfBoundsException e) {
+            throw new BadBytecode("bad method descriptor: "
+                                  + methodDesc);
         }
 
         numLocals = n;
@@ -156,7 +162,8 @@ public class TypedBlock extends BasicBlock {
 
     private static int descToTag(String desc, int i,
                                  int n, TypeData[] types)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         int i0 = i;
         int arrayDim = 0;
         char c = desc.charAt(i);
@@ -174,15 +181,17 @@ public class TypedBlock extends BasicBlock {
                 types[n] = new TypeData.ClassName(desc.substring(i0, ++i2));
             else
                 types[n] = new TypeData.ClassName(desc.substring(i0 + 1, ++i2 - 1)
-                        .replace('/', '.'));
+                                                      .replace('/', '.'));
             return i2;
-        } else if (arrayDim > 0) {
+        }
+        else if (arrayDim > 0) {
             types[n] = new TypeData.ClassName(desc.substring(i0, ++i));
             return i;
-        } else {
+        }
+        else {
             TypeData t = toPrimitiveTag(c);
             if (t == null)
-                throw new org.hotswap.agent.javassist.bytecode.BadBytecode("bad method descriptor: " + desc);
+                throw new BadBytecode("bad method descriptor: " + desc);
 
             types[n] = t;
             return i + 1;
@@ -191,21 +200,21 @@ public class TypedBlock extends BasicBlock {
 
     private static TypeData toPrimitiveTag(char c) {
         switch (c) {
-            case 'Z':
-            case 'C':
-            case 'B':
-            case 'S':
-            case 'I':
-                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.INTEGER;
-            case 'J':
-                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.LONG;
-            case 'F':
-                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.FLOAT;
-            case 'D':
-                return org.hotswap.agent.javassist.bytecode.stackmap.TypeTag.DOUBLE;
-            case 'V':
-            default:
-                return null;
+        case 'Z' :
+        case 'C' :
+        case 'B' :
+        case 'S' :
+        case 'I' :
+            return TypeTag.INTEGER;
+        case 'J' :
+            return TypeTag.LONG;
+        case 'F' :
+            return TypeTag.FLOAT;
+        case 'D' :
+            return TypeTag.DOUBLE;
+        case 'V' :
+        default :
+            return null;
         }
     }
 

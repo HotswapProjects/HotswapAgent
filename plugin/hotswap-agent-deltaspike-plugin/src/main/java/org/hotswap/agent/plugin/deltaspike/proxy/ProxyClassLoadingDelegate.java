@@ -6,13 +6,17 @@ import java.util.Map;
 
 import org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator;
 import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
- * Delegates proxy loading to AsmProxyClassGenerator or PluginManager.getInstance().hotswap
+ * Delegates proxy loading to AsmProxyClassGenerator or PluginManager.getInstance()
+ *
  * @author Vladimir Dvorak
  */
 public class ProxyClassLoadingDelegate {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyClassLoadingDelegate.class);
 
     private static final ThreadLocal<Boolean> MAGIC_IN_PROGRESS = new ThreadLocal<Boolean>() {
         @Override
@@ -29,6 +33,17 @@ public class ProxyClassLoadingDelegate {
         MAGIC_IN_PROGRESS.remove();
     }
 
+    // Deltaspike 1.7
+    public static Class<?> tryToLoadClassForName(String proxyClassName, Class<?> targetClass, ClassLoader classLoader) {
+        if (MAGIC_IN_PROGRESS.get()) {
+            return null;
+        }
+        return (Class<?>) ReflectionHelper.invoke(null, org.apache.deltaspike.core.util.ClassUtils.class, "tryToLoadClassForName",
+                new Class[] { String.class, Class.class, ClassLoader.class },
+                proxyClassName, targetClass, classLoader);
+    }
+
+    // Deltaspike 1.5
     public static Class<?> tryToLoadClassForName(String proxyClassName, Class<?> targetClass) {
         if (MAGIC_IN_PROGRESS.get()) {
             return null;
@@ -57,6 +72,7 @@ public class ProxyClassLoadingDelegate {
                     new Class[]{ClassLoader.class, String.class, byte[].class, ProtectionDomain.class},
                     loader, className, bytes, protectionDomain);
         } catch (Exception e) {
+            LOGGER.error("loadClass() exception {}", e.getMessage());
         }
         return null;
     }

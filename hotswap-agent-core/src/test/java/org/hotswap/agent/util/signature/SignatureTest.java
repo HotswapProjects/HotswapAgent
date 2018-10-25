@@ -41,6 +41,7 @@ public class SignatureTest {
     public @interface Asd {
         SigTestEnum value() default SigTestEnum.FINISHED;
         SigTestEnum value2() default SigTestEnum.FINISHED;
+        String[] array() default {"string"};
 
         // TransformationState value3();
     }

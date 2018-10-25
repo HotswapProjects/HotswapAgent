@@ -7,6 +7,11 @@ import org.apache.deltaspike.core.api.config.view.metadata.ConfigDescriptor;
 import org.apache.deltaspike.core.api.config.view.metadata.ViewConfigDescriptor;
 import org.apache.deltaspike.core.api.config.view.metadata.ViewConfigResolver;
 
+/**
+ * ViewConfigResolverProxy.
+ *
+ * @author Vladimir Dvorak
+ */
 public class ViewConfigResolverProxy implements ViewConfigResolver {
 
     private ViewConfigResolver viewConfigResolver;

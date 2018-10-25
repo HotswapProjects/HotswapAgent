@@ -30,7 +30,8 @@ public class LineNumberAttribute extends AttributeInfo {
     public static final String tag = "LineNumberTable";
 
     LineNumberAttribute(ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+        throws IOException
+    {
         super(cp, n, in);
     }
 
@@ -51,7 +52,7 @@ public class LineNumberAttribute extends AttributeInfo {
      * This represents the index into the code array at which the code
      * for a new line in the original source file begins.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public int startPc(int i) {
         return ByteArray.readU16bit(info, i * 4 + 2);
@@ -62,7 +63,7 @@ public class LineNumberAttribute extends AttributeInfo {
      * This represents the corresponding line number in the original
      * source file.
      *
-     * @param i the i-th entry.
+     * @param i         the i-th entry.
      */
     public int lineNumber(int i) {
         return ByteArray.readU16bit(info, i * 4 + 4);
@@ -71,7 +72,7 @@ public class LineNumberAttribute extends AttributeInfo {
     /**
      * Returns the line number corresponding to the specified bytecode.
      *
-     * @param pc the index into the code array.
+     * @param pc        the index into the code array.
      */
     public int toLineNumber(int pc) {
         int n = tableLength();
@@ -90,8 +91,8 @@ public class LineNumberAttribute extends AttributeInfo {
      * Returns the index into the code array at which the code for
      * the specified line begins.
      *
-     * @param line the line number.
-     * @return -1 if the specified line is not found.
+     * @param line      the line number.
+     * @return          -1 if the specified line is not found.
      */
     public int toStartPc(int line) {
         int n = tableLength();
@@ -108,7 +109,7 @@ public class LineNumberAttribute extends AttributeInfo {
     static public class Pc {
         /**
          * The index into the code array.
-         */
+         */ 
         public int index;
         /**
          * The line number.
@@ -121,9 +122,9 @@ public class LineNumberAttribute extends AttributeInfo {
      * the specified line (or the nearest line after the specified one)
      * begins.
      *
-     * @param line the line number.
-     * @return a pair of the index and the line number of the
-     * bytecode at that index.
+     * @param line      the line number.
+     * @return          a pair of the index and the line number of the
+     *                  bytecode at that index.
      */
     public Pc toNearPc(int line) {
         int n = tableLength();
@@ -137,9 +138,9 @@ public class LineNumberAttribute extends AttributeInfo {
         for (int i = 1; i < n; ++i) {
             int d = lineNumber(i) - line;
             if ((d < 0 && d > distance)
-                    || (d >= 0 && (d < distance || distance < 0))) {
-                distance = d;
-                nearPc = startPc(i);
+                || (d >= 0 && (d < distance || distance < 0))) { 
+                    distance = d;
+                    nearPc = startPc(i);
             }
         }
 
@@ -152,8 +153,8 @@ public class LineNumberAttribute extends AttributeInfo {
     /**
      * Makes a copy.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames should be null.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        should be null.
      */
     public AttributeInfo copy(ConstPool newCp, Map classnames) {
         byte[] src = info;

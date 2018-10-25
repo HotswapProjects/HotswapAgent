@@ -90,30 +90,36 @@ public class ClassPathScanner implements Scanner {
         LOGGER.trace("Scanning JAR file '{}'", urlFile);
 
         int separatorIndex = urlFile.indexOf(JAR_URL_SEPARATOR);
-        JarFile jarFile;
+        JarFile jarFile = null;
         String rootEntryPath;
 
-        if (separatorIndex != -1) {
-            String jarFileUrl = urlFile.substring(0, separatorIndex);
-            rootEntryPath = urlFile.substring(separatorIndex + JAR_URL_SEPARATOR.length());
-            jarFile = getJarFile(jarFileUrl);
-        } else {
-            rootEntryPath = "";
-            jarFile = new JarFile(urlFile);
-        }
+        try {
+            if (separatorIndex != -1) {
+                String jarFileUrl = urlFile.substring(0, separatorIndex);
+                rootEntryPath = urlFile.substring(separatorIndex + JAR_URL_SEPARATOR.length());
+                jarFile = getJarFile(jarFileUrl);
+            } else {
+                rootEntryPath = "";
+                jarFile = new JarFile(urlFile);
+            }
 
-        if (!"".equals(rootEntryPath) && !rootEntryPath.endsWith("/")) {
-            rootEntryPath = rootEntryPath + "/";
-        }
+            if (!"".equals(rootEntryPath) && !rootEntryPath.endsWith("/")) {
+                rootEntryPath = rootEntryPath + "/";
+            }
 
-        for (Enumeration<JarEntry> entries = jarFile.entries(); entries.hasMoreElements(); ) {
-            JarEntry entry = entries.nextElement();
-            String entryPath = entry.getName();
+            for (Enumeration<JarEntry> entries = jarFile.entries(); entries.hasMoreElements(); ) {
+                JarEntry entry = entries.nextElement();
+                String entryPath = entry.getName();
 
-            // class files inside entry
-            if (entryPath.startsWith(rootEntryPath) && entryPath.endsWith(".class")) {
-                LOGGER.trace("Visiting JAR entry {}", entryPath);
-                visitor.visit(jarFile.getInputStream(entry));
+                // class files inside entry
+                if (entryPath.startsWith(rootEntryPath) && entryPath.endsWith(".class")) {
+                    LOGGER.trace("Visiting JAR entry {}", entryPath);
+                    visitor.visit(jarFile.getInputStream(entry));
+                }
+            }
+        } finally {
+            if (jarFile != null) {
+                jarFile.close();
             }
         }
     }

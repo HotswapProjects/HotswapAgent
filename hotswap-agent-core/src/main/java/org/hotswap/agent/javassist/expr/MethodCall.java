@@ -16,6 +16,10 @@
 
 package org.hotswap.agent.javassist.expr;
 
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.compiler.*;
+
 /**
  * Method invocation (caller-side expression).
  */
@@ -23,12 +27,12 @@ public class MethodCall extends Expr {
     /**
      * Undocumented constructor.  Do not use; internal-use only.
      */
-    protected MethodCall(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator i, org.hotswap.agent.javassist.CtClass declaring,
-                         org.hotswap.agent.javassist.bytecode.MethodInfo m) {
+    protected MethodCall(int pos, CodeIterator i, CtClass declaring,
+                         MethodInfo m) {
         super(pos, i, declaring, m);
     }
 
-    private int getNameAndType(org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    private int getNameAndType(ConstPool cp) {
         int pos = currentPos;
         int c = iterator.byteAt(pos);
         int index = iterator.u16bitAt(pos + 1);
@@ -43,9 +47,7 @@ public class MethodCall extends Expr {
      * Returns the method or constructor containing the method-call
      * expression represented by this object.
      */
-    public org.hotswap.agent.javassist.CtBehavior where() {
-        return super.where();
-    }
+    public CtBehavior where() { return super.where(); }
 
     /**
      * Returns the line number of the source line containing the
@@ -70,7 +72,7 @@ public class MethodCall extends Expr {
      * Returns the class of the target object,
      * which the method is called on.
      */
-    protected org.hotswap.agent.javassist.CtClass getCtClass() throws org.hotswap.agent.javassist.NotFoundException {
+    protected CtClass getCtClass() throws NotFoundException {
         return thisClass.getClassPool().get(getClassName());
     }
 
@@ -81,7 +83,7 @@ public class MethodCall extends Expr {
     public String getClassName() {
         String cname;
 
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = getConstPool();
+        ConstPool cp = getConstPool();
         int pos = currentPos;
         int c = iterator.byteAt(pos);
         int index = iterator.u16bitAt(pos + 1);
@@ -91,17 +93,17 @@ public class MethodCall extends Expr {
         else
             cname = cp.getMethodrefClassName(index);
 
-        if (cname.charAt(0) == '[')
-            cname = org.hotswap.agent.javassist.bytecode.Descriptor.toClassName(cname);
+         if (cname.charAt(0) == '[')
+             cname = Descriptor.toClassName(cname);
 
-        return cname;
+         return cname;
     }
 
     /**
-     * Returns the name of the called method.
+     * Returns the name of the called method. 
      */
     public String getMethodName() {
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = getConstPool();
+        ConstPool cp = getConstPool();
         int nt = getNameAndType(cp);
         return cp.getUtf8Info(cp.getNameAndTypeName(nt));
     }
@@ -109,7 +111,7 @@ public class MethodCall extends Expr {
     /**
      * Returns the called method.
      */
-    public org.hotswap.agent.javassist.CtMethod getMethod() throws org.hotswap.agent.javassist.NotFoundException {
+    public CtMethod getMethod() throws NotFoundException {
         return getCtClass().getMethod(getMethodName(), getSignature());
     }
 
@@ -119,12 +121,12 @@ public class MethodCall extends Expr {
      * The method signature is represented by a character string
      * called method descriptor, which is defined in the JVM specification.
      *
-     * @see org.hotswap.agent.javassist.CtBehavior#getSignature()
-     * @see org.hotswap.agent.javassist.bytecode.Descriptor
+     * @see javassist.CtBehavior#getSignature()
+     * @see javassist.bytecode.Descriptor
      * @since 3.1
      */
     public String getSignature() {
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = getConstPool();
+        ConstPool cp = getConstPool();
         int nt = getNameAndType(cp);
         return cp.getUtf8Info(cp.getNameAndTypeDescriptor(nt));
     }
@@ -135,7 +137,7 @@ public class MethodCall extends Expr {
      * including the expression can catch and the exceptions that
      * the throws declaration allows the method to throw.
      */
-    public org.hotswap.agent.javassist.CtClass[] mayThrow() {
+    public CtClass[] mayThrow() {
         return super.mayThrow();
     }
 
@@ -145,7 +147,7 @@ public class MethodCall extends Expr {
      */
     public boolean isSuper() {
         return iterator.byteAt(currentPos) == INVOKESPECIAL
-                && !where().getDeclaringClass().getName().equals(getClassName());
+            && !where().getDeclaringClass().getName().equals(getClassName());
     }
 
     /*
@@ -169,14 +171,14 @@ public class MethodCall extends Expr {
     /**
      * Replaces the method call with the bytecode derived from
      * the given source text.
-     * <p/>
+     *
      * <p>$0 is available even if the called method is static.
      *
-     * @param statement a Java statement except try-catch.
+     * @param statement         a Java statement except try-catch.
      */
-    public void replace(String statement) throws org.hotswap.agent.javassist.CannotCompileException {
+    public void replace(String statement) throws CannotCompileException {
         thisClass.getClassFile();   // to call checkModify().
-        org.hotswap.agent.javassist.bytecode.ConstPool constPool = getConstPool();
+        ConstPool constPool = getConstPool();
         int pos = currentPos;
         int index = iterator.u16bitAt(pos + 1);
 
@@ -188,57 +190,58 @@ public class MethodCall extends Expr {
             classname = constPool.getInterfaceMethodrefClassName(index);
             methodname = constPool.getInterfaceMethodrefName(index);
             signature = constPool.getInterfaceMethodrefType(index);
-        } else if (c == INVOKESTATIC
-                || c == INVOKESPECIAL || c == INVOKEVIRTUAL) {
+        }
+        else if (c == INVOKESTATIC
+                 || c == INVOKESPECIAL || c == INVOKEVIRTUAL) {
             opcodeSize = 3;
             classname = constPool.getMethodrefClassName(index);
             methodname = constPool.getMethodrefName(index);
             signature = constPool.getMethodrefType(index);
-        } else
-            throw new org.hotswap.agent.javassist.CannotCompileException("not method invocation");
+        }
+        else
+            throw new CannotCompileException("not method invocation");
 
-        org.hotswap.agent.javassist.compiler.Javac jc = new org.hotswap.agent.javassist.compiler.Javac(thisClass);
-        org.hotswap.agent.javassist.ClassPool cp = thisClass.getClassPool();
-        org.hotswap.agent.javassist.bytecode.CodeAttribute ca = iterator.get();
+        Javac jc = new Javac(thisClass);
+        ClassPool cp = thisClass.getClassPool();
+        CodeAttribute ca = iterator.get();
         try {
-            org.hotswap.agent.javassist.CtClass[] params = org.hotswap.agent.javassist.bytecode.Descriptor.getParameterTypes(signature, cp);
-            org.hotswap.agent.javassist.CtClass retType = org.hotswap.agent.javassist.bytecode.Descriptor.getReturnType(signature, cp);
+            CtClass[] params = Descriptor.getParameterTypes(signature, cp);
+            CtClass retType = Descriptor.getReturnType(signature, cp);
             int paramVar = ca.getMaxLocals();
             jc.recordParams(classname, params,
-                    true, paramVar, withinStatic());
+                            true, paramVar, withinStatic());
             int retVar = jc.recordReturnType(retType, true);
             if (c == INVOKESTATIC)
                 jc.recordStaticProceed(classname, methodname);
             else if (c == INVOKESPECIAL)
-                jc.recordSpecialProceed(org.hotswap.agent.javassist.compiler.Javac.param0Name, classname,
-                        methodname, signature);
+                jc.recordSpecialProceed(Javac.param0Name, classname,
+                                        methodname, signature, index);
             else
-                jc.recordProceed(org.hotswap.agent.javassist.compiler.Javac.param0Name, methodname);
+                jc.recordProceed(Javac.param0Name, methodname);
 
             /* Is $_ included in the source code?
              */
             checkResultValue(retType, statement);
 
-            org.hotswap.agent.javassist.bytecode.Bytecode bytecode = jc.getBytecode();
+            Bytecode bytecode = jc.getBytecode();
             storeStack(params, c == INVOKESTATIC, paramVar, bytecode);
             jc.recordLocalVariables(ca, pos);
 
-            if (retType != org.hotswap.agent.javassist.CtClass.voidType) {
+            if (retType != CtClass.voidType) {
                 bytecode.addConstZero(retType);
                 bytecode.addStore(retVar, retType);     // initialize $_
             }
 
             jc.compileStmnt(statement);
-            if (retType != org.hotswap.agent.javassist.CtClass.voidType)
+            if (retType != CtClass.voidType)
                 bytecode.addLoad(retVar, retType);
 
             replace0(pos, bytecode, opcodeSize);
-        } catch (org.hotswap.agent.javassist.compiler.CompileError e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException("broken method");
+        }
+        catch (CompileError e) { throw new CannotCompileException(e); }
+        catch (NotFoundException e) { throw new CannotCompileException(e); }
+        catch (BadBytecode e) {
+            throw new CannotCompileException("broken method");
         }
     }
 }

@@ -16,20 +16,22 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtPrimitiveType;
-
+import org.hotswap.agent.javassist.NotFoundException;
 import java.util.Map;
 
 /**
  * A support class for dealing with descriptors.
- * <p/>
+ *
  * <p>See chapter 4.3 in "The Java Virtual Machine Specification (2nd ed.)"
  */
 public class Descriptor {
     /**
      * Converts a class name into the internal representation used in
      * the JVM.
-     * <p/>
+     *
      * <p>Note that <code>toJvmName(toJvmName(s))</code> is equivalent
      * to <code>toJvmName(s)</code>.
      */
@@ -54,7 +56,7 @@ public class Descriptor {
      * Returns the internal representation of the class name in the
      * JVM.
      */
-    public static String toJvmName(org.hotswap.agent.javassist.CtClass clazz) {
+    public static String toJvmName(CtClass clazz) {
         if (clazz.isArray())
             return of(clazz);
         else
@@ -64,7 +66,7 @@ public class Descriptor {
     /**
      * Converts to a Java class name from a descriptor.
      *
-     * @param descriptor type descriptor.
+     * @param descriptor        type descriptor.
      */
     public static String toClassName(String descriptor) {
         int arrayDim = 0;
@@ -80,8 +82,9 @@ public class Descriptor {
             int i2 = descriptor.indexOf(';', i++);
             name = descriptor.substring(i, i2).replace('/', '.');
             i = i2;
-        } else if (c == 'V')
-            name = "void";
+        }
+        else if (c == 'V')
+            name =  "void";
         else if (c == 'I')
             name = "int";
         else if (c == 'B')
@@ -149,6 +152,7 @@ public class Descriptor {
      * @param desc    descriptor string
      * @param oldname replaced JVM class name
      * @param newname substituted JVM class name
+     *
      * @see Descriptor#toJvmName(String)
      */
     public static String rename(String desc, String oldname, String newname) {
@@ -158,18 +162,19 @@ public class Descriptor {
         StringBuffer newdesc = new StringBuffer();
         int head = 0;
         int i = 0;
-        for (; ; ) {
+        for (;;) {
             int j = desc.indexOf('L', i);
             if (j < 0)
                 break;
             else if (desc.startsWith(oldname, j + 1)
-                    && desc.charAt(j + oldname.length() + 1) == ';') {
+                     && desc.charAt(j + oldname.length() + 1) == ';') {
                 newdesc.append(desc.substring(head, j));
                 newdesc.append('L');
                 newdesc.append(newname);
                 newdesc.append(';');
                 head = i = j + oldname.length() + 2;
-            } else {
+            }
+            else {
                 i = desc.indexOf(';', j) + 1;
                 if (i < 1)
                     break; // ';' was not found.
@@ -202,7 +207,7 @@ public class Descriptor {
         StringBuffer newdesc = new StringBuffer();
         int head = 0;
         int i = 0;
-        for (; ; ) {
+        for (;;) {
             int j = desc.indexOf('L', i);
             if (j < 0)
                 break;
@@ -213,7 +218,7 @@ public class Descriptor {
 
             i = k + 1;
             String name = desc.substring(j + 1, k);
-            String name2 = (String) map.get(name);
+            String name2 = (String)map.get(name);
             if (name2 != null) {
                 newdesc.append(desc.substring(head, j));
                 newdesc.append('L');
@@ -237,27 +242,30 @@ public class Descriptor {
     /**
      * Returns the descriptor representing the given type.
      */
-    public static String of(org.hotswap.agent.javassist.CtClass type) {
+    public static String of(CtClass type) {
         StringBuffer sbuf = new StringBuffer();
         toDescriptor(sbuf, type);
         return sbuf.toString();
     }
 
-    private static void toDescriptor(StringBuffer desc, org.hotswap.agent.javassist.CtClass type) {
+    private static void toDescriptor(StringBuffer desc, CtClass type) {
         if (type.isArray()) {
             desc.append('[');
             try {
                 toDescriptor(desc, type.getComponentType());
-            } catch (org.hotswap.agent.javassist.NotFoundException e) {
+            }
+            catch (NotFoundException e) {
                 desc.append('L');
                 String name = type.getName();
                 desc.append(toJvmName(name.substring(0, name.length() - 2)));
                 desc.append(';');
             }
-        } else if (type.isPrimitive()) {
-            CtPrimitiveType pt = (CtPrimitiveType) type;
+        }
+        else if (type.isPrimitive()) {
+            CtPrimitiveType pt = (CtPrimitiveType)type;
             desc.append(pt.getDescriptor());
-        } else { // class type
+        }
+        else { // class type
             desc.append('L');
             desc.append(type.getName().replace('.', '/'));
             desc.append(';');
@@ -270,8 +278,8 @@ public class Descriptor {
      *
      * @param paramTypes parameter types
      */
-    public static String ofConstructor(org.hotswap.agent.javassist.CtClass[] paramTypes) {
-        return ofMethod(org.hotswap.agent.javassist.CtClass.voidType, paramTypes);
+    public static String ofConstructor(CtClass[] paramTypes) {
+        return ofMethod(CtClass.voidType, paramTypes);
     }
 
     /**
@@ -281,7 +289,7 @@ public class Descriptor {
      * @param returnType return type
      * @param paramTypes parameter types
      */
-    public static String ofMethod(org.hotswap.agent.javassist.CtClass returnType, org.hotswap.agent.javassist.CtClass[] paramTypes) {
+    public static String ofMethod(CtClass returnType, CtClass[] paramTypes) {
         StringBuffer desc = new StringBuffer();
         desc.append('(');
         if (paramTypes != null) {
@@ -304,14 +312,14 @@ public class Descriptor {
      *
      * @param paramTypes parameter types
      */
-    public static String ofParameters(org.hotswap.agent.javassist.CtClass[] paramTypes) {
+    public static String ofParameters(CtClass[] paramTypes) {
         return ofMethod(null, paramTypes);
     }
 
     /**
      * Appends a parameter type to the parameter list represented
      * by the given descriptor.
-     * <p/>
+     *
      * <p><code>classname</code> must not be an array type.
      *
      * @param classname parameter type (not primitive type)
@@ -336,7 +344,7 @@ public class Descriptor {
      * Inserts a parameter type at the beginning of the parameter
      * list represented
      * by the given descriptor.
-     * <p/>
+     *
      * <p><code>classname</code> must not be an array type.
      *
      * @param classname parameter type (not primitive type)
@@ -347,7 +355,7 @@ public class Descriptor {
             return desc;
         else
             return "(L" + classname.replace('.', '/') + ';'
-                    + desc.substring(1);
+                   + desc.substring(1);
     }
 
     /**
@@ -355,10 +363,10 @@ public class Descriptor {
      * by the given descriptor.  The appended parameter becomes
      * the last parameter.
      *
-     * @param type       the type of the appended parameter.
-     * @param descriptor the original descriptor.
+     * @param type      the type of the appended parameter.
+     * @param descriptor      the original descriptor.
      */
-    public static String appendParameter(org.hotswap.agent.javassist.CtClass type, String descriptor) {
+    public static String appendParameter(CtClass type, String descriptor) {
         int i = descriptor.indexOf(')');
         if (i < 0)
             return descriptor;
@@ -376,10 +384,10 @@ public class Descriptor {
      * list represented
      * by the given descriptor.
      *
-     * @param type       the type of the inserted parameter.
-     * @param descriptor the descriptor of the method.
+     * @param type              the type of the inserted parameter.
+     * @param descriptor        the descriptor of the method.
      */
-    public static String insertParameter(org.hotswap.agent.javassist.CtClass type,
+    public static String insertParameter(CtClass type,
                                          String descriptor) {
         if (descriptor.charAt(0) != '(')
             return descriptor;
@@ -389,7 +397,7 @@ public class Descriptor {
 
     /**
      * Changes the return type included in the given descriptor.
-     * <p/>
+     *
      * <p><code>classname</code> must not be an array type.
      *
      * @param classname return type
@@ -417,13 +425,14 @@ public class Descriptor {
      * @param cp   the class pool used for obtaining
      *             a <code>CtClass</code> object.
      */
-    public static org.hotswap.agent.javassist.CtClass[] getParameterTypes(String desc, org.hotswap.agent.javassist.ClassPool cp)
-            throws org.hotswap.agent.javassist.NotFoundException {
+    public static CtClass[] getParameterTypes(String desc, ClassPool cp)
+        throws NotFoundException
+    {
         if (desc.charAt(0) != '(')
             return null;
         else {
             int num = numOfParameters(desc);
-            org.hotswap.agent.javassist.CtClass[] args = new org.hotswap.agent.javassist.CtClass[num];
+            CtClass[] args = new CtClass[num];
             int n = 0;
             int i = 1;
             do {
@@ -469,13 +478,14 @@ public class Descriptor {
      * @param cp   the class pool used for obtaining
      *             a <code>CtClass</code> object.
      */
-    public static org.hotswap.agent.javassist.CtClass getReturnType(String desc, org.hotswap.agent.javassist.ClassPool cp)
-            throws org.hotswap.agent.javassist.NotFoundException {
+    public static CtClass getReturnType(String desc, ClassPool cp)
+        throws NotFoundException
+    {
         int i = desc.indexOf(')');
         if (i < 0)
             return null;
         else {
-            org.hotswap.agent.javassist.CtClass[] type = new org.hotswap.agent.javassist.CtClass[1];
+            CtClass[] type = new CtClass[1];
             toCtClass(cp, desc, i + 1, type, 0);
             return type[0];
         }
@@ -490,7 +500,7 @@ public class Descriptor {
     public static int numOfParameters(String desc) {
         int n = 0;
         int i = 1;
-        for (; ; ) {
+        for (;;) {
             char c = desc.charAt(i);
             if (c == ')')
                 break;
@@ -502,7 +512,8 @@ public class Descriptor {
                 i = desc.indexOf(';', i) + 1;
                 if (i <= 0)
                     throw new IndexOutOfBoundsException("bad descriptor");
-            } else
+            }
+            else
                 ++i;
 
             ++n;
@@ -514,7 +525,7 @@ public class Descriptor {
     /**
      * Returns a <code>CtClass</code> object representing the type
      * specified by the given descriptor.
-     * <p/>
+     *
      * <p>This method works even if the package-class separator is
      * not <code>/</code> but <code>.</code> (period).  For example,
      * it accepts <code>Ljava.lang.Object;</code>
@@ -524,9 +535,10 @@ public class Descriptor {
      * @param cp   the class pool used for obtaining
      *             a <code>CtClass</code> object.
      */
-    public static org.hotswap.agent.javassist.CtClass toCtClass(String desc, org.hotswap.agent.javassist.ClassPool cp)
-            throws org.hotswap.agent.javassist.NotFoundException {
-        org.hotswap.agent.javassist.CtClass[] clazz = new org.hotswap.agent.javassist.CtClass[1];
+    public static CtClass toCtClass(String desc, ClassPool cp)
+        throws NotFoundException
+    {
+        CtClass[] clazz = new CtClass[1];
         int res = toCtClass(cp, desc, 0, clazz, 0);
         if (res >= 0)
             return clazz[0];
@@ -537,9 +549,10 @@ public class Descriptor {
         }
     }
 
-    private static int toCtClass(org.hotswap.agent.javassist.ClassPool cp, String desc, int i,
-                                 org.hotswap.agent.javassist.CtClass[] args, int n)
-            throws org.hotswap.agent.javassist.NotFoundException {
+    private static int toCtClass(ClassPool cp, String desc, int i,
+                                 CtClass[] args, int n)
+        throws NotFoundException
+    {
         int i2;
         String name;
 
@@ -553,8 +566,9 @@ public class Descriptor {
         if (c == 'L') {
             i2 = desc.indexOf(';', ++i);
             name = desc.substring(i, i2++).replace('/', '.');
-        } else {
-            org.hotswap.agent.javassist.CtClass type = toPrimitiveClass(c);
+        }
+        else {
+            CtClass type = toPrimitiveClass(c);
             if (type == null)
                 return -1; // error
 
@@ -562,7 +576,8 @@ public class Descriptor {
             if (arrayDim == 0) {
                 args[n] = type;
                 return i2; // neither an array type or a class type
-            } else
+            }
+            else
                 name = type.getName();
         }
 
@@ -578,36 +593,36 @@ public class Descriptor {
         return i2;
     }
 
-    static org.hotswap.agent.javassist.CtClass toPrimitiveClass(char c) {
-        org.hotswap.agent.javassist.CtClass type = null;
+    static CtClass toPrimitiveClass(char c) {
+        CtClass type = null;
         switch (c) {
-            case 'Z':
-                type = org.hotswap.agent.javassist.CtClass.booleanType;
-                break;
-            case 'C':
-                type = org.hotswap.agent.javassist.CtClass.charType;
-                break;
-            case 'B':
-                type = org.hotswap.agent.javassist.CtClass.byteType;
-                break;
-            case 'S':
-                type = org.hotswap.agent.javassist.CtClass.shortType;
-                break;
-            case 'I':
-                type = org.hotswap.agent.javassist.CtClass.intType;
-                break;
-            case 'J':
-                type = org.hotswap.agent.javassist.CtClass.longType;
-                break;
-            case 'F':
-                type = org.hotswap.agent.javassist.CtClass.floatType;
-                break;
-            case 'D':
-                type = org.hotswap.agent.javassist.CtClass.doubleType;
-                break;
-            case 'V':
-                type = org.hotswap.agent.javassist.CtClass.voidType;
-                break;
+        case 'Z' :
+            type = CtClass.booleanType;
+            break;
+        case 'C' :
+            type = CtClass.charType;
+            break;
+        case 'B' :
+            type = CtClass.byteType;
+            break;
+        case 'S' :
+            type = CtClass.shortType;
+            break;
+        case 'I' :
+            type = CtClass.intType;
+            break;
+        case 'J' :
+            type = CtClass.longType;
+            break;
+        case 'F' :
+            type = CtClass.floatType;
+            break;
+        case 'D' :
+            type = CtClass.doubleType;
+            break;
+        case 'V' :
+            type = CtClass.voidType;
+            break;
         }
 
         return type;
@@ -645,7 +660,7 @@ public class Descriptor {
     /**
      * Computes the data size specified by the given descriptor.
      * For example, if the descriptor is "D", this method returns 2.
-     * <p/>
+     *
      * <p>If the descriptor represents a method type, this method returns
      * (the size of the returned value) - (the sum of the data sizes
      * of all the parameters).  For example, if the descriptor is
@@ -661,10 +676,10 @@ public class Descriptor {
      * Computes the data size of parameters.
      * If one of the parameters is double type, the size of that parameter
      * is 2 words.  For example, if the given descriptor is
-     * <code>"(IJ)D"</code>, then this method returns 3.  The size of the
+     *  <code>"(IJ)D"</code>, then this method returns 3.  The size of the
      * return type is not computed.
-     *
-     * @param desc a method descriptor.
+     * 
+     * @param desc      a method descriptor.
      */
     public static int paramSize(String desc) {
         return -dataSize(desc, false);
@@ -675,7 +690,7 @@ public class Descriptor {
         char c = desc.charAt(0);
         if (c == '(') {
             int i = 1;
-            for (; ; ) {
+            for (;;) {
                 c = desc.charAt(i);
                 if (c == ')') {
                     c = desc.charAt(i + 1);
@@ -692,7 +707,8 @@ public class Descriptor {
                     i = desc.indexOf(';', i) + 1;
                     if (i <= 0)
                         throw new IndexOutOfBoundsException("bad descriptor");
-                } else
+                }
+                else
                     ++i;
 
                 if (!array && (c == 'J' || c == 'D'))
@@ -716,7 +732,7 @@ public class Descriptor {
      * given descriptor.  For example, <code>Ljava/lang/Object;</code>
      * is converted into <code>java.lang.Object</code>.
      * <code>(I[I)V</code> is converted into <code>(int, int[])</code>
-     * (the return type is ignored).
+     * (the return type is ignored). 
      */
     public static String toString(String desc) {
         return PrettyPrinter.toString(desc);
@@ -736,7 +752,8 @@ public class Descriptor {
                 }
 
                 sbuf.append(')');
-            } else
+            }
+            else
                 readType(sbuf, 0, desc);
 
             return sbuf.toString();
@@ -762,7 +779,7 @@ public class Descriptor {
                     sbuf.append(c);
                 }
             else {
-                org.hotswap.agent.javassist.CtClass t = toPrimitiveClass(c);
+                CtClass t = toPrimitiveClass(c);
                 sbuf.append(t.getName());
             }
 
@@ -784,7 +801,7 @@ public class Descriptor {
         /**
          * Constructs an iterator.
          *
-         * @param s descriptor.
+         * @param s         descriptor.
          */
         public Iterator(String s) {
             desc = s;
@@ -802,16 +819,12 @@ public class Descriptor {
         /**
          * Returns true if the current element is a parameter type.
          */
-        public boolean isParameter() {
-            return param;
-        }
+        public boolean isParameter() { return param; }
 
         /**
          * Returns the first character of the current element.
          */
-        public char currentChar() {
-            return desc.charAt(curPos);
-        }
+        public char currentChar() { return desc.charAt(curPos); }
 
         /**
          * Returns true if the current element is double or long type.
@@ -847,7 +860,8 @@ public class Descriptor {
                 nextPos = desc.indexOf(';', nextPos) + 1;
                 if (nextPos <= 0)
                     throw new IndexOutOfBoundsException("bad descriptor");
-            } else
+            }
+            else
                 ++nextPos;
 
             curPos = index;

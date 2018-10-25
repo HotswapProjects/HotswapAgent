@@ -90,15 +90,15 @@ public interface TokenId {
     int ARSHIFT_E = 371;        // >>>=
 
     // operators from NEQ to ARSHIFT_E
-    String opNames[] = {"!=", "%=", "&=", "*=", "+=", "-=", "/=",
-            "<=", "==", ">=", "^=", "|=", "++", "--",
-            "<<", "<<=", ">>", ">>=", "||", "&&", ">>>",
-            ">>>="};
+    String opNames[] = { "!=", "%=", "&=", "*=", "+=", "-=", "/=",
+                       "<=", "==", ">=", "^=", "|=", "++", "--",
+                       "<<", "<<=", ">>", ">>=", "||", "&&", ">>>",
+                       ">>>=" };
 
     // operators from MOD_E to ARSHIFT_E
-    int assignOps[] = {'%', '&', '*', '+', '-', '/', 0, 0, 0,
-            '^', '|', 0, 0, 0, LSHIFT, 0, RSHIFT, 0, 0, 0,
-            ARSHIFT};
+    int assignOps[] = { '%', '&', '*', '+', '-', '/', 0, 0, 0,
+                        '^', '|', 0, 0, 0, LSHIFT, 0, RSHIFT, 0, 0, 0,
+                        ARSHIFT };
 
     int Identifier = 400;
     int CharConstant = 401;

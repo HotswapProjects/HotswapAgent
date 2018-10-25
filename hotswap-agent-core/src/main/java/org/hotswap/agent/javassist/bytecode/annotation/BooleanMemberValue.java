@@ -15,8 +15,8 @@
  */
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 
@@ -33,7 +33,7 @@ public class BooleanMemberValue extends MemberValue {
      * Constructs a boolean constant value.  The initial value is specified
      * by the constant pool entry at the given index.
      *
-     * @param index the index of a CONSTANT_Integer_info structure.
+     * @param index     the index of a CONSTANT_Integer_info structure.
      */
     public BooleanMemberValue(int index, ConstPool cp) {
         super('Z', cp);
@@ -43,7 +43,7 @@ public class BooleanMemberValue extends MemberValue {
     /**
      * Constructs a boolean constant value.
      *
-     * @param b the initial value.
+     * @param b         the initial value.
      */
     public BooleanMemberValue(boolean b, ConstPool cp) {
         super('Z', cp);
@@ -58,8 +58,8 @@ public class BooleanMemberValue extends MemberValue {
         setValue(false);
     }
 
-    Object getValue(ClassLoader cl, org.hotswap.agent.javassist.ClassPool cp, Method m) {
-        return new Boolean(getValue());
+    Object getValue(ClassLoader cl, ClassPool cp, Method m) {
+        return Boolean.valueOf(getValue());
     }
 
     Class getType(ClassLoader cl) {
@@ -97,7 +97,7 @@ public class BooleanMemberValue extends MemberValue {
     /**
      * Accepts a visitor.
      */
-    public void accept(org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor visitor) {
+    public void accept(MemberValueVisitor visitor) {
         visitor.visitBooleanMemberValue(this);
     }
 }

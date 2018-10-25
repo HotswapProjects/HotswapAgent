@@ -33,25 +33,25 @@ public interface Translator {
      * <code>CtClass</code> objects that will be accessed
      * in <code>onLoad()</code> in <code>Translator</code>.
      *
-     * @param pool the <code>ClassPool</code> that this translator
-     *             should use.
-     * @throws NotFoundException      if a <code>CtClass</code> cannot be found.
-     * @throws CannotCompileException if the initialization by this method
-     *                                fails.
+     * @param pool      the <code>ClassPool</code> that this translator
+     *                          should use.
      * @see Loader
+     * @throws NotFoundException    if a <code>CtClass</code> cannot be found.
+     * @throws CannotCompileException   if the initialization by this method
+     *                                  fails.
      */
     void start(ClassPool pool)
-            throws NotFoundException, CannotCompileException;
+        throws NotFoundException, CannotCompileException;
 
     /**
      * Is invoked by a <code>Loader</code> for notifying that
      * a class is loaded.  The <code>Loader</code> calls
-     * <p/>
-     * <ul><pre>
-     * pool.get(classname).toBytecode()</pre></ul>
-     * <p/>
+     *
+     * <pre>
+     * pool.get(classname).toBytecode()</pre>
+     *
      * to read the class file after <code>onLoad()</code> returns.
-     * <p/>
+     *
      * <p><code>classname</code> may be the name of a class
      * that has not been created yet.
      * If so, <code>onLoad()</code> must create that class so that
@@ -59,13 +59,13 @@ public interface Translator {
      * returns.
      *
      * @param pool      the <code>ClassPool</code> that this translator
-     *                  should use.
-     * @param classname the name of the class being loaded.
-     * @throws NotFoundException      if a <code>CtClass</code> cannot be found.
-     * @throws CannotCompileException if the code transformation
-     *                                by this method fails.
+     *                          should use.
+     * @param classname     the name of the class being loaded.
      * @see Loader
+     * @throws NotFoundException    if a <code>CtClass</code> cannot be found.
+     * @throws CannotCompileException   if the code transformation
+     *                                  by this method fails.
      */
     void onLoad(ClassPool pool, String classname)
-            throws NotFoundException, CannotCompileException;
+        throws NotFoundException, CannotCompileException;
 }

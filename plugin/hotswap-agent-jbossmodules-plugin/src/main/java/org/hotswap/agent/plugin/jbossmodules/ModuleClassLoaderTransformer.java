@@ -41,14 +41,14 @@ public class ModuleClassLoaderTransformer {
             }
 
             CtClass objectClass = classPool.get(Object.class.getName());
-            CtField ctField = new CtField(objectClass, "__prepend", ctClass);
+            CtField ctField = new CtField(objectClass, "$$ha$prepend", ctClass);
             ctClass.addField(ctField);
 
             ctClass.addMethod(CtNewMethod.make(
-                    "private void __setupPrepend() {" +
+                    "private void $$ha$setupPrepend() {" +
                     "       Class clPaths = Class.forName(\"org.jboss.modules.Paths\", true, this.getClass().getClassLoader());" +
-                    "       java.lang.reflect.Method spM  = clPaths.getDeclaredMethod(\"__setPrepend\", new Class[] {java.lang.Object.class});" +
-                    "       spM.invoke(this.paths" + pathsGetter + ", new java.lang.Object[] { __prepend });"+
+                    "       java.lang.reflect.Method spM  = clPaths.getDeclaredMethod(\"$$ha$setPrepend\", new Class[] {java.lang.Object.class});" +
+                    "       spM.invoke(this.paths" + pathsGetter + ", new java.lang.Object[] { $$ha$prepend });"+
                     "}", ctClass)
             );
 
@@ -67,8 +67,8 @@ public class ModuleClassLoaderTransformer {
                     "           " + ModuleClassLoaderTransformer.class.getName() + ".logSetExtraClassPathException(e);" +
                     "           }" +
                     "       }" +
-                    "       this.__prepend = resLoaderList;" +
-                    "       __setupPrepend();" +
+                    "       this.$$ha$prepend = resLoaderList;" +
+                    "       $$ha$setupPrepend();" +
                     "   } catch (java.lang.Exception e) {" +
                     "       " + ModuleClassLoaderTransformer.class.getName() + ".logSetExtraClassPathException(e);" +
                     "   }" +
@@ -81,7 +81,7 @@ public class ModuleClassLoaderTransformer {
             ctClass.addMethod(CtNewMethod.make(
                     "boolean recalculate() {" +
                     "   boolean ret = _recalculate();" +
-                    "   __setupPrepend();" +
+                    "   $$ha$setupPrepend();" +
                     "   return ret;" +
                     "}",
                     ctClass
@@ -94,7 +94,7 @@ public class ModuleClassLoaderTransformer {
             methResourceLoaders.setBody(
                     "{" +
                     "   boolean ret = setResourceLoaders((org.jboss.modules.Paths)this.paths" + pathsGetter + ", $1);" +
-                    "   __setupPrepend();" +
+                    "   $$ha$setupPrepend();" +
                     "   return ret;" +
                     "}"
             );
@@ -115,15 +115,15 @@ public class ModuleClassLoaderTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.jboss.modules.Paths")
     public static void patchModulesPaths(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtClass objectClass = classPool.get(Object.class.getName());
-        CtField ctField = new CtField(objectClass, "__prepend", ctClass);
+        CtField ctField = new CtField(objectClass, "$$ha$prepend", ctClass);
         ctClass.addField(ctField);
 
         try {
             CtMethod methGetAllPaths = ctClass.getDeclaredMethod("getAllPaths");
             methGetAllPaths.setBody(
                     "{" +
-                    "   if (this.__prepend != null) {" +
-                    "       java.util.Map result = new org.hotswap.agent.plugin.jbossmodules.PrependingMap(this.allPaths, this.__prepend);" +
+                    "   if (this.$$ha$prepend != null) {" +
+                    "       java.util.Map result = new org.hotswap.agent.plugin.jbossmodules.PrependingMap(this.allPaths, this.$$ha$prepend);" +
                     "       return result;" +
                     "   }" +
                     "   return this.allPaths;"+
@@ -131,8 +131,8 @@ public class ModuleClassLoaderTransformer {
             );
 
             ctClass.addMethod(CtNewMethod.make(
-                    "public void __setPrepend(java.lang.Object prepend) {" +
-                    "   this.__prepend = prepend; " +
+                    "public void $$ha$setPrepend(java.lang.Object prepend) {" +
+                    "   this.$$ha$prepend = prepend; " +
                     "}", ctClass)
             );
         } catch (NotFoundException e) {

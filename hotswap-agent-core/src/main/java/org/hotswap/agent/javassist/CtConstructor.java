@@ -16,24 +16,25 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.compiler.Javac;
+import org.hotswap.agent.javassist.compiler.CompileError;
 
 /**
  * An instance of CtConstructor represents a constructor.
  * It may represent a static constructor
  * (class initializer).  To distinguish a constructor and a class
  * initializer, call <code>isClassInitializer()</code>.
- * <p/>
+ *
  * <p>See the super class <code>CtBehavior</code> as well since
  * a number of useful methods are in <code>CtBehavior</code>.
  *
- * @see org.hotswap.agent.javassist.CtClass#getDeclaredConstructors()
- * @see org.hotswap.agent.javassist.CtClass#getClassInitializer()
+ * @see CtClass#getDeclaredConstructors()
+ * @see CtClass#getClassInitializer()
  * @see CtNewConstructor
  */
 public final class CtConstructor extends CtBehavior {
-    protected CtConstructor(org.hotswap.agent.javassist.bytecode.MethodInfo minfo, org.hotswap.agent.javassist.CtClass declaring) {
+    protected CtConstructor(MethodInfo minfo, CtClass declaring) {
         super(declaring, minfo);
     }
 
@@ -41,33 +42,34 @@ public final class CtConstructor extends CtBehavior {
      * Creates a constructor with no constructor body.
      * The created constructor
      * must be added to a class with <code>CtClass.addConstructor()</code>.
-     * <p/>
+     *
      * <p>The created constructor does not include a constructor body,
      * which must be specified with <code>setBody()</code>.
      *
-     * @param declaring  the class to which the created method is added.
-     * @param parameters a list of the parameter types
-     * @see org.hotswap.agent.javassist.CtClass#addConstructor(CtConstructor)
+     * @param declaring         the class to which the created method is added.
+     * @param parameters        a list of the parameter types
+     *
+     * @see CtClass#addConstructor(CtConstructor)
      * @see CtConstructor#setBody(String)
-     * @see CtConstructor#setBody(CtConstructor, org.hotswap.agent.javassist.ClassMap)
+     * @see CtConstructor#setBody(CtConstructor,ClassMap)
      */
-    public CtConstructor(org.hotswap.agent.javassist.CtClass[] parameters, org.hotswap.agent.javassist.CtClass declaring) {
-        this((org.hotswap.agent.javassist.bytecode.MethodInfo) null, declaring);
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = declaring.getClassFile2().getConstPool();
-        String desc = org.hotswap.agent.javassist.bytecode.Descriptor.ofConstructor(parameters);
-        methodInfo = new org.hotswap.agent.javassist.bytecode.MethodInfo(cp, "<init>", desc);
-        setModifiers(org.hotswap.agent.javassist.Modifier.PUBLIC);
+    public CtConstructor(CtClass[] parameters, CtClass declaring) {
+        this((MethodInfo)null, declaring);
+        ConstPool cp = declaring.getClassFile2().getConstPool();
+        String desc = Descriptor.ofConstructor(parameters);
+        methodInfo = new MethodInfo(cp, "<init>", desc);
+        setModifiers(Modifier.PUBLIC);
     }
 
     /**
      * Creates a copy of a <code>CtConstructor</code> object.
      * The created constructor must be
      * added to a class with <code>CtClass.addConstructor()</code>.
-     * <p/>
+     *
      * <p>All occurrences of class names in the created constructor
      * are replaced with names specified by
      * <code>map</code> if <code>map</code> is not <code>null</code>.
-     * <p/>
+     *
      * <p>By default, all the occurrences of the names of the class
      * declaring <code>src</code> and the superclass are replaced
      * with the name of the class and the superclass that
@@ -75,7 +77,7 @@ public final class CtConstructor extends CtBehavior {
      * This is done whichever <code>map</code> is null or not.
      * To prevent this replacement, call <code>ClassMap.fix()</code>
      * or <code>put()</code> to explicitly specify replacement.
-     * <p/>
+     *
      * <p><b>Note:</b> if the <code>.class</code> notation (for example,
      * <code>String.class</code>) is included in an expression, the
      * Javac compiler may produce a helper method.
@@ -85,16 +87,18 @@ public final class CtConstructor extends CtBehavior {
      * expression.
      *
      * @param src       the source method.
-     * @param declaring the class to which the created method is added.
+     * @param declaring    the class to which the created method is added.
      * @param map       the hashtable associating original class names
      *                  with substituted names.
      *                  It can be <code>null</code>.
-     * @see org.hotswap.agent.javassist.CtClass#addConstructor(CtConstructor)
-     * @see org.hotswap.agent.javassist.ClassMap#fix(String)
+     *
+     * @see CtClass#addConstructor(CtConstructor)
+     * @see ClassMap#fix(String)
      */
-    public CtConstructor(CtConstructor src, org.hotswap.agent.javassist.CtClass declaring, org.hotswap.agent.javassist.ClassMap map)
-            throws org.hotswap.agent.javassist.CannotCompileException {
-        this((org.hotswap.agent.javassist.bytecode.MethodInfo) null, declaring);
+    public CtConstructor(CtConstructor src, CtClass declaring, ClassMap map)
+        throws CannotCompileException
+    {
+        this((MethodInfo)null, declaring);
         copy(src, true, map);
     }
 
@@ -114,14 +118,14 @@ public final class CtConstructor extends CtBehavior {
 
     /**
      * Returns the constructor name followed by parameter types
-     * such as <code>CtConstructor(CtClass[],CtClass)</code>.
+     * such as <code>javassist.CtConstructor(CtClass[],CtClass)</code>.
      *
      * @since 3.5
      */
     public String getLongName() {
         return getDeclaringClass().getName()
-                + (isConstructor() ? org.hotswap.agent.javassist.bytecode.Descriptor.toString(getSignature())
-                : ("." + org.hotswap.agent.javassist.bytecode.MethodInfo.nameClinit + "()"));
+               + (isConstructor() ? Descriptor.toString(getSignature())
+                                  : ("." + MethodInfo.nameClinit + "()"));
     }
 
     /**
@@ -132,7 +136,7 @@ public final class CtConstructor extends CtBehavior {
      */
     public String getName() {
         if (methodInfo.isStaticInitializer())
-            return org.hotswap.agent.javassist.bytecode.MethodInfo.nameClinit;
+            return MethodInfo.nameClinit;
         else
             return declaringClass.getSimpleName();
     }
@@ -145,48 +149,49 @@ public final class CtConstructor extends CtBehavior {
      * the super class).
      */
     public boolean isEmpty() {
-        org.hotswap.agent.javassist.bytecode.CodeAttribute ca = getMethodInfo2().getCodeAttribute();
+        CodeAttribute ca = getMethodInfo2().getCodeAttribute();
         if (ca == null)
             return false;       // native or abstract??
-        // they are not allowed, though.
+                                // they are not allowed, though.
 
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = ca.getConstPool();
-        org.hotswap.agent.javassist.bytecode.CodeIterator it = ca.iterator();
+        ConstPool cp = ca.getConstPool();
+        CodeIterator it = ca.iterator();
         try {
             int pos, desc;
             int op0 = it.byteAt(it.next());
-            return op0 == org.hotswap.agent.javassist.bytecode.Opcode.RETURN     // empty static initializer
-                    || (op0 == org.hotswap.agent.javassist.bytecode.Opcode.ALOAD_0
-                    && it.byteAt(pos = it.next()) == org.hotswap.agent.javassist.bytecode.Opcode.INVOKESPECIAL
+            return op0 == Opcode.RETURN     // empty static initializer
+                || (op0 == Opcode.ALOAD_0
+                    && it.byteAt(pos = it.next()) == Opcode.INVOKESPECIAL
                     && (desc = cp.isConstructor(getSuperclassName(),
-                    it.u16bitAt(pos + 1))) != 0
+                                                it.u16bitAt(pos + 1))) != 0
                     && "()V".equals(cp.getUtf8Info(desc))
-                    && it.byteAt(it.next()) == org.hotswap.agent.javassist.bytecode.Opcode.RETURN
+                    && it.byteAt(it.next()) == Opcode.RETURN
                     && !it.hasNext());
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
         }
+        catch (BadBytecode e) {}
         return false;
     }
 
     private String getSuperclassName() {
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = declaringClass.getClassFile2();
+        ClassFile cf = declaringClass.getClassFile2();
         return cf.getSuperclass();
     }
 
     /**
      * Returns true if this constructor calls a constructor
      * of the super class.  This method returns false if it
-     * calls another constructor of this class by <code>this()</code>.
+     * calls another constructor of this class by <code>this()</code>. 
      */
-    public boolean callsSuper() throws org.hotswap.agent.javassist.CannotCompileException {
-        org.hotswap.agent.javassist.bytecode.CodeAttribute codeAttr = methodInfo.getCodeAttribute();
+    public boolean callsSuper() throws CannotCompileException {
+        CodeAttribute codeAttr = methodInfo.getCodeAttribute();
         if (codeAttr != null) {
-            org.hotswap.agent.javassist.bytecode.CodeIterator it = codeAttr.iterator();
+            CodeIterator it = codeAttr.iterator();
             try {
                 int index = it.skipSuperConstructor();
                 return index >= 0;
-            } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
-                throw new org.hotswap.agent.javassist.CannotCompileException(e);
+            }
+            catch (BadBytecode e) {
+                throw new CannotCompileException(e);
             }
         }
 
@@ -196,13 +201,13 @@ public final class CtConstructor extends CtBehavior {
     /**
      * Sets a constructor body.
      *
-     * @param src the source code representing the constructor body.
-     *            It must be a single statement or block.
-     *            If it is <code>null</code>, the substituted
-     *            constructor body does nothing except calling
-     *            <code>super()</code>.
+     * @param src       the source code representing the constructor body.
+     *                  It must be a single statement or block.
+     *                  If it is <code>null</code>, the substituted
+     *                  constructor body does nothing except calling
+     *                  <code>super()</code>.
      */
-    public void setBody(String src) throws org.hotswap.agent.javassist.CannotCompileException {
+    public void setBody(String src) throws CannotCompileException {
         if (src == null)
             if (isClassInitializer())
                 src = ";";
@@ -214,20 +219,21 @@ public final class CtConstructor extends CtBehavior {
 
     /**
      * Copies a constructor body from another constructor.
-     * <p/>
+     *
      * <p>All occurrences of the class names in the copied body
      * are replaced with the names specified by
      * <code>map</code> if <code>map</code> is not <code>null</code>.
      *
-     * @param src the method that the body is copied from.
-     * @param map the hashtable associating original class names
-     *            with substituted names.
-     *            It can be <code>null</code>.
+     * @param src       the method that the body is copied from.
+     * @param map       the hashtable associating original class names
+     *                  with substituted names.
+     *                  It can be <code>null</code>.
      */
-    public void setBody(CtConstructor src, org.hotswap.agent.javassist.ClassMap map)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+    public void setBody(CtConstructor src, ClassMap map)
+        throws CannotCompileException
+    {
         setBody0(src.declaringClass, src.methodInfo,
-                declaringClass, methodInfo, map);
+                 declaringClass, methodInfo, map);
     }
 
     /**
@@ -235,19 +241,19 @@ public final class CtConstructor extends CtBehavior {
      * or this class is called.
      * It does not work if this object represents a class initializer.
      *
-     * @param src the source code representing the inserted bytecode.
-     *            It must be a single statement or block.
+     * @param src       the source code representing the inserted bytecode.
+     *                  It must be a single statement or block.
      */
-    public void insertBeforeBody(String src) throws org.hotswap.agent.javassist.CannotCompileException {
-        org.hotswap.agent.javassist.CtClass cc = declaringClass;
+    public void insertBeforeBody(String src) throws CannotCompileException {
+        CtClass cc = declaringClass;
         cc.checkModify();
         if (isClassInitializer())
-            throw new org.hotswap.agent.javassist.CannotCompileException("class initializer");
+            throw new CannotCompileException("class initializer");
 
-        org.hotswap.agent.javassist.bytecode.CodeAttribute ca = methodInfo.getCodeAttribute();
-        org.hotswap.agent.javassist.bytecode.CodeIterator iterator = ca.iterator();
-        org.hotswap.agent.javassist.bytecode.Bytecode b = new org.hotswap.agent.javassist.bytecode.Bytecode(methodInfo.getConstPool(),
-                ca.getMaxStack(), ca.getMaxLocals());
+        CodeAttribute ca = methodInfo.getCodeAttribute();
+        CodeIterator iterator = ca.iterator();
+        Bytecode b = new Bytecode(methodInfo.getConstPool(),
+                                  ca.getMaxStack(), ca.getMaxLocals());
         b.setStackDepth(ca.getMaxStack());
         Javac jv = new Javac(b, cc);
         try {
@@ -259,25 +265,29 @@ public final class CtConstructor extends CtBehavior {
             int pos = iterator.insertEx(b.get());
             iterator.insert(b.getExceptionTable(), pos);
             methodInfo.rebuildStackMapIf6(cc.getClassPool(), cc.getClassFile2());
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
-        } catch (CompileError e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
+        }
+        catch (NotFoundException e) {
+            throw new CannotCompileException(e);
+        }
+        catch (CompileError e) {
+            throw new CannotCompileException(e);
+        }
+        catch (BadBytecode e) {
+            throw new CannotCompileException(e);
         }
     }
 
     /* This method is called by addCatch() in CtBehavior.
      * super() and this() must not be in a try statement.
      */
-    int getStartPosOfBody(org.hotswap.agent.javassist.bytecode.CodeAttribute ca) throws org.hotswap.agent.javassist.CannotCompileException {
-        org.hotswap.agent.javassist.bytecode.CodeIterator ci = ca.iterator();
+    int getStartPosOfBody(CodeAttribute ca) throws CannotCompileException {
+        CodeIterator ci = ca.iterator();
         try {
             ci.skipConstructor();
             return ci.next();
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
+        }
+        catch (BadBytecode e) {
+            throw new CannotCompileException(e);
         }
     }
 
@@ -288,21 +298,22 @@ public final class CtConstructor extends CtBehavior {
      * appended to the class specified by <code>declaring</code>.
      * If this constructor is a static initializer, the resulting method takes
      * no parameter.
-     * <p/>
+     *
      * <p>An occurrence of another constructor call <code>this()</code>
      * or a super constructor call <code>super()</code> is
-     * eliminated from the resulting method.
-     * <p/>
+     * eliminated from the resulting method. 
+     *
      * <p>The immediate super class of the class declaring this constructor
      * must be also a super class of the class declaring the resulting method.
      * If the constructor accesses a field, the class declaring the resulting method
      * must also declare a field with the same name and type.
      *
-     * @param name      the name of the resulting method.
-     * @param declaring the class declaring the resulting method.
+     * @param name              the name of the resulting method.
+     * @param declaring         the class declaring the resulting method.
      */
-    public org.hotswap.agent.javassist.CtMethod toMethod(String name, org.hotswap.agent.javassist.CtClass declaring)
-            throws org.hotswap.agent.javassist.CannotCompileException {
+    public CtMethod toMethod(String name, CtClass declaring)
+        throws CannotCompileException
+    {
         return toMethod(name, declaring, null);
     }
 
@@ -313,11 +324,11 @@ public final class CtConstructor extends CtBehavior {
      * appended to the class specified by <code>declaring</code>.
      * If this constructor is a static initializer, the resulting method takes
      * no parameter.
-     * <p/>
+     *
      * <p>An occurrence of another constructor call <code>this()</code>
      * or a super constructor call <code>super()</code> is
-     * eliminated from the resulting method.
-     * <p/>
+     * eliminated from the resulting method. 
+     *
      * <p>The immediate super class of the class declaring this constructor
      * must be also a super class of the class declaring the resulting method
      * (this is obviously true if the second parameter <code>declaring</code> is
@@ -325,29 +336,31 @@ public final class CtConstructor extends CtBehavior {
      * If the constructor accesses a field, the class declaring the resulting method
      * must also declare a field with the same name and type.
      *
-     * @param name      the name of the resulting method.
-     * @param declaring the class declaring the resulting method.
-     *                  It is normally the same as the class declaring this
-     *                  constructor.
+     * @param name              the name of the resulting method.
+     * @param declaring         the class declaring the resulting method.
+     *                          It is normally the same as the class declaring this
+     *                          constructor.
      * @param map       the hash table associating original class names
      *                  with substituted names.  The original class names will be
      *                  replaced while making a copy.
      *                  <code>map</code> can be <code>null</code>.
      */
-    public org.hotswap.agent.javassist.CtMethod toMethod(String name, org.hotswap.agent.javassist.CtClass declaring, org.hotswap.agent.javassist.ClassMap map)
-            throws org.hotswap.agent.javassist.CannotCompileException {
-        org.hotswap.agent.javassist.CtMethod method = new org.hotswap.agent.javassist.CtMethod(null, declaring);
+    public CtMethod toMethod(String name, CtClass declaring, ClassMap map)
+        throws CannotCompileException
+    {
+        CtMethod method = new CtMethod(null, declaring);
         method.copy(this, false, map);
         if (isConstructor()) {
-            org.hotswap.agent.javassist.bytecode.MethodInfo minfo = method.getMethodInfo2();
-            org.hotswap.agent.javassist.bytecode.CodeAttribute ca = minfo.getCodeAttribute();
+            MethodInfo minfo = method.getMethodInfo2();
+            CodeAttribute ca = minfo.getCodeAttribute();
             if (ca != null) {
                 removeConsCall(ca);
                 try {
                     methodInfo.rebuildStackMapIf6(declaring.getClassPool(),
-                            declaring.getClassFile2());
-                } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
-                    throw new org.hotswap.agent.javassist.CannotCompileException(e);
+                                                  declaring.getClassFile2());
+                }
+                catch (BadBytecode e) {
+                    throw new CannotCompileException(e);
                 }
             }
         }
@@ -356,33 +369,35 @@ public final class CtConstructor extends CtBehavior {
         return method;
     }
 
-    private static void removeConsCall(org.hotswap.agent.javassist.bytecode.CodeAttribute ca)
-            throws org.hotswap.agent.javassist.CannotCompileException {
-        org.hotswap.agent.javassist.bytecode.CodeIterator iterator = ca.iterator();
+    private static void removeConsCall(CodeAttribute ca)
+        throws CannotCompileException
+    {
+        CodeIterator iterator = ca.iterator();
         try {
             int pos = iterator.skipConstructor();
             if (pos >= 0) {
                 int mref = iterator.u16bitAt(pos + 1);
                 String desc = ca.getConstPool().getMethodrefType(mref);
-                int num = org.hotswap.agent.javassist.bytecode.Descriptor.numOfParameters(desc) + 1;
+                int num = Descriptor.numOfParameters(desc) + 1;
                 if (num > 3)
                     pos = iterator.insertGapAt(pos, num - 3, false).position;
 
-                iterator.writeByte(org.hotswap.agent.javassist.bytecode.Opcode.POP, pos++);  // this
-                iterator.writeByte(org.hotswap.agent.javassist.bytecode.Opcode.NOP, pos);
-                iterator.writeByte(org.hotswap.agent.javassist.bytecode.Opcode.NOP, pos + 1);
-                org.hotswap.agent.javassist.bytecode.Descriptor.Iterator it = new org.hotswap.agent.javassist.bytecode.Descriptor.Iterator(desc);
+                iterator.writeByte(Opcode.POP, pos++);  // this
+                iterator.writeByte(Opcode.NOP, pos);
+                iterator.writeByte(Opcode.NOP, pos + 1);
+                Descriptor.Iterator it = new Descriptor.Iterator(desc);
                 while (true) {
                     it.next();
                     if (it.isParameter())
-                        iterator.writeByte(it.is2byte() ? org.hotswap.agent.javassist.bytecode.Opcode.POP2 : org.hotswap.agent.javassist.bytecode.Opcode.POP,
-                                pos++);
+                        iterator.writeByte(it.is2byte() ? Opcode.POP2 : Opcode.POP,
+                                           pos++);
                     else
                         break;
                 }
             }
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
-            throw new org.hotswap.agent.javassist.CannotCompileException(e);
+        }
+        catch (BadBytecode e) {
+            throw new CannotCompileException(e);
         }
     }
 }

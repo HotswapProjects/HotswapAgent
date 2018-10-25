@@ -71,4 +71,10 @@ test 5.2.1.Final
 test 5.2.2.Final
 test 5.2.3.Final
 test 5.2.4.Final
+test 5.2.5.Final
+test 5.2.6.Final
+test 5.2.7.Final
+test 5.2.8.Final
+test 5.2.9.Final
+test 5.2.10.Final
 

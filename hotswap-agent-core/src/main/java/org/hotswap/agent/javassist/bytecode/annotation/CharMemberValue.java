@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
@@ -32,9 +34,9 @@ public class CharMemberValue extends MemberValue {
      * Constructs a char constant value.  The initial value is specified
      * by the constant pool entry at the given index.
      *
-     * @param index the index of a CONSTANT_Integer_info structure.
+     * @param index     the index of a CONSTANT_Integer_info structure.
      */
-    public CharMemberValue(int index, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public CharMemberValue(int index, ConstPool cp) {
         super('C', cp);
         this.valueIndex = index;
     }
@@ -42,9 +44,9 @@ public class CharMemberValue extends MemberValue {
     /**
      * Constructs a char constant value.
      *
-     * @param c the initial value.
+     * @param c     the initial value.
      */
-    public CharMemberValue(char c, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public CharMemberValue(char c, ConstPool cp) {
         super('C', cp);
         setValue(c);
     }
@@ -52,13 +54,13 @@ public class CharMemberValue extends MemberValue {
     /**
      * Constructs a char constant value.  The initial value is '\0'.
      */
-    public CharMemberValue(org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    public CharMemberValue(ConstPool cp) {
         super('C', cp);
         setValue('\0');
     }
 
-    Object getValue(ClassLoader cl, org.hotswap.agent.javassist.ClassPool cp, Method m) {
-        return new Character(getValue());
+    Object getValue(ClassLoader cl, ClassPool cp, Method m) {
+        return Character.valueOf(getValue());
     }
 
     Class getType(ClassLoader cl) {
@@ -69,7 +71,7 @@ public class CharMemberValue extends MemberValue {
      * Obtains the value of the member.
      */
     public char getValue() {
-        return (char) cp.getIntegerInfo(valueIndex);
+        return (char)cp.getIntegerInfo(valueIndex);
     }
 
     /**
@@ -96,7 +98,7 @@ public class CharMemberValue extends MemberValue {
     /**
      * Accepts a visitor.
      */
-    public void accept(org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor visitor) {
+    public void accept(MemberValueVisitor visitor) {
         visitor.visitCharMemberValue(this);
     }
 }

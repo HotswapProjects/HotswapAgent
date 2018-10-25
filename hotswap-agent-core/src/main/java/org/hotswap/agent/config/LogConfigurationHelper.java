@@ -1,14 +1,15 @@
 package org.hotswap.agent.config;
 
-import org.hotswap.agent.logging.AgentLogger;
-
 import static java.lang.Boolean.parseBoolean;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.util.Locale;
 import java.util.Properties;
+
+import org.hotswap.agent.logging.AgentLogger;
 
 /**
  * Configure LOG level and handler according to properties.
@@ -63,7 +64,7 @@ public class LogConfigurationHelper {
     // resolve level from enum
     private static AgentLogger.Level getLevel(String property, String levelName) {
         try {
-            return AgentLogger.Level.valueOf(levelName.toUpperCase());
+            return AgentLogger.Level.valueOf(levelName.toUpperCase(Locale.ENGLISH));
         } catch (IllegalArgumentException e) {
             LOGGER.warning("Invalid configuration value for property '{}'. Unknown LOG level '{}'.", property, levelName);
             return null;

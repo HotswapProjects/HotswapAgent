@@ -16,15 +16,21 @@
 
 package org.hotswap.agent.javassist.convert;
 
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.*;
+
 public class TransformBefore extends TransformCall {
-    protected org.hotswap.agent.javassist.CtClass[] parameterTypes;
+    protected CtClass[] parameterTypes;
     protected int locals;
     protected int maxLocals;
     protected byte[] saveCode, loadCode;
 
     public TransformBefore(Transformer next,
-                           org.hotswap.agent.javassist.CtMethod origMethod, org.hotswap.agent.javassist.CtMethod beforeMethod)
-            throws org.hotswap.agent.javassist.NotFoundException {
+                           CtMethod origMethod, CtMethod beforeMethod)
+        throws NotFoundException
+    {
         super(next, origMethod, beforeMethod);
 
         // override
@@ -36,18 +42,19 @@ public class TransformBefore extends TransformCall {
         saveCode = loadCode = null;
     }
 
-    public void initialize(org.hotswap.agent.javassist.bytecode.ConstPool cp, org.hotswap.agent.javassist.bytecode.CodeAttribute attr) {
+    public void initialize(ConstPool cp, CodeAttribute attr) {
         super.initialize(cp, attr);
         locals = 0;
         maxLocals = attr.getMaxLocals();
         saveCode = loadCode = null;
     }
 
-    protected int match(int c, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator,
-                        int typedesc, org.hotswap.agent.javassist.bytecode.ConstPool cp) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    protected int match(int c, int pos, CodeIterator iterator,
+                        int typedesc, ConstPool cp) throws BadBytecode
+    {
         if (newIndex == 0) {
-            String desc = org.hotswap.agent.javassist.bytecode.Descriptor.ofParameters(parameterTypes) + 'V';
-            desc = org.hotswap.agent.javassist.bytecode.Descriptor.insertParameter(classname, desc);
+            String desc = Descriptor.ofParameters(parameterTypes) + 'V';
+            desc = Descriptor.insertParameter(classname, desc);
             int nt = cp.addNameAndTypeInfo(newMethodname, desc);
             int ci = cp.addClassInfo(newClassname);
             newIndex = cp.addMethodrefInfo(ci, nt);
@@ -60,7 +67,7 @@ public class TransformBefore extends TransformCall {
         return match2(pos, iterator);
     }
 
-    protected int match2(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    protected int match2(int pos, CodeIterator iterator) throws BadBytecode {
         iterator.move(pos);
         iterator.insert(saveCode);
         iterator.insert(loadCode);
@@ -71,13 +78,11 @@ public class TransformBefore extends TransformCall {
         return iterator.next();
     }
 
-    public int extraLocals() {
-        return locals;
-    }
+    public int extraLocals() { return locals; }
 
-    protected void makeCode(org.hotswap.agent.javassist.CtClass[] paramTypes, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
-        org.hotswap.agent.javassist.bytecode.Bytecode save = new org.hotswap.agent.javassist.bytecode.Bytecode(cp, 0, 0);
-        org.hotswap.agent.javassist.bytecode.Bytecode load = new org.hotswap.agent.javassist.bytecode.Bytecode(cp, 0, 0);
+    protected void makeCode(CtClass[] paramTypes, ConstPool cp) {
+        Bytecode save = new Bytecode(cp, 0, 0);
+        Bytecode load = new Bytecode(cp, 0, 0);
 
         int var = maxLocals;
         int len = (paramTypes == null) ? 0 : paramTypes.length;
@@ -89,13 +94,15 @@ public class TransformBefore extends TransformCall {
         loadCode = load.get();
     }
 
-    private void makeCode2(org.hotswap.agent.javassist.bytecode.Bytecode save, org.hotswap.agent.javassist.bytecode.Bytecode load,
-                           int i, int n, org.hotswap.agent.javassist.CtClass[] paramTypes, int var) {
+    private void makeCode2(Bytecode save, Bytecode load,
+                           int i, int n, CtClass[] paramTypes, int var)
+    {
         if (i < n) {
             int size = load.addLoad(var, paramTypes[i]);
             makeCode2(save, load, i + 1, n, paramTypes, var + size);
             save.addStore(var, paramTypes[i]);
-        } else
+        }
+        else
             locals = var - maxLocals;
     }
 }

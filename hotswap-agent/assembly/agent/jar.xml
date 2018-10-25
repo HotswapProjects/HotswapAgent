@@ -10,7 +10,7 @@
     <dependencySets>
         <dependencySet>
             <includes>
-                <include>org.hotswap.agent:*</include>
+                <include>org.hotswapagent:*</include>
             </includes>
             <unpack>true</unpack>
         </dependencySet>

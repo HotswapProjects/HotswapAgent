@@ -47,13 +47,11 @@ public final class CtPrimitiveType extends CtClass {
      * Java type: boolean, byte, char, short, int, long, float, double,
      * or void.
      */
-    public boolean isPrimitive() {
-        return true;
-    }
+    public boolean isPrimitive() { return true; }
 
     /**
      * Returns the modifiers for this type.
-     * For decoding, use <code>Modifier</code>.
+     * For decoding, use <code>javassist.Modifier</code>.
      *
      * @see Modifier
      */
@@ -65,18 +63,14 @@ public final class CtPrimitiveType extends CtClass {
      * Returns the descriptor representing this type.
      * For example, if the type is int, then the descriptor is I.
      */
-    public char getDescriptor() {
-        return descriptor;
-    }
+    public char getDescriptor() { return descriptor; }
 
     /**
      * Returns the name of the wrapper class.
      * For example, if the type is int, then the wrapper class is
      * <code>java.lang.Integer</code>.
      */
-    public String getWrapperName() {
-        return wrapperName;
-    }
+    public String getWrapperName() { return wrapperName; }
 
     /**
      * Returns the name of the method for retrieving the value
@@ -84,9 +78,7 @@ public final class CtPrimitiveType extends CtClass {
      * For example, if the type is int, then the method name is
      * <code>intValue</code>.
      */
-    public String getGetMethodName() {
-        return getMethodName;
-    }
+    public String getGetMethodName() { return getMethodName; }
 
     /**
      * Returns the descriptor of the method for retrieving the value
@@ -94,18 +86,14 @@ public final class CtPrimitiveType extends CtClass {
      * For example, if the type is int, then the method descriptor is
      * <code>()I</code>.
      */
-    public String getGetMethodDescriptor() {
-        return mDescriptor;
-    }
+    public String getGetMethodDescriptor() { return mDescriptor; }
 
     /**
      * Returns the opcode for returning a value of the type.
      * For example, if the type is int, then the returned opcode is
      * <code>javassit.bytecode.Opcode.IRETURN</code>.
      */
-    public int getReturnOp() {
-        return returnOp;
-    }
+    public int getReturnOp() { return returnOp; }
 
     /**
      * Returns the array-type code representing the type.
@@ -113,16 +101,12 @@ public final class CtPrimitiveType extends CtClass {
      * For example, if the type is int, then this method returns
      * <code>javassit.bytecode.Opcode.T_INT</code>.
      */
-    public int getArrayType() {
-        return arrayType;
-    }
+    public int getArrayType() { return arrayType; }
 
     /**
      * Returns the data size of the primitive type.
      * If the type is long or double, this method returns 2.
      * Otherwise, it returns 1.
      */
-    public int getDataSize() {
-        return dataSize;
-    }
+    public int getDataSize() { return dataSize; }
 }

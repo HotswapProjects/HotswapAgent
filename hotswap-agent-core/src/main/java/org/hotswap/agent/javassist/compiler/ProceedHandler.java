@@ -16,14 +16,15 @@
 
 package org.hotswap.agent.javassist.compiler;
 
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.compiler.ast.ASTList;
+
 /**
  * An interface to an object for implementing $proceed().
  *
- * @see JvstCodeGen#setProceedHandler(ProceedHandler, String)
- * @see JvstCodeGen#atMethodCall(Expr)
+ * @see javassist.compiler.JvstCodeGen#setProceedHandler(ProceedHandler, String)
  */
 public interface ProceedHandler {
-    void doit(JvstCodeGen gen, org.hotswap.agent.javassist.bytecode.Bytecode b, org.hotswap.agent.javassist.compiler.ast.ASTList args) throws CompileError;
-
-    void setReturnType(JvstTypeChecker c, org.hotswap.agent.javassist.compiler.ast.ASTList args) throws CompileError;
+    void doit(JvstCodeGen gen, Bytecode b, ASTList args) throws CompileError;
+    void setReturnType(JvstTypeChecker c, ASTList args) throws CompileError;
 }

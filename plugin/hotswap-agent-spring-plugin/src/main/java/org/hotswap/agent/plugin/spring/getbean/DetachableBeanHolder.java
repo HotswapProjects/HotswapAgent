@@ -73,7 +73,24 @@ public class DetachableBeanHolder {
 	public void detach() {
 		bean = null;
 	}
-	
+
+
+	/**
+	 * Sets current target bean.
+	 * @return current target bean.
+	 */
+	public void setTarget(Object bean) {
+		this.bean = bean;
+	}
+
+	/**
+	 * Returns current target bean.
+	 * @return current target bean.
+	 */
+	public Object getTarget() {
+		return bean;
+	}
+
 	/**
 	 * Returns an existing bean instance or retrieves and stores new bean from the Spring BeanFactory
 	 * 
@@ -88,7 +105,19 @@ public class DetachableBeanHolder {
 			for (Method factoryMethod : methods) {
 				if (ProxyReplacer.FACTORY_METHOD_NAME.equals(factoryMethod.getName())
 						&& Arrays.equals(factoryMethod.getParameterTypes(), paramClasses)) {
-					bean = factoryMethod.invoke(beanFactory, paramValues);
+
+					Object freshBean = factoryMethod.invoke(beanFactory, paramValues);
+
+					// Factory returns HA proxy, but current method is invoked from HA proxy!
+					// It migt be the same object (if factory returns same object - meaning
+					//   that although clearAllProxies() was called, this bean did not change)
+					// Unwrap the target bean, it is always available
+					// see org.hotswap.agent.plugin.spring.getbean.EnhancerProxyCreater.create()
+					if (freshBean instanceof SpringHotswapAgentProxy) {
+						freshBean = ((SpringHotswapAgentProxy) freshBean).$$ha$getTarget();
+					}
+
+					bean = freshBean;
 					beanCopy = bean;
 					LOGGER.info("Bean '{}' loaded", bean.getClass().getName());
 					break;

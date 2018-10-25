@@ -79,6 +79,7 @@ public class ReflectionCommand extends MergeableCommand {
      */
     public ReflectionCommand(Object target, String methodName, Object... params) {
         this.target = target;
+        this.className = target == null ? "NULL" : target.getClass().getName();
         this.methodName = methodName;
         this.params = Arrays.asList(params);
     }
@@ -176,7 +177,7 @@ public class ReflectionCommand extends MergeableCommand {
         Class[] paramTypes = new Class[params.size()];
         int i = 0;
         for (Object param : params) {
-            if (params == null)
+            if (param == null)
                 throw new IllegalArgumentException("Cannot execute for null parameter value");
             else {
                 paramTypes[i++] = param.getClass();
@@ -208,9 +209,9 @@ public class ReflectionCommand extends MergeableCommand {
     @Override
     public int hashCode() {
         int result = target != null ? target.hashCode() : 0;
-        result = 31 * result + className.hashCode();
-        result = 31 * result + methodName.hashCode();
-        result = 31 * result + params.hashCode();
+        result = 31 * result + (className != null ? className.hashCode() : 0);
+        result = 31 * result + (methodName != null ? methodName.hashCode() : 0);
+        result = 31 * result + (params != null ? params.hashCode() : 0);
         result = 31 * result + (plugin != null ? plugin.hashCode() : 0);
         result = 31 * result + (targetClassLoader != null ? targetClassLoader.hashCode() : 0);
         return result;

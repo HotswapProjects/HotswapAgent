@@ -17,14 +17,15 @@
 package org.hotswap.agent.javassist.tools.reflect;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.IllegalAccessException;
 
 /**
  * Thrown when method invocation using the reflection API has thrown
  * an exception.
  *
- * @see Metaobject#trapMethodcall(int, Object[])
- * @see ClassMetaobject#trapMethodcall(int, Object[])
- * @see ClassMetaobject#invoke(Object, int, Object[])
+ * @see javassist.tools.reflect.Metaobject#trapMethodcall(int, Object[])
+ * @see javassist.tools.reflect.ClassMetaobject#trapMethodcall(int, Object[])
+ * @see javassist.tools.reflect.ClassMetaobject#invoke(Object, int, Object[])
  */
 public class CannotInvokeException extends RuntimeException {
 
@@ -33,9 +34,7 @@ public class CannotInvokeException extends RuntimeException {
     /**
      * Returns the cause of this exception.  It may return null.
      */
-    public Throwable getReason() {
-        return err;
-    }
+    public Throwable getReason() { return err; }
 
     /**
      * Constructs a CannotInvokeException with an error message.

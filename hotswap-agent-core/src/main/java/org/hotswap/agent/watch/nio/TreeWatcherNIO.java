@@ -101,7 +101,7 @@ public class TreeWatcherNIO extends AbstractNIO2Watcher {
 	 */
 	protected void registerAll(Path watched, Path target) throws IOException {
 		if(watched == null){
-			watched = target.getParent();
+			watched = target;
 		}
 		LOGGER.info("Registering directory target {} via watched: {}", target, watched);
 		

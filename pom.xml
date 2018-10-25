@@ -3,9 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.hotswap.agent</groupId>
+    <groupId>org.hotswapagent</groupId>
     <artifactId>hotswap-agent-aggregator</artifactId>
-    <version>1.0-cg-1</version>
+    <version>1.3.0</version>
     <packaging>pom</packaging>
 
     <name>Hotswap Agent Aggregator</name>
@@ -25,18 +25,24 @@
         <module>plugin/hotswap-agent-zk-plugin</module>
         <module>plugin/hotswap-agent-logback-plugin</module>
         <module>plugin/hotswap-agent-log4j2-plugin</module>
-        <module>plugin/hotswap-agent-jsf-plugin</module>
+        <module>plugin/hotswap-agent-cdi-plugin</module>
+        <module>plugin/hotswap-agent-myfaces-plugin</module>
+        <module>plugin/hotswap-agent-mojarra-plugin</module>
+        <module>plugin/hotswap-agent-omnifaces-plugin</module>
         <module>plugin/hotswap-agent-seam-plugin</module>
         <module>plugin/hotswap-agent-el-resolver-plugin</module>
         <module>plugin/hotswap-agent-osgiequinox-plugin</module>
+        <module>plugin/hotswap-agent-owb-plugin</module>
         <module>plugin/hotswap-agent-proxy-plugin</module>
         <module>plugin/hotswap-agent-webobjects-plugin</module>
         <module>plugin/hotswap-agent-weld-plugin</module>
         <module>plugin/hotswap-agent-jbossmodules-plugin</module>
         <module>plugin/hotswap-agent-resteasy-registry-plugin</module>
         <module>plugin/hotswap-agent-deltaspike-plugin</module>
-        <module>plugin/hotswap-agent-javabeans-plugin</module>
         <module>plugin/hotswap-agent-wildfly-el-plugin</module>
+        <module>plugin/hotswap-agent-glassfish-plugin</module>
+        <module>plugin/hotswap-agent-vaadin-plugin</module>
+        <module>plugin/hotswap-agent-plugins</module>
         <module>hotswap-agent</module>
     </modules>
 

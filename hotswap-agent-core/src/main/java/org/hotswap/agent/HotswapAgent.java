@@ -134,5 +134,6 @@ public class HotswapAgent {
             + "org.hotswap.agent.plugin," //
             + "org.hotswap.agent.util," //
             + "org.hotswap.agent.watch," //
+            + "org.hotswap.agent.versions," //
             + "org.hotswap.agent.javassist";
 }

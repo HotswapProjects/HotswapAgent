@@ -16,10 +16,13 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
+import org.hotswap.agent.javassist.compiler.TokenId;
+import org.hotswap.agent.javassist.compiler.CompileError;
+
 /**
  * Variable declarator.
  */
-public class Declarator extends org.hotswap.agent.javassist.compiler.ast.ASTList implements org.hotswap.agent.javassist.compiler.TokenId {
+public class Declarator extends ASTList implements TokenId {
     protected int varType;
     protected int arrayDim;
     protected int localVar;
@@ -33,7 +36,7 @@ public class Declarator extends org.hotswap.agent.javassist.compiler.ast.ASTList
         qualifiedClass = null;
     }
 
-    public Declarator(org.hotswap.agent.javassist.compiler.ast.ASTList className, int dim) {
+    public Declarator(ASTList className, int dim) {
         super(null);
         varType = CLASS;
         arrayDim = dim;
@@ -65,59 +68,39 @@ public class Declarator extends org.hotswap.agent.javassist.compiler.ast.ASTList
     /* Returns CLASS, BOOLEAN, BYTE, CHAR, SHORT, INT, LONG, FLOAT,
      * or DOUBLE (or VOID)
      */
-    public int getType() {
-        return varType;
-    }
+    public int getType() { return varType; }
 
-    public int getArrayDim() {
-        return arrayDim;
-    }
+    public int getArrayDim() { return arrayDim; }
 
-    public void addArrayDim(int d) {
-        arrayDim += d;
-    }
+    public void addArrayDim(int d) { arrayDim += d; }
 
-    public String getClassName() {
-        return qualifiedClass;
-    }
+    public String getClassName() { return qualifiedClass; }
 
-    public void setClassName(String s) {
-        qualifiedClass = s;
-    }
+    public void setClassName(String s) { qualifiedClass = s; }
 
-    public Symbol getVariable() {
-        return (Symbol) getLeft();
-    }
+    public Symbol getVariable() { return (Symbol)getLeft(); }
 
-    public void setVariable(Symbol sym) {
-        setLeft(sym);
-    }
+    public void setVariable(Symbol sym) { setLeft(sym); }
 
     public ASTree getInitializer() {
-        org.hotswap.agent.javassist.compiler.ast.ASTList t = tail();
+        ASTList t = tail();
         if (t != null)
             return t.head();
         else
             return null;
     }
 
-    public void setLocalVar(int n) {
-        localVar = n;
-    }
+    public void setLocalVar(int n) { localVar = n; }
 
-    public int getLocalVar() {
-        return localVar;
-    }
+    public int getLocalVar() { return localVar; }
 
-    public String getTag() {
-        return "decl";
-    }
+    public String getTag() { return "decl"; }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void accept(Visitor v) throws CompileError {
         v.atDeclarator(this);
     }
 
-    public static String astToClassName(org.hotswap.agent.javassist.compiler.ast.ASTList name, char sep) {
+    public static String astToClassName(ASTList name, char sep) {
         if (name == null)
             return null;
 
@@ -126,14 +109,14 @@ public class Declarator extends org.hotswap.agent.javassist.compiler.ast.ASTList
         return sbuf.toString();
     }
 
-    private static void astToClassName(StringBuffer sbuf, org.hotswap.agent.javassist.compiler.ast.ASTList name,
+    private static void astToClassName(StringBuffer sbuf, ASTList name,
                                        char sep) {
-        for (; ; ) {
+        for (;;) {
             ASTree h = name.head();
             if (h instanceof Symbol)
-                sbuf.append(((Symbol) h).get());
-            else if (h instanceof org.hotswap.agent.javassist.compiler.ast.ASTList)
-                astToClassName(sbuf, (org.hotswap.agent.javassist.compiler.ast.ASTList) h, sep);
+                sbuf.append(((Symbol)h).get());
+            else if (h instanceof ASTList)
+                astToClassName(sbuf, (ASTList)h, sep);
 
             name = name.tail();
             if (name == null)

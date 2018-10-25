@@ -3,17 +3,24 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.hotswap.agent</groupId>
+        <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.0-cg-1</version>
+        <version>1.3.0-cg.1</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>hotswap-agent-tomcat-plugin</artifactId>
+    
+    <properties>
+        <tomcat.version>8.5.24</tomcat.version>
+        <!--<tomcat.artifact>catalina</tomcat.artifact> &lt;!&ndash; catalina if 6.x &ndash;&gt;-->
+        <!--tomcat-catalina if 7.x+ -->
+         <tomcat.artifact>tomcat-catalina</tomcat.artifact>
+    </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.hotswap.agent</groupId>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -21,10 +28,14 @@
         <!--Just to get Tomcat sources into IDE-->
         <dependency>
             <groupId>org.apache.tomcat</groupId>
-            <artifactId>catalina</artifactId>
-            <!--<version>7.0.47</version>-->
-            <!--<version>8.0.1</version>-->
-            <version>6.0.36</version> <!--(change artifcatId to catalina) -->
+            <artifactId>${tomcat.artifact}</artifactId>
+            <version>${tomcat.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jasper</artifactId>
+            <version>${tomcat.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -16,13 +16,15 @@
 
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
+import org.hotswap.agent.javassist.bytecode.StackMapTable;
+
 public interface TypeTag {
     String TOP_TYPE = "*top*";
-    org.hotswap.agent.javassist.bytecode.stackmap.TypeData TOP = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.BasicType(TOP_TYPE, org.hotswap.agent.javassist.bytecode.StackMapTable.TOP);
-    org.hotswap.agent.javassist.bytecode.stackmap.TypeData INTEGER = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.BasicType("int", org.hotswap.agent.javassist.bytecode.StackMapTable.INTEGER);
-    org.hotswap.agent.javassist.bytecode.stackmap.TypeData FLOAT = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.BasicType("float", org.hotswap.agent.javassist.bytecode.StackMapTable.FLOAT);
-    org.hotswap.agent.javassist.bytecode.stackmap.TypeData DOUBLE = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.BasicType("double", org.hotswap.agent.javassist.bytecode.StackMapTable.DOUBLE);
-    org.hotswap.agent.javassist.bytecode.stackmap.TypeData LONG = new org.hotswap.agent.javassist.bytecode.stackmap.TypeData.BasicType("long", org.hotswap.agent.javassist.bytecode.StackMapTable.LONG);
+    TypeData.BasicType TOP = new TypeData.BasicType(TOP_TYPE, StackMapTable.TOP, ' ');
+    TypeData.BasicType INTEGER = new TypeData.BasicType("int", StackMapTable.INTEGER, 'I');
+    TypeData.BasicType FLOAT = new TypeData.BasicType("float", StackMapTable.FLOAT, 'F');
+    TypeData.BasicType DOUBLE = new TypeData.BasicType("double", StackMapTable.DOUBLE, 'D');
+    TypeData.BasicType LONG = new TypeData.BasicType("long", StackMapTable.LONG, 'J');
 
     // and NULL, THIS, OBJECT, UNINIT
 }

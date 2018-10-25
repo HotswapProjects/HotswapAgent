@@ -17,8 +17,8 @@
 package org.hotswap.agent.javassist.bytecode;
 
 import java.io.DataInputStream;
-import java.io.IOException;
 import java.util.Map;
+import java.io.IOException;
 
 /**
  * <code>ConstantValue_attribute</code>.
@@ -29,23 +29,24 @@ public class ConstantAttribute extends AttributeInfo {
      */
     public static final String tag = "ConstantValue";
 
-    ConstantAttribute(org.hotswap.agent.javassist.bytecode.ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+    ConstantAttribute(ConstPool cp, int n, DataInputStream in)
+        throws IOException
+    {
         super(cp, n, in);
     }
 
     /**
      * Constructs a ConstantValue attribute.
      *
-     * @param cp    a constant pool table.
-     * @param index <code>constantvalue_index</code>
-     *              of <code>ConstantValue_attribute</code>.
+     * @param cp                a constant pool table.
+     * @param index             <code>constantvalue_index</code>
+     *                          of <code>ConstantValue_attribute</code>.
      */
-    public ConstantAttribute(org.hotswap.agent.javassist.bytecode.ConstPool cp, int index) {
+    public ConstantAttribute(ConstPool cp, int index) {
         super(cp, tag);
         byte[] bvalue = new byte[2];
-        bvalue[0] = (byte) (index >>> 8);
-        bvalue[1] = (byte) index;
+        bvalue[0] = (byte)(index >>> 8);
+        bvalue[1] = (byte)index;
         set(bvalue);
     }
 
@@ -60,13 +61,13 @@ public class ConstantAttribute extends AttributeInfo {
      * Makes a copy.  Class names are replaced according to the
      * given <code>Map</code> object.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames pairs of replaced and substituted
-     *                   class names.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        pairs of replaced and substituted
+     *                          class names.
      */
-    public AttributeInfo copy(org.hotswap.agent.javassist.bytecode.ConstPool newCp, Map classnames) {
+    public AttributeInfo copy(ConstPool newCp, Map classnames) {
         int index = getConstPool().copy(getConstantValue(), newCp,
-                classnames);
+                                        classnames);
         return new ConstantAttribute(newCp, index);
     }
 }

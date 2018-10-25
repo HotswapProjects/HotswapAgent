@@ -20,13 +20,13 @@ import java.util.ArrayList;
 
 /**
  * An iterator for editing a code attribute.
- * <p/>
+ *
  * <p>To directly read or edit a bytecode sequence, call {@link #byteAt(int)}, {@link #s16bitAt(int)},
  * {@link #writeByte(int, int)}, {@link #write16bit(int, int)}, and other methods.
  * For example, if <code>method</code> refers to a <code>CtMethod</code> object,
  * the following code substitutes the <code>NOP</code> instruction for the first
- * instruction of the method:
- * <p/>
+ * instruction of the method:  
+ *
  * <pre>
  * CodeAttribute ca = method.getMethodInfo().getCodeAttribute();
  * CodeIterator ci = ca.iterator();
@@ -69,11 +69,11 @@ public class CodeIterator implements Opcode {
 
     /**
      * Moves to the given index.
-     * <p/>
+     *
      * <p>The index of the next instruction is set to the given index.
      * The successive call to <code>next()</code>
      * returns the index that has been given to <code>move()</code>.
-     * <p/>
+     *
      * <p>Note that the index is into the byte array returned by
      * <code>get().getCode()</code>.
      *
@@ -105,9 +105,7 @@ public class CodeIterator implements Opcode {
      * @see #setMark(int)
      * @since 3.11
      */
-    public int getMark() {
-        return mark;
-    }
+    public int getMark() { return mark; }
 
     /**
      * Returns a Code attribute read with this iterator.
@@ -126,56 +124,59 @@ public class CodeIterator implements Opcode {
     /**
      * Returns the unsigned 8bit value at the given index.
      */
-    public int byteAt(int index) {
-        return bytecode[index] & 0xff;
-    }
+    public int byteAt(int index) { return bytecode[index] & 0xff; }
+
+    /**
+     * Returns the signed 8bit value at the given index.
+     */
+    public int signedByteAt(int index) { return bytecode[index]; }
 
     /**
      * Writes an 8bit value at the given index.
      */
     public void writeByte(int value, int index) {
-        bytecode[index] = (byte) value;
+        bytecode[index] = (byte)value;
     }
 
     /**
      * Returns the unsigned 16bit value at the given index.
      */
     public int u16bitAt(int index) {
-        return org.hotswap.agent.javassist.bytecode.ByteArray.readU16bit(bytecode, index);
+        return ByteArray.readU16bit(bytecode, index);
     }
 
     /**
      * Returns the signed 16bit value at the given index.
      */
     public int s16bitAt(int index) {
-        return org.hotswap.agent.javassist.bytecode.ByteArray.readS16bit(bytecode, index);
+        return ByteArray.readS16bit(bytecode, index);
     }
 
     /**
      * Writes a 16 bit integer at the index.
      */
     public void write16bit(int value, int index) {
-        org.hotswap.agent.javassist.bytecode.ByteArray.write16bit(value, bytecode, index);
+        ByteArray.write16bit(value, bytecode, index);
     }
 
     /**
      * Returns the signed 32bit value at the given index.
      */
     public int s32bitAt(int index) {
-        return org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(bytecode, index);
+        return ByteArray.read32bit(bytecode, index);
     }
 
     /**
      * Writes a 32bit integer at the index.
      */
     public void write32bit(int value, int index) {
-        org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(value, bytecode, index);
+        ByteArray.write32bit(value, bytecode, index);
     }
 
     /**
      * Writes a byte array at the index.
      *
-     * @param code may be a zero-length array.
+     * @param code	may be a zero-length array.
      */
     public void write(byte[] code, int index) {
         int len = code.length;
@@ -186,21 +187,19 @@ public class CodeIterator implements Opcode {
     /**
      * Returns true if there is more instructions.
      */
-    public boolean hasNext() {
-        return currentPos < endPos;
-    }
+    public boolean hasNext() { return currentPos < endPos; }
 
     /**
      * Returns the index of the next instruction
      * (not the operand following the current opcode).
-     * <p/>
+     *
      * <p>Note that the index is into the byte array returned by
      * <code>get().getCode()</code>.
      *
      * @see CodeAttribute#getCode()
      * @see CodeIterator#byteAt(int)
      */
-    public int next() throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int next() throws BadBytecode {
         int pos = currentPos;
         currentPos = nextOpcode(bytecode, pos);
         return pos;
@@ -209,7 +208,7 @@ public class CodeIterator implements Opcode {
     /**
      * Obtains the value that the next call
      * to <code>next()</code> will return.
-     * <p/>
+     *
      * <p>This method is side-effects free.
      * Successive calls to <code>lookAhead()</code> return the
      * same value until <code>next()</code> is called.
@@ -221,72 +220,72 @@ public class CodeIterator implements Opcode {
     /**
      * Moves to the instruction for
      * either <code>super()</code> or <code>this()</code>.
-     * <p/>
+     *
      * <p>This method skips all the instructions for computing arguments
      * to <code>super()</code> or <code>this()</code>, which should be
      * placed at the beginning of a constructor body.
-     * <p/>
+     *
      * <p>This method returns the index of INVOKESPECIAL instruction
      * executing <code>super()</code> or <code>this()</code>.
      * A successive call to <code>next()</code> returns the
      * index of the next instruction following that INVOKESPECIAL.
-     * <p/>
+     *
      * <p>This method works only for a constructor.
      *
-     * @return the index of the INVOKESPECIAL instruction, or -1
-     * if a constructor invocation is not found.
+     * @return  the index of the INVOKESPECIAL instruction, or -1
+     *          if a constructor invocation is not found.
      */
-    public int skipConstructor() throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int skipConstructor() throws BadBytecode {
         return skipSuperConstructor0(-1);
     }
 
     /**
      * Moves to the instruction for <code>super()</code>.
-     * <p/>
+     *
      * <p>This method skips all the instructions for computing arguments to
      * <code>super()</code>, which should be
      * placed at the beginning of a constructor body.
-     * <p/>
+     *
      * <p>This method returns the index of INVOKESPECIAL instruction
      * executing <code>super()</code>.
      * A successive call to <code>next()</code> returns the
      * index of the next instruction following that INVOKESPECIAL.
-     * <p/>
+     *
      * <p>This method works only for a constructor.
      *
-     * @return the index of the INVOKESPECIAL instruction, or -1
-     * if a super constructor invocation is not found
-     * but <code>this()</code> is found.
+     * @return  the index of the INVOKESPECIAL instruction, or -1
+     *          if a super constructor invocation is not found
+     *          but <code>this()</code> is found.
      */
-    public int skipSuperConstructor() throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int skipSuperConstructor() throws BadBytecode {
         return skipSuperConstructor0(0);
     }
 
     /**
      * Moves to the instruction for <code>this()</code>.
-     * <p/>
+     *
      * <p>This method skips all the instructions for computing arguments to
      * <code>this()</code>, which should be
      * placed at the beginning of a constructor body.
-     * <p/>
+     *
      * <p>This method returns the index of INVOKESPECIAL instruction
      * executing <code>this()</code>.
      * A successive call to <code>next()</code> returns the
      * index of the next instruction following that INVOKESPECIAL.
-     * <p/>
+     *
      * <p>This method works only for a constructor.
      *
-     * @return the index of the INVOKESPECIAL instruction, or -1
-     * if a explicit constructor invocation is not found
-     * but <code>super()</code> is found.
+     * @return  the index of the INVOKESPECIAL instruction, or -1
+     *          if a explicit constructor invocation is not found
+     *          but <code>super()</code> is found.
      */
-    public int skipThisConstructor() throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int skipThisConstructor() throws BadBytecode {
         return skipSuperConstructor0(1);
     }
 
     /* skipSuper        1: this(), 0: super(), -1: both.
      */
-    private int skipSuperConstructor0(int skipThis) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    private int skipSuperConstructor0(int skipThis) throws BadBytecode {
         begin();
         ConstPool cp = codeAttr.getConstPool();
         String thisClassName = codeAttr.getDeclaringClass();
@@ -297,8 +296,8 @@ public class CodeIterator implements Opcode {
             if (c == NEW)
                 ++nested;
             else if (c == INVOKESPECIAL) {
-                int mref = org.hotswap.agent.javassist.bytecode.ByteArray.readU16bit(bytecode, index + 1);
-                if (cp.getMethodrefName(mref).equals(org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit))
+                int mref = ByteArray.readU16bit(bytecode, index + 1);
+                if (cp.getMethodrefName(mref).equals(MethodInfo.nameInit))
                     if (--nested < 0) {
                         if (skipThis < 0)
                             return index;
@@ -322,20 +321,21 @@ public class CodeIterator implements Opcode {
      * <code>next()</code> (not before the instruction returned
      * by the last call to <code>next()</code>).
      * Branch offsets and the exception table are also updated.
-     * <p/>
+     *
      * <p>If the next instruction is at the beginning of a block statement,
      * then the bytecode is inserted within that block.
-     * <p/>
+     *
      * <p>An extra gap may be inserted at the end of the inserted
      * bytecode sequence for adjusting alignment if the code attribute
      * includes <code>LOOKUPSWITCH</code> or <code>TABLESWITCH</code>.
      *
-     * @param code inserted bytecode sequence.
-     * @return the index indicating the first byte of the
-     * inserted byte sequence.
+     * @param code      inserted bytecode sequence.
+     * @return          the index indicating the first byte of the
+     *                  inserted byte sequence.
      */
     public int insert(byte[] code)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         return insert0(currentPos, code, false);
     }
 
@@ -343,24 +343,24 @@ public class CodeIterator implements Opcode {
      * Inserts the given bytecode sequence
      * before the instruction at the given index <code>pos</code>.
      * Branch offsets and the exception table are also updated.
-     * <p/>
+     *
      * <p>If the instruction at the given index is at the beginning
      * of a block statement,
      * then the bytecode is inserted within that block.
-     * <p/>
+     *
      * <p>An extra gap may be inserted at the end of the inserted
      * bytecode sequence for adjusting alignment if the code attribute
      * includes <code>LOOKUPSWITCH</code> or <code>TABLESWITCH</code>.
-     * <p/>
+     *
      * <p>The index at which the byte sequence is actually inserted
      * might be different from pos since some other bytes might be
      * inserted at other positions (e.g. to change <code>GOTO</code>
      * to <code>GOTO_W</code>).
      *
-     * @param pos  the index at which a byte sequence is inserted.
-     * @param code inserted bytecode sequence.
+     * @param pos       the index at which a byte sequence is inserted.
+     * @param code      inserted bytecode sequence.
      */
-    public void insert(int pos, byte[] code) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public void insert(int pos, byte[] code) throws BadBytecode {
         insert0(pos, code, false);
     }
 
@@ -368,23 +368,23 @@ public class CodeIterator implements Opcode {
      * Inserts the given bytecode sequence
      * before the instruction at the given index <code>pos</code>.
      * Branch offsets and the exception table are also updated.
-     * <p/>
+     *
      * <p>If the instruction at the given index is at the beginning
      * of a block statement,
      * then the bytecode is inserted within that block.
-     * <p/>
+     *
      * <p>An extra gap may be inserted at the end of the inserted
      * bytecode sequence for adjusting alignment if the code attribute
      * includes <code>LOOKUPSWITCH</code> or <code>TABLESWITCH</code>.
      *
-     * @param pos  the index at which a byte sequence is inserted.
-     * @param code inserted bytecode sequence.
-     * @return the index indicating the first byte of the
-     * inserted byte sequence, which might be
-     * different from pos.
+     * @param pos       the index at which a byte sequence is inserted.
+     * @param code      inserted bytecode sequence.
+     * @return          the index indicating the first byte of the
+     *                  inserted byte sequence, which might be
+     *                  different from pos.
      * @since 3.11
      */
-    public int insertAt(int pos, byte[] code) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int insertAt(int pos, byte[] code) throws BadBytecode {
         return insert0(pos, code, false);
     }
 
@@ -394,20 +394,21 @@ public class CodeIterator implements Opcode {
      * <code>next()</code> (not before the instruction returned
      * by tha last call to <code>next()</code>).
      * Branch offsets and the exception table are also updated.
-     * <p/>
+     *
      * <p>If the next instruction is at the beginning of a block statement,
      * then the bytecode is excluded from that block.
-     * <p/>
+     *
      * <p>An extra gap may be inserted at the end of the inserted
      * bytecode sequence for adjusting alignment if the code attribute
      * includes <code>LOOKUPSWITCH</code> or <code>TABLESWITCH</code>.
      *
-     * @param code inserted bytecode sequence.
-     * @return the index indicating the first byte of the
-     * inserted byte sequence.
+     * @param code      inserted bytecode sequence.
+     * @return          the index indicating the first byte of the
+     *                  inserted byte sequence.
      */
     public int insertEx(byte[] code)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         return insert0(currentPos, code, true);
     }
 
@@ -415,24 +416,24 @@ public class CodeIterator implements Opcode {
      * Inserts the given bytecode sequence exclusively
      * before the instruction at the given index <code>pos</code>.
      * Branch offsets and the exception table are also updated.
-     * <p/>
+     *
      * <p>If the instruction at the given index is at the beginning
      * of a block statement,
      * then the bytecode is excluded from that block.
-     * <p/>
+     *
      * <p>An extra gap may be inserted at the end of the inserted
      * bytecode sequence for adjusting alignment if the code attribute
      * includes <code>LOOKUPSWITCH</code> or <code>TABLESWITCH</code>.
-     * <p/>
+     *
      * <p>The index at which the byte sequence is actually inserted
      * might be different from pos since some other bytes might be
      * inserted at other positions (e.g. to change <code>GOTO</code>
-     * to <code>GOTO_W</code>).
+     * to <code>GOTO_W</code>). 
      *
-     * @param pos  the index at which a byte sequence is inserted.
-     * @param code inserted bytecode sequence.
+     * @param pos       the index at which a byte sequence is inserted.
+     * @param code      inserted bytecode sequence.
      */
-    public void insertEx(int pos, byte[] code) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public void insertEx(int pos, byte[] code) throws BadBytecode {
         insert0(pos, code, true);
     }
 
@@ -440,32 +441,33 @@ public class CodeIterator implements Opcode {
      * Inserts the given bytecode sequence exclusively
      * before the instruction at the given index <code>pos</code>.
      * Branch offsets and the exception table are also updated.
-     * <p/>
+     *
      * <p>If the instruction at the given index is at the beginning
      * of a block statement,
      * then the bytecode is excluded from that block.
-     * <p/>
+     *
      * <p>An extra gap may be inserted at the end of the inserted
      * bytecode sequence for adjusting alignment if the code attribute
      * includes <code>LOOKUPSWITCH</code> or <code>TABLESWITCH</code>.
      *
-     * @param pos  the index at which a byte sequence is inserted.
-     * @param code inserted bytecode sequence.
-     * @return the index indicating the first byte of the
-     * inserted byte sequence, which might be
-     * different from pos.
+     * @param pos       the index at which a byte sequence is inserted.
+     * @param code      inserted bytecode sequence.
+     * @return          the index indicating the first byte of the
+     *                  inserted byte sequence, which might be
+     *                  different from pos.
      * @since 3.11
      */
-    public int insertExAt(int pos, byte[] code) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int insertExAt(int pos, byte[] code) throws BadBytecode {
         return insert0(pos, code, true);
     }
 
     /**
-     * @return the index indicating the first byte of the
-     * inserted byte sequence.
+     * @return          the index indicating the first byte of the
+     *                  inserted byte sequence.
      */
     private int insert0(int pos, byte[] code, boolean exclusive)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         int len = code.length;
         if (len <= 0)
             return pos;
@@ -488,14 +490,14 @@ public class CodeIterator implements Opcode {
      * Branch offsets and the exception table are also updated.
      * The inserted gap is filled with NOP.  The gap length may be
      * extended to a multiple of 4.
-     * <p/>
+     *
      * <p>If the next instruction is at the beginning of a block statement,
      * then the gap is inserted within that block.
      *
-     * @param length gap length
-     * @return the index indicating the first byte of the inserted gap.
+     * @param length            gap length
+     * @return  the index indicating the first byte of the inserted gap.
      */
-    public int insertGap(int length) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int insertGap(int length) throws BadBytecode {
         return insertGapAt(currentPos, length, false).position;
     }
 
@@ -505,17 +507,17 @@ public class CodeIterator implements Opcode {
      * Branch offsets and the exception table are also updated.
      * The inserted gap is filled with NOP.  The gap length may be
      * extended to a multiple of 4.
-     * <p/>
+     *
      * <p>If the instruction at the given index is at the beginning
      * of a block statement,
      * then the gap is inserted within that block.
      *
-     * @param pos    the index at which a gap is inserted.
-     * @param length gap length.
+     * @param pos               the index at which a gap is inserted.
+     * @param length            gap length.
      * @return the length of the inserted gap.
-     * It might be bigger than <code>length</code>.
+     *          It might be bigger than <code>length</code>.
      */
-    public int insertGap(int pos, int length) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int insertGap(int pos, int length) throws BadBytecode {
         return insertGapAt(pos, length, false).length;
     }
 
@@ -527,14 +529,14 @@ public class CodeIterator implements Opcode {
      * Branch offsets and the exception table are also updated.
      * The inserted gap is filled with NOP.  The gap length may be
      * extended to a multiple of 4.
-     * <p/>
+     *
      * <p>If the next instruction is at the beginning of a block statement,
      * then the gap is excluded from that block.
      *
-     * @param length gap length
-     * @return the index indicating the first byte of the inserted gap.
+     * @param length            gap length
+     * @return  the index indicating the first byte of the inserted gap.
      */
-    public int insertExGap(int length) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int insertExGap(int length) throws BadBytecode {
         return insertGapAt(currentPos, length, true).position;
     }
 
@@ -544,17 +546,17 @@ public class CodeIterator implements Opcode {
      * Branch offsets and the exception table are also updated.
      * The inserted gap is filled with NOP.  The gap length may be
      * extended to a multiple of 4.
-     * <p/>
+     *
      * <p>If the instruction at the given index is at the beginning
      * of a block statement,
      * then the gap is excluded from that block.
      *
-     * @param pos    the index at which a gap is inserted.
-     * @param length gap length.
+     * @param pos               the index at which a gap is inserted.
+     * @param length            gap length.
      * @return the length of the inserted gap.
-     * It might be bigger than <code>length</code>.
+     *          It might be bigger than <code>length</code>.
      */
-    public int insertExGap(int pos, int length) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int insertExGap(int pos, int length) throws BadBytecode {
         return insertGapAt(pos, length, true).length;
     }
 
@@ -581,18 +583,18 @@ public class CodeIterator implements Opcode {
      * Branch offsets and the exception table in the method body
      * are also updated.  The inserted gap is filled with NOP.
      * The gap length may be extended to a multiple of 4.
-     * <p/>
+     *
      * <p>Suppose that the instruction at the given index is at the
      * beginning of a block statement.  If the gap is inclusive,
      * then it is included within that block.  If the gap is exclusive,
      * then it is excluded from that block.
-     * <p/>
+     *
      * <p>The index at which the gap is actually inserted
      * might be different from pos since some other bytes might be
      * inserted at other positions (e.g. to change <code>GOTO</code>
      * to <code>GOTO_W</code>).  The index is available from the <code>Gap</code>
      * object returned by this method.
-     * <p/>
+     *
      * <p>Suppose that the gap is inserted at the position of
      * the next instruction that would be returned by
      * <code>next()</code> (not the last instruction returned
@@ -601,14 +603,15 @@ public class CodeIterator implements Opcode {
      * inserted is still the same instruction.  It is not <code>NOP</code>
      * at the first byte of the inserted gap.
      *
-     * @param pos       the index at which a gap is inserted.
-     * @param length    gap length.
-     * @param exclusive true if exclusive, otherwise false.
+     * @param pos               the index at which a gap is inserted.
+     * @param length            gap length.
+     * @param exclusive         true if exclusive, otherwise false.
      * @return the position and the length of the inserted gap.
      * @since 3.11
      */
     public Gap insertGapAt(int pos, int length, boolean exclusive)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         /**
          * cursorPos indicates the next bytecode whichever exclusive is
          * true or false.
@@ -625,13 +628,14 @@ public class CodeIterator implements Opcode {
         if (bytecode.length + length > Short.MAX_VALUE) {
             // currentPos might change after calling insertGapCore0w().
             c = insertGapCore0w(bytecode, pos, length, exclusive,
-                    get().getExceptionTable(), codeAttr, gap);
+                                get().getExceptionTable(), codeAttr, gap);
             pos = gap.position;
             length2 = length; // == gap.length
-        } else {
+        }
+        else {
             int cur = currentPos;
             c = insertGapCore0(bytecode, pos, length, exclusive,
-                    get().getExceptionTable(), codeAttr);
+                                      get().getExceptionTable(), codeAttr);
             // insertGapCore0() never changes pos.
             length2 = c.length - bytecode.length;
             gap.position = pos;
@@ -654,8 +658,8 @@ public class CodeIterator implements Opcode {
      * Is called when a gap is inserted.  The default implementation is empty.
      * A subclass can override this method so that cursors will be updated.
      *
-     * @param pos    the position where a gap is inserted.
-     * @param length the length of the gap.
+     * @param pos           the position where a gap is inserted.
+     * @param length        the length of the gap.
      */
     protected void updateCursors(int pos, int length) {
         // empty
@@ -666,8 +670,8 @@ public class CodeIterator implements Opcode {
      * at the beginning of the exception table in the code attribute
      * edited by this object.
      *
-     * @param offset the value added to the code positions included
-     *               in the entries.
+     * @param offset    the value added to the code positions included
+     *                          in the entries.
      */
     public void insert(ExceptionTable et, int offset) {
         codeAttr.getExceptionTable().add(0, et, offset);
@@ -676,8 +680,8 @@ public class CodeIterator implements Opcode {
     /**
      * Appends the given bytecode sequence at the end.
      *
-     * @param code the bytecode appended.
-     * @return the position of the first byte of the appended bytecode.
+     * @param code      the bytecode appended.
+     * @return  the position of the first byte of the appended bytecode.
      */
     public int append(byte[] code) {
         int size = getCodeLength();
@@ -696,7 +700,7 @@ public class CodeIterator implements Opcode {
     /**
      * Appends a gap at the end of the bytecode sequence.
      *
-     * @param gapLength gap length
+     * @param gapLength            gap length
      */
     public void appendGap(int gapLength) {
         byte[] code = bytecode;
@@ -720,8 +724,8 @@ public class CodeIterator implements Opcode {
      * at the end of the exception table in the code attribute
      * edited by this object.
      *
-     * @param offset the value added to the code positions included
-     *               in the entries.
+     * @param offset    the value added to the code positions included
+     *                          in the entries.
      */
     public void append(ExceptionTable et, int offset) {
         ExceptionTable table = codeAttr.getExceptionTable();
@@ -731,17 +735,17 @@ public class CodeIterator implements Opcode {
     /* opcodeLegth is used for implementing nextOpcode().
      */
     private static final int opcodeLength[] = {
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 2, 3,
-            3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3,
-            3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3,
-            3, 3, 3, 3, 3, 5, 5, 3, 2, 3, 1, 1, 3, 3, 1, 1, 0, 4, 3, 3,
-            5, 5
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 2, 3,
+        3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3,
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3,
+        3, 3, 3, 3, 3, 5, 5, 3, 2, 3, 1, 1, 3, 3, 1, 1, 0, 4, 3, 3,
+        5, 5
     };
     // 0 .. LOOKUPSWITCH, TABLESWITCH, WIDE
 
@@ -749,12 +753,14 @@ public class CodeIterator implements Opcode {
      * Calculates the index of the next opcode.
      */
     static int nextOpcode(byte[] code, int index)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         int opcode;
         try {
             opcode = code[index] & 0xff;
-        } catch (IndexOutOfBoundsException e) {
-            throw new org.hotswap.agent.javassist.bytecode.BadBytecode("invalid opcode address");
+        }
+        catch (IndexOutOfBoundsException e) {
+            throw new BadBytecode("invalid opcode address");
         }
 
         try {
@@ -762,63 +768,67 @@ public class CodeIterator implements Opcode {
             if (len > 0)
                 return index + len;
             else if (opcode == WIDE)
-                if (code[index + 1] == (byte) IINC)      // WIDE IINC
+                if (code[index + 1] == (byte)IINC)      // WIDE IINC
                     return index + 6;
                 else
                     return index + 4;           // WIDE ...
             else {
                 int index2 = (index & ~3) + 8;
                 if (opcode == LOOKUPSWITCH) {
-                    int npairs = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, index2);
+                    int npairs = ByteArray.read32bit(code, index2);
                     return index2 + npairs * 8 + 4;
-                } else if (opcode == TABLESWITCH) {
-                    int low = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, index2);
-                    int high = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, index2 + 4);
+                }
+                else if (opcode == TABLESWITCH) {
+                    int low = ByteArray.read32bit(code, index2);
+                    int high = ByteArray.read32bit(code, index2 + 4);
                     return index2 + (high - low + 1) * 4 + 8;
                 }
                 // else
                 //     throw new BadBytecode(opcode);
             }
-        } catch (IndexOutOfBoundsException e) {
+        }
+        catch (IndexOutOfBoundsException e) {
         }
 
         // opcode is UNUSED or an IndexOutOfBoundsException was thrown.
-        throw new org.hotswap.agent.javassist.bytecode.BadBytecode(opcode);
+        throw new BadBytecode(opcode);
     }
 
     // methods for implementing insertGap().
 
-    static class AlignmentException extends Exception {
-    }
+    static class AlignmentException extends Exception {}
 
     /**
      * insertGapCore0() inserts a gap (some NOPs).
      * It cannot handle a long code sequence more than 32K.  All branch offsets must be
-     * signed 16bits.
-     * <p/>
+     * signed 16bits. 
+     *
      * If "where" is the beginning of a block statement and exclusive is false,
      * then the inserted gap is also included in the block statement.
      * "where" must indicate the first byte of an opcode.
      * The inserted gap is filled with NOP.  gapLength may be extended to
      * a multiple of 4.
-     * <p/>
+     *
      * This method was also called from CodeAttribute.LdcEntry.doit().
      *
-     * @param where It must indicate the first byte of an opcode.
+     * @param where       It must indicate the first byte of an opcode.
      */
     static byte[] insertGapCore0(byte[] code, int where, int gapLength,
                                  boolean exclusive, ExceptionTable etable, CodeAttribute ca)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         if (gapLength <= 0)
             return code;
 
         try {
             return insertGapCore1(code, where, gapLength, exclusive, etable, ca);
-        } catch (AlignmentException e) {
+        }
+        catch (AlignmentException e) {
             try {
                 return insertGapCore1(code, where, (gapLength + 3) & ~3,
-                        exclusive, etable, ca);
-            } catch (AlignmentException e2) {
+                                  exclusive, etable, ca);
+            }
+            catch (AlignmentException e2) {
                 throw new RuntimeException("fatal error?");
             }
         }
@@ -827,32 +837,33 @@ public class CodeIterator implements Opcode {
     private static byte[] insertGapCore1(byte[] code, int where, int gapLength,
                                          boolean exclusive, ExceptionTable etable,
                                          CodeAttribute ca)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode, AlignmentException {
+        throws BadBytecode, AlignmentException
+    {
         int codeLength = code.length;
         byte[] newcode = new byte[codeLength + gapLength];
         insertGap2(code, where, gapLength, codeLength, newcode, exclusive);
         etable.shiftPc(where, gapLength, exclusive);
-        org.hotswap.agent.javassist.bytecode.LineNumberAttribute na
-                = (org.hotswap.agent.javassist.bytecode.LineNumberAttribute) ca.getAttribute(org.hotswap.agent.javassist.bytecode.LineNumberAttribute.tag);
+        LineNumberAttribute na
+            = (LineNumberAttribute)ca.getAttribute(LineNumberAttribute.tag);
         if (na != null)
             na.shiftPc(where, gapLength, exclusive);
 
-        org.hotswap.agent.javassist.bytecode.LocalVariableAttribute va = (org.hotswap.agent.javassist.bytecode.LocalVariableAttribute) ca.getAttribute(
-                org.hotswap.agent.javassist.bytecode.LocalVariableAttribute.tag);
+        LocalVariableAttribute va = (LocalVariableAttribute)ca.getAttribute(
+                                                LocalVariableAttribute.tag);
         if (va != null)
             va.shiftPc(where, gapLength, exclusive);
 
-        org.hotswap.agent.javassist.bytecode.LocalVariableAttribute vta
-                = (org.hotswap.agent.javassist.bytecode.LocalVariableAttribute) ca.getAttribute(
-                org.hotswap.agent.javassist.bytecode.LocalVariableAttribute.typeTag);
+        LocalVariableAttribute vta
+            = (LocalVariableAttribute)ca.getAttribute(
+                                              LocalVariableAttribute.typeTag);
         if (vta != null)
             vta.shiftPc(where, gapLength, exclusive);
 
-        org.hotswap.agent.javassist.bytecode.StackMapTable smt = (org.hotswap.agent.javassist.bytecode.StackMapTable) ca.getAttribute(org.hotswap.agent.javassist.bytecode.StackMapTable.tag);
+        StackMapTable smt = (StackMapTable)ca.getAttribute(StackMapTable.tag);
         if (smt != null)
             smt.shiftPc(where, gapLength, exclusive);
 
-        org.hotswap.agent.javassist.bytecode.StackMap sm = (org.hotswap.agent.javassist.bytecode.StackMap) ca.getAttribute(org.hotswap.agent.javassist.bytecode.StackMap.tag);
+        StackMap sm = (StackMap)ca.getAttribute(StackMap.tag);
         if (sm != null)
             sm.shiftPc(where, gapLength, exclusive);
 
@@ -860,8 +871,9 @@ public class CodeIterator implements Opcode {
     }
 
     private static void insertGap2(byte[] code, int where, int gapLength,
-                                   int endPos, byte[] newcode, boolean exclusive)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode, AlignmentException {
+                        int endPos, byte[] newcode, boolean exclusive)
+        throws BadBytecode, AlignmentException
+    {
         int nextPos;
         int i = 0;
         int j = 0;
@@ -876,21 +888,23 @@ public class CodeIterator implements Opcode {
             int inst = code[i] & 0xff;
             // if<cond>, if_icmp<cond>, if_acmp<cond>, goto, jsr
             if ((153 <= inst && inst <= 168)
-                    || inst == IFNULL || inst == IFNONNULL) {
+                || inst == IFNULL || inst == IFNONNULL) {
                 /* 2bytes *signed* offset */
                 int offset = (code[i + 1] << 8) | (code[i + 2] & 0xff);
                 offset = newOffset(i, offset, where, gapLength, exclusive);
                 newcode[j] = code[i];
-                org.hotswap.agent.javassist.bytecode.ByteArray.write16bit(offset, newcode, j + 1);
+                ByteArray.write16bit(offset, newcode, j + 1);
                 j += 3;
-            } else if (inst == GOTO_W || inst == JSR_W) {
+            }
+            else if (inst == GOTO_W || inst == JSR_W) {
                 /* 4bytes offset */
-                int offset = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i + 1);
+                int offset = ByteArray.read32bit(code, i + 1);
                 offset = newOffset(i, offset, where, gapLength, exclusive);
                 newcode[j++] = code[i];
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offset, newcode, j);
+                ByteArray.write32bit(offset, newcode, j);
                 j += 4;
-            } else if (inst == TABLESWITCH) {
+            }
+            else if (inst == TABLESWITCH) {
                 if (i != j && (gapLength & 3) != 0)
                     throw new AlignmentException();
 
@@ -903,24 +917,25 @@ public class CodeIterator implements Opcode {
                 // see JIRA JASSIST-74.
                 j = copyGapBytes(newcode, j, code, i, i2);
 
-                int defaultbyte = newOffset(i, org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2),
-                        where, gapLength, exclusive);
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(defaultbyte, newcode, j);
-                int lowbyte = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2 + 4);
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(lowbyte, newcode, j + 4);
-                int highbyte = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2 + 8);
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(highbyte, newcode, j + 8);
+                int defaultbyte = newOffset(i, ByteArray.read32bit(code, i2),
+                                            where, gapLength, exclusive);
+                ByteArray.write32bit(defaultbyte, newcode, j);
+                int lowbyte = ByteArray.read32bit(code, i2 + 4);
+                ByteArray.write32bit(lowbyte, newcode, j + 4);
+                int highbyte = ByteArray.read32bit(code, i2 + 8);
+                ByteArray.write32bit(highbyte, newcode, j + 8);
                 j += 12;
                 int i0 = i2 + 12;
                 i2 = i0 + (highbyte - lowbyte + 1) * 4;
                 while (i0 < i2) {
-                    int offset = newOffset(i, org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i0),
-                            where, gapLength, exclusive);
-                    org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offset, newcode, j);
+                    int offset = newOffset(i, ByteArray.read32bit(code, i0),
+                                           where, gapLength, exclusive);
+                    ByteArray.write32bit(offset, newcode, j);
                     j += 4;
                     i0 += 4;
                 }
-            } else if (inst == LOOKUPSWITCH) {
+            }
+            else if (inst == LOOKUPSWITCH) {
                 if (i != j && (gapLength & 3) != 0)
                     throw new AlignmentException();
 
@@ -934,41 +949,42 @@ public class CodeIterator implements Opcode {
                 // see JIRA JASSIST-74.
                 j = copyGapBytes(newcode, j, code, i, i2);
 
-                int defaultbyte = newOffset(i, org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2),
-                        where, gapLength, exclusive);
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(defaultbyte, newcode, j);
-                int npairs = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2 + 4);
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(npairs, newcode, j + 4);
+                int defaultbyte = newOffset(i, ByteArray.read32bit(code, i2),
+                                            where, gapLength, exclusive);
+                ByteArray.write32bit(defaultbyte, newcode, j);
+                int npairs = ByteArray.read32bit(code, i2 + 4);
+                ByteArray.write32bit(npairs, newcode, j + 4);
                 j += 8;
                 int i0 = i2 + 8;
                 i2 = i0 + npairs * 8;
                 while (i0 < i2) {
-                    org.hotswap.agent.javassist.bytecode.ByteArray.copy32bit(code, i0, newcode, j);
+                    ByteArray.copy32bit(code, i0, newcode, j);
                     int offset = newOffset(i,
-                            org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i0 + 4),
-                            where, gapLength, exclusive);
-                    org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offset, newcode, j + 4);
+                                        ByteArray.read32bit(code, i0 + 4),
+                                        where, gapLength, exclusive);
+                    ByteArray.write32bit(offset, newcode, j + 4);
                     j += 8;
                     i0 += 8;
                 }
-            } else
+            }
+            else
                 while (i < nextPos)
                     newcode[j++] = code[i++];
-        }
+            }
     }
 
 
     private static int copyGapBytes(byte[] newcode, int j, byte[] code, int i, int iEnd) {
         switch (iEnd - i) {
-            case 4:
-                newcode[j++] = code[i++];
-            case 3:
-                newcode[j++] = code[i++];
-            case 2:
-                newcode[j++] = code[i++];
-            case 1:
-                newcode[j++] = code[i++];
-            default:
+        case 4:
+            newcode[j++] = code[i++];
+        case 3:
+            newcode[j++] = code[i++];
+        case 2:
+            newcode[j++] = code[i++];
+        case 1:
+            newcode[j++] = code[i++];
+        default:
         }
 
         return j;
@@ -980,13 +996,16 @@ public class CodeIterator implements Opcode {
         if (i < where) {
             if (where < target || (exclusive && where == target))
                 offset += gapLength;
-        } else if (i == where) {
+        }
+        else if (i == where) {
             // This code is different from the code in Branch#shiftOffset().
             // see JASSIST-124.
             if (target < where)
                 offset -= gapLength;
-        } else if (target < where || (!exclusive && where == target))
-            offset -= gapLength;
+        }
+        else
+            if (target < where || (!exclusive && where == target))
+                offset -= gapLength;
 
         return offset;
     }
@@ -995,24 +1014,24 @@ public class CodeIterator implements Opcode {
         int cursor;
         int mark0, mark;
         ExceptionTable etable;
-        org.hotswap.agent.javassist.bytecode.LineNumberAttribute line;
-        org.hotswap.agent.javassist.bytecode.LocalVariableAttribute vars, types;
-        org.hotswap.agent.javassist.bytecode.StackMapTable stack;
-        org.hotswap.agent.javassist.bytecode.StackMap stack2;
+        LineNumberAttribute line;
+        LocalVariableAttribute vars, types;
+        StackMapTable stack;
+        StackMap stack2;
 
         Pointers(int cur, int m, int m0, ExceptionTable et, CodeAttribute ca) {
             cursor = cur;
             mark = m;
             mark0 = m0;
             etable = et;    // non null
-            line = (org.hotswap.agent.javassist.bytecode.LineNumberAttribute) ca.getAttribute(org.hotswap.agent.javassist.bytecode.LineNumberAttribute.tag);
-            vars = (org.hotswap.agent.javassist.bytecode.LocalVariableAttribute) ca.getAttribute(org.hotswap.agent.javassist.bytecode.LocalVariableAttribute.tag);
-            types = (org.hotswap.agent.javassist.bytecode.LocalVariableAttribute) ca.getAttribute(org.hotswap.agent.javassist.bytecode.LocalVariableAttribute.typeTag);
-            stack = (org.hotswap.agent.javassist.bytecode.StackMapTable) ca.getAttribute(org.hotswap.agent.javassist.bytecode.StackMapTable.tag);
-            stack2 = (org.hotswap.agent.javassist.bytecode.StackMap) ca.getAttribute(org.hotswap.agent.javassist.bytecode.StackMap.tag);
+            line = (LineNumberAttribute)ca.getAttribute(LineNumberAttribute.tag);
+            vars = (LocalVariableAttribute)ca.getAttribute(LocalVariableAttribute.tag);
+            types = (LocalVariableAttribute)ca.getAttribute(LocalVariableAttribute.typeTag);
+            stack = (StackMapTable)ca.getAttribute(StackMapTable.tag);
+            stack2 = (StackMap)ca.getAttribute(StackMap.tag);
         }
 
-        void shiftPc(int where, int gapLength, boolean exclusive) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        void shiftPc(int where, int gapLength, boolean exclusive) throws BadBytecode {
             if (where < cursor || (where == cursor && exclusive))
                 cursor += gapLength;
 
@@ -1039,7 +1058,7 @@ public class CodeIterator implements Opcode {
                 stack2.shiftPc(where, gapLength, exclusive);
         }
 
-        void shiftForSwitch(int where, int gapLength) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        void shiftForSwitch(int where, int gapLength) throws BadBytecode {
             if (stack != null)
                 stack.shiftForSwitch(where, gapLength);
 
@@ -1053,7 +1072,8 @@ public class CodeIterator implements Opcode {
      */
     static byte[] changeLdcToLdcW(byte[] code, ExceptionTable etable,
                                   CodeAttribute ca, CodeAttribute.LdcEntry ldcs)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         Pointers pointers = new Pointers(0, 0, 0, etable, ca);
         ArrayList jumps = makeJumpList(code, code.length, pointers);
         while (ldcs != null) {
@@ -1070,7 +1090,7 @@ public class CodeIterator implements Opcode {
         LdcW ldcw = new LdcW(where, ldcs.index);
         int s = jumps.size();
         for (int i = 0; i < s; i++)
-            if (where < ((Branch) jumps.get(i)).orgPos) {
+            if (where < ((Branch)jumps.get(i)).orgPos) {
                 jumps.add(i, ldcw);
                 return;
             }
@@ -1093,7 +1113,8 @@ public class CodeIterator implements Opcode {
      */
     private byte[] insertGapCore0w(byte[] code, int where, int gapLength, boolean exclusive,
                                    ExceptionTable etable, CodeAttribute ca, Gap newWhere)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         if (gapLength <= 0)
             return code;
 
@@ -1116,12 +1137,13 @@ public class CodeIterator implements Opcode {
 
     private static byte[] insertGap2w(byte[] code, int where, int gapLength,
                                       boolean exclusive, ArrayList jumps, Pointers ptrs)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         int n = jumps.size();
         if (gapLength > 0) {
             ptrs.shiftPc(where, gapLength, exclusive);
             for (int i = 0; i < n; i++)
-                ((Branch) jumps.get(i)).shift(where, gapLength, exclusive);
+                ((Branch)jumps.get(i)).shift(where, gapLength, exclusive);
         }
 
         boolean unstable = true;
@@ -1129,27 +1151,27 @@ public class CodeIterator implements Opcode {
             while (unstable) {
                 unstable = false;
                 for (int i = 0; i < n; i++) {
-                    Branch b = (Branch) jumps.get(i);
+                    Branch b = (Branch)jumps.get(i);
                     if (b.expanded()) {
                         unstable = true;
                         int p = b.pos;
                         int delta = b.deltaSize();
                         ptrs.shiftPc(p, delta, false);
                         for (int j = 0; j < n; j++)
-                            ((Branch) jumps.get(j)).shift(p, delta, false);
+                            ((Branch)jumps.get(j)).shift(p, delta, false);
                     }
                 }
             }
 
             for (int i = 0; i < n; i++) {
-                Branch b = (Branch) jumps.get(i);
+                Branch b = (Branch)jumps.get(i);
                 int diff = b.gapChanged();
                 if (diff > 0) {
                     unstable = true;
                     int p = b.pos;
                     ptrs.shiftPc(p, diff, false);
                     for (int j = 0; j < n; j++)
-                        ((Branch) jumps.get(j)).shift(p, diff, false);
+                        ((Branch)jumps.get(j)).shift(p, diff, false);
                 }
             }
         } while (unstable);
@@ -1158,7 +1180,8 @@ public class CodeIterator implements Opcode {
     }
 
     private static ArrayList makeJumpList(byte[] code, int endPos, Pointers ptrs)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         ArrayList jumps = new ArrayList();
         int nextPos;
         for (int i = 0; i < endPos; i = nextPos) {
@@ -1176,34 +1199,37 @@ public class CodeIterator implements Opcode {
                     b = new If16(i, offset);
 
                 jumps.add(b);
-            } else if (inst == GOTO_W || inst == JSR_W) {
+            }
+            else if (inst == GOTO_W || inst == JSR_W) {
                 /* 4bytes offset */
-                int offset = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i + 1);
+                int offset = ByteArray.read32bit(code, i + 1);
                 jumps.add(new Jump32(i, offset));
-            } else if (inst == TABLESWITCH) {
+            }
+            else if (inst == TABLESWITCH) {
                 int i2 = (i & ~3) + 4;  // 0-3 byte padding
-                int defaultbyte = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2);
-                int lowbyte = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2 + 4);
-                int highbyte = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2 + 8);
+                int defaultbyte = ByteArray.read32bit(code, i2);
+                int lowbyte = ByteArray.read32bit(code, i2 + 4);
+                int highbyte = ByteArray.read32bit(code, i2 + 8);
                 int i0 = i2 + 12;
                 int size = highbyte - lowbyte + 1;
                 int[] offsets = new int[size];
                 for (int j = 0; j < size; j++) {
-                    offsets[j] = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i0);
+                    offsets[j] = ByteArray.read32bit(code, i0);
                     i0 += 4;
                 }
 
                 jumps.add(new Table(i, defaultbyte, lowbyte, highbyte, offsets, ptrs));
-            } else if (inst == LOOKUPSWITCH) {
+            }
+            else if (inst == LOOKUPSWITCH) {
                 int i2 = (i & ~3) + 4;  // 0-3 byte padding
-                int defaultbyte = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2);
-                int npairs = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i2 + 4);
+                int defaultbyte = ByteArray.read32bit(code, i2);
+                int npairs = ByteArray.read32bit(code, i2 + 4);
                 int i0 = i2 + 8;
                 int[] matches = new int[npairs];
                 int[] offsets = new int[npairs];
                 for (int j = 0; j < npairs; j++) {
-                    matches[j] = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i0);
-                    offsets[j] = org.hotswap.agent.javassist.bytecode.ByteArray.read32bit(code, i0 + 4);
+                    matches[j] = ByteArray.read32bit(code, i0);
+                    offsets[j] = ByteArray.read32bit(code, i0 + 4);
                     i0 += 8;
                 }
 
@@ -1216,11 +1242,12 @@ public class CodeIterator implements Opcode {
 
     private static byte[] makeExapndedCode(byte[] code, ArrayList jumps,
                                            int where, int gapLength)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        throws BadBytecode
+    {
         int n = jumps.size();
         int size = code.length + gapLength;
         for (int i = 0; i < n; i++) {
-            Branch b = (Branch) jumps.get(i);
+            Branch b = (Branch)jumps.get(i);
             size += b.deltaSize();
         }
 
@@ -1230,9 +1257,10 @@ public class CodeIterator implements Opcode {
         Branch b;
         int bpos;
         if (0 < n) {
-            b = (Branch) jumps.get(0);
+            b = (Branch)jumps.get(0);
             bpos = b.orgPos;
-        } else {
+        }
+        else {
             b = null;
             bpos = len;  // src will be never equal to bpos 
         }
@@ -1251,9 +1279,10 @@ public class CodeIterator implements Opcode {
                 src += s;
                 dest += s + b.deltaSize();
                 if (++bindex < n) {
-                    b = (Branch) jumps.get(bindex);
+                    b = (Branch)jumps.get(bindex);
                     bpos = b.orgPos;
-                } else {
+                }
+                else  {
                     b = null;
                     bpos = len;
                 }
@@ -1265,11 +1294,7 @@ public class CodeIterator implements Opcode {
 
     static abstract class Branch {
         int pos, orgPos;
-
-        Branch(int p) {
-            pos = orgPos = p;
-        }
-
+        Branch(int p) { pos = orgPos = p; }
         void shift(int where, int gapLength, boolean exclusive) {
             if (where < pos || (where == pos && exclusive))
                 pos += gapLength;
@@ -1281,33 +1306,28 @@ public class CodeIterator implements Opcode {
             if (i < where) {
                 if (where < target || (exclusive && where == target))
                     offset += gapLength;
-            } else if (i == where) {
+            }
+            else if (i == where) {
                 // This code is different from the code in CodeIterator#newOffset().
                 // see JASSIST-124.
                 if (target < where && exclusive)
                     offset -= gapLength;
                 else if (where < target && !exclusive)
                     offset += gapLength;
-            } else if (target < where || (!exclusive && where == target))
-                offset -= gapLength;
+            }
+            else
+                if (target < where || (!exclusive && where == target))
+                    offset -= gapLength;
 
             return offset;
         }
 
-        boolean expanded() {
-            return false;
-        }
-
-        int gapChanged() {
-            return 0;
-        }
-
-        int deltaSize() {
-            return 0;
-        }   // newSize - oldSize
+        boolean expanded() { return false; }
+        int gapChanged() { return 0; }
+        int deltaSize() { return 0; }   // newSize - oldSize
 
         // This returns the original instruction size.
-        abstract int write(int srcPos, byte[] code, int destPos, byte[] newcode) throws org.hotswap.agent.javassist.bytecode.BadBytecode;
+        abstract int write(int srcPos, byte[] code, int destPos, byte[] newcode) throws BadBytecode;
     }
 
     /* used by changeLdcToLdcW() and CodeAttribute.LdcEntry.
@@ -1315,7 +1335,6 @@ public class CodeIterator implements Opcode {
     static class LdcW extends Branch {
         int index;
         boolean state;
-
         LdcW(int p, int i) {
             super(p);
             index = i;
@@ -1326,17 +1345,16 @@ public class CodeIterator implements Opcode {
             if (state) {
                 state = false;
                 return true;
-            } else
+            }
+            else
                 return false;
         }
 
-        int deltaSize() {
-            return 1;
-        }
+        int deltaSize() { return 1; }
 
         int write(int srcPos, byte[] code, int destPos, byte[] newcode) {
             newcode[destPos] = LDC_W;
-            org.hotswap.agent.javassist.bytecode.ByteArray.write16bit(index, newcode, destPos + 1);
+            ByteArray.write16bit(index, newcode, destPos + 1);
             return 2;
         }
     }
@@ -1366,12 +1384,12 @@ public class CodeIterator implements Opcode {
             if (state == EXPAND) {
                 state = BIT32;
                 return true;
-            } else
+            }
+            else
                 return false;
         }
 
         abstract int deltaSize();
-
         abstract void write32(int src, byte[] code, int dest, byte[] newcode);
 
         int write(int src, byte[] code, int dest, byte[] newcode) {
@@ -1379,7 +1397,7 @@ public class CodeIterator implements Opcode {
                 write32(src, code, dest, newcode);
             else {
                 newcode[dest] = code[src];
-                org.hotswap.agent.javassist.bytecode.ByteArray.write16bit(offset, newcode, dest + 1);
+                ByteArray.write16bit(offset, newcode, dest + 1);
             }
 
             return 3;
@@ -1397,8 +1415,8 @@ public class CodeIterator implements Opcode {
         }
 
         void write32(int src, byte[] code, int dest, byte[] newcode) {
-            newcode[dest] = (byte) (((code[src] & 0xff) == GOTO) ? GOTO_W : JSR_W);
-            org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offset, newcode, dest + 1);
+            newcode[dest] = (byte)(((code[src] & 0xff) == GOTO) ? GOTO_W : JSR_W);
+            ByteArray.write32bit(offset, newcode, dest + 1);
         }
     }
 
@@ -1413,11 +1431,11 @@ public class CodeIterator implements Opcode {
         }
 
         void write32(int src, byte[] code, int dest, byte[] newcode) {
-            newcode[dest] = (byte) opcode(code[src] & 0xff);
+            newcode[dest] = (byte)opcode(code[src] & 0xff);
             newcode[dest + 1] = 0;
             newcode[dest + 2] = 8;  // branch_offset = 8
-            newcode[dest + 3] = (byte) GOTO_W;
-            org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offset - 3, newcode, dest + 4);
+            newcode[dest + 3] = (byte)GOTO_W;
+            ByteArray.write32bit(offset - 3, newcode, dest + 4);
         }
 
         int opcode(int op) {
@@ -1449,7 +1467,7 @@ public class CodeIterator implements Opcode {
 
         int write(int src, byte[] code, int dest, byte[] newcode) {
             newcode[dest] = code[src];
-            org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offset, newcode, dest + 1);
+            ByteArray.write32bit(offset, newcode, dest + 1);
             return 5;
         }
     }
@@ -1492,7 +1510,7 @@ public class CodeIterator implements Opcode {
             return gap - (3 - (orgPos & 3));
         }
 
-        int write(int src, byte[] code, int dest, byte[] newcode) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        int write(int src, byte[] code, int dest, byte[] newcode) throws BadBytecode {
             int padding = 3 - (pos & 3);
             int nops = gap - padding;
             int bytecodeSize = 5 + (3 - (orgPos & 3)) + tableSize();
@@ -1503,7 +1521,7 @@ public class CodeIterator implements Opcode {
             while (padding-- > 0)
                 newcode[dest++] = 0;
 
-            org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(defaultByte, newcode, dest);
+            ByteArray.write32bit(defaultByte, newcode, dest);
             int size = write2(dest + 4, newcode);
             dest += size + 4;
             while (nops-- > 0)
@@ -1513,7 +1531,6 @@ public class CodeIterator implements Opcode {
         }
 
         abstract int write2(int dest, byte[] newcode);
-
         abstract int tableSize();
 
         /* If the new bytecode size is shorter than the original, some NOPs
@@ -1525,7 +1542,7 @@ public class CodeIterator implements Opcode {
          * dead code.  It complicates the generation of StackMap and
          * StackMapTable.
          */
-        void adjustOffsets(int size, int nops) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+        void adjustOffsets(int size, int nops) throws BadBytecode {
             pointers.shiftForSwitch(pos + size, nops);
             if (defaultByte == size)
                 defaultByte -= nops;
@@ -1546,21 +1563,19 @@ public class CodeIterator implements Opcode {
         }
 
         int write2(int dest, byte[] newcode) {
-            org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(low, newcode, dest);
-            org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(high, newcode, dest + 4);
+            ByteArray.write32bit(low, newcode, dest);
+            ByteArray.write32bit(high, newcode, dest + 4);
             int n = offsets.length;
             dest += 8;
             for (int i = 0; i < n; i++) {
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offsets[i], newcode, dest);
+                ByteArray.write32bit(offsets[i], newcode, dest);
                 dest += 4;
             }
 
             return 8 + 4 * n;
         }
 
-        int tableSize() {
-            return 8 + 4 * offsets.length;
-        }
+        int tableSize() { return 8 + 4 * offsets.length; }
     }
 
     static class Lookup extends Switcher {
@@ -1573,19 +1588,17 @@ public class CodeIterator implements Opcode {
 
         int write2(int dest, byte[] newcode) {
             int n = matches.length;
-            org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(n, newcode, dest);
+            ByteArray.write32bit(n, newcode, dest);
             dest += 4;
             for (int i = 0; i < n; i++) {
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(matches[i], newcode, dest);
-                org.hotswap.agent.javassist.bytecode.ByteArray.write32bit(offsets[i], newcode, dest + 4);
+                ByteArray.write32bit(matches[i], newcode, dest);
+                ByteArray.write32bit(offsets[i], newcode, dest + 4);
                 dest += 8;
             }
 
             return 4 + 8 * n;
         }
 
-        int tableSize() {
-            return 4 + 8 * matches.length;
-        }
+        int tableSize() { return 4 + 8 * matches.length; }
     }
 }

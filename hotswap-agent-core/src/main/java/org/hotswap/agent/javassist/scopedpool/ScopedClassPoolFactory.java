@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.scopedpool;
 
+import org.hotswap.agent.javassist.ClassPool;
+
 /**
  * A factory interface.
  *
@@ -26,12 +28,12 @@ public interface ScopedClassPoolFactory {
     /**
      * Makes an instance.
      */
-    ScopedClassPool create(ClassLoader cl, org.hotswap.agent.javassist.ClassPool src,
+    ScopedClassPool create(ClassLoader cl, ClassPool src,
                            ScopedClassPoolRepository repository);
 
     /**
      * Makes an instance.
      */
-    ScopedClassPool create(org.hotswap.agent.javassist.ClassPool src,
+    ScopedClassPool create(ClassPool src,
                            ScopedClassPoolRepository repository);
 }

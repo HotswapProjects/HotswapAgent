@@ -35,6 +35,7 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipException;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.io.loader.DefaultResourceLoader;
 import org.hotswap.agent.util.spring.io.loader.ResourceLoader;
 import org.hotswap.agent.util.spring.io.resource.FileSystemResource;
@@ -76,14 +77,14 @@ import org.hotswap.agent.util.spring.util.StringUtils;
  *
  * <p>
  * When the path location contains an Ant-style pattern, e.g.:
- * 
+ *
  * <pre class="code">
  * /WEB-INF/*-context.xml
  * com/mycompany/**&#47;applicationContext.xml
  * file:C:/some/path/*-context.xml
  * classpath:com/mycompany/**&#47;applicationContext.xml
  * </pre>
- * 
+ *
  * the resolver follows a more complex but defined procedure to try to resolve
  * the wildcard. It produces a {@code Resource} for the path up to the last
  * non-wildcard segment and obtains a {@code URL} from it. If this URL is not a
@@ -162,17 +163,17 @@ import org.hotswap.agent.util.spring.util.StringUtils;
  * guaranteed to find matching resources if the root package to search is
  * available in multiple class path locations. This is because a resource such
  * as
- * 
+ *
  * <pre class="code">
  * com / mycompany / package1 / service - context.xml
  * </pre>
- * 
+ *
  * may be in only one location, but when a path such as
- * 
+ *
  * <pre class="code">
  *     classpath:com/mycompany/**&#47;service-context.xml
  * </pre>
- * 
+ *
  * is used to try to resolve it, the resolver will work off the (first) URL
  * returned by {@code getResource("com/mycompany");}. If this base package node
  * exists in multiple classloader locations, the actual end resource may not be
@@ -215,7 +216,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * DefaultResourceLoader.
      * <p>
      * ClassLoader access will happen via the thread context class loader.
-     * 
+     *
      * @see org.hotswap.agent.util.spring.io.loader.springframework.core.io.
      *      DefaultResourceLoader
      */
@@ -227,7 +228,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * Create a new PathMatchingResourcePatternResolver.
      * <p>
      * ClassLoader access will happen via the thread context class loader.
-     * 
+     *
      * @param resourceLoader
      *            the ResourceLoader to load root directories and actual
      *            resources with
@@ -240,7 +241,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Create a new PathMatchingResourcePatternResolver with a
      * DefaultResourceLoader.
-     * 
+     *
      * @param classLoader
      *            the ClassLoader to load classpath resources with, or
      *            {@code null} for using the thread context class loader at the
@@ -267,7 +268,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Set the PathMatcher implementation to use for this resource pattern
      * resolver. Default is AntPathMatcher.
-     * 
+     *
      * @see org.hotswap.agent.util.spring.path.springframework.util.
      *      AntPathMatcher
      */
@@ -317,7 +318,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Find all class location resources with the given location via the
      * ClassLoader. Delegates to {@link #doFindAllClassPathResources(String)}.
-     * 
+     *
      * @param location
      *            the absolute path within the classpath
      * @return the result as Resource array
@@ -338,7 +339,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Find all class location resources with the given path via the
      * ClassLoader. Called by {@link #findAllClassPathResources(String)}.
-     * 
+     *
      * @param path
      *            the absolute path within the classpath (never a leading slash)
      * @return a mutable Set of matching Resource instances
@@ -366,7 +367,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * {@link Resource}.
      * <p>
      * The default implementation simply creates a {@link UrlResource} instance.
-     * 
+     *
      * @param url
      *            a URL as returned from the ClassLoader
      * @return the corresponding Resource object
@@ -382,7 +383,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * Search all {@link URLClassLoader} URLs for jar file references and add
      * them to the given set of resources in the form of pointers to the root of
      * the jar file content.
-     * 
+     *
      * @param classLoader
      *            the ClassLoader to search (including its ancestors)
      * @param result
@@ -426,7 +427,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * Find all resources that match the given location pattern via the
      * Ant-style PathMatcher. Supports resources in jar files and zip files and
      * in the file system.
-     * 
+     *
      * @param locationPattern
      *            the location pattern to match
      * @return the result as Resource array
@@ -466,7 +467,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * pattern.
      * <p>
      * Will return "/WEB-INF/" for the pattern "/WEB-INF/*.xml", for example.
-     * 
+     *
      * @param location
      *            the location to check
      * @return the part of the location that denotes the root directory
@@ -490,7 +491,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * The default implementation detects an Equinox OSGi "bundleresource:" /
      * "bundleentry:" URL and resolves it into a standard jar file URL that can
      * be traversed using Spring's standard jar file traversal algorithm.
-     * 
+     *
      * @param original
      *            the resource to resolve
      * @return the resolved resource (may be identical to the passed-in
@@ -499,12 +500,26 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      *             in case of resolution failure
      */
     protected Resource resolveRootDirResource(Resource original) throws IOException {
-        if (equinoxResolveMethod != null) {
-            URL url = original.getURL();
-            if (url.getProtocol().startsWith("bundle")) {
+        URL url = original.getURL();
+        if (url != null && url.getProtocol().startsWith("bundle")) {
+            if (equinoxResolveMethod != null) {
                 return new UrlResource((URL) ReflectionUtils.invokeMethod(equinoxResolveMethod, null, url));
             }
+
+            if (url.getProtocol().equals("bundle")) {
+                try {
+                    // Try felix OSGi
+                    Class<?> bundleWiringClass = ClassUtils.forName("org.apache.felix.framework.BundleWiringImpl", null);
+                    URL convertedURL = (URL) ReflectionHelper.invoke(null, bundleWiringClass, "convertToLocalUrl", new Class[] { URL.class }, url);
+                    return new UrlResource(convertedURL);
+                } catch (ClassNotFoundException e) {
+                    logger.trace("org.apache.felix.framework.BundleWiringImpl class not found for {}", url);
+                } catch (Exception e) {
+                    logger.error("Felix BundleWiring.convertToLocalUrl(URL) failed for URL {}", url, e);
+                }
+            }
         }
+
         return original;
     }
 
@@ -515,7 +530,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * The default implementation checks against the URL protocols "jar", "zip"
      * and "wsjar" (the latter are used by BEA WebLogic Server and IBM
      * WebSphere, respectively, but can be treated like jar files).
-     * 
+     *
      * @param resource
      *            the resource handle to check (usually the root directory to
      *            start path matching from)
@@ -529,7 +544,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Find all resources in jar files that match the given location pattern via
      * the Ant-style PathMatcher.
-     * 
+     *
      * @param rootDirResource
      *            the root directory as Resource
      * @param subPattern
@@ -635,7 +650,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Find all resources in the file system that match the given location
      * pattern via the Ant-style PathMatcher.
-     * 
+     *
      * @param rootDirResource
      *            the root directory as Resource
      * @param subPattern
@@ -653,7 +668,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
             rootDir = rootDirResource.getFile().getAbsoluteFile();
         } catch (IOException ex) {
             if (logger.isWarnEnabled()) {
-                logger.warning("Cannot search for matching files underneath " + rootDirResource + " because it does not correspond to a directory in the file system", ex);
+                logger.warning("Cannot search for matching files underneath {} because it does not correspond to a directory in the file system", rootDirResource);
             }
             return Collections.emptySet();
         }
@@ -663,7 +678,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Find all resources in the file system that match the given location
      * pattern via the Ant-style PathMatcher.
-     * 
+     *
      * @param rootDir
      *            the root directory in the file system
      * @param subPattern
@@ -689,7 +704,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Retrieve files that match the given path pattern, checking the given
      * directory and its subdirectories.
-     * 
+     *
      * @param rootDir
      *            the directory to start from
      * @param pattern
@@ -732,7 +747,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
     /**
      * Recursively retrieve files that match the given pattern, adding them to
      * the given result list.
-     * 
+     *
      * @param fullPattern
      *            the pattern to match against, with prepended root directory
      *            path

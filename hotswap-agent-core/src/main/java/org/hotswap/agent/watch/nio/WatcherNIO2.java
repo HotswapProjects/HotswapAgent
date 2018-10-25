@@ -19,6 +19,7 @@
 package org.hotswap.agent.watch.nio;
 
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.EnumSet;
 
 /**
  * NIO2 watcher implementation.
@@ -62,7 +64,7 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
             LOGGER.debug("Registering directory  {}", start);
         }
 
-        Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(start, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 register(dir);

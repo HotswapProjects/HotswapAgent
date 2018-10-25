@@ -16,35 +16,37 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import java.lang.ref.WeakReference;
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
+import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
+import java.util.List;
+import java.util.Iterator;
+
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.compiler.ast.*;
 
 /* Code generator methods depending on javassist.* classes.
  */
 public class MemberResolver implements TokenId {
-    private org.hotswap.agent.javassist.ClassPool classPool;
+    private ClassPool classPool;
 
-    public MemberResolver(org.hotswap.agent.javassist.ClassPool cp) {
+    public MemberResolver(ClassPool cp) {
         classPool = cp;
     }
 
-    public org.hotswap.agent.javassist.ClassPool getClassPool() {
-        return classPool;
-    }
+    public ClassPool getClassPool() { return classPool; }
 
     private static void fatal() throws CompileError {
         throw new CompileError("fatal");
     }
 
     public static class Method {
-        public org.hotswap.agent.javassist.CtClass declaring;
-        public org.hotswap.agent.javassist.bytecode.MethodInfo info;
+        public CtClass declaring;
+        public MethodInfo info;
         public int notmatch;
 
-        public Method(org.hotswap.agent.javassist.CtClass c, org.hotswap.agent.javassist.bytecode.MethodInfo i, int n) {
+        public Method(CtClass c, MethodInfo i, int n) {
             declaring = c;
             info = i;
             notmatch = n;
@@ -55,21 +57,22 @@ public class MemberResolver implements TokenId {
          */
         public boolean isStatic() {
             int acc = info.getAccessFlags();
-            return (acc & org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC) != 0;
+            return (acc & AccessFlag.STATIC) != 0;
         }
     }
 
-    public Method lookupMethod(org.hotswap.agent.javassist.CtClass clazz, org.hotswap.agent.javassist.CtClass currentClass, org.hotswap.agent.javassist.bytecode.MethodInfo current,
-                               String methodName,
-                               int[] argTypes, int[] argDims,
-                               String[] argClassNames)
-            throws CompileError {
+    public Method lookupMethod(CtClass clazz, CtClass currentClass, MethodInfo current,
+                                String methodName,
+                                int[] argTypes, int[] argDims,
+                                String[] argClassNames)
+        throws CompileError
+    {
         Method maybe = null;
         // to enable the creation of a recursively called method
         if (current != null && clazz == currentClass)
             if (current.getName().equals(methodName)) {
                 int res = compareSignature(current.getDescriptor(),
-                        argTypes, argDims, argClassNames);
+                                           argTypes, argDims, argClassNames);
                 if (res != NO) {
                     Method r = new Method(clazz, current, res);
                     if (res == YES)
@@ -80,29 +83,31 @@ public class MemberResolver implements TokenId {
             }
 
         Method m = lookupMethod(clazz, methodName, argTypes, argDims,
-                argClassNames, maybe != null);
+                                argClassNames, maybe != null);
         if (m != null)
             return m;
         else
             return maybe;
     }
 
-    private Method lookupMethod(org.hotswap.agent.javassist.CtClass clazz, String methodName,
-                                int[] argTypes, int[] argDims,
-                                String[] argClassNames, boolean onlyExact)
-            throws CompileError {
+    private Method lookupMethod(CtClass clazz, String methodName,
+                               int[] argTypes, int[] argDims,
+                               String[] argClassNames, boolean onlyExact)
+        throws CompileError
+    {
         Method maybe = null;
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = clazz.getClassFile2();
+        ClassFile cf = clazz.getClassFile2();
         // If the class is an array type, the class file is null.
         // If so, search the super class java.lang.Object for clone() etc.
         if (cf != null) {
             List list = cf.getMethods();
             int n = list.size();
             for (int i = 0; i < n; ++i) {
-                org.hotswap.agent.javassist.bytecode.MethodInfo minfo = (org.hotswap.agent.javassist.bytecode.MethodInfo) list.get(i);
-                if (minfo.getName().equals(methodName)) {
+                MethodInfo minfo = (MethodInfo)list.get(i);
+                if (minfo.getName().equals(methodName)
+                    && (minfo.getAccessFlags() & AccessFlag.BRIDGE) == 0) {
                     int res = compareSignature(minfo.getDescriptor(),
-                            argTypes, argDims, argClassNames);
+                                           argTypes, argDims, argClassNames);
                     if (res != NO) {
                         Method r = new Method(clazz, minfo, res);
                         if (res == YES)
@@ -117,48 +122,48 @@ public class MemberResolver implements TokenId {
         if (onlyExact)
             maybe = null;
         else
-            onlyExact = maybe != null;
+            if (maybe != null)
+                return maybe;
 
         int mod = clazz.getModifiers();
-        boolean isIntf = org.hotswap.agent.javassist.Modifier.isInterface(mod);
+        boolean isIntf = Modifier.isInterface(mod);
         try {
             // skip searching java.lang.Object if clazz is an interface type.
             if (!isIntf) {
-                org.hotswap.agent.javassist.CtClass pclazz = clazz.getSuperclass();
+                CtClass pclazz = clazz.getSuperclass();
                 if (pclazz != null) {
                     Method r = lookupMethod(pclazz, methodName, argTypes,
-                            argDims, argClassNames, onlyExact);
+                                            argDims, argClassNames, onlyExact);
                     if (r != null)
                         return r;
                 }
             }
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
         }
+        catch (NotFoundException e) {}
 
-        if (isIntf || org.hotswap.agent.javassist.Modifier.isAbstract(mod))
-            try {
-                org.hotswap.agent.javassist.CtClass[] ifs = clazz.getInterfaces();
-                int size = ifs.length;
-                for (int i = 0; i < size; ++i) {
-                    Method r = lookupMethod(ifs[i], methodName,
-                            argTypes, argDims, argClassNames,
-                            onlyExact);
+        try {
+            CtClass[] ifs = clazz.getInterfaces();
+            int size = ifs.length;
+            for (int i = 0; i < size; ++i) {
+                Method r = lookupMethod(ifs[i], methodName,
+                        argTypes, argDims, argClassNames,
+                        onlyExact);
+                if (r != null)
+                    return r;
+            }
+
+            if (isIntf) {
+                // finally search java.lang.Object.
+                CtClass pclazz = clazz.getSuperclass();
+                if (pclazz != null) {
+                    Method r = lookupMethod(pclazz, methodName, argTypes,
+                                            argDims, argClassNames, onlyExact);
                     if (r != null)
                         return r;
                 }
-
-                if (isIntf) {
-                    // finally search java.lang.Object.
-                    org.hotswap.agent.javassist.CtClass pclazz = clazz.getSuperclass();
-                    if (pclazz != null) {
-                        Method r = lookupMethod(pclazz, methodName, argTypes,
-                                argDims, argClassNames, onlyExact);
-                        if (r != null)
-                            return r;
-                    }
-                }
-            } catch (org.hotswap.agent.javassist.NotFoundException e) {
             }
+        }
+        catch (NotFoundException e) {}
 
         return maybe;
     }
@@ -180,11 +185,12 @@ public class MemberResolver implements TokenId {
      */
     private int compareSignature(String desc, int[] argTypes,
                                  int[] argDims, String[] argClassNames)
-            throws CompileError {
+        throws CompileError
+    {
         int result = YES;
         int i = 1;
         int nArgs = argTypes.length;
-        if (nArgs != org.hotswap.agent.javassist.bytecode.Descriptor.numOfParameters(desc))
+        if (nArgs != Descriptor.numOfParameters(desc))
             return NO;
 
         int len = desc.length();
@@ -207,9 +213,10 @@ public class MemberResolver implements TokenId {
 
                 if (c == 'L')
                     i = desc.indexOf(';', i) + 1;
-            } else if (argDims[n] != dim) {
+            }
+            else if (argDims[n] != dim) {
                 if (!(dim == 0 && c == 'L'
-                        && desc.startsWith("java/lang/Object;", i)))
+                      && desc.startsWith("java/lang/Object;", i)))
                     return NO;
 
                 // if the thread reaches here, c must be 'L'.
@@ -217,31 +224,34 @@ public class MemberResolver implements TokenId {
                 result++;
                 if (i <= 0)
                     return NO;  // invalid descriptor?
-            } else if (c == 'L') {        // not compare
+            }
+            else if (c == 'L') {        // not compare
                 int j = desc.indexOf(';', i);
                 if (j < 0 || argTypes[n] != CLASS)
                     return NO;
 
                 String cname = desc.substring(i, j);
                 if (!cname.equals(argClassNames[n])) {
-                    org.hotswap.agent.javassist.CtClass clazz = lookupClassByJvmName(argClassNames[n]);
+                    CtClass clazz = lookupClassByJvmName(argClassNames[n]);
                     try {
                         if (clazz.subtypeOf(lookupClassByJvmName(cname)))
                             result++;
                         else
                             return NO;
-                    } catch (org.hotswap.agent.javassist.NotFoundException e) {
+                    }
+                    catch (NotFoundException e) {
                         result++; // should be NO?
                     }
                 }
 
                 i = j + 1;
-            } else {
+            }
+            else {
                 int t = descToType(c);
                 int at = argTypes[n];
                 if (t != at)
                     if (t == INT
-                            && (at == SHORT || at == BYTE || at == CHAR))
+                        && (at == SHORT || at == BYTE || at == CHAR))
                         result++;
                     else
                         return NO;
@@ -254,77 +264,84 @@ public class MemberResolver implements TokenId {
     /**
      * Only used by fieldAccess() in MemberCodeGen and TypeChecker.
      *
-     * @param jvmClassName a JVM class name.  e.g. java/lang/String
+     * @param jvmClassName  a JVM class name.  e.g. java/lang/String
      * @see #lookupClass(String, boolean)
      */
-    public org.hotswap.agent.javassist.CtField lookupFieldByJvmName2(String jvmClassName, org.hotswap.agent.javassist.compiler.ast.Symbol fieldSym,
-                                                                     org.hotswap.agent.javassist.compiler.ast.ASTree expr) throws org.hotswap.agent.javassist.compiler.NoFieldException {
+    public CtField lookupFieldByJvmName2(String jvmClassName, Symbol fieldSym,
+                                         ASTree expr) throws NoFieldException
+    {
         String field = fieldSym.get();
-        org.hotswap.agent.javassist.CtClass cc = null;
+        CtClass cc = null;
         try {
             cc = lookupClass(jvmToJavaName(jvmClassName), true);
-        } catch (CompileError e) {
+        }
+        catch (CompileError e) {
             // EXPR might be part of a qualified class name.
-            throw new org.hotswap.agent.javassist.compiler.NoFieldException(jvmClassName + "/" + field, expr);
+            throw new NoFieldException(jvmClassName + "/" + field, expr);
         }
 
         try {
             return cc.getField(field);
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             // maybe an inner class.
             jvmClassName = javaToJvmName(cc.getName());
-            throw new org.hotswap.agent.javassist.compiler.NoFieldException(jvmClassName + "$" + field, expr);
+            throw new NoFieldException(jvmClassName + "$" + field, expr);
         }
     }
 
     /**
-     * @param jvmClassName a JVM class name.  e.g. java/lang/String
+     * @param jvmClassName  a JVM class name.  e.g. java/lang/String
      */
-    public org.hotswap.agent.javassist.CtField lookupFieldByJvmName(String jvmClassName, org.hotswap.agent.javassist.compiler.ast.Symbol fieldName)
-            throws CompileError {
+    public CtField lookupFieldByJvmName(String jvmClassName, Symbol fieldName)
+        throws CompileError
+    {
         return lookupField(jvmToJavaName(jvmClassName), fieldName);
     }
 
     /**
-     * @param name a qualified class name. e.g. java.lang.String
+     * @param className      a qualified class name. e.g. java.lang.String
      */
-    public org.hotswap.agent.javassist.CtField lookupField(String className, org.hotswap.agent.javassist.compiler.ast.Symbol fieldName)
-            throws CompileError {
-        org.hotswap.agent.javassist.CtClass cc = lookupClass(className, false);
+    public CtField lookupField(String className, Symbol fieldName)
+        throws CompileError
+    {
+        CtClass cc = lookupClass(className, false);
         try {
             return cc.getField(fieldName.get());
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
         }
+        catch (NotFoundException e) {}
         throw new CompileError("no such field: " + fieldName.get());
     }
 
-    public org.hotswap.agent.javassist.CtClass lookupClassByName(org.hotswap.agent.javassist.compiler.ast.ASTList name) throws CompileError {
-        return lookupClass(org.hotswap.agent.javassist.compiler.ast.Declarator.astToClassName(name, '.'), false);
+    public CtClass lookupClassByName(ASTList name) throws CompileError {
+        return lookupClass(Declarator.astToClassName(name, '.'), false);
     }
 
-    public org.hotswap.agent.javassist.CtClass lookupClassByJvmName(String jvmName) throws CompileError {
+    public CtClass lookupClassByJvmName(String jvmName) throws CompileError {
         return lookupClass(jvmToJavaName(jvmName), false);
     }
 
-    public org.hotswap.agent.javassist.CtClass lookupClass(org.hotswap.agent.javassist.compiler.ast.Declarator decl) throws CompileError {
+    public CtClass lookupClass(Declarator decl) throws CompileError {
         return lookupClass(decl.getType(), decl.getArrayDim(),
-                decl.getClassName());
+                           decl.getClassName());
     }
 
     /**
-     * @parma classname         jvm class name.
+     * @param classname         jvm class name.
      */
-    public org.hotswap.agent.javassist.CtClass lookupClass(int type, int dim, String classname)
-            throws CompileError {
+    public CtClass lookupClass(int type, int dim, String classname)
+        throws CompileError
+    {
         String cname = "";
-        org.hotswap.agent.javassist.CtClass clazz;
+        CtClass clazz;
         if (type == CLASS) {
             clazz = lookupClassByJvmName(classname);
             if (dim > 0)
                 cname = clazz.getName();
             else
                 return clazz;
-        } else
+        }
+        else
             cname = getTypeName(type);
 
         while (dim-- > 0)
@@ -339,59 +356,61 @@ public class MemberResolver implements TokenId {
     static String getTypeName(int type) throws CompileError {
         String cname = "";
         switch (type) {
-            case BOOLEAN:
-                cname = "boolean";
-                break;
-            case CHAR:
-                cname = "char";
-                break;
-            case BYTE:
-                cname = "byte";
-                break;
-            case SHORT:
-                cname = "short";
-                break;
-            case INT:
-                cname = "int";
-                break;
-            case LONG:
-                cname = "long";
-                break;
-            case FLOAT:
-                cname = "float";
-                break;
-            case DOUBLE:
-                cname = "double";
-                break;
-            case VOID:
-                cname = "void";
-                break;
-            default:
-                fatal();
+        case BOOLEAN :
+            cname = "boolean";
+            break;
+        case CHAR :
+            cname = "char";
+            break;
+        case BYTE :
+            cname = "byte";
+            break;
+        case SHORT :
+            cname = "short";
+            break;
+        case INT :
+            cname = "int";
+            break;
+        case LONG :
+            cname = "long";
+            break;
+        case FLOAT :
+            cname = "float";
+            break;
+        case DOUBLE :
+            cname = "double";
+            break;
+        case VOID :
+            cname = "void";
+            break;
+        default :
+            fatal();
         }
 
         return cname;
     }
 
     /**
-     * @param name a qualified class name. e.g. java.lang.String
+     * @param name      a qualified class name. e.g. java.lang.String
      */
-    public org.hotswap.agent.javassist.CtClass lookupClass(String name, boolean notCheckInner)
-            throws CompileError {
+    public CtClass lookupClass(String name, boolean notCheckInner)
+        throws CompileError
+    {
         Hashtable cache = getInvalidNames();
         Object found = cache.get(name);
         if (found == INVALID)
             throw new CompileError("no such class: " + name);
         else if (found != null)
             try {
-                return classPool.get((String) found);
-            } catch (org.hotswap.agent.javassist.NotFoundException e) {
+                return classPool.get((String)found);
             }
+            catch (NotFoundException e) {}
 
-        org.hotswap.agent.javassist.CtClass cc = null;
+        CtClass cc = null;
         try {
             cc = lookupClass0(name, notCheckInner);
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             cc = searchImports(name);
         }
 
@@ -404,17 +423,15 @@ public class MemberResolver implements TokenId {
     private Hashtable invalidNames = null;
 
     // for unit tests
-    public static int getInvalidMapSize() {
-        return invalidNamesMap.size();
-    }
+    public static int getInvalidMapSize() { return invalidNamesMap.size(); }
 
     private Hashtable getInvalidNames() {
         Hashtable ht = invalidNames;
         if (ht == null) {
             synchronized (MemberResolver.class) {
-                WeakReference ref = (WeakReference) invalidNamesMap.get(classPool);
+                WeakReference ref = (WeakReference)invalidNamesMap.get(classPool);
                 if (ref != null)
-                    ht = (Hashtable) ref.get();
+                    ht = (Hashtable)ref.get();
 
                 if (ht == null) {
                     ht = new Hashtable();
@@ -428,21 +445,23 @@ public class MemberResolver implements TokenId {
         return ht;
     }
 
-    private org.hotswap.agent.javassist.CtClass searchImports(String orgName)
-            throws CompileError {
+    private CtClass searchImports(String orgName)
+        throws CompileError
+    {
         if (orgName.indexOf('.') < 0) {
             Iterator it = classPool.getImportedPackages();
             while (it.hasNext()) {
-                String pac = (String) it.next();
+                String pac = (String)it.next();
                 String fqName = pac + '.' + orgName;
                 try {
                     return classPool.get(fqName);
-                } catch (org.hotswap.agent.javassist.NotFoundException e) {
+                }
+                catch (NotFoundException e) {
                     try {
                         if (pac.endsWith("." + orgName))
                             return classPool.get(pac);
-                    } catch (org.hotswap.agent.javassist.NotFoundException e2) {
                     }
+                    catch (NotFoundException e2) {}
                 }
             }
         }
@@ -451,13 +470,15 @@ public class MemberResolver implements TokenId {
         throw new CompileError("no such class: " + orgName);
     }
 
-    private org.hotswap.agent.javassist.CtClass lookupClass0(String classname, boolean notCheckInner)
-            throws org.hotswap.agent.javassist.NotFoundException {
-        org.hotswap.agent.javassist.CtClass cc = null;
+    private CtClass lookupClass0(String classname, boolean notCheckInner)
+        throws NotFoundException
+    {
+        CtClass cc = null;
         do {
             try {
                 cc = classPool.get(classname);
-            } catch (org.hotswap.agent.javassist.NotFoundException e) {
+            }
+            catch (NotFoundException e) {
                 int i = classname.lastIndexOf('.');
                 if (notCheckInner || i < 0)
                     throw e;
@@ -476,7 +497,7 @@ public class MemberResolver implements TokenId {
      * It may also expand a simple class name to java.lang.*.
      * For example, this converts Object into java/lang/Object.
      */
-    public String resolveClassName(org.hotswap.agent.javassist.compiler.ast.ASTList name) throws CompileError {
+    public String resolveClassName(ASTList name) throws CompileError {
         if (name == null)
             return null;
         else
@@ -493,15 +514,28 @@ public class MemberResolver implements TokenId {
             return javaToJvmName(lookupClassByJvmName(jvmName).getName());
     }
 
-    public static org.hotswap.agent.javassist.CtClass getSuperclass(org.hotswap.agent.javassist.CtClass c) throws CompileError {
+    public static CtClass getSuperclass(CtClass c) throws CompileError {
         try {
-            org.hotswap.agent.javassist.CtClass sc = c.getSuperclass();
+            CtClass sc = c.getSuperclass();
             if (sc != null)
                 return sc;
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
         }
+        catch (NotFoundException e) {}
         throw new CompileError("cannot find the super class of "
-                + c.getName());
+                               + c.getName());
+    }
+
+    public static CtClass getSuperInterface(CtClass c, String interfaceName)
+        throws CompileError
+    {
+        try {
+            CtClass[] intfs = c.getInterfaces();
+            for (int i = 0; i < intfs.length; i++)
+                if (intfs[i].getName().equals(interfaceName))
+                    return intfs[i];
+        } catch (NotFoundException e) {}
+        throw new CompileError("cannot find the super inetrface " + interfaceName
+                               + " of " + c.getName());
     }
 
     public static String javaToJvmName(String classname) {
@@ -514,69 +548,69 @@ public class MemberResolver implements TokenId {
 
     public static int descToType(char c) throws CompileError {
         switch (c) {
-            case 'Z':
-                return BOOLEAN;
-            case 'C':
-                return CHAR;
-            case 'B':
-                return BYTE;
-            case 'S':
-                return SHORT;
-            case 'I':
-                return INT;
-            case 'J':
-                return LONG;
-            case 'F':
-                return FLOAT;
-            case 'D':
-                return DOUBLE;
-            case 'V':
-                return VOID;
-            case 'L':
-            case '[':
-                return CLASS;
-            default:
-                fatal();
-                return VOID;    // never reach here
+        case 'Z' :
+            return BOOLEAN;
+        case 'C' :
+            return CHAR;
+        case 'B' :
+            return  BYTE;
+        case 'S' :
+            return SHORT;
+        case 'I' :
+            return INT;
+        case 'J' :
+            return LONG;
+        case 'F' :
+            return FLOAT;
+        case 'D' :
+            return DOUBLE;
+        case 'V' :
+            return VOID;
+        case 'L' :
+        case '[' :
+            return CLASS;
+        default :
+            fatal();
+            return VOID;    // never reach here
         }
     }
 
-    public static int getModifiers(org.hotswap.agent.javassist.compiler.ast.ASTList mods) {
+    public static int getModifiers(ASTList mods) {
         int m = 0;
         while (mods != null) {
-            org.hotswap.agent.javassist.compiler.ast.Keyword k = (org.hotswap.agent.javassist.compiler.ast.Keyword) mods.head();
+            Keyword k = (Keyword)mods.head();
             mods = mods.tail();
             switch (k.get()) {
-                case STATIC:
-                    m |= org.hotswap.agent.javassist.Modifier.STATIC;
-                    break;
-                case FINAL:
-                    m |= org.hotswap.agent.javassist.Modifier.FINAL;
-                    break;
-                case SYNCHRONIZED:
-                    m |= org.hotswap.agent.javassist.Modifier.SYNCHRONIZED;
-                    break;
-                case ABSTRACT:
-                    m |= org.hotswap.agent.javassist.Modifier.ABSTRACT;
-                    break;
-                case PUBLIC:
-                    m |= org.hotswap.agent.javassist.Modifier.PUBLIC;
-                    break;
-                case PROTECTED:
-                    m |= org.hotswap.agent.javassist.Modifier.PROTECTED;
-                    break;
-                case PRIVATE:
-                    m |= org.hotswap.agent.javassist.Modifier.PRIVATE;
-                    break;
-                case VOLATILE:
-                    m |= org.hotswap.agent.javassist.Modifier.VOLATILE;
-                    break;
-                case TRANSIENT:
-                    m |= org.hotswap.agent.javassist.Modifier.TRANSIENT;
-                    break;
-                case STRICT:
-                    m |= org.hotswap.agent.javassist.Modifier.STRICT;
-                    break;
+            case STATIC :
+                m |= Modifier.STATIC;
+                break;
+            case FINAL :
+                m |= Modifier.FINAL;
+                break;
+            case SYNCHRONIZED :
+                m |= Modifier.SYNCHRONIZED;
+                break;
+            case ABSTRACT :
+                m |= Modifier.ABSTRACT;
+                break;
+            case PUBLIC :
+                m |= Modifier.PUBLIC;
+                break;
+            case PROTECTED :
+                m |= Modifier.PROTECTED;
+                break;
+            case PRIVATE :
+                m |= Modifier.PRIVATE;
+                break;
+            case VOLATILE :
+                m |= Modifier.VOLATILE;
+                break;
+            case TRANSIENT :
+                m |= Modifier.TRANSIENT;
+                break;
+            case STRICT :
+                m |= Modifier.STRICT;
+                break;
             }
         }
 

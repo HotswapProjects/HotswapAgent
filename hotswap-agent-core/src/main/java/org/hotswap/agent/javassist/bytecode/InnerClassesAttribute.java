@@ -17,8 +17,8 @@
 package org.hotswap.agent.javassist.bytecode;
 
 import java.io.DataInputStream;
-import java.io.IOException;
 import java.util.Map;
+import java.io.IOException;
 
 /**
  * <code>InnerClasses_attribute</code>.
@@ -30,7 +30,8 @@ public class InnerClassesAttribute extends AttributeInfo {
     public static final String tag = "InnerClasses";
 
     InnerClassesAttribute(ConstPool cp, int n, DataInputStream in)
-            throws IOException {
+        throws IOException
+    {
         super(cp, n, in);
     }
 
@@ -51,9 +52,7 @@ public class InnerClassesAttribute extends AttributeInfo {
     /**
      * Returns <code>number_of_classes</code>.
      */
-    public int tableLength() {
-        return ByteArray.readU16bit(get(), 0);
-    }
+    public int tableLength() { return ByteArray.readU16bit(get(), 0); }
 
     /**
      * Returns <code>classes[nth].inner_class_info_index</code>.
@@ -65,8 +64,10 @@ public class InnerClassesAttribute extends AttributeInfo {
     /**
      * Returns the class name indicated
      * by <code>classes[nth].inner_class_info_index</code>.
+     * The class name is fully-qualified and separated by dot.
      *
      * @return null or the class name.
+     * @see ConstPool#getClassInfo(int)
      */
     public String innerClass(int nth) {
         int i = innerClassIndex(nth);
@@ -158,12 +159,28 @@ public class InnerClassesAttribute extends AttributeInfo {
     }
 
     /**
+     * Finds the entry for the given inner class.
+     *
+     * @param name      the fully-qualified class name separated by dot and $.
+     * @return the index or -1 if not found.
+     * @since 3.22
+     */
+    public int find(String name) {
+        int n = tableLength();
+        for (int i = 0; i < n; i++)
+            if (name.equals(innerClass(i)))
+                return i;
+
+        return -1;
+    }
+
+    /**
      * Appends a new entry.
      *
-     * @param inner <code>inner_class_info_index</code>
-     * @param outer <code>outer_class_info_index</code>
-     * @param name  <code>inner_name_index</code>
-     * @param flags <code>inner_class_access_flags</code>
+     * @param inner     <code>inner_class_info_index</code>
+     * @param outer     <code>outer_class_info_index</code>
+     * @param name      <code>inner_name_index</code>
+     * @param flags     <code>inner_class_access_flags</code>
      */
     public void append(String inner, String outer, String name, int flags) {
         int i = constPool.addClassInfo(inner);
@@ -175,10 +192,10 @@ public class InnerClassesAttribute extends AttributeInfo {
     /**
      * Appends a new entry.
      *
-     * @param inner <code>inner_class_info_index</code>
-     * @param outer <code>outer_class_info_index</code>
-     * @param name  <code>inner_name_index</code>
-     * @param flags <code>inner_class_access_flags</code>
+     * @param inner     <code>inner_class_info_index</code>
+     * @param outer     <code>outer_class_info_index</code>
+     * @param name      <code>inner_name_index</code>
+     * @param flags     <code>inner_class_access_flags</code>
      */
     public void append(int inner, int outer, int name, int flags) {
         byte[] data = get();
@@ -199,12 +216,46 @@ public class InnerClassesAttribute extends AttributeInfo {
     }
 
     /**
+     * Removes the {@code nth} entry.  It does not eliminate
+     * constant pool items that the removed entry refers to.
+     * {@link ClassFile#compact()} should be executed to remove
+     * these unnecessary items. 
+     *
+     * @param nth       0, 1, 2, ...
+     * @return  the number of items after the removal.
+     * @see ClassFile#compact()
+     */
+    public int remove(int nth) {
+        byte[] data = get();
+        int len = data.length;
+        if (len < 10)
+            return 0;
+
+        int n = ByteArray.readU16bit(data, 0);
+        int nthPos = 2 + nth * 8;
+        if (n <= nth)
+            return n;
+
+        byte[] newData = new byte[len - 8];
+        ByteArray.write16bit(n - 1, newData, 0);
+        int i = 2, j = 2;
+        while (i < len)
+            if (i == nthPos)
+                i += 8;
+            else
+                newData[j++] = data[i++];
+
+        set(newData);
+        return n - 1;
+    }
+
+    /**
      * Makes a copy.  Class names are replaced according to the
      * given <code>Map</code> object.
      *
-     * @param newCp      the constant pool table used by the new copy.
-     * @param classnames pairs of replaced and substituted
-     *                   class names.
+     * @param newCp     the constant pool table used by the new copy.
+     * @param classnames        pairs of replaced and substituted
+     *                          class names.
      */
     public AttributeInfo copy(ConstPool newCp, Map classnames) {
         byte[] src = get();

@@ -19,7 +19,7 @@ package org.hotswap.agent.javassist.tools.rmi;
 /**
  * An interface implemented by proxy classes.
  *
- * @see StubGenerator
+ * @see javassist.tools.rmi.StubGenerator
  */
 public interface Proxy {
     int _getObjectId();

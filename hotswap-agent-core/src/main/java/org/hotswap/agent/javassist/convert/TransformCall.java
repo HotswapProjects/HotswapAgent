@@ -16,9 +16,12 @@
 
 package org.hotswap.agent.javassist.convert;
 
+import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.*;
 
 public class TransformCall extends Transformer {
     protected String classname, methodname, methodDescriptor;
@@ -27,26 +30,28 @@ public class TransformCall extends Transformer {
 
     /* cache */
     protected int newIndex;
-    protected org.hotswap.agent.javassist.bytecode.ConstPool constPool;
+    protected ConstPool constPool;
 
     public TransformCall(Transformer next, CtMethod origMethod,
-                         CtMethod substMethod) {
+                         CtMethod substMethod)
+    {
         this(next, origMethod.getName(), substMethod);
         classname = origMethod.getDeclaringClass().getName();
     }
 
     public TransformCall(Transformer next, String oldMethodName,
-                         CtMethod substMethod) {
+                         CtMethod substMethod)
+    {
         super(next);
         methodname = oldMethodName;
         methodDescriptor = substMethod.getMethodInfo2().getDescriptor();
-        classname = newClassname = substMethod.getDeclaringClass().getName();
+        classname = newClassname = substMethod.getDeclaringClass().getName(); 
         newMethodname = substMethod.getName();
         constPool = null;
         newMethodIsPrivate = Modifier.isPrivate(substMethod.getModifiers());
     }
 
-    public void initialize(org.hotswap.agent.javassist.bytecode.ConstPool cp, org.hotswap.agent.javassist.bytecode.CodeAttribute attr) {
+    public void initialize(ConstPool cp, CodeAttribute attr) {
         if (constPool != cp)
             newIndex = 0;
     }
@@ -58,50 +63,54 @@ public class TransformCall extends Transformer {
      * by <code>classname</code>.   This method transforms the instruction
      * in that case unless the subclass overrides the target method.
      */
-    public int transform(org.hotswap.agent.javassist.CtClass clazz, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator,
-                         org.hotswap.agent.javassist.bytecode.ConstPool cp) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    public int transform(CtClass clazz, int pos, CodeIterator iterator,
+                         ConstPool cp) throws BadBytecode
+    {
         int c = iterator.byteAt(pos);
         if (c == INVOKEINTERFACE || c == INVOKESPECIAL
-                || c == INVOKESTATIC || c == INVOKEVIRTUAL) {
+                        || c == INVOKESTATIC || c == INVOKEVIRTUAL) {
             int index = iterator.u16bitAt(pos + 1);
             String cname = cp.eqMember(methodname, methodDescriptor, index);
             if (cname != null && matchClass(cname, clazz.getClassPool())) {
                 int ntinfo = cp.getMemberNameAndType(index);
                 pos = match(c, pos, iterator,
-                        cp.getNameAndTypeDescriptor(ntinfo), cp);
+                            cp.getNameAndTypeDescriptor(ntinfo), cp);
             }
         }
 
         return pos;
     }
 
-    private boolean matchClass(String name, org.hotswap.agent.javassist.ClassPool pool) {
+    private boolean matchClass(String name, ClassPool pool) {
         if (classname.equals(name))
             return true;
 
         try {
-            org.hotswap.agent.javassist.CtClass clazz = pool.get(name);
-            org.hotswap.agent.javassist.CtClass declClazz = pool.get(classname);
+            CtClass clazz = pool.get(name);
+            CtClass declClazz = pool.get(classname);
             if (clazz.subtypeOf(declClazz))
                 try {
                     CtMethod m = clazz.getMethod(methodname, methodDescriptor);
                     return m.getDeclaringClass().getName().equals(classname);
-                } catch (NotFoundException e) {
+                }
+                catch (NotFoundException e) {
                     // maybe the original method has been removed.
                     return true;
                 }
-        } catch (NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             return false;
         }
 
         return false;
     }
 
-    protected int match(int c, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator,
-                        int typedesc, org.hotswap.agent.javassist.bytecode.ConstPool cp) throws org.hotswap.agent.javassist.bytecode.BadBytecode {
+    protected int match(int c, int pos, CodeIterator iterator,
+                        int typedesc, ConstPool cp) throws BadBytecode
+    {
         if (newIndex == 0) {
             int nt = cp.addNameAndTypeInfo(cp.addUtf8Info(newMethodname),
-                    typedesc);
+                                           typedesc);
             int ci = cp.addClassInfo(newClassname);
             if (c == INVOKEINTERFACE)
                 newIndex = cp.addInterfaceMethodrefInfo(ci, nt);

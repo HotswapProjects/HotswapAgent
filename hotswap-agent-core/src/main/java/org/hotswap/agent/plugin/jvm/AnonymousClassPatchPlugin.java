@@ -231,7 +231,8 @@ public class AnonymousClassPatchPlugin {
         Map<String, AnonymousClassInfos> classInfosMap = anonymousClassInfosMap.get(classLoader);
         if (classInfosMap == null) {
             synchronized (classLoader) {
-                if (!anonymousClassInfosMap.containsKey(classLoader)) {
+                classInfosMap = anonymousClassInfosMap.get(classLoader);
+                if (classInfosMap == null) {
                     classInfosMap = new HashMap<String, AnonymousClassInfos>();
                     anonymousClassInfosMap.put(classLoader, classInfosMap);
                 }

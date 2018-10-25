@@ -21,29 +21,29 @@ import org.hotswap.agent.javassist.bytecode.AccessFlag;
 /**
  * The Modifier class provides static methods and constants to decode
  * class and member access modifiers.  The constant values are equivalent
- * to the corresponding values in <code>AccessFlag</code>.
- * <p/>
+ * to the corresponding values in <code>javassist.bytecode.AccessFlag</code>.
+ *
  * <p>All the methods/constants in this class are compatible with
  * ones in <code>java.lang.reflect.Modifier</code>.
  *
  * @see CtClass#getModifiers()
  */
 public class Modifier {
-    public static final int PUBLIC = AccessFlag.PUBLIC;
-    public static final int PRIVATE = AccessFlag.PRIVATE;
+    public static final int PUBLIC    = AccessFlag.PUBLIC;
+    public static final int PRIVATE   = AccessFlag.PRIVATE;
     public static final int PROTECTED = AccessFlag.PROTECTED;
-    public static final int STATIC = AccessFlag.STATIC;
-    public static final int FINAL = AccessFlag.FINAL;
+    public static final int STATIC    = AccessFlag.STATIC;
+    public static final int FINAL     = AccessFlag.FINAL;
     public static final int SYNCHRONIZED = AccessFlag.SYNCHRONIZED;
-    public static final int VOLATILE = AccessFlag.VOLATILE;
+    public static final int VOLATILE  = AccessFlag.VOLATILE;
     public static final int VARARGS = AccessFlag.VARARGS;
     public static final int TRANSIENT = AccessFlag.TRANSIENT;
-    public static final int NATIVE = AccessFlag.NATIVE;
+    public static final int NATIVE    = AccessFlag.NATIVE;
     public static final int INTERFACE = AccessFlag.INTERFACE;
-    public static final int ABSTRACT = AccessFlag.ABSTRACT;
-    public static final int STRICT = AccessFlag.STRICT;
+    public static final int ABSTRACT  = AccessFlag.ABSTRACT;
+    public static final int STRICT    = AccessFlag.STRICT;
     public static final int ANNOTATION = AccessFlag.ANNOTATION;
-    public static final int ENUM = AccessFlag.ENUM;
+    public static final int ENUM      = AccessFlag.ENUM;
 
     /**
      * Returns true if the modifiers include the <tt>public</tt>
@@ -211,7 +211,7 @@ public class Modifier {
      * Return a string describing the access modifier flags in
      * the specified modifier.
      *
-     * @param mod modifier flags.
+     * @param mod   modifier flags.
      */
     public static String toString(int mod) {
         return java.lang.reflect.Modifier.toString(mod);

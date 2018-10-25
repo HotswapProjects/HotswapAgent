@@ -16,39 +16,41 @@
 
 package org.hotswap.agent.javassist.convert;
 
-import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CannotCompileException;
 
 final public class TransformNew extends Transformer {
     private int nested;
     private String classname, trapClass, trapMethod;
 
     public TransformNew(Transformer next,
-                        String classname, String trapClass, String trapMethod) {
+                 String classname, String trapClass, String trapMethod) {
         super(next);
         this.classname = classname;
         this.trapClass = trapClass;
         this.trapMethod = trapMethod;
     }
 
-    public void initialize(org.hotswap.agent.javassist.bytecode.ConstPool cp, org.hotswap.agent.javassist.bytecode.CodeAttribute attr) {
+    public void initialize(ConstPool cp, CodeAttribute attr) {
         nested = 0;
     }
 
     /**
      * Replace a sequence of
-     * NEW classname
-     * DUP
-     * ...
-     * INVOKESPECIAL
+     *    NEW classname
+     *    DUP
+     *    ...
+     *    INVOKESPECIAL
      * with
-     * NOP
-     * NOP
-     * ...
-     * INVOKESTATIC trapMethod in trapClass
+     *    NOP
+     *    NOP
+     *    ...
+     *    INVOKESTATIC trapMethod in trapClass
      */
-    public int transform(CtClass clazz, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iterator,
-                         org.hotswap.agent.javassist.bytecode.ConstPool cp) throws CannotCompileException {
+    public int transform(CtClass clazz, int pos, CodeIterator iterator,
+                         ConstPool cp) throws CannotCompileException
+    {
         int index;
         int c = iterator.byteAt(pos);
         if (c == NEW) {
@@ -56,7 +58,7 @@ final public class TransformNew extends Transformer {
             if (cp.getClassInfo(index).equals(classname)) {
                 if (iterator.byteAt(pos + 3) != DUP)
                     throw new CannotCompileException(
-                            "NEW followed by no DUP was found");
+                                "NEW followed by no DUP was found");
 
                 iterator.writeByte(NOP, pos);
                 iterator.writeByte(NOP, pos + 1);
@@ -64,17 +66,18 @@ final public class TransformNew extends Transformer {
                 iterator.writeByte(NOP, pos + 3);
                 ++nested;
 
-                org.hotswap.agent.javassist.bytecode.StackMapTable smt
-                        = (org.hotswap.agent.javassist.bytecode.StackMapTable) iterator.get().getAttribute(org.hotswap.agent.javassist.bytecode.StackMapTable.tag);
+                StackMapTable smt
+                    = (StackMapTable)iterator.get().getAttribute(StackMapTable.tag);
                 if (smt != null)
                     smt.removeNew(pos);
 
-                org.hotswap.agent.javassist.bytecode.StackMap sm
-                        = (org.hotswap.agent.javassist.bytecode.StackMap) iterator.get().getAttribute(org.hotswap.agent.javassist.bytecode.StackMap.tag);
+                StackMap sm
+                    = (StackMap)iterator.get().getAttribute(StackMap.tag);
                 if (sm != null)
                     sm.removeNew(pos);
             }
-        } else if (c == INVOKESPECIAL) {
+        }
+        else if (c == INVOKESPECIAL) {
             index = iterator.u16bitAt(pos + 1);
             int typedesc = cp.isConstructor(classname, index);
             if (typedesc != 0 && nested > 0) {
@@ -88,13 +91,13 @@ final public class TransformNew extends Transformer {
         return pos;
     }
 
-    private int computeMethodref(int typedesc, org.hotswap.agent.javassist.bytecode.ConstPool cp) {
+    private int computeMethodref(int typedesc, ConstPool cp) {
         int classIndex = cp.addClassInfo(trapClass);
         int mnameIndex = cp.addUtf8Info(trapMethod);
         typedesc = cp.addUtf8Info(
-                org.hotswap.agent.javassist.bytecode.Descriptor.changeReturnType(classname,
-                        cp.getUtf8Info(typedesc)));
+                Descriptor.changeReturnType(classname,
+                                            cp.getUtf8Info(typedesc)));
         return cp.addMethodrefInfo(classIndex,
-                cp.addNameAndTypeInfo(mnameIndex, typedesc));
+                        cp.addNameAndTypeInfo(mnameIndex, typedesc));
     }
 }

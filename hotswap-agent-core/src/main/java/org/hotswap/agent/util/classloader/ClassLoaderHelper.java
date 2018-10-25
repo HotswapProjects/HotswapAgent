@@ -1,9 +1,9 @@
 package org.hotswap.agent.util.classloader;
 
-import org.hotswap.agent.logging.AgentLogger;
-
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 
 /**
  * Utility method for classloaders.
@@ -38,5 +38,31 @@ public class ClassLoaderHelper {
             LOGGER.error("Unable to invoke findLoadedClass on classLoader {}, className {}", e, classLoader, className);
             return false;
         }
+    }
+
+    /**
+     * Some class loader has activity state. e.g. WebappClassLoader must be started before it can be used
+     *
+     * @param classLoader the class loader
+     * @return true, if is class loder active
+     */
+    public static boolean isClassLoderStarted(ClassLoader classLoader) {
+        if ("org.glassfish.web.loader.WebappClassLoader".equals(classLoader.getClass().getName())||
+            "org.apache.catalina.loader.WebappClassLoader".equals(classLoader.getClass().getName())) {
+            try {
+                Class<?> clazz = classLoader.getClass();
+                boolean isStarted;
+                if ("org.apache.catalina.loader.WebappClassLoaderBase".equals(clazz.getSuperclass().getName())) {
+                    clazz = clazz.getSuperclass();
+                    isStarted = "STARTED".equals((String) ReflectionHelper.invoke(classLoader, clazz, "getStateName", new Class[] {}, null));
+                } else {
+                    isStarted = (boolean) ReflectionHelper.invoke(classLoader, clazz, "isStarted", new Class[] {}, null);
+                }
+                return isStarted;
+            } catch (Exception e) {
+                LOGGER.warning("isClassLoderStarted() : {}", e.getMessage());
+            }
+        }
+        return true;
     }
 }

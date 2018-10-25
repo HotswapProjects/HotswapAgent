@@ -2,7 +2,6 @@ package org.hotswap.agent.plugin.weld.command;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +13,11 @@ import org.hotswap.agent.plugin.weld.BeanReloadStrategy;
 import org.hotswap.agent.watch.WatchFileEvent;
 
 /**
- * BeanClassRefreshCommand. When a bean class is redefined object of BeanClassRefreshCommand is created and after
- * timeout executed. It calls bean reload logic in BeanDepoymentArchiveAgent internally
+ * BeanClassRefreshCommand. Collect all classes definitions/redefinitions for single archive
+ *
+ * 1. Merge all commands (definition, redefinition) for single archive to single command.
+ * 2. Call proxy redefinitions in BeanClassRefreshAgent for all merged commands
+ * 3. Call bean class reload in BeanDepoymentArchiveAgent for all merged commands
  *
  * @author Vladimir Dvorak
  */
@@ -72,37 +74,91 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
     @Override
     public void executeCommand() {
-        if (isDeleteEvent()) {
-            LOGGER.trace("Skip Weld reload for delete event on class '{}'", className);
+        List<Command> mergedCommands = popMergedCommands();
+        mergedCommands.add(0, this);
+
+        do {
+            // First step : recreate all proxies
+            for (Command command: mergedCommands) {
+                ((BeanClassRefreshCommand)command).recreateProxy(mergedCommands);
+            }
+
+            // Second step : reload beans
+            for (Command command: mergedCommands) {
+                ((BeanClassRefreshCommand)command).reloadBean(mergedCommands);
+            }
+            mergedCommands = popMergedCommands();
+        } while (!mergedCommands.isEmpty());
+    }
+
+    private void recreateProxy(List<Command> mergedCommands) {
+
+        if (isDeleteEvent(mergedCommands)) {
+            LOGGER.trace("Skip recreate proxy for delete event on class '{}'", className);
             return;
         }
+
         if (className != null) {
             try {
-                LOGGER.debug("Executing BeanDeploymentArchiveAgent.refreshBeanClass('{}')", className);
-                Class<?> bdaAgentClazz = Class.forName(BeanDeploymentArchiveAgent.class.getName(), true, classLoader);
-                Method bdaMethod  = bdaAgentClazz.getDeclaredMethod("refreshBeanClass",
+                LOGGER.debug("Executing BeanClassRefreshAgent.recreateProxy('{}')", className);
+                Class<?> bdaAgentClazz = Class.forName(BeanClassRefreshAgent.class.getName(), true, classLoader);
+                Method recreateProxy  = bdaAgentClazz.getDeclaredMethod("recreateProxy",
                         new Class[] { ClassLoader.class,
                                       String.class,
                                       Map.class,
+                                      String.class,
+                                      String.class
+                        }
+                );
+                recreateProxy.invoke(null,
+                        classLoader,
+                        archivePath,
+                        registeredProxiedBeans,
+                        className,
+                        classSignatureForProxyCheck
+                );
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException("Plugin error, method not found", e);
+            } catch (InvocationTargetException e) {
+                LOGGER.error("Error recreate proxy class {} in classLoader {}", e, className, classLoader);
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Plugin error, illegal access", e);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Plugin error, CDI class not found in classloader", e);
+            }
+        }
+    }
+
+    private void reloadBean(List<Command> mergedCommands) {
+
+        if (isDeleteEvent(mergedCommands)) {
+            LOGGER.trace("Skip refresh bean class for delete event on class '{}'", className);
+            return;
+        }
+
+        if (className != null) {
+            try {
+                LOGGER.debug("Executing BeanClassRefreshAgent.reloadBean('{}')", className);
+                Class<?> bdaAgentClazz = Class.forName(BeanClassRefreshAgent.class.getName(), true, classLoader);
+                Method refreshBean  = bdaAgentClazz.getDeclaredMethod("reloadBean",
+                        new Class[] { ClassLoader.class,
                                       String.class,
                                       String.class,
                                       String.class,
                                       String.class
                         }
                 );
-                bdaMethod.invoke(null,
+                refreshBean.invoke(null,
                         classLoader,
                         archivePath,
-                        registeredProxiedBeans,
                         className,
-                        classSignatureForProxyCheck,
                         classSignatureByStrategy,
-                        strBeanReloadStrategy // passed as String since BeanDeploymentArchiveAgent has different classloader
+                        strBeanReloadStrategy // passed as String since BeanClassRefreshAgent has different classloader
                 );
             } catch (NoSuchMethodException e) {
                 throw new IllegalStateException("Plugin error, method not found", e);
             } catch (InvocationTargetException e) {
-                LOGGER.error("Error refreshing class {} in classLoader {}", e, className, classLoader);
+                LOGGER.error("Error reloadBean class {} in classLoader {}", e, className, classLoader);
             } catch (IllegalAccessException e) {
                 throw new IllegalStateException("Plugin error, illegal access", e);
             } catch (ClassNotFoundException e) {
@@ -112,25 +168,22 @@ public class BeanClassRefreshCommand extends MergeableCommand {
     }
 
     /**
-     * Check all merged events for delete and create events. If delete without create is found, than assume
+     * Check all merged events with same className for delete and create events. If delete without create is found, than assume
      * file was deleted.
+     * @param mergedCommands
      */
-    private boolean isDeleteEvent() {
-        // for all merged commands including this command
-        List<BeanClassRefreshCommand> mergedCommands = new ArrayList<BeanClassRefreshCommand>();
-        for (Command command : getMergedCommands()) {
-            mergedCommands.add((BeanClassRefreshCommand) command);
-        }
-        mergedCommands.add(this);
-
+    private boolean isDeleteEvent(List<Command> mergedCommands) {
         boolean createFound = false;
         boolean deleteFound = false;
-        for (BeanClassRefreshCommand command : mergedCommands) {
-            if (command.event != null) {
-                if (command.event.getEventType().equals(FileEvent.DELETE))
-                    deleteFound = true;
-                if (command.event.getEventType().equals(FileEvent.CREATE))
-                    createFound = true;
+        for (Command cmd : mergedCommands) {
+            BeanClassRefreshCommand refreshCommand = (BeanClassRefreshCommand) cmd;
+            if (className.equals(refreshCommand.className)) {
+                if (refreshCommand.event != null) {
+                    if (refreshCommand.event.getEventType().equals(FileEvent.DELETE))
+                        deleteFound = true;
+                    if (refreshCommand.event.getEventType().equals(FileEvent.CREATE))
+                        createFound = true;
+                }
             }
         }
 
@@ -146,7 +199,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         BeanClassRefreshCommand that = (BeanClassRefreshCommand) o;
 
         if (!classLoader.equals(that.classLoader)) return false;
-        if (className != null && !className.equals(that.className)) return false;
+        if (archivePath != null && !archivePath.equals(that.archivePath)) return false;
 
         return true;
     }

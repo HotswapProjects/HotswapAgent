@@ -38,10 +38,11 @@ import org.hotswap.agent.util.AnnotationHelper;
  * @author alpapad@gmail.com
  */
 @Plugin(name = "Hibernate3", //
-description = "Reload Hibernate configuration after entity create/change.", //
-testedVersions = { "3.6" }, //
-expectedVersions = { "3.6" }, //
-supportClass = { Hibernate3Transformers.class })
+        group = "groupHibernate",
+        description = "Reload Hibernate configuration after entity create/change.", //
+        testedVersions = { "3.6" }, //
+        expectedVersions = { "3.6" }, //
+        supportClass = { Hibernate3Transformers.class })
 @Versions(maven = { @Maven(value = "[3.0,4.0)", artifactId = "hibernate-core", groupId = "org.hibernate") })
 public class Hibernate3Plugin {
 
@@ -80,7 +81,7 @@ public class Hibernate3Plugin {
 
     /**
      * Disable plugin (if environment is JPA)
-     * 
+     *
      * Need to re-think this: Maybe use OverrideConfig to hold this info?.
      */
     public void disable() {

@@ -29,7 +29,7 @@ import org.jboss.classfilewriter.util.ByteArrayDataOutputStream;
 import org.jboss.weld.util.bytecode.ClassFileUtils;
 
 /**
- * The CDI proxyFactory has its class loading tasks delegated to this class, which can then have some magic applied
+ * The Weld proxyFactory has its class loading tasks delegated to this class, which can then have some magic applied
  * to make weld think that the class has not been loaded yet.
  *
  * @author Stuart Douglas

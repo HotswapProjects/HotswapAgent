@@ -16,33 +16,32 @@
 
 package org.hotswap.agent.javassist;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.net.MalformedURLException;
+import java.io.*;
 import java.net.URL;
+import java.net.MalformedURLException;
 
 /**
  * A <code>ByteArrayClassPath</code> contains bytes that is served as
  * a class file to a <code>ClassPool</code>.  It is useful to convert
  * a byte array to a <code>CtClass</code> object.
- * <p/>
+ *
  * <p>For example, if you want to convert a byte array <code>b</code>
  * into a <code>CtClass</code> object representing the class with a name
  * <code>classname</code>, then do as following:
- * <p/>
- * <ul><pre>
+ *
+ * <pre>
  * ClassPool cp = ClassPool.getDefault();
  * cp.insertClassPath(new ByteArrayClassPath(classname, b));
  * CtClass cc = cp.get(classname);
- * </pre></ul>
- * <p/>
+ * </pre>
+ *
  * <p>The <code>ClassPool</code> object <code>cp</code> uses the created
  * <code>ByteArrayClassPath</code> object as the source of the class file.
- * <p/>
+ * 
  * <p>A <code>ByteArrayClassPath</code> must be instantiated for every
  * class.  It contains only a single class file.
  *
- * @see ClassPath
+ * @see javassist.ClassPath
  * @see ClassPool#insertClassPath(ClassPath)
  * @see ClassPool#appendClassPath(ClassPath)
  * @see ClassPool#makeClass(InputStream)
@@ -66,8 +65,7 @@ public class ByteArrayClassPath implements ClassPath {
     /**
      * Closes this class path.
      */
-    public void close() {
-    }
+    public void close() {}
 
     public String toString() {
         return "byte[]:" + classname;
@@ -77,7 +75,7 @@ public class ByteArrayClassPath implements ClassPath {
      * Opens the class file.
      */
     public InputStream openClassfile(String classname) {
-        if (this.classname.equals(classname))
+        if(this.classname.equals(classname))
             return new ByteArrayInputStream(classfile);
         else
             return null;
@@ -87,13 +85,13 @@ public class ByteArrayClassPath implements ClassPath {
      * Obtains the URL.
      */
     public URL find(String classname) {
-        if (this.classname.equals(classname)) {
+        if(this.classname.equals(classname)) {
             String cname = classname.replace('.', '/') + ".class";
             try {
                 // return new File(cname).toURL();
                 return new URL("file:/ByteArrayClassPath/" + cname);
-            } catch (MalformedURLException e) {
             }
+            catch (MalformedURLException e) {}
         }
 
         return null;

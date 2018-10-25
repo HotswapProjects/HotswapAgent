@@ -16,10 +16,12 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
-public class MethodDecl extends org.hotswap.agent.javassist.compiler.ast.ASTList {
+import org.hotswap.agent.javassist.compiler.CompileError;
+
+public class MethodDecl extends ASTList {
     public static final String initName = "<init>";
 
-    public MethodDecl(ASTree _head, org.hotswap.agent.javassist.compiler.ast.ASTList _tail) {
+    public MethodDecl(ASTree _head, ASTList _tail) {
         super(_head, _tail);
     }
 
@@ -28,27 +30,17 @@ public class MethodDecl extends org.hotswap.agent.javassist.compiler.ast.ASTList
         return sym != null && initName.equals(sym.get());
     }
 
-    public org.hotswap.agent.javassist.compiler.ast.ASTList getModifiers() {
-        return (org.hotswap.agent.javassist.compiler.ast.ASTList) getLeft();
-    }
+    public ASTList getModifiers() { return (ASTList)getLeft(); }
 
-    public org.hotswap.agent.javassist.compiler.ast.Declarator getReturn() {
-        return (org.hotswap.agent.javassist.compiler.ast.Declarator) tail().head();
-    }
+    public Declarator getReturn() { return (Declarator)tail().head(); }
 
-    public org.hotswap.agent.javassist.compiler.ast.ASTList getParams() {
-        return (org.hotswap.agent.javassist.compiler.ast.ASTList) sublist(2).head();
-    }
+    public ASTList getParams() { return (ASTList)sublist(2).head(); }
 
-    public org.hotswap.agent.javassist.compiler.ast.ASTList getThrows() {
-        return (org.hotswap.agent.javassist.compiler.ast.ASTList) sublist(3).head();
-    }
+    public ASTList getThrows() { return (ASTList)sublist(3).head(); }
 
-    public Stmnt getBody() {
-        return (Stmnt) sublist(4).head();
-    }
+    public Stmnt getBody() { return (Stmnt)sublist(4).head(); }
 
-    public void accept(Visitor v) throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void accept(Visitor v) throws CompileError {
         v.atMethodDecl(this);
     }
 }

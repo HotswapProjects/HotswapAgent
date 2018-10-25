@@ -16,9 +16,10 @@
 
 package org.hotswap.agent.javassist;
 
+import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.compiler.JvstCodeGen;
-
 import java.util.Hashtable;
+import org.hotswap.agent.javassist.CtMethod.ConstParameter;
 
 class CtNewWrappedMethod {
 
@@ -27,36 +28,39 @@ class CtNewWrappedMethod {
     public static CtMethod wrapped(CtClass returnType, String mname,
                                    CtClass[] parameterTypes,
                                    CtClass[] exceptionTypes,
-                                   CtMethod body, CtMethod.ConstParameter constParam,
+                                   CtMethod body, ConstParameter constParam,
                                    CtClass declaring)
-            throws CannotCompileException {
+        throws CannotCompileException
+    {
         CtMethod mt = new CtMethod(returnType, mname, parameterTypes,
-                declaring);
+                                   declaring);
         mt.setModifiers(body.getModifiers());
         try {
             mt.setExceptionTypes(exceptionTypes);
-        } catch (NotFoundException e) {
+        }
+        catch (NotFoundException e) {
             throw new CannotCompileException(e);
         }
 
-        org.hotswap.agent.javassist.bytecode.Bytecode code = makeBody(declaring, declaring.getClassFile2(), body,
-                parameterTypes, returnType, constParam);
-        org.hotswap.agent.javassist.bytecode.MethodInfo minfo = mt.getMethodInfo2();
+        Bytecode code = makeBody(declaring, declaring.getClassFile2(), body,
+                                 parameterTypes, returnType, constParam);
+        MethodInfo minfo = mt.getMethodInfo2();
         minfo.setCodeAttribute(code.toCodeAttribute());
         // a stack map has been already created. 
         return mt;
     }
 
-    static org.hotswap.agent.javassist.bytecode.Bytecode makeBody(CtClass clazz, org.hotswap.agent.javassist.bytecode.ClassFile classfile,
-                                                                  CtMethod wrappedBody,
-                                                                  CtClass[] parameters,
-                                                                  CtClass returnType,
-                                                                  CtMethod.ConstParameter cparam)
-            throws CannotCompileException {
+    static Bytecode makeBody(CtClass clazz, ClassFile classfile,
+                             CtMethod wrappedBody,
+                             CtClass[] parameters,
+                             CtClass returnType,
+                             ConstParameter cparam)
+        throws CannotCompileException
+    {
         boolean isStatic = Modifier.isStatic(wrappedBody.getModifiers());
-        org.hotswap.agent.javassist.bytecode.Bytecode code = new org.hotswap.agent.javassist.bytecode.Bytecode(classfile.getConstPool(), 0, 0);
+        Bytecode code = new Bytecode(classfile.getConstPool(), 0, 0);
         int stacksize = makeBody0(clazz, classfile, wrappedBody, isStatic,
-                parameters, returnType, cparam, code);
+                                  parameters, returnType, cparam, code);
         code.setMaxStack(stacksize);
         code.setMaxLocals(isStatic, parameters, 0);
         return code;
@@ -65,27 +69,29 @@ class CtNewWrappedMethod {
     /* The generated method body does not need a stack map table
      * because it does not contain a branch instruction.
      */
-    protected static int makeBody0(CtClass clazz, org.hotswap.agent.javassist.bytecode.ClassFile classfile,
+    protected static int makeBody0(CtClass clazz, ClassFile classfile,
                                    CtMethod wrappedBody,
                                    boolean isStatic, CtClass[] parameters,
-                                   CtClass returnType, CtMethod.ConstParameter cparam,
-                                   org.hotswap.agent.javassist.bytecode.Bytecode code)
-            throws CannotCompileException {
+                                   CtClass returnType, ConstParameter cparam,
+                                   Bytecode code)
+        throws CannotCompileException
+    {
         if (!(clazz instanceof CtClassType))
             throw new CannotCompileException("bad declaring class"
-                    + clazz.getName());
+                                             + clazz.getName());
 
         if (!isStatic)
             code.addAload(0);
 
         int stacksize = compileParameterList(code, parameters,
-                (isStatic ? 0 : 1));
+                                             (isStatic ? 0 : 1));
         int stacksize2;
         String desc;
         if (cparam == null) {
             stacksize2 = 0;
-            desc = CtMethod.ConstParameter.defaultDescriptor();
-        } else {
+            desc = ConstParameter.defaultDescriptor();
+        }
+        else {
             stacksize2 = cparam.compile(code);
             desc = cparam.descriptor();
         }
@@ -94,19 +100,20 @@ class CtNewWrappedMethod {
 
         String bodyname;
         try {
-            bodyname = addBodyMethod((CtClassType) clazz, classfile,
-                    wrappedBody);
+            bodyname = addBodyMethod((CtClassType)clazz, classfile,
+                                     wrappedBody);
             /* if an exception is thrown below, the method added above
              * should be removed. (future work :<)
              */
-        } catch (org.hotswap.agent.javassist.bytecode.BadBytecode e) {
+        }
+        catch (BadBytecode e) {
             throw new CannotCompileException(e);
         }
 
         if (isStatic)
-            code.addInvokestatic(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, bodyname, desc);
+            code.addInvokestatic(Bytecode.THIS, bodyname, desc);
         else
-            code.addInvokespecial(org.hotswap.agent.javassist.bytecode.Bytecode.THIS, bodyname, desc);
+            code.addInvokespecial(Bytecode.THIS, bodyname, desc);
 
         compileReturn(code, returnType);        // consumes 2 stack entries
 
@@ -118,36 +125,38 @@ class CtNewWrappedMethod {
 
     private static void checkSignature(CtMethod wrappedBody,
                                        String descriptor)
-            throws CannotCompileException {
+        throws CannotCompileException
+    {
         if (!descriptor.equals(wrappedBody.getMethodInfo2().getDescriptor()))
             throw new CannotCompileException(
-                    "wrapped method with a bad signature: "
-                            + wrappedBody.getDeclaringClass().getName()
-                            + '.' + wrappedBody.getName());
+                        "wrapped method with a bad signature: "
+                        + wrappedBody.getDeclaringClass().getName()
+                        + '.' + wrappedBody.getName());
     }
 
     private static String addBodyMethod(CtClassType clazz,
-                                        org.hotswap.agent.javassist.bytecode.ClassFile classfile,
+                                        ClassFile classfile,
                                         CtMethod src)
-            throws org.hotswap.agent.javassist.bytecode.BadBytecode, CannotCompileException {
+        throws BadBytecode, CannotCompileException
+    {
         Hashtable bodies = clazz.getHiddenMethods();
-        String bodyname = (String) bodies.get(src);
+        String bodyname = (String)bodies.get(src);
         if (bodyname == null) {
             do {
                 bodyname = addedWrappedMethod + clazz.getUniqueNumber();
             } while (classfile.getMethod(bodyname) != null);
             ClassMap map = new ClassMap();
             map.put(src.getDeclaringClass().getName(), clazz.getName());
-            org.hotswap.agent.javassist.bytecode.MethodInfo body = new org.hotswap.agent.javassist.bytecode.MethodInfo(classfile.getConstPool(),
-                    bodyname, src.getMethodInfo2(),
-                    map);
+            MethodInfo body = new MethodInfo(classfile.getConstPool(),
+                                             bodyname, src.getMethodInfo2(),
+                                             map);
             int acc = body.getAccessFlags();
-            body.setAccessFlags(org.hotswap.agent.javassist.bytecode.AccessFlag.setPrivate(acc));
-            body.addAttribute(new org.hotswap.agent.javassist.bytecode.SyntheticAttribute(classfile.getConstPool()));
+            body.setAccessFlags(AccessFlag.setPrivate(acc));
+            body.addAttribute(new SyntheticAttribute(classfile.getConstPool()));
             // a stack map is copied.  rebuilding it is not needed.
             classfile.addMethod(body);
             bodies.put(src, bodyname);
-            org.hotswap.agent.javassist.CtMember.Cache cache = clazz.hasMemberCache();
+            CtMember.Cache cache = clazz.hasMemberCache();
             if (cache != null)
                 cache.addMethod(new CtMethod(body, clazz));
         }
@@ -162,7 +171,7 @@ class CtNewWrappedMethod {
      *                  the first argument is received.
      *                  (0: static method, 1: regular method.)
      */
-    static int compileParameterList(org.hotswap.agent.javassist.bytecode.Bytecode code,
+    static int compileParameterList(Bytecode code,
                                     CtClass[] params, int regno) {
         return JvstCodeGen.compileParameterList(code, params, regno);
     }
@@ -170,20 +179,21 @@ class CtNewWrappedMethod {
     /*
      * The produced codes cosume 1 or 2 stack entries.
      */
-    private static void compileReturn(org.hotswap.agent.javassist.bytecode.Bytecode code, CtClass type) {
+    private static void compileReturn(Bytecode code, CtClass type) {
         if (type.isPrimitive()) {
-            CtPrimitiveType pt = (CtPrimitiveType) type;
+            CtPrimitiveType pt = (CtPrimitiveType)type;
             if (pt != CtClass.voidType) {
                 String wrapper = pt.getWrapperName();
                 code.addCheckcast(wrapper);
                 code.addInvokevirtual(wrapper, pt.getGetMethodName(),
-                        pt.getGetMethodDescriptor());
+                                      pt.getGetMethodDescriptor());
             }
 
             code.addOpcode(pt.getReturnOp());
-        } else {
+        }
+        else {
             code.addCheckcast(type);
-            code.addOpcode(org.hotswap.agent.javassist.bytecode.Bytecode.ARETURN);
+            code.addOpcode(Bytecode.ARETURN);
         }
     }
 }

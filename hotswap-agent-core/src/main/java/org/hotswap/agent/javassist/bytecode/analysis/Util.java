@@ -15,13 +15,16 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+
 /**
  * A set of common utility methods.
  *
  * @author Jason T. Greene
  */
-public class Util implements org.hotswap.agent.javassist.bytecode.Opcode {
-    public static int getJumpTarget(int pos, org.hotswap.agent.javassist.bytecode.CodeIterator iter) {
+public class Util implements Opcode {
+    public static int getJumpTarget(int pos, CodeIterator iter) {
         int opcode = iter.byteAt(pos);
         pos += (opcode == JSR_W || opcode == GOTO_W) ? iter.s32bitAt(pos + 1) : iter.s16bitAt(pos + 1);
         return pos;

@@ -7,6 +7,11 @@ import java.util.List;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 
+/**
+ * ViewConfigReloadCommand.
+ *
+ * @author Vladimir Dvorak
+ */
 public class ViewConfigReloadCommand extends MergeableCommand {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ViewConfigReloadCommand.class);
@@ -31,7 +36,7 @@ public class ViewConfigReloadCommand extends MergeableCommand {
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
-            LOGGER.error("Error refreshing classes {} in classLoader {}", e, rootClassNameList, classLoader);
+            LOGGER.error("Error refreshing classes '{}' in classLoader {}", e, rootClassNameList, classLoader);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Plugin error, illegal access", e);
         } catch (ClassNotFoundException e) {

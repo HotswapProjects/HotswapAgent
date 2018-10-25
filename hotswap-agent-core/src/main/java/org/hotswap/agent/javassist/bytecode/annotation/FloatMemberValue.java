@@ -18,7 +18,6 @@ package org.hotswap.agent.javassist.bytecode.annotation;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 
@@ -36,7 +35,7 @@ public class FloatMemberValue extends MemberValue {
      * Constructs a float constant value.  The initial value is specified
      * by the constant pool entry at the given index.
      *
-     * @param index the index of a CONSTANT_Float_info structure.
+     * @param index     the index of a CONSTANT_Float_info structure.
      */
     public FloatMemberValue(int index, ConstPool cp) {
         super('F', cp);
@@ -46,7 +45,7 @@ public class FloatMemberValue extends MemberValue {
     /**
      * Constructs a float constant value.
      *
-     * @param f the initial value.
+     * @param f         the initial value.
      */
     public FloatMemberValue(float f, ConstPool cp) {
         super('F', cp);
@@ -62,7 +61,7 @@ public class FloatMemberValue extends MemberValue {
     }
 
     Object getValue(ClassLoader cl, ClassPool cp, Method m) {
-        return new Float(getValue());
+        return Float.valueOf(getValue());
     }
 
     Class getType(ClassLoader cl) {
@@ -93,14 +92,14 @@ public class FloatMemberValue extends MemberValue {
     /**
      * Writes the value.
      */
-    public void write(org.hotswap.agent.javassist.bytecode.annotation.AnnotationsWriter writer) throws IOException {
+    public void write(AnnotationsWriter writer) throws IOException {
         writer.constValueIndex(getValue());
     }
 
     /**
      * Accepts a visitor.
      */
-    public void accept(org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor visitor) {
+    public void accept(MemberValueVisitor visitor) {
         visitor.visitFloatMemberValue(this);
     }
 }

@@ -16,41 +16,42 @@
 
 package org.hotswap.agent.javassist.convert;
 
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+
 /**
  * Transformer and its subclasses are used for executing
  * code transformation specified by CodeConverter.
  *
- * @see org.hotswap.agent.javassist.CodeConverter
+ * @see javassist.CodeConverter
  */
-public abstract class Transformer implements org.hotswap.agent.javassist.bytecode.Opcode {
+public abstract class Transformer implements Opcode {
     private Transformer next;
 
     public Transformer(Transformer t) {
         next = t;
     }
 
-    public Transformer getNext() {
-        return next;
+    public Transformer getNext() { return next; }
+
+    public void initialize(ConstPool cp, CodeAttribute attr) {}
+    
+    public void initialize(ConstPool cp, CtClass clazz, MethodInfo minfo) throws CannotCompileException { 
+    	initialize(cp, minfo.getCodeAttribute());
     }
 
-    public void initialize(org.hotswap.agent.javassist.bytecode.ConstPool cp, org.hotswap.agent.javassist.bytecode.CodeAttribute attr) {
-    }
+    public void clean() {}
 
-    public void initialize(org.hotswap.agent.javassist.bytecode.ConstPool cp, org.hotswap.agent.javassist.CtClass clazz, org.hotswap.agent.javassist.bytecode.MethodInfo minfo) throws org.hotswap.agent.javassist.CannotCompileException {
-        initialize(cp, minfo.getCodeAttribute());
-    }
+    public abstract int transform(CtClass clazz, int pos, CodeIterator it,
+                ConstPool cp) throws CannotCompileException, BadBytecode;
 
-    public void clean() {
-    }
+    public int extraLocals() { return 0; }
 
-    public abstract int transform(org.hotswap.agent.javassist.CtClass clazz, int pos, org.hotswap.agent.javassist.bytecode.CodeIterator it,
-                                  org.hotswap.agent.javassist.bytecode.ConstPool cp) throws org.hotswap.agent.javassist.CannotCompileException, org.hotswap.agent.javassist.bytecode.BadBytecode;
-
-    public int extraLocals() {
-        return 0;
-    }
-
-    public int extraStack() {
-        return 0;
-    }
+    public int extraStack() { return 0; }
 }

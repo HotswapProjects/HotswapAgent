@@ -16,22 +16,24 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.compiler.TokenId;
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.compiler.ast.*;
 
 import java.util.ArrayList;
 
 /* Code generator methods depending on javassist.* classes.
  */
 public class MemberCodeGen extends CodeGen {
-    protected org.hotswap.agent.javassist.compiler.MemberResolver resolver;
-    protected org.hotswap.agent.javassist.CtClass thisClass;
-    protected org.hotswap.agent.javassist.bytecode.MethodInfo thisMethod;
+    protected MemberResolver resolver;
+    protected CtClass   thisClass;
+    protected MethodInfo thisMethod;
 
     protected boolean resultStatic;
 
-    public MemberCodeGen(org.hotswap.agent.javassist.bytecode.Bytecode b, org.hotswap.agent.javassist.CtClass cc, org.hotswap.agent.javassist.ClassPool cp) {
+    public MemberCodeGen(Bytecode b, CtClass cc, ClassPool cp) {
         super(b);
-        resolver = new org.hotswap.agent.javassist.compiler.MemberResolver(cp);
+        resolver = new MemberResolver(cp);
         thisClass = cc;
         thisMethod = null;
     }
@@ -41,9 +43,9 @@ public class MemberCodeGen extends CodeGen {
      * targeted by this compilation.
      */
     public int getMajorVersion() {
-        org.hotswap.agent.javassist.bytecode.ClassFile cf = thisClass.getClassFile2();
+        ClassFile cf = thisClass.getClassFile2();
         if (cf == null)
-            return org.hotswap.agent.javassist.bytecode.ClassFile.MAJOR_VERSION;     // JDK 1.3
+            return ClassFile.MAJOR_VERSION;     // JDK 1.3
         else
             return cf.getMajorVersion();
     }
@@ -51,35 +53,33 @@ public class MemberCodeGen extends CodeGen {
     /**
      * Records the currently compiled method.
      */
-    public void setThisMethod(org.hotswap.agent.javassist.CtMethod m) {
+    public void setThisMethod(CtMethod m) {
         thisMethod = m.getMethodInfo2();
         if (typeChecker != null)
             typeChecker.setThisMethod(thisMethod);
     }
 
-    public org.hotswap.agent.javassist.CtClass getThisClass() {
-        return thisClass;
-    }
+    public CtClass getThisClass() { return thisClass; }
 
     /**
      * Returns the JVM-internal representation of this class name.
      */
     protected String getThisName() {
-        return org.hotswap.agent.javassist.compiler.MemberResolver.javaToJvmName(thisClass.getName());
+        return MemberResolver.javaToJvmName(thisClass.getName());
     }
 
     /**
      * Returns the JVM-internal representation of this super class name.
      */
-    protected String getSuperName() throws org.hotswap.agent.javassist.compiler.CompileError {
-        return org.hotswap.agent.javassist.compiler.MemberResolver.javaToJvmName(
-                org.hotswap.agent.javassist.compiler.MemberResolver.getSuperclass(thisClass).getName());
+    protected String getSuperName() throws CompileError {
+        return MemberResolver.javaToJvmName(
+                        MemberResolver.getSuperclass(thisClass).getName());
     }
 
-    protected void insertDefaultSuperCall() throws org.hotswap.agent.javassist.compiler.CompileError {
+    protected void insertDefaultSuperCall() throws CompileError {
         bytecode.addAload(0);
-        bytecode.addInvokespecial(org.hotswap.agent.javassist.compiler.MemberResolver.getSuperclass(thisClass),
-                "<init>", "()V");
+        bytecode.addInvokespecial(MemberResolver.getSuperclass(thisClass),
+                                  "<init>", "()V");
     }
 
     static class JsrHook extends ReturnHook {
@@ -103,44 +103,44 @@ public class MemberCodeGen extends CodeGen {
             return var;
         }
 
-        private void jsrJmp(org.hotswap.agent.javassist.bytecode.Bytecode b) {
-            b.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.GOTO);
-            jsrList.add(new int[]{b.currentPc(), var});
+        private void jsrJmp(Bytecode b) {
+            b.addOpcode(Opcode.GOTO);
+            jsrList.add(new int[] {b.currentPc(), var});
             b.addIndex(0);
         }
 
-        protected boolean doit(org.hotswap.agent.javassist.bytecode.Bytecode b, int opcode) {
+        protected boolean doit(Bytecode b, int opcode) {
             switch (opcode) {
-                case org.hotswap.agent.javassist.bytecode.Opcode.RETURN:
-                    jsrJmp(b);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.ARETURN:
-                    b.addAstore(getVar(1));
-                    jsrJmp(b);
-                    b.addAload(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.IRETURN:
-                    b.addIstore(getVar(1));
-                    jsrJmp(b);
-                    b.addIload(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.LRETURN:
-                    b.addLstore(getVar(2));
-                    jsrJmp(b);
-                    b.addLload(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.DRETURN:
-                    b.addDstore(getVar(2));
-                    jsrJmp(b);
-                    b.addDload(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.FRETURN:
-                    b.addFstore(getVar(1));
-                    jsrJmp(b);
-                    b.addFload(var);
-                    break;
-                default:
-                    throw new RuntimeException("fatal");
+            case Opcode.RETURN :
+                jsrJmp(b);
+                break;
+            case ARETURN :
+                b.addAstore(getVar(1));
+                jsrJmp(b);
+                b.addAload(var);
+                break;
+            case IRETURN :
+                b.addIstore(getVar(1));
+                jsrJmp(b);
+                b.addIload(var);
+                break;
+            case LRETURN :
+                b.addLstore(getVar(2));
+                jsrJmp(b);
+                b.addLload(var);
+                break;
+            case DRETURN :
+                b.addDstore(getVar(2));
+                jsrJmp(b);
+                b.addDload(var);
+                break;
+            case FRETURN :
+                b.addFstore(getVar(1));
+                jsrJmp(b);
+                b.addFload(var);
+                break;
+            default :
+                throw new RuntimeException("fatal");
             }
 
             return false;
@@ -157,44 +157,44 @@ public class MemberCodeGen extends CodeGen {
             var = retTarget[1];
         }
 
-        protected boolean doit(org.hotswap.agent.javassist.bytecode.Bytecode b, int opcode) {
+        protected boolean doit(Bytecode b, int opcode) {
             switch (opcode) {
-                case org.hotswap.agent.javassist.bytecode.Opcode.RETURN:
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.ARETURN:
-                    b.addAstore(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.IRETURN:
-                    b.addIstore(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.LRETURN:
-                    b.addLstore(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.DRETURN:
-                    b.addDstore(var);
-                    break;
-                case org.hotswap.agent.javassist.bytecode.Opcode.FRETURN:
-                    b.addFstore(var);
-                    break;
-                default:
-                    throw new RuntimeException("fatal");
+            case Opcode.RETURN :
+                break;
+            case ARETURN :
+                b.addAstore(var);
+                break;
+            case IRETURN :
+                b.addIstore(var);
+                break;
+            case LRETURN :
+                b.addLstore(var);
+                break;
+            case DRETURN :
+                b.addDstore(var);
+                break;
+            case FRETURN :
+                b.addFstore(var);
+                break;
+            default :
+                throw new RuntimeException("fatal");
             }
 
-            b.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.GOTO);
+            b.addOpcode(Opcode.GOTO);
             b.addIndex(target - b.currentPc() + 3);
             return true;
         }
     }
 
-    protected void atTryStmnt(org.hotswap.agent.javassist.compiler.ast.Stmnt st) throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.bytecode.Bytecode bc = bytecode;
-        org.hotswap.agent.javassist.compiler.ast.Stmnt body = (org.hotswap.agent.javassist.compiler.ast.Stmnt) st.getLeft();
+    protected void atTryStmnt(Stmnt st) throws CompileError {
+        Bytecode bc = bytecode;
+        Stmnt body = (Stmnt)st.getLeft();
         if (body == null)
             return;
 
-        org.hotswap.agent.javassist.compiler.ast.ASTList catchList = (org.hotswap.agent.javassist.compiler.ast.ASTList) st.getRight().getLeft();
-        org.hotswap.agent.javassist.compiler.ast.Stmnt finallyBlock = (org.hotswap.agent.javassist.compiler.ast.Stmnt) st.getRight().getRight().getLeft();
-        ArrayList gotoList = new ArrayList();
+        ASTList catchList = (ASTList)st.getRight().getLeft();
+        Stmnt finallyBlock = (Stmnt)st.getRight().getRight().getLeft();
+        ArrayList gotoList = new ArrayList(); 
 
         JsrHook jsrHook = null;
         if (finallyBlock != null)
@@ -204,12 +204,12 @@ public class MemberCodeGen extends CodeGen {
         body.accept(this);
         int end = bc.currentPc();
         if (start == end)
-            throw new org.hotswap.agent.javassist.compiler.CompileError("empty try block");
+            throw new CompileError("empty try block");
 
         boolean tryNotReturn = !hasReturned;
         if (tryNotReturn) {
-            bc.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.GOTO);
-            gotoList.add(new Integer(bc.currentPc()));
+            bc.addOpcode(Opcode.GOTO);
+            gotoList.add(Integer.valueOf(bc.currentPc()));
             bc.addIndex(0);   // correct later
         }
 
@@ -217,15 +217,15 @@ public class MemberCodeGen extends CodeGen {
         incMaxLocals(1);
         while (catchList != null) {
             // catch clause
-            org.hotswap.agent.javassist.compiler.ast.Pair p = (org.hotswap.agent.javassist.compiler.ast.Pair) catchList.head();
+            Pair p = (Pair)catchList.head();
             catchList = catchList.tail();
-            org.hotswap.agent.javassist.compiler.ast.Declarator decl = (org.hotswap.agent.javassist.compiler.ast.Declarator) p.getLeft();
-            org.hotswap.agent.javassist.compiler.ast.Stmnt block = (org.hotswap.agent.javassist.compiler.ast.Stmnt) p.getRight();
+            Declarator decl = (Declarator)p.getLeft();
+            Stmnt block = (Stmnt)p.getRight();
 
             decl.setLocalVar(var);
 
-            org.hotswap.agent.javassist.CtClass type = resolver.lookupClassByJvmName(decl.getClassName());
-            decl.setClassName(org.hotswap.agent.javassist.compiler.MemberResolver.javaToJvmName(type.getName()));
+            CtClass type = resolver.lookupClassByJvmName(decl.getClassName());
+            decl.setClassName(MemberResolver.javaToJvmName(type.getName()));
             bc.addExceptionHandler(start, end, bc.currentPc(), type);
             bc.growStack(1);
             bc.addAstore(var);
@@ -234,8 +234,8 @@ public class MemberCodeGen extends CodeGen {
                 block.accept(this);
 
             if (!hasReturned) {
-                bc.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.GOTO);
-                gotoList.add(new Integer(bc.currentPc()));
+                bc.addOpcode(Opcode.GOTO);
+                gotoList.add(Integer.valueOf(bc.currentPc()));
                 bc.addIndex(0);   // correct later
                 tryNotReturn = true;
             }
@@ -252,7 +252,7 @@ public class MemberCodeGen extends CodeGen {
             finallyBlock.accept(this);
             if (!hasReturned) {
                 bc.addAload(var);
-                bc.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.ATHROW);
+                bc.addOpcode(ATHROW);
             }
 
             addFinally(jsrHook.jsrList, finallyBlock);
@@ -270,121 +270,125 @@ public class MemberCodeGen extends CodeGen {
     /**
      * Adds a finally clause for earch return statement.
      */
-    private void addFinally(ArrayList returnList, org.hotswap.agent.javassist.compiler.ast.Stmnt finallyBlock)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.bytecode.Bytecode bc = bytecode;
+    private void addFinally(ArrayList returnList, Stmnt finallyBlock)
+        throws CompileError
+    {
+        Bytecode bc = bytecode;
         int n = returnList.size();
         for (int i = 0; i < n; ++i) {
-            final int[] ret = (int[]) returnList.get(i);
+            final int[] ret = (int[])returnList.get(i);
             int pc = ret[0];
             bc.write16bit(pc, bc.currentPc() - pc + 1);
             ReturnHook hook = new JsrHook2(this, ret);
             finallyBlock.accept(this);
             hook.remove(this);
             if (!hasReturned) {
-                bc.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.GOTO);
+                bc.addOpcode(Opcode.GOTO);
                 bc.addIndex(pc + 3 - bc.currentPc());
             }
         }
     }
 
-    public void atNewExpr(org.hotswap.agent.javassist.compiler.ast.NewExpr expr) throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void atNewExpr(NewExpr expr) throws CompileError {
         if (expr.isArray())
             atNewArrayExpr(expr);
         else {
-            org.hotswap.agent.javassist.CtClass clazz = resolver.lookupClassByName(expr.getClassName());
+            CtClass clazz = resolver.lookupClassByName(expr.getClassName());
             String cname = clazz.getName();
-            org.hotswap.agent.javassist.compiler.ast.ASTList args = expr.getArguments();
+            ASTList args = expr.getArguments();
             bytecode.addNew(cname);
-            bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.DUP);
+            bytecode.addOpcode(DUP);
 
-            atMethodCallCore(clazz, org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit, args,
-                    false, true, -1, null);
+            atMethodCallCore(clazz, MethodInfo.nameInit, args,
+                             false, true, -1, null);
 
-            exprType = org.hotswap.agent.javassist.compiler.TokenId.CLASS;
+            exprType = CLASS;
             arrayDim = 0;
-            className = org.hotswap.agent.javassist.compiler.MemberResolver.javaToJvmName(cname);
+            className = MemberResolver.javaToJvmName(cname);
         }
     }
 
-    public void atNewArrayExpr(org.hotswap.agent.javassist.compiler.ast.NewExpr expr) throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void atNewArrayExpr(NewExpr expr) throws CompileError {
         int type = expr.getArrayType();
-        org.hotswap.agent.javassist.compiler.ast.ASTList size = expr.getArraySize();
-        org.hotswap.agent.javassist.compiler.ast.ASTList classname = expr.getClassName();
-        org.hotswap.agent.javassist.compiler.ast.ArrayInit init = expr.getInitializer();
+        ASTList size = expr.getArraySize();
+        ASTList classname = expr.getClassName();
+        ArrayInit init = expr.getInitializer();
         if (size.length() > 1) {
             if (init != null)
-                throw new org.hotswap.agent.javassist.compiler.CompileError(
+                throw new CompileError(
                         "sorry, multi-dimensional array initializer " +
-                                "for new is not supported");
+                        "for new is not supported");
 
             atMultiNewArray(type, classname, size);
             return;
         }
 
-        org.hotswap.agent.javassist.compiler.ast.ASTree sizeExpr = size.head();
-        atNewArrayExpr2(type, sizeExpr, org.hotswap.agent.javassist.compiler.ast.Declarator.astToClassName(classname, '/'), init);
+        ASTree sizeExpr = size.head();
+        atNewArrayExpr2(type, sizeExpr, Declarator.astToClassName(classname, '/'), init);
     }
 
-    private void atNewArrayExpr2(int type, org.hotswap.agent.javassist.compiler.ast.ASTree sizeExpr,
-                                 String jvmClassname, org.hotswap.agent.javassist.compiler.ast.ArrayInit init) throws org.hotswap.agent.javassist.compiler.CompileError {
+    private void atNewArrayExpr2(int type, ASTree sizeExpr,
+                        String jvmClassname, ArrayInit init) throws CompileError {
         if (init == null)
             if (sizeExpr == null)
-                throw new org.hotswap.agent.javassist.compiler.CompileError("no array size");
+                throw new CompileError("no array size");
             else
                 sizeExpr.accept(this);
-        else if (sizeExpr == null) {
-            int s = init.length();
-            bytecode.addIconst(s);
-        } else
-            throw new org.hotswap.agent.javassist.compiler.CompileError("unnecessary array size specified for new");
+        else
+            if (sizeExpr == null) {
+                int s = init.length();
+                bytecode.addIconst(s);
+            }
+            else
+                throw new CompileError("unnecessary array size specified for new");
 
         String elementClass;
-        if (type == TokenId.CLASS) {
+        if (type == CLASS) {
             elementClass = resolveClassName(jvmClassname);
-            bytecode.addAnewarray(org.hotswap.agent.javassist.compiler.MemberResolver.jvmToJavaName(elementClass));
-        } else {
+            bytecode.addAnewarray(MemberResolver.jvmToJavaName(elementClass));
+        }
+        else {
             elementClass = null;
             int atype = 0;
             switch (type) {
-                case TokenId.BOOLEAN:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_BOOLEAN;
-                    break;
-                case TokenId.CHAR:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_CHAR;
-                    break;
-                case TokenId.FLOAT:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_FLOAT;
-                    break;
-                case TokenId.DOUBLE:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_DOUBLE;
-                    break;
-                case TokenId.BYTE:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_BYTE;
-                    break;
-                case TokenId.SHORT:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_SHORT;
-                    break;
-                case TokenId.INT:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_INT;
-                    break;
-                case TokenId.LONG:
-                    atype = org.hotswap.agent.javassist.bytecode.Opcode.T_LONG;
-                    break;
-                default:
-                    badNewExpr();
-                    break;
+            case BOOLEAN :
+                atype = T_BOOLEAN;
+                break;
+            case CHAR :
+                atype = T_CHAR;
+                break;
+            case FLOAT :
+                atype = T_FLOAT;
+                break;
+            case DOUBLE :
+                atype = T_DOUBLE;
+                break;
+            case BYTE :
+                atype = T_BYTE;
+                break;
+            case SHORT :
+                atype = T_SHORT;
+                break;
+            case INT :
+                atype = T_INT;
+                break;
+            case LONG :
+                atype = T_LONG;
+                break;
+            default :
+                badNewExpr();
+                break;
             }
 
-            bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.NEWARRAY);
+            bytecode.addOpcode(NEWARRAY);
             bytecode.add(atype);
         }
 
         if (init != null) {
             int s = init.length();
-            org.hotswap.agent.javassist.compiler.ast.ASTList list = init;
+            ASTList list = init;
             for (int i = 0; i < s; i++) {
-                bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.DUP);
+                bytecode.addOpcode(DUP);
                 bytecode.addIconst(i);
                 list.head().accept(this);
                 if (!isRefType(type))
@@ -400,58 +404,60 @@ public class MemberCodeGen extends CodeGen {
         className = elementClass;
     }
 
-    private static void badNewExpr() throws org.hotswap.agent.javassist.compiler.CompileError {
-        throw new org.hotswap.agent.javassist.compiler.CompileError("bad new expression");
+    private static void badNewExpr() throws CompileError {
+        throw new CompileError("bad new expression");
     }
 
-    protected void atArrayVariableAssign(org.hotswap.agent.javassist.compiler.ast.ArrayInit init, int varType,
-                                         int varArray, String varClass) throws org.hotswap.agent.javassist.compiler.CompileError {
+    protected void atArrayVariableAssign(ArrayInit init, int varType,
+                                         int varArray, String varClass) throws CompileError {
         atNewArrayExpr2(varType, null, varClass, init);
     }
 
-    public void atArrayInit(org.hotswap.agent.javassist.compiler.ast.ArrayInit init) throws org.hotswap.agent.javassist.compiler.CompileError {
-        throw new org.hotswap.agent.javassist.compiler.CompileError("array initializer is not supported");
+    public void atArrayInit(ArrayInit init) throws CompileError {
+        throw new CompileError("array initializer is not supported");
     }
 
-    protected void atMultiNewArray(int type, org.hotswap.agent.javassist.compiler.ast.ASTList classname, org.hotswap.agent.javassist.compiler.ast.ASTList size)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
+    protected void atMultiNewArray(int type, ASTList classname, ASTList size)
+        throws CompileError
+    {
         int count, dim;
         dim = size.length();
         for (count = 0; size != null; size = size.tail()) {
-            org.hotswap.agent.javassist.compiler.ast.ASTree s = size.head();
+            ASTree s = size.head();
             if (s == null)
                 break;          // int[][][] a = new int[3][4][];
 
             ++count;
             s.accept(this);
-            if (exprType != TokenId.INT)
-                throw new org.hotswap.agent.javassist.compiler.CompileError("bad type for array size");
+            if (exprType != INT)
+                throw new CompileError("bad type for array size");
         }
 
         String desc;
         exprType = type;
         arrayDim = dim;
-        if (type == TokenId.CLASS) {
+        if (type == CLASS) {
             className = resolveClassName(classname);
             desc = toJvmArrayName(className, dim);
-        } else
+        }
+        else
             desc = toJvmTypeName(type, dim);
 
         bytecode.addMultiNewarray(desc, count);
     }
 
-    public void atCallExpr(org.hotswap.agent.javassist.compiler.ast.CallExpr expr) throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void atCallExpr(CallExpr expr) throws CompileError {
         String mname = null;
-        org.hotswap.agent.javassist.CtClass targetClass = null;
-        org.hotswap.agent.javassist.compiler.ast.ASTree method = expr.oprand1();
-        org.hotswap.agent.javassist.compiler.ast.ASTList args = (org.hotswap.agent.javassist.compiler.ast.ASTList) expr.oprand2();
+        CtClass targetClass = null;
+        ASTree method = expr.oprand1();
+        ASTList args = (ASTList)expr.oprand2();
         boolean isStatic = false;
         boolean isSpecial = false;
         int aload0pos = -1;
 
-        org.hotswap.agent.javassist.compiler.MemberResolver.Method cached = expr.getMethod();
-        if (method instanceof org.hotswap.agent.javassist.compiler.ast.Member) {
-            mname = ((org.hotswap.agent.javassist.compiler.ast.Member) method).get();
+        MemberResolver.Method cached = expr.getMethod();
+        if (method instanceof Member) {
+            mname = ((Member)method).get();
             targetClass = thisClass;
             if (inStaticMethod || (cached != null && cached.isStatic()))
                 isStatic = true;            // should be static
@@ -459,61 +465,81 @@ public class MemberCodeGen extends CodeGen {
                 aload0pos = bytecode.currentPc();
                 bytecode.addAload(0);       // this
             }
-        } else if (method instanceof org.hotswap.agent.javassist.compiler.ast.Keyword) {   // constructor
+        }
+        else if (method instanceof Keyword) {   // constructor
             isSpecial = true;
-            mname = org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit;        // <init>
+            mname = MethodInfo.nameInit;        // <init>
             targetClass = thisClass;
             if (inStaticMethod)
-                throw new org.hotswap.agent.javassist.compiler.CompileError("a constructor cannot be static");
+                throw new CompileError("a constructor cannot be static");
             else
                 bytecode.addAload(0);   // this
 
-            if (((org.hotswap.agent.javassist.compiler.ast.Keyword) method).get() == TokenId.SUPER)
-                targetClass = org.hotswap.agent.javassist.compiler.MemberResolver.getSuperclass(targetClass);
-        } else if (method instanceof org.hotswap.agent.javassist.compiler.ast.Expr) {
-            org.hotswap.agent.javassist.compiler.ast.Expr e = (org.hotswap.agent.javassist.compiler.ast.Expr) method;
-            mname = ((org.hotswap.agent.javassist.compiler.ast.Symbol) e.oprand2()).get();
+            if (((Keyword)method).get() == SUPER)
+                targetClass = MemberResolver.getSuperclass(targetClass);
+        }
+        else if (method instanceof Expr) {
+            Expr e = (Expr)method;
+            mname = ((Symbol)e.oprand2()).get();
             int op = e.getOperator();
-            if (op == TokenId.MEMBER) {                 // static method
+            if (op == MEMBER) {                 // static method
                 targetClass
-                        = resolver.lookupClass(((org.hotswap.agent.javassist.compiler.ast.Symbol) e.oprand1()).get(), false);
+                    = resolver.lookupClass(((Symbol)e.oprand1()).get(), false);
                 isStatic = true;
-            } else if (op == '.') {
-                org.hotswap.agent.javassist.compiler.ast.ASTree target = e.oprand1();
-                if (target instanceof org.hotswap.agent.javassist.compiler.ast.Keyword)
-                    if (((org.hotswap.agent.javassist.compiler.ast.Keyword) target).get() == TokenId.SUPER)
-                        isSpecial = true;
-
-                try {
-                    target.accept(this);
-                } catch (org.hotswap.agent.javassist.compiler.NoFieldException nfe) {
-                    if (nfe.getExpr() != target)
-                        throw nfe;
-
-                    // it should be a static method.
-                    exprType = TokenId.CLASS;
-                    arrayDim = 0;
-                    className = nfe.getField(); // JVM-internal
-                    isStatic = true;
+            }
+            else if (op == '.') {
+                ASTree target = e.oprand1();
+                String classFollowedByDotSuper = TypeChecker.isDotSuper(target);
+                if (classFollowedByDotSuper != null) {
+                    isSpecial = true;
+                    targetClass = MemberResolver.getSuperInterface(thisClass,
+                                                        classFollowedByDotSuper);
+                    if (inStaticMethod || (cached != null && cached.isStatic()))
+                        isStatic = true;            // should be static
+                    else {
+                        aload0pos = bytecode.currentPc();
+                        bytecode.addAload(0);       // this
+                    }
                 }
+                else {
+                    if (target instanceof Keyword)
+                        if (((Keyword)target).get() == SUPER)
+                            isSpecial = true;
 
-                if (arrayDim > 0)
-                    targetClass = resolver.lookupClass(javaLangObject, true);
-                else if (exprType == TokenId.CLASS /* && arrayDim == 0 */)
-                    targetClass = resolver.lookupClassByJvmName(className);
-                else
-                    badMethod();
-            } else
+                    try {
+                        target.accept(this);
+                    }
+                    catch (NoFieldException nfe) {
+                        if (nfe.getExpr() != target)
+                            throw nfe;
+
+                        // it should be a static method.
+                        exprType = CLASS;
+                        arrayDim = 0;
+                        className = nfe.getField(); // JVM-internal
+                        isStatic = true;
+                    }
+
+                    if (arrayDim > 0)
+                        targetClass = resolver.lookupClass(javaLangObject, true);
+                    else if (exprType == CLASS /* && arrayDim == 0 */)
+                        targetClass = resolver.lookupClassByJvmName(className);
+                    else
+                        badMethod();
+                }
+            }
+            else
                 badMethod();
-        } else
+        }
+        else
             fatal();
 
         atMethodCallCore(targetClass, mname, args, isStatic, isSpecial,
-                aload0pos, cached);
+                         aload0pos, cached);
     }
 
-    private static void badMethod() throws org.hotswap.agent.javassist.compiler.CompileError {
-        throw new org.hotswap.agent.javassist.compiler.CompileError("bad method");
+    private static void badMethod() throws CompileError {
+        throw new CompileError("bad method");
     }
 
     /*
@@ -522,17 +548,18 @@ public class MemberCodeGen extends CodeGen {
      * @param targetClass       the class at which method lookup starts.
      * @param found         not null if the method look has been already done.
      */
-    public void atMethodCallCore(org.hotswap.agent.javassist.CtClass targetClass, String mname,
-                                 org.hotswap.agent.javassist.compiler.ast.ASTList args, boolean isStatic, boolean isSpecial,
-                                 int aload0pos, org.hotswap.agent.javassist.compiler.MemberResolver.Method found)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void atMethodCallCore(CtClass targetClass, String mname,
+                        ASTList args, boolean isStatic, boolean isSpecial,
+                        int aload0pos, MemberResolver.Method found)
+        throws CompileError
+    {
         int nargs = getMethodArgsLength(args);
         int[] types = new int[nargs];
         int[] dims = new int[nargs];
         String[] cnames = new String[nargs];
 
         if (!isStatic && found != null && found.isStatic()) {
-            bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.POP);
+            bytecode.addOpcode(POP);
             isStatic = true;
         }
 
@@ -541,65 +568,64 @@ public class MemberCodeGen extends CodeGen {
         // generate code for evaluating arguments.
         atMethodArgs(args, types, dims, cnames);
 
-        // used by invokeinterface
-        int count = bytecode.getStackDepth() - stack + 1;
-
         if (found == null)
             found = resolver.lookupMethod(targetClass, thisClass, thisMethod,
-                    mname, types, dims, cnames);
+                                          mname, types, dims, cnames);
 
         if (found == null) {
             String msg;
-            if (mname.equals(org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit))
+            if (mname.equals(MethodInfo.nameInit))
                 msg = "constructor not found";
             else
                 msg = "Method " + mname + " not found in "
-                        + targetClass.getName();
+                    + targetClass.getName();
 
-            throw new org.hotswap.agent.javassist.compiler.CompileError(msg);
+            throw new CompileError(msg);
         }
 
         atMethodCallCore2(targetClass, mname, isStatic, isSpecial,
-                aload0pos, count, found);
+                          aload0pos, found);
     }
 
-    private void atMethodCallCore2(org.hotswap.agent.javassist.CtClass targetClass, String mname,
+    private void atMethodCallCore2(CtClass targetClass, String mname,
                                    boolean isStatic, boolean isSpecial,
-                                   int aload0pos, int count,
-                                   org.hotswap.agent.javassist.compiler.MemberResolver.Method found)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.CtClass declClass = found.declaring;
-        org.hotswap.agent.javassist.bytecode.MethodInfo minfo = found.info;
+                                   int aload0pos,
+                                   MemberResolver.Method found)
+        throws CompileError
+    {
+        CtClass declClass = found.declaring;
+        MethodInfo minfo = found.info;
         String desc = minfo.getDescriptor();
         int acc = minfo.getAccessFlags();
 
-        if (mname.equals(org.hotswap.agent.javassist.bytecode.MethodInfo.nameInit)) {
+        if (mname.equals(MethodInfo.nameInit)) {
             isSpecial = true;
             if (declClass != targetClass)
-                throw new org.hotswap.agent.javassist.compiler.CompileError("no such constructor: " + targetClass.getName());
+                throw new CompileError("no such constructor: " + targetClass.getName());
 
-            if (declClass != thisClass && org.hotswap.agent.javassist.bytecode.AccessFlag.isPrivate(acc)) {
+            if (declClass != thisClass && AccessFlag.isPrivate(acc)) {
                 desc = getAccessibleConstructor(desc, declClass, minfo);
-                bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.ACONST_NULL); // the last parameter
+                bytecode.addOpcode(Opcode.ACONST_NULL); // the last parameter
             }
-        } else if (org.hotswap.agent.javassist.bytecode.AccessFlag.isPrivate(acc))
+        }
+        else if (AccessFlag.isPrivate(acc))
             if (declClass == thisClass)
                 isSpecial = true;
             else {
                 isSpecial = false;
                 isStatic = true;
                 String origDesc = desc;
-                if ((acc & org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC) == 0)
-                    desc = org.hotswap.agent.javassist.bytecode.Descriptor.insertParameter(declClass.getName(),
-                            origDesc);
+                if ((acc & AccessFlag.STATIC) == 0)
+                    desc = Descriptor.insertParameter(declClass.getName(),
+                                                      origDesc);
 
-                acc = org.hotswap.agent.javassist.bytecode.AccessFlag.setPackage(acc) | org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC;
+                acc = AccessFlag.setPackage(acc) | AccessFlag.STATIC;
                 mname = getAccessiblePrivate(mname, origDesc, desc,
-                        minfo, declClass);
+                                             minfo, declClass);
             }
 
         boolean popTarget = false;
-        if ((acc & org.hotswap.agent.javassist.bytecode.AccessFlag.STATIC) != 0) {
+        if ((acc & AccessFlag.STATIC) != 0) {
             if (!isStatic) {
                 /* this method is static but the target object is
                    on stack.  It must be popped out.  If aload0pos >= 0,
@@ -608,25 +634,29 @@ public class MemberCodeGen extends CodeGen {
                 */
                 isStatic = true;
                 if (aload0pos >= 0)
-                    bytecode.write(aload0pos, org.hotswap.agent.javassist.bytecode.Opcode.NOP);
+                    bytecode.write(aload0pos, NOP);
                 else
                     popTarget = true;
             }
 
             bytecode.addInvokestatic(declClass, mname, desc);
-        } else if (isSpecial)    // if (isSpecial && notStatic(acc))
-            bytecode.addInvokespecial(declClass, mname, desc);
+        }
+        else if (isSpecial)    // if (isSpecial && notStatic(acc))
+            bytecode.addInvokespecial(targetClass, mname, desc);
         else {
-            if (!org.hotswap.agent.javassist.Modifier.isPublic(declClass.getModifiers())
-                    || declClass.isInterface() != targetClass.isInterface())
+            if (!Modifier.isPublic(declClass.getModifiers())
+                || declClass.isInterface() != targetClass.isInterface())
                 declClass = targetClass;
 
-            if (declClass.isInterface())
-                bytecode.addInvokeinterface(declClass, mname, desc, count);
-            else if (isStatic)
-                throw new org.hotswap.agent.javassist.compiler.CompileError(mname + " is not static");
+            if (declClass.isInterface()) {
+                int nargs = Descriptor.paramSize(desc) + 1;
+                bytecode.addInvokeinterface(declClass, mname, desc, nargs);
+            }
             else
-                bytecode.addInvokevirtual(declClass, mname, desc);
+                if (isStatic)
+                    throw new CompileError(mname + " is not static");
+                else
+                    bytecode.addInvokevirtual(declClass, mname, desc);
         }
 
         setReturnType(desc, isStatic, popTarget);
@@ -640,18 +670,19 @@ public class MemberCodeGen extends CodeGen {
      * @param declClass     the class declaring the method.
      */
     protected String getAccessiblePrivate(String methodName, String desc,
-                                          String newDesc, org.hotswap.agent.javassist.bytecode.MethodInfo minfo,
-                                          org.hotswap.agent.javassist.CtClass declClass)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
+                                          String newDesc, MethodInfo minfo,
+                                          CtClass declClass)
+        throws CompileError
+    {
         if (isEnclosing(declClass, thisClass)) {
             AccessorMaker maker = declClass.getAccessorMaker();
             if (maker != null)
                 return maker.getMethodAccessor(methodName, desc, newDesc,
-                        minfo);
+                                               minfo);
         }
 
-        throw new org.hotswap.agent.javassist.compiler.CompileError("Method " + methodName
-                + " is private");
+        throw new CompileError("Method " + methodName
+                               + " is private");
     }
 
     /*
@@ -663,40 +694,41 @@ public class MemberCodeGen extends CodeGen {
      * @param minfo         the method info of the constructor.
      * @return the descriptor of the hidden constructor.
      */
-    protected String getAccessibleConstructor(String desc, org.hotswap.agent.javassist.CtClass declClass,
-                                              org.hotswap.agent.javassist.bytecode.MethodInfo minfo)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
+    protected String getAccessibleConstructor(String desc, CtClass declClass,
+                                              MethodInfo minfo)
+        throws CompileError
+    {
         if (isEnclosing(declClass, thisClass)) {
             AccessorMaker maker = declClass.getAccessorMaker();
             if (maker != null)
                 return maker.getConstructor(declClass, desc, minfo);
         }
 
-        throw new org.hotswap.agent.javassist.compiler.CompileError("the called constructor is private in "
-                + declClass.getName());
+        throw new CompileError("the called constructor is private in "
+                               + declClass.getName());
     }
 
-    private boolean isEnclosing(org.hotswap.agent.javassist.CtClass outer, org.hotswap.agent.javassist.CtClass inner) {
+    private boolean isEnclosing(CtClass outer, CtClass inner) {
         try {
             while (inner != null) {
                 inner = inner.getDeclaringClass();
                 if (inner == outer)
                     return true;
             }
-        } catch (org.hotswap.agent.javassist.NotFoundException e) {
         }
-        return false;
+        catch (NotFoundException e) {}
+        return false;   
     }
 
-    public int getMethodArgsLength(org.hotswap.agent.javassist.compiler.ast.ASTList args) {
-        return org.hotswap.agent.javassist.compiler.ast.ASTList.length(args);
+    public int getMethodArgsLength(ASTList args) {
+        return ASTList.length(args);
     }
 
-    public void atMethodArgs(org.hotswap.agent.javassist.compiler.ast.ASTList args, int[] types, int[] dims,
-                             String[] cnames) throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void atMethodArgs(ASTList args, int[] types, int[] dims,
+                             String[] cnames) throws CompileError {
         int i = 0;
         while (args != null) {
-            org.hotswap.agent.javassist.compiler.ast.ASTree a = args.head();
+            ASTree a = args.head();
             a.accept(this);
             types[i] = exprType;
             dims[i] = arrayDim;
@@ -707,7 +739,8 @@ public class MemberCodeGen extends CodeGen {
     }
 
     void setReturnType(String desc, boolean isStatic, boolean popTarget)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
+        throws CompileError
+    {
         int i = desc.indexOf(')');
         if (i < 0)
             badMethod();
@@ -725,10 +758,11 @@ public class MemberCodeGen extends CodeGen {
             if (j < 0)
                 badMethod();
 
-            exprType = TokenId.CLASS;
+            exprType = CLASS;
             className = desc.substring(i + 1, j);
-        } else {
-            exprType = org.hotswap.agent.javassist.compiler.MemberResolver.descToType(c);
+        }
+        else {
+            exprType = MemberResolver.descToType(c);
             className = null;
         }
 
@@ -736,36 +770,39 @@ public class MemberCodeGen extends CodeGen {
         if (isStatic) {
             if (popTarget) {
                 if (is2word(etype, dim)) {
-                    bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.DUP2_X1);
-                    bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.POP2);
-                    bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.POP);
-                } else if (etype == TokenId.VOID)
-                    bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.POP);
+                    bytecode.addOpcode(DUP2_X1);
+                    bytecode.addOpcode(POP2);
+                    bytecode.addOpcode(POP);
+                }
+                else if (etype == VOID)
+                    bytecode.addOpcode(POP);
                 else {
-                    bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.SWAP);
-                    bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.POP);
+                    bytecode.addOpcode(SWAP);
+                    bytecode.addOpcode(POP);
                 }
             }
         }
     }
 
-    protected void atFieldAssign(org.hotswap.agent.javassist.compiler.ast.Expr expr, int op, org.hotswap.agent.javassist.compiler.ast.ASTree left,
-                                 org.hotswap.agent.javassist.compiler.ast.ASTree right, boolean doDup) throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.CtField f = fieldAccess(left, false);
+    protected void atFieldAssign(Expr expr, int op, ASTree left,
+                        ASTree right, boolean doDup) throws CompileError
+    {
+        CtField f = fieldAccess(left, false);
         boolean is_static = resultStatic;
         if (op != '=' && !is_static)
-            bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.DUP);
+            bytecode.addOpcode(DUP);
 
         int fi;
         if (op == '=') {
-            org.hotswap.agent.javassist.bytecode.FieldInfo finfo = f.getFieldInfo2();
+            FieldInfo finfo = f.getFieldInfo2();
             setFieldType(finfo);
-            AccessorMaker maker = isAccessibleField(f, finfo);
+            AccessorMaker maker = isAccessibleField(f, finfo);            
             if (maker == null)
                 fi = addFieldrefInfo(f, finfo);
             else
                 fi = 0;
-        } else
+        }
+        else
             fi = atFieldRead(f, is_static);
 
         int fType = exprType;
@@ -778,9 +815,9 @@ public class MemberCodeGen extends CodeGen {
         if (doDup) {
             int dup_code;
             if (is_static)
-                dup_code = (is2w ? org.hotswap.agent.javassist.bytecode.Opcode.DUP2 : org.hotswap.agent.javassist.bytecode.Opcode.DUP);
+                dup_code = (is2w ? DUP2 : DUP);
             else
-                dup_code = (is2w ? org.hotswap.agent.javassist.bytecode.Opcode.DUP2_X1 : org.hotswap.agent.javassist.bytecode.Opcode.DUP_X1);
+                dup_code = (is2w ? DUP2_X1 : DUP_X1);
 
             bytecode.addOpcode(dup_code);
         }
@@ -794,44 +831,47 @@ public class MemberCodeGen extends CodeGen {
 
     /* If fi == 0, the field must be a private field in an enclosing class.
      */
-    private void atFieldAssignCore(org.hotswap.agent.javassist.CtField f, boolean is_static, int fi,
-                                   boolean is2byte) throws org.hotswap.agent.javassist.compiler.CompileError {
+    private void atFieldAssignCore(CtField f, boolean is_static, int fi,
+                                   boolean is2byte) throws CompileError {
         if (fi != 0) {
             if (is_static) {
-                bytecode.add(org.hotswap.agent.javassist.bytecode.Opcode.PUTSTATIC);
-                bytecode.growStack(is2byte ? -2 : -1);
-            } else {
-                bytecode.add(org.hotswap.agent.javassist.bytecode.Opcode.PUTFIELD);
+               bytecode.add(PUTSTATIC);
+               bytecode.growStack(is2byte ? -2 : -1);
+            }
+            else {
+                bytecode.add(PUTFIELD);
                 bytecode.growStack(is2byte ? -3 : -2);
             }
-
+        
             bytecode.addIndex(fi);
-        } else {
-            org.hotswap.agent.javassist.CtClass declClass = f.getDeclaringClass();
+        }
+        else {
+            CtClass declClass = f.getDeclaringClass();
             AccessorMaker maker = declClass.getAccessorMaker();
             // make should be non null.
-            org.hotswap.agent.javassist.bytecode.FieldInfo finfo = f.getFieldInfo2();
-            org.hotswap.agent.javassist.bytecode.MethodInfo minfo = maker.getFieldSetter(finfo, is_static);
+            FieldInfo finfo = f.getFieldInfo2();
+            MethodInfo minfo = maker.getFieldSetter(finfo, is_static);
             bytecode.addInvokestatic(declClass, minfo.getName(),
-                    minfo.getDescriptor());
+                                     minfo.getDescriptor());
         }
     }
 
     /* overwritten in JvstCodeGen.
      */
-    public void atMember(org.hotswap.agent.javassist.compiler.ast.Member mem) throws org.hotswap.agent.javassist.compiler.CompileError {
+    public void atMember(Member mem) throws CompileError {
         atFieldRead(mem);
     }
 
-    protected void atFieldRead(org.hotswap.agent.javassist.compiler.ast.ASTree expr) throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.CtField f = fieldAccess(expr, true);
+    protected void atFieldRead(ASTree expr) throws CompileError
+    {
+        CtField f = fieldAccess(expr, true);
         if (f == null) {
             atArrayLength(expr);
             return;
         }
 
         boolean is_static = resultStatic;
-        org.hotswap.agent.javassist.compiler.ast.ASTree cexpr = org.hotswap.agent.javassist.compiler.TypeChecker.getConstantFieldValue(f);
+        ASTree cexpr = TypeChecker.getConstantFieldValue(f);
         if (cexpr == null)
             atFieldRead(f, is_static);
         else {
@@ -840,36 +880,38 @@ public class MemberCodeGen extends CodeGen {
         }
     }
 
-    private void atArrayLength(org.hotswap.agent.javassist.compiler.ast.ASTree expr) throws org.hotswap.agent.javassist.compiler.CompileError {
+    private void atArrayLength(ASTree expr) throws CompileError {
         if (arrayDim == 0)
-            throw new org.hotswap.agent.javassist.compiler.CompileError(".length applied to a non array");
+            throw new CompileError(".length applied to a non array");
 
-        bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.ARRAYLENGTH);
-        exprType = TokenId.INT;
+        bytecode.addOpcode(ARRAYLENGTH);
+        exprType = INT;
         arrayDim = 0;
     }
 
     /**
      * Generates bytecode for reading a field value.
      * It returns a fieldref_info index or zero if the field is a private
-     * one declared in an enclosing class.
+     * one declared in an enclosing class. 
      */
-    private int atFieldRead(org.hotswap.agent.javassist.CtField f, boolean isStatic) throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.bytecode.FieldInfo finfo = f.getFieldInfo2();
+    private int atFieldRead(CtField f, boolean isStatic) throws CompileError {
+        FieldInfo finfo = f.getFieldInfo2();
         boolean is2byte = setFieldType(finfo);
         AccessorMaker maker = isAccessibleField(f, finfo);
         if (maker != null) {
-            org.hotswap.agent.javassist.bytecode.MethodInfo minfo = maker.getFieldGetter(finfo, isStatic);
+            MethodInfo minfo = maker.getFieldGetter(finfo, isStatic);
             bytecode.addInvokestatic(f.getDeclaringClass(), minfo.getName(),
-                    minfo.getDescriptor());
+                                     minfo.getDescriptor());
             return 0;
-        } else {
+        }
+        else {
             int fi = addFieldrefInfo(f, finfo);
             if (isStatic) {
-                bytecode.add(org.hotswap.agent.javassist.bytecode.Opcode.GETSTATIC);
+                bytecode.add(GETSTATIC);
                 bytecode.growStack(is2byte ? 2 : 1);
-            } else {
-                bytecode.add(org.hotswap.agent.javassist.bytecode.Opcode.GETFIELD);
+            }
+            else {
+                bytecode.add(GETFIELD);
                 bytecode.growStack(is2byte ? 1 : 0);
             }
 
@@ -883,20 +925,22 @@ public class MemberCodeGen extends CodeGen {
      * an exception or it returns AccessorMaker if the field is a private
      * one declared in an enclosing class.
      */
-    private AccessorMaker isAccessibleField(org.hotswap.agent.javassist.CtField f, org.hotswap.agent.javassist.bytecode.FieldInfo finfo)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
-        if (org.hotswap.agent.javassist.bytecode.AccessFlag.isPrivate(finfo.getAccessFlags())
-                && f.getDeclaringClass() != thisClass) {
-            org.hotswap.agent.javassist.CtClass declClass = f.getDeclaringClass();
+    private AccessorMaker isAccessibleField(CtField f, FieldInfo finfo)
+        throws CompileError
+    {
+        if (AccessFlag.isPrivate(finfo.getAccessFlags())
+            && f.getDeclaringClass() != thisClass) {
+            CtClass declClass = f.getDeclaringClass(); 
             if (isEnclosing(declClass, thisClass)) {
                 AccessorMaker maker = declClass.getAccessorMaker();
                 if (maker != null)
                     return maker;
                 else
-                    throw new org.hotswap.agent.javassist.compiler.CompileError("fatal error.  bug?");
-            } else
-                throw new org.hotswap.agent.javassist.compiler.CompileError("Field " + f.getName() + " in "
-                        + declClass.getName() + " is private.");
+                    throw new CompileError("fatal error.  bug?");
+            }
+            else
+                throw new CompileError("Field " + f.getName() + " in "
+                                       + declClass.getName() + " is private.");
         }
 
         return null;    // accessible field
@@ -905,9 +949,9 @@ public class MemberCodeGen extends CodeGen {
     /**
      * Sets exprType, arrayDim, and className.
      *
-     * @return true if the field type is long or double.
+     * @return true if the field type is long or double. 
      */
-    private boolean setFieldType(org.hotswap.agent.javassist.bytecode.FieldInfo finfo) throws org.hotswap.agent.javassist.compiler.CompileError {
+    private boolean setFieldType(FieldInfo finfo) throws CompileError {
         String type = finfo.getDescriptor();
 
         int i = 0;
@@ -919,19 +963,19 @@ public class MemberCodeGen extends CodeGen {
         }
 
         arrayDim = dim;
-        exprType = org.hotswap.agent.javassist.compiler.MemberResolver.descToType(c);
+        exprType = MemberResolver.descToType(c);
 
         if (c == 'L')
             className = type.substring(i + 1, type.indexOf(';', i + 1));
         else
             className = null;
 
-        boolean is2byte = (c == 'J' || c == 'D');
+        boolean is2byte = dim == 0 && (c == 'J' || c == 'D');
         return is2byte;
     }
 
-    private int addFieldrefInfo(org.hotswap.agent.javassist.CtField f, org.hotswap.agent.javassist.bytecode.FieldInfo finfo) {
-        org.hotswap.agent.javassist.bytecode.ConstPool cp = bytecode.getConstPool();
+    private int addFieldrefInfo(CtField f, FieldInfo finfo) {
+        ConstPool cp = bytecode.getConstPool();
         String cname = f.getDeclaringClass().getName();
         int ci = cp.addClassInfo(cname);
         String name = finfo.getName();
@@ -939,20 +983,21 @@ public class MemberCodeGen extends CodeGen {
         return cp.addFieldrefInfo(ci, name, type);
     }
 
-    protected void atClassObject2(String cname) throws org.hotswap.agent.javassist.compiler.CompileError {
-        if (getMajorVersion() < org.hotswap.agent.javassist.bytecode.ClassFile.JAVA_5)
+    protected void atClassObject2(String cname) throws CompileError {
+        if (getMajorVersion() < ClassFile.JAVA_5)
             super.atClassObject2(cname);
         else
             bytecode.addLdc(bytecode.getConstPool().addClassInfo(cname));
     }
 
     protected void atFieldPlusPlus(int token, boolean isPost,
-                                   org.hotswap.agent.javassist.compiler.ast.ASTree oprand, org.hotswap.agent.javassist.compiler.ast.Expr expr, boolean doDup)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.CtField f = fieldAccess(oprand, false);
+                                   ASTree oprand, Expr expr, boolean doDup)
+        throws CompileError
+    {
+        CtField f = fieldAccess(oprand, false);
         boolean is_static = resultStatic;
         if (!is_static)
-            bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.DUP);
+            bytecode.addOpcode(DUP);
 
         int fi = atFieldRead(f, is_static);
         int t = exprType;
@@ -960,9 +1005,9 @@ public class MemberCodeGen extends CodeGen {
 
         int dup_code;
         if (is_static)
-            dup_code = (is2w ? org.hotswap.agent.javassist.bytecode.Opcode.DUP2 : org.hotswap.agent.javassist.bytecode.Opcode.DUP);
+            dup_code = (is2w ? DUP2 : DUP);
         else
-            dup_code = (is2w ? org.hotswap.agent.javassist.bytecode.Opcode.DUP2_X1 : org.hotswap.agent.javassist.bytecode.Opcode.DUP_X1);
+            dup_code = (is2w ? DUP2_X1 : DUP_X1);
 
         atPlusPlusCore(dup_code, doDup, token, isPost, expr);
         atFieldAssignCore(f, is_static, fi, is2w);
@@ -972,64 +1017,69 @@ public class MemberCodeGen extends CodeGen {
      *
      * @param acceptLength      true if array length is acceptable
      */
-    protected org.hotswap.agent.javassist.CtField fieldAccess(org.hotswap.agent.javassist.compiler.ast.ASTree expr, boolean acceptLength)
-            throws org.hotswap.agent.javassist.compiler.CompileError {
-        if (expr instanceof org.hotswap.agent.javassist.compiler.ast.Member) {
-            String name = ((org.hotswap.agent.javassist.compiler.ast.Member) expr).get();
-            org.hotswap.agent.javassist.CtField f = null;
+    protected CtField fieldAccess(ASTree expr, boolean acceptLength)
+            throws CompileError
+    {
+        if (expr instanceof Member) {
+            String name = ((Member)expr).get();
+            CtField f = null;
             try {
                 f = thisClass.getField(name);
-            } catch (org.hotswap.agent.javassist.NotFoundException e) {
+            }
+            catch (NotFoundException e) {
                 // EXPR might be part of a static member access?
-                throw new org.hotswap.agent.javassist.compiler.NoFieldException(name, expr);
+                throw new NoFieldException(name, expr);
             }
 
-            boolean is_static = org.hotswap.agent.javassist.Modifier.isStatic(f.getModifiers());
+            boolean is_static = Modifier.isStatic(f.getModifiers());
             if (!is_static)
                 if (inStaticMethod)
-                    throw new org.hotswap.agent.javassist.compiler.CompileError(
-                            "not available in a static method: " + name);
+                    throw new CompileError(
+                                "not available in a static method: " + name);
                 else
                     bytecode.addAload(0);       // this
 
             resultStatic = is_static;
             return f;
-        } else if (expr instanceof org.hotswap.agent.javassist.compiler.ast.Expr) {
-            org.hotswap.agent.javassist.compiler.ast.Expr e = (org.hotswap.agent.javassist.compiler.ast.Expr) expr;
+        }
+        else if (expr instanceof Expr) {
+            Expr e = (Expr)expr;
             int op = e.getOperator();
-            if (op == TokenId.MEMBER) {
+            if (op == MEMBER) {
                 /* static member by # (extension by Javassist)
                  * For example, if int.class is parsed, the resulting tree
                  * is (# "java.lang.Integer" "TYPE"). 
                  */
-                org.hotswap.agent.javassist.CtField f = resolver.lookupField(((org.hotswap.agent.javassist.compiler.ast.Symbol) e.oprand1()).get(),
-                        (org.hotswap.agent.javassist.compiler.ast.Symbol) e.oprand2());
+                CtField f = resolver.lookupField(((Symbol)e.oprand1()).get(),
+                                         (Symbol)e.oprand2());
                 resultStatic = true;
                 return f;
-            } else if (op == '.') {
-                org.hotswap.agent.javassist.CtField f = null;
+            }
+            else if (op == '.') {
+                CtField f = null;
                 try {
                     e.oprand1().accept(this);
                     /* Don't call lookupFieldByJvmName2().
                      * The left operand of . is not a class name but
                      * a normal expression.
                      */
-                    if (exprType == TokenId.CLASS && arrayDim == 0)
+                    if (exprType == CLASS && arrayDim == 0)
                         f = resolver.lookupFieldByJvmName(className,
-                                (org.hotswap.agent.javassist.compiler.ast.Symbol) e.oprand2());
+                                                    (Symbol)e.oprand2());
                     else if (acceptLength && arrayDim > 0
-                            && ((org.hotswap.agent.javassist.compiler.ast.Symbol) e.oprand2()).get().equals("length"))
+                             && ((Symbol)e.oprand2()).get().equals("length"))
                         return null;    // expr is an array length.
                     else
                         badLvalue();
 
-                    boolean is_static = org.hotswap.agent.javassist.Modifier.isStatic(f.getModifiers());
+                    boolean is_static = Modifier.isStatic(f.getModifiers());
                     if (is_static)
-                        bytecode.addOpcode(org.hotswap.agent.javassist.bytecode.Opcode.POP);
+                        bytecode.addOpcode(POP);
 
                     resultStatic = is_static;
                     return f;
-                } catch (org.hotswap.agent.javassist.compiler.NoFieldException nfe) {
+                }
+                catch (NoFieldException nfe) {
                     if (nfe.getExpr() != e.oprand1())
                         throw nfe;
 
@@ -1037,35 +1087,37 @@ public class MemberCodeGen extends CodeGen {
                      * If EXPR might be part of a qualified class name,
                      * lookupFieldByJvmName2() throws NoFieldException.
                      */
-                    org.hotswap.agent.javassist.compiler.ast.Symbol fname = (org.hotswap.agent.javassist.compiler.ast.Symbol) e.oprand2();
+                    Symbol fname = (Symbol)e.oprand2();
                     String cname = nfe.getField();
                     f = resolver.lookupFieldByJvmName2(cname, fname, expr);
                     resultStatic = true;
                     return f;
                 }
-            } else
+            }
+            else
                 badLvalue();
-        } else
+        }
+        else
             badLvalue();
 
         resultStatic = false;
         return null;    // never reach
     }
 
-    private static void badLvalue() throws org.hotswap.agent.javassist.compiler.CompileError {
-        throw new org.hotswap.agent.javassist.compiler.CompileError("bad l-value");
+    private static void badLvalue() throws CompileError {
+        throw new CompileError("bad l-value");
     }
 
-    public org.hotswap.agent.javassist.CtClass[] makeParamList(org.hotswap.agent.javassist.compiler.ast.MethodDecl md) throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.CtClass[] params;
-        org.hotswap.agent.javassist.compiler.ast.ASTList plist = md.getParams();
+    public CtClass[] makeParamList(MethodDecl md) throws CompileError {
+        CtClass[] params;
+        ASTList plist = md.getParams();
         if (plist == null)
-            params = new org.hotswap.agent.javassist.CtClass[0];
+            params = new CtClass[0];
         else {
             int i = 0;
-            params = new org.hotswap.agent.javassist.CtClass[plist.length()];
+            params = new CtClass[plist.length()];
             while (plist != null) {
-                params[i++] = resolver.lookupClass((org.hotswap.agent.javassist.compiler.ast.Declarator) plist.head());
+                params[i++] = resolver.lookupClass((Declarator)plist.head());
                 plist = plist.tail();
             }
         }
@@ -1073,16 +1125,16 @@ public class MemberCodeGen extends CodeGen {
         return params;
     }
 
-    public org.hotswap.agent.javassist.CtClass[] makeThrowsList(org.hotswap.agent.javassist.compiler.ast.MethodDecl md) throws org.hotswap.agent.javassist.compiler.CompileError {
-        org.hotswap.agent.javassist.CtClass[] clist;
-        org.hotswap.agent.javassist.compiler.ast.ASTList list = md.getThrows();
+    public CtClass[] makeThrowsList(MethodDecl md) throws CompileError {
+        CtClass[] clist;
+        ASTList list = md.getThrows();
         if (list == null)
             return null;
         else {
             int i = 0;
-            clist = new org.hotswap.agent.javassist.CtClass[list.length()];
+            clist = new CtClass[list.length()];
             while (list != null) {
-                clist[i++] = resolver.lookupClassByName((org.hotswap.agent.javassist.compiler.ast.ASTList) list.head());
+                clist[i++] = resolver.lookupClassByName((ASTList)list.head());
                 list = list.tail();
             }
 
@@ -1095,14 +1147,14 @@ public class MemberCodeGen extends CodeGen {
      * It may also expand a simple class name to java.lang.*.
      * For example, this converts Object into java/lang/Object.
      */
-    protected String resolveClassName(org.hotswap.agent.javassist.compiler.ast.ASTList name) throws org.hotswap.agent.javassist.compiler.CompileError {
+    protected String resolveClassName(ASTList name) throws CompileError {
         return resolver.resolveClassName(name);
     }
 
     /* Expands a simple class name to java.lang.*.
      * For example, this converts Object into java/lang/Object.
      */
-    protected String resolveClassName(String jvmName) throws org.hotswap.agent.javassist.compiler.CompileError {
+    protected String resolveClassName(String jvmName) throws CompileError {
         return resolver.resolveJvmClassName(jvmName);
     }
 }

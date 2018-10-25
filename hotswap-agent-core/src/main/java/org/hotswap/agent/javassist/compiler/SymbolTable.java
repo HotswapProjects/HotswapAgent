@@ -16,28 +16,23 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.compiler.ast.Declarator;
-
 import java.util.HashMap;
+import org.hotswap.agent.javassist.compiler.ast.Declarator;
 
 public final class SymbolTable extends HashMap {
     private SymbolTable parent;
 
-    public SymbolTable() {
-        this(null);
-    }
+    public SymbolTable() { this(null); }
 
     public SymbolTable(SymbolTable p) {
         super();
         parent = p;
     }
 
-    public SymbolTable getParent() {
-        return parent;
-    }
+    public SymbolTable getParent() { return parent; }
 
     public Declarator lookup(String name) {
-        Declarator found = (Declarator) get(name);
+        Declarator found = (Declarator)get(name);
         if (found == null && parent != null)
             return parent.lookup(name);
         else
