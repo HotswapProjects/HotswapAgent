@@ -191,4 +191,31 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>mikord</id>
+            <name>CG Repo</name>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <url>http://artifactory.cg.ru/artifactory/all</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>mikord</id>
+            <name>ASD CG Release repository</name>
+            <url>http://artifactory.cg.ru/artifactory/libs-releases-local</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>ASD CG Snapshots repository</name>
+            <url>http://artifactory.cg.ru/artifactory/libs-snapshots-local</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
