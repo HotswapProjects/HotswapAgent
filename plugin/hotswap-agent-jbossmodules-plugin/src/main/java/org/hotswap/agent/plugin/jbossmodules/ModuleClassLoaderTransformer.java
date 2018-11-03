@@ -10,6 +10,7 @@ import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
+import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
 
 /**
  * ModuleClassLoaderTransformer
@@ -41,37 +42,47 @@ public class ModuleClassLoaderTransformer {
             }
 
             CtClass objectClass = classPool.get(Object.class.getName());
-            CtField ctField = new CtField(objectClass, "$$ha$prepend", ctClass);
-            ctClass.addField(ctField);
+            CtField ctPrependField = new CtField(objectClass, "$$ha$prepend", ctClass);
+            ctClass.addField(ctPrependField);
 
             ctClass.addMethod(CtNewMethod.make(
                     "private void $$ha$setupPrepend() {" +
-                    "       Class clPaths = Class.forName(\"org.jboss.modules.Paths\", true, this.getClass().getClassLoader());" +
-                    "       java.lang.reflect.Method spM  = clPaths.getDeclaredMethod(\"$$ha$setPrepend\", new Class[] {java.lang.Object.class});" +
-                    "       spM.invoke(this.paths" + pathsGetter + ", new java.lang.Object[] { $$ha$prepend });"+
+                            "Class clPaths = Class.forName(\"org.jboss.modules.Paths\", true, this.getClass().getClassLoader());" +
+                            "java.lang.reflect.Method spM  = clPaths.getDeclaredMethod(\"$$ha$setPrepend\", new Class[] {java.lang.Object.class});" +
+                            "spM.invoke(this.paths" + pathsGetter + ", new java.lang.Object[] { $$ha$prepend });"+
                     "}", ctClass)
             );
 
             // Implementation of HotswapAgentClassLoaderExt.setExtraClassPath(...)
             ctClass.addMethod(CtNewMethod.make(
                     "public void setExtraClassPath(java.net.URL[] extraClassPath) {" +
-                    "   try {" +
-                    "       java.util.List resLoaderList = new java.util.ArrayList();" +
-                    "       for (int i=0; i<extraClassPath.length; i++) {" +
-                    "           try {" +
-                    "               java.net.URL url = extraClassPath[i];" +
-                    "               java.io.File root = new java.io.File(url.getPath());" +
-                    "               org.jboss.modules.ResourceLoader resourceLoader = org.jboss.modules.ResourceLoaders.createFileResourceLoader(url.getPath(), root);" +
-                    "               resLoaderList.add(resourceLoader);" +
-                    "           } catch (java.lang.Exception e) {" +
-                    "           " + ModuleClassLoaderTransformer.class.getName() + ".logSetExtraClassPathException(e);" +
-                    "           }" +
-                    "       }" +
-                    "       this.$$ha$prepend = resLoaderList;" +
-                    "       $$ha$setupPrepend();" +
-                    "   } catch (java.lang.Exception e) {" +
-                    "       " + ModuleClassLoaderTransformer.class.getName() + ".logSetExtraClassPathException(e);" +
-                    "   }" +
+                        "try {" +
+                            "java.util.List resLoaderList = new java.util.ArrayList();" +
+                            "for (int i=0; i<extraClassPath.length; i++) {" +
+                                "try {" +
+                                    "java.net.URL url = extraClassPath[i];" +
+                                    "java.io.File root = new java.io.File(url.getPath());" +
+                                    "org.jboss.modules.ResourceLoader resourceLoader = org.jboss.modules.ResourceLoaders.createFileResourceLoader(url.getPath(), root);" +
+                                    "resLoaderList.add(resourceLoader);" +
+                                "} catch (java.lang.Exception e) {" +
+                                    ModuleClassLoaderTransformer.class.getName() + ".logSetExtraClassPathException(e);" +
+                                "}" +
+                            "}" +
+                            "this.$$ha$prepend = resLoaderList;" +
+                            "$$ha$setupPrepend();" +
+                        "} catch (java.lang.Exception e) {" +
+                            ModuleClassLoaderTransformer.class.getName() + ".logSetExtraClassPathException(e);" +
+                        "}" +
+                    "}", ctClass)
+            );
+
+            CtClass watchResClassLoaderClass = classPool.get(WatchResourcesClassLoader.class.getName());
+            CtField watchResClassLoaderField = new CtField(watchResClassLoaderClass, "$$ha$watchResourceLoader", ctClass);
+            ctClass.addField(watchResClassLoaderField);
+
+            ctClass.addMethod(CtNewMethod.make(
+                    "public void setWatchResourceLoader(" + WatchResourcesClassLoader.class.getName() + " watchResourceLoader) {" +
+                        "this.$$ha$watchResourceLoader = watchResourceLoader;" +
                     "}", ctClass)
             );
 
@@ -88,14 +99,32 @@ public class ModuleClassLoaderTransformer {
             ));
 
 
-            CtClass ctResLoadClass = classPool.get("org.jboss.modules.ResourceLoaderSpec[]");
-
-            CtMethod methResourceLoaders = ctClass.getDeclaredMethod("setResourceLoaders", new CtClass[] { ctResLoadClass });
-            methResourceLoaders.setBody(
+            CtClass resourceLoaderSpecClass = classPool.get("org.jboss.modules.ResourceLoaderSpec[]");
+            ctClass.getDeclaredMethod("setResourceLoaders", new CtClass[] { resourceLoaderSpecClass }).setBody(
                     "{" +
-                    "   boolean ret = setResourceLoaders((org.jboss.modules.Paths)this.paths" + pathsGetter + ", $1);" +
-                    "   $$ha$setupPrepend();" +
-                    "   return ret;" +
+                        "boolean ret = setResourceLoaders((org.jboss.modules.Paths)this.paths" + pathsGetter + ", $1);" +
+                        "$$ha$setupPrepend();" +
+                        "return ret;" +
+                    "}"
+            );
+
+            // patch: URL findResource(final String name, final boolean exportsOnly)
+            ctClass.getDeclaredMethod("findResource", new CtClass[] { classPool.get(String.class.getName()), CtClass.booleanType }).insertBefore(
+                    "if (this.$$ha$watchResourceLoader != null){" +
+                        "java.net.URL resource = this.$$ha$watchResourceLoader.getResource($1);" +
+                        "if(resource != null)" +
+                            "return resource;" +
+                    "}"
+            );
+
+            // patch: Enumeration<URL> findResources(final String name, final boolean exportsOnly)
+            ctClass.getDeclaredMethod("findResources", new CtClass[] { classPool.get(String.class.getName()), CtClass.booleanType }).insertBefore(
+                    "if (this.$$ha$watchResourceLoader != null){" +
+                        "try {" +
+                            "java.util.Enumeration resources = this.$$ha$watchResourceLoader.getResources($1);" +
+                            "if (resources != null && resources.hasMoreElements())" +
+                                "return resources;" +
+                        "} catch (java.io.IOException e) {}" +
                     "}"
             );
 
@@ -103,7 +132,6 @@ public class ModuleClassLoaderTransformer {
             LOGGER.warning("Unable to find field \"paths\" in org.jboss.modules.ModuleClassLoader.", e);
         }
     }
-
 
     /**
      *
@@ -122,17 +150,17 @@ public class ModuleClassLoaderTransformer {
             CtMethod methGetAllPaths = ctClass.getDeclaredMethod("getAllPaths");
             methGetAllPaths.setBody(
                     "{" +
-                    "   if (this.$$ha$prepend != null) {" +
-                    "       java.util.Map result = new org.hotswap.agent.plugin.jbossmodules.PrependingMap(this.allPaths, this.$$ha$prepend);" +
-                    "       return result;" +
-                    "   }" +
-                    "   return this.allPaths;"+
+                        "if (this.$$ha$prepend != null) {" +
+                            "java.util.Map result = new org.hotswap.agent.plugin.jbossmodules.PrependingMap(this.allPaths, this.$$ha$prepend);" +
+                            "return result;" +
+                        "}" +
+                        "return this.allPaths;"+
                     "}"
             );
 
             ctClass.addMethod(CtNewMethod.make(
                     "public void $$ha$setPrepend(java.lang.Object prepend) {" +
-                    "   this.$$ha$prepend = prepend; " +
+                        "this.$$ha$prepend = prepend; " +
                     "}", ctClass)
             );
         } catch (NotFoundException e) {

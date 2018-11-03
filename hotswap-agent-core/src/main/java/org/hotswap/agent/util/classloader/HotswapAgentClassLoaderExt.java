@@ -5,4 +5,5 @@ package org.hotswap.agent.util.classloader;
  */
 public interface HotswapAgentClassLoaderExt {
     public void setExtraClassPath(java.net.URL[] extraClassPath);
+    public void setWatchResourceLoader(WatchResourcesClassLoader watchResourceLoader);
 }

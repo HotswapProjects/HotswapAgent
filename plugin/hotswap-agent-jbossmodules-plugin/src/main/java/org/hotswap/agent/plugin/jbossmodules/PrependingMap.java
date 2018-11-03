@@ -55,8 +55,8 @@ public class PrependingMap implements Map {
 //                return result;
 //            }
             if (list instanceof List){
-                List result = new ArrayList<>((List) list);
-                result.addAll(0, (List) prependList);
+                List result = new ArrayList<>((List) prependList);
+                result.addAll((List)list);
                 return result;
             }
         }
