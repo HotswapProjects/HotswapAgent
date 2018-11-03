@@ -1,6 +1,8 @@
 package org.hotswap.agent.plugin.weld.command;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +13,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Context;
+import javax.enterprise.context.spi.Contextual;
+import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanAttributes;
@@ -32,7 +36,7 @@ import org.jboss.weld.annotated.slim.SlimAnnotatedType;
 import org.jboss.weld.bean.AbstractClassBean;
 import org.jboss.weld.bean.ManagedBean;
 import org.jboss.weld.bean.attributes.BeanAttributesFactory;
-import org.jboss.weld.context.ContextNotActiveException;
+// import org.jboss.weld.context.ContextNotActiveException;
 import org.jboss.weld.manager.BeanManagerImpl;
 import org.jboss.weld.manager.api.WeldManager;
 import org.jboss.weld.metadata.TypeStore;
@@ -169,17 +173,20 @@ public class BeanReloadExecutor {
             } else {
                 doReinjectBeanInstance(beanManager, bean, beanManager.getContext(bean.getScope()));
             }
-        } catch (ContextNotActiveException e) {
-            LOGGER.info("No active contexts for bean '{}'", bean.getBeanClass().getName());
+        } catch (Exception e) {
+            if (e.getClass().getSimpleName().equals("ContextNotActiveException")) {
+                LOGGER.info("No active contexts for bean '{}'", bean.getBeanClass().getName());
+            } else {
+                throw e;
+            }
         }
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings("rawtypes")
     private static void doReinjectRegisteredBeanInstances(BeanManagerImpl beanManager, AbstractClassBean bean) {
         for (Object instance: HaCdiCommons.getBeanInstances(bean)) {
             if (instance != null) {
-                bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
-                LOGGER.info("Bean '{}' injection points was reinjected.", bean.getBeanClass().getName());
+                doCallInject(beanManager, bean, instance);
             }
         }
     }
@@ -188,8 +195,28 @@ public class BeanReloadExecutor {
     private static void doReinjectBeanInstance(BeanManagerImpl beanManager, AbstractClassBean bean, Context context) {
         Object instance = context.get(bean);
         if (instance != null) {
-            bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
+            doCallInject(beanManager, bean, instance);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void doCallInject(BeanManagerImpl beanManager, AbstractClassBean bean, Object instance) {
+
+        // In whatever reason, we have to use reflection call for beanManager.createCreationalContext() in weld>=3.0
+        Method m = null;
+        try {
+            m = beanManager.getClass().getMethod("createCreationalContext", Contextual.class);
+        } catch (Exception e) {
+            LOGGER.error("BeanManager.createCreationalContext() method not found beanManagerClass='{}'", e, bean.getBeanClass().getName());
+            return;
+        }
+
+        try {
+            bean.getProducer().inject(instance, (CreationalContext) m.invoke(beanManager, bean));
             LOGGER.debug("Bean instance '{}' injection points was reinjected.", instance);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            LOGGER.error("beanManager.createCreationalContext(beanManager, bean) invocation failed beanManagerClass='{}', beanClass='{}'", e,
+                    bean.getBeanClass().getName(), bean.getClass().getName());
         }
     }
 
@@ -206,10 +233,12 @@ public class BeanReloadExecutor {
             } else {
                 LOGGER.debug("No active contexts for bean '{}' in scope '{}'", managedBean.getBeanClass().getName(),  managedBean.getScope());
             }
-        } catch (ContextNotActiveException e) {
-            LOGGER.warning("No active contexts for bean '{}'", e, managedBean.getBeanClass().getName());
         } catch (Exception e) {
-            LOGGER.warning("Context for '{}' failed to reload", e, managedBean.getBeanClass().getName());
+            if (e.getClass().getSimpleName().equals("ContextNotActiveException")) {
+                LOGGER.warning("No active contexts for bean '{}'", e, managedBean.getBeanClass().getName());
+            } else {
+                LOGGER.warning("Context for '{}' failed to reload", e, managedBean.getBeanClass().getName());
+            }
         }
     }
 
