@@ -4,7 +4,6 @@ import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -68,9 +67,23 @@ public class ProxyClassLoadingDelegate {
             }
         }
         try {
-            return (Class<?>) ReflectionHelper.invoke(null, AsmProxyClassGenerator.class, "loadClass",
-                    new Class[]{ClassLoader.class, String.class, byte[].class, ProtectionDomain.class},
-                    loader, className, bytes, protectionDomain);
+            Class<?> proxyClassGeneratorClass = null;
+            try {
+                // proxy generator from ds1.9
+                proxyClassGeneratorClass = loader.loadClass("org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator");
+            } catch (ClassNotFoundException e1) {
+                try {
+                // proxy generator from ds<1.9
+                    proxyClassGeneratorClass = loader.loadClass("org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator");
+                } catch (ClassNotFoundException e2) {
+                    LOGGER.error("DeltaspikeProxyClassGenerator class not found!");
+                }
+            }
+            if (proxyClassGeneratorClass != null) {
+                return (Class<?>) ReflectionHelper.invoke(null, proxyClassGeneratorClass, "loadClass",
+                        new Class[]{ClassLoader.class, String.class, byte[].class, ProtectionDomain.class},
+                        loader, className, bytes, protectionDomain);
+            }
         } catch (Exception e) {
             LOGGER.error("loadClass() exception {}", e.getMessage());
         }
