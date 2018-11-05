@@ -1,8 +1,8 @@
 package org.hotswap.agent.plugin.hibernate3;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import javax.persistence.EntityManager;
@@ -16,6 +16,7 @@ import org.hotswap.agent.plugin.hibernate3.testEntitiesHotswap.TestEntity2;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
