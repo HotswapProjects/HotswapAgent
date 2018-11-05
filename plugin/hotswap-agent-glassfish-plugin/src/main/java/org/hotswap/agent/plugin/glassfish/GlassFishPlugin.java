@@ -45,17 +45,17 @@ public class GlassFishPlugin {
                     "if ($1 == null) { " +
                         "$1 = new java.util.HashMap();" +
                     "}" +
-                    "String __bootDeleg = (String) $1.get(\"" + FRAMEWORK_BOOTDELEGATION + "\");" +
-                    "if (__bootDeleg == null) {" +
-                        "__bootDeleg = \"\";" +
+                    "String $ha$$bootDeleg = (String) $1.get(\"" + FRAMEWORK_BOOTDELEGATION + "\");" +
+                    "if ($ha$$bootDeleg == null) {" +
+                        "$ha$$bootDeleg = \"\";" +
                     "}" +
-                    "if (__bootDeleg.indexOf(\"org.hotswap.agent\") == -1) {" +
-                        "__bootDeleg = __bootDeleg.trim();" +
-                        "if (!__bootDeleg.isEmpty()) {" +
-                            "__bootDeleg = __bootDeleg + \", \";" +
+                    "if ($ha$$bootDeleg.indexOf(\"org.hotswap.agent\") == -1) {" +
+                        "$ha$$bootDeleg = $ha$$bootDeleg.trim();" +
+                        "if (!$ha$$bootDeleg.isEmpty()) {" +
+                            "$ha$$bootDeleg = $ha$$bootDeleg + \", \";" +
                         "}" +
-                        "__bootDeleg = __bootDeleg + \"" + BOOTDELEGATION_PACKAGES + "\";" +
-                        "$1.put(\"" + FRAMEWORK_BOOTDELEGATION + "\", __bootDeleg);" +
+                        "$ha$$bootDeleg = $ha$$bootDeleg + \"" + BOOTDELEGATION_PACKAGES + "\";" +
+                        "$1.put(\"" + FRAMEWORK_BOOTDELEGATION + "\", $ha$$bootDeleg);" +
                     "}" +
                 "}"
         );
