@@ -1,13 +1,12 @@
 package org.hotswap.agent.plugin.tomcat;
 
+import java.net.URL;
+import java.util.Arrays;
+
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
-import sun.reflect.Reflection;
-
-import java.net.URL;
-import java.util.Arrays;
 
 /**
  * Created by bubnik on 4.6.2014.
