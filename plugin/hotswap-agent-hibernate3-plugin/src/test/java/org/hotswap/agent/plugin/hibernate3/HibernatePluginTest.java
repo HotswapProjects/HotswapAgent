@@ -24,6 +24,7 @@ import org.junit.Test;
  *
  * @author Jiri Bubnik
  */
+@Ignore
 public class HibernatePluginTest {
 
     static EntityManagerFactory entityManagerFactory;
