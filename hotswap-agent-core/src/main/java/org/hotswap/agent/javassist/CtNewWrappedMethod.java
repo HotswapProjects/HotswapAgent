@@ -16,10 +16,16 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.JvstCodeGen;
-import java.util.Hashtable;
+import java.util.Map;
+
 import org.hotswap.agent.javassist.CtMethod.ConstParameter;
+import org.hotswap.agent.javassist.bytecode.AccessFlag;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.SyntheticAttribute;
+import org.hotswap.agent.javassist.compiler.JvstCodeGen;
 
 class CtNewWrappedMethod {
 
@@ -139,8 +145,8 @@ class CtNewWrappedMethod {
                                         CtMethod src)
         throws BadBytecode, CannotCompileException
     {
-        Hashtable bodies = clazz.getHiddenMethods();
-        String bodyname = (String)bodies.get(src);
+        Map<CtMethod,String> bodies = clazz.getHiddenMethods();
+        String bodyname = bodies.get(src);
         if (bodyname == null) {
             do {
                 bodyname = addedWrappedMethod + clazz.getUniqueNumber();

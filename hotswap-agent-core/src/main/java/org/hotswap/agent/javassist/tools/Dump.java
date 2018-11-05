@@ -16,7 +16,10 @@
 
 package org.hotswap.agent.javassist.tools;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.PrintWriter;
+
 import org.hotswap.agent.javassist.bytecode.ClassFile;
 import org.hotswap.agent.javassist.bytecode.ClassFilePrinter;
 

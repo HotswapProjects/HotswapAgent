@@ -16,11 +16,19 @@
 
 package org.hotswap.agent.javassist.tools.reflect;
 
-import java.util.Iterator;
-import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CodeConverter;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtMethod.ConstParameter;
-import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.CtNewMethod;
+import org.hotswap.agent.javassist.Modifier;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.Translator;
 import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 
 /**
@@ -105,6 +113,7 @@ public class Reflection implements Translator {
     /**
      * Initializes the object.
      */
+    @Override
     public void start(ClassPool pool) throws NotFoundException {
         classPool = pool;
         final String msg
@@ -130,6 +139,7 @@ public class Reflection implements Translator {
      * Inserts hooks for intercepting accesses to the fields declared
      * in reflective classes.
      */
+    @Override
     public void onLoad(ClassPool pool, String classname)
         throws CannotCompileException, NotFoundException
     {
@@ -176,8 +186,8 @@ public class Reflection implements Translator {
      * @see javassist.tools.reflect.Metaobject
      * @see javassist.tools.reflect.ClassMetaobject
      */
-    public boolean makeReflective(Class clazz,
-                                  Class metaobject, Class metaclass)
+    public boolean makeReflective(Class<?> clazz,
+                                  Class<?> metaobject, Class<?> metaclass)
         throws CannotCompileException, NotFoundException
     {
         return makeReflective(clazz.getName(), metaobject.getName(),
@@ -248,8 +258,7 @@ public class Reflection implements Translator {
     {
         if (clazz.getAttribute("Reflective") != null)
             return false;       // this is already reflective.
-        else
-            clazz.setAttribute("Reflective", new byte[0]);
+        clazz.setAttribute("Reflective", new byte[0]);
 
         CtClass mlevel = classPool.get("javassist.tools.reflect.Metalevel");
         boolean addMeta = !clazz.subtypeOf(mlevel);
@@ -394,10 +403,7 @@ public class Reflection implements Translator {
         if (ClassFile.MAJOR_VERSION < ClassFile.JAVA_6)
             return;
 
-        Iterator methods = cf.getMethods().iterator();
-        while (methods.hasNext()) {
-            MethodInfo mi = (MethodInfo)methods.next();
+        for (MethodInfo mi:cf.getMethods())
             mi.rebuildStackMap(classPool);
-        }
     }
 }

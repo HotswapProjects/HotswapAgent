@@ -16,23 +16,31 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtPrimitiveType;
-import org.hotswap.agent.javassist.CtMember;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.CtBehavior;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.CtMember;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.CtPrimitiveType;
 import org.hotswap.agent.javassist.Modifier;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.Bytecode;
 import org.hotswap.agent.javassist.bytecode.CodeAttribute;
 import org.hotswap.agent.javassist.bytecode.LocalVariableAttribute;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.NotFoundException;
-
-import org.hotswap.agent.javassist.compiler.ast.*;
+import org.hotswap.agent.javassist.compiler.ast.ASTList;
+import org.hotswap.agent.javassist.compiler.ast.ASTree;
+import org.hotswap.agent.javassist.compiler.ast.CallExpr;
+import org.hotswap.agent.javassist.compiler.ast.Declarator;
+import org.hotswap.agent.javassist.compiler.ast.Expr;
+import org.hotswap.agent.javassist.compiler.ast.FieldDecl;
+import org.hotswap.agent.javassist.compiler.ast.Member;
+import org.hotswap.agent.javassist.compiler.ast.MethodDecl;
+import org.hotswap.agent.javassist.compiler.ast.Stmnt;
+import org.hotswap.agent.javassist.compiler.ast.Symbol;
 
 public class Javac {
     JvstCodeGen gen;
@@ -91,14 +99,12 @@ public class Javac {
         try {
             if (mem instanceof FieldDecl)
                 return compileField((FieldDecl)mem);
-            else {
-                CtBehavior cb = compileMethod(p, (MethodDecl)mem);
-                CtClass decl = cb.getDeclaringClass();
-                cb.getMethodInfo2()
-                  .rebuildStackMapIf6(decl.getClassPool(),
-                                      decl.getClassFile2());
-                return cb;
-            }
+            CtBehavior cb = compileMethod(p, (MethodDecl)mem);
+            CtClass decl = cb.getDeclaringClass();
+            cb.getMethodInfo2()
+              .rebuildStackMapIf6(decl.getClassPool(),
+                                  decl.getClassFile2());
+            return cb;
         }
         catch (BadBytecode bb) {
             throw new CompileError(bb.getMessage());
@@ -120,6 +126,7 @@ public class Javac {
 
         protected void setInit(ASTree i) { init = i; }
 
+        @Override
         protected ASTree getInitAST() {
             return init;
         }
@@ -158,24 +165,22 @@ public class Javac {
                 cons.setExceptionTypes(tlist);
                 return cons;
             }
-            else {
-                Declarator r = md.getReturn();
-                CtClass rtype = gen.resolver.lookupClass(r);
-                recordReturnType(rtype, false);
-                CtMethod method = new CtMethod(rtype, r.getVariable().get(),
-                                           plist, gen.getThisClass());
-                method.setModifiers(mod);
-                gen.setThisMethod(method);
-                md.accept(gen);
-                if (md.getBody() != null)
-                    method.getMethodInfo().setCodeAttribute(
-                                        bytecode.toCodeAttribute());
-                else
-                    method.setModifiers(mod | Modifier.ABSTRACT);
+            Declarator r = md.getReturn();
+            CtClass rtype = gen.resolver.lookupClass(r);
+            recordReturnType(rtype, false);
+            CtMethod method = new CtMethod(rtype, r.getVariable().get(),
+                                       plist, gen.getThisClass());
+            method.setModifiers(mod);
+            gen.setThisMethod(method);
+            md.accept(gen);
+            if (md.getBody() != null)
+                method.getMethodInfo().setCodeAttribute(
+                                    bytecode.toCodeAttribute());
+            else
+                method.setModifiers(mod | Modifier.ABSTRACT);
 
-                method.setExceptionTypes(tlist);
-                return method;
-            }
+            method.setExceptionTypes(tlist);
+            return method;
         }
         catch (NotFoundException e) {
             throw new CompileError(e.toString());
@@ -437,6 +442,7 @@ public class Javac {
         final String m = method;
 
         ProceedHandler h = new ProceedHandler() {
+                @Override
                 public void doit(JvstCodeGen gen, Bytecode b, ASTList args)
                     throws CompileError
                 {
@@ -449,6 +455,7 @@ public class Javac {
                     gen.addNullIfVoid();
                 }
 
+                @Override
                 public void setReturnType(JvstTypeChecker check, ASTList args)
                     throws CompileError
                 {
@@ -481,6 +488,7 @@ public class Javac {
         final String m = method;
 
         ProceedHandler h = new ProceedHandler() {
+                @Override
                 public void doit(JvstCodeGen gen, Bytecode b, ASTList args)
                     throws CompileError
                 {
@@ -491,6 +499,7 @@ public class Javac {
                     gen.addNullIfVoid();
                 }
 
+                @Override
                 public void setReturnType(JvstTypeChecker check, ASTList args)
                     throws CompileError
                 {
@@ -525,12 +534,14 @@ public class Javac {
         final ASTree texpr = p.parseExpression(stable);
 
         ProceedHandler h = new ProceedHandler() {
+                @Override
                 public void doit(JvstCodeGen gen, Bytecode b, ASTList args)
                     throws CompileError
                 {
                     gen.compileInvokeSpecial(texpr, methodIndex, descriptor, args);
                 }
 
+                @Override
                 public void setReturnType(JvstTypeChecker c, ASTList args)
                     throws CompileError
                 {

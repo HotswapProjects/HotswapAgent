@@ -17,8 +17,8 @@
 package org.hotswap.agent.javassist.tools.reflect;
 
 import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.NotFoundException;
 
 /**
  * A class loader for reflection.

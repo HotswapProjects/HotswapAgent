@@ -16,9 +16,23 @@
 
 package org.hotswap.agent.javassist.expr;
 
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.Javac;
+import org.hotswap.agent.javassist.compiler.JvstCodeGen;
+import org.hotswap.agent.javassist.compiler.JvstTypeChecker;
+import org.hotswap.agent.javassist.compiler.ProceedHandler;
 import org.hotswap.agent.javassist.compiler.ast.ASTList;
 
 /**
@@ -36,6 +50,7 @@ public class Cast extends Expr {
      * Returns the method or constructor containing the type cast
      * expression represented by this object.
      */
+    @Override
     public CtBehavior where() { return super.where(); }
 
     /**
@@ -44,6 +59,7 @@ public class Cast extends Expr {
      *
      * @return -1       if this information is not available.
      */
+    @Override
     public int getLineNumber() {
         return super.getLineNumber();
     }
@@ -53,6 +69,7 @@ public class Cast extends Expr {
      *
      * @return null     if this information is not available.
      */
+    @Override
     public String getFileName() {
         return super.getFileName();
     }
@@ -75,6 +92,7 @@ public class Cast extends Expr {
      * including the expression can catch and the exceptions that
      * the throws declaration allows the method to throw.
      */
+    @Override
     public CtClass[] mayThrow() {
         return super.mayThrow();
     }
@@ -87,8 +105,10 @@ public class Cast extends Expr {
      *
      * @param statement         a Java statement except try-catch.
      */
+    @Override
     public void replace(String statement) throws CannotCompileException {
         thisClass.getClassFile();   // to call checkModify().
+        @SuppressWarnings("unused")
         ConstPool constPool = getConstPool();
         int pos = currentPos;
         int index = iterator.u16bitAt(pos + 1);
@@ -142,6 +162,7 @@ public class Cast extends Expr {
             retType = t;
         }
 
+        @Override
         public void doit(JvstCodeGen gen, Bytecode bytecode, ASTList args)
             throws CompileError
         {
@@ -155,7 +176,8 @@ public class Cast extends Expr {
             bytecode.addIndex(index);
             gen.setType(retType);
         }
-        
+
+        @Override
         public void setReturnType(JvstTypeChecker c, ASTList args)
             throws CompileError
         {

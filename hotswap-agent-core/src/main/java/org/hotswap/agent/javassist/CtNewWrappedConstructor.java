@@ -16,8 +16,10 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.CtMethod.ConstParameter;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
 
 class CtNewWrappedConstructor extends CtNewWrappedMethod {
     private static final int PASS_NONE = CtNewConstructor.PASS_NONE;

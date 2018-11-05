@@ -17,10 +17,18 @@
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
 import java.util.ArrayList;
+import java.util.List;
+
 import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.ByteArray;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.StackMap;
+import org.hotswap.agent.javassist.bytecode.StackMapTable;
 
 /**
  * Stack map maker.
@@ -379,7 +387,7 @@ public class MapMaker extends Tracer {
      * their types are also fixed when they are found. 
      */
     private void fixTypes(byte[] code, TypedBlock[] blocks) throws NotFoundException, BadBytecode {
-        ArrayList preOrder = new ArrayList();
+        List<TypeData> preOrder = new ArrayList<TypeData>();
         int len = blocks.length;
         int index = 0;
         for (int i = 0; i < len; i++) {
@@ -422,7 +430,6 @@ public class MapMaker extends Tracer {
                 // dead code.
                 writer.sameFrame(offsetDelta);
                 offsetDelta = bb.length - 1;
-                prev = bb;
             }
             else
                 offsetDelta += bb.length;
@@ -522,8 +529,7 @@ public class MapMaker extends Tracer {
                 return diffSize(newTd, len, newTdLen);
             else
                 return -diffSize(oldTd, len, oldTdLen);
-        else
-            return -100;
+        return -100;
     }
 
     private static boolean stackMapEq(TypeData[] oldTd, TypeData[] newTd, int len) {

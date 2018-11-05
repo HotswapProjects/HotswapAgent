@@ -19,7 +19,7 @@
                 <os>
                     <family>!mac</family>
                 </os>
-                <jdk>(,1.9)</jdk>
+                <jdk>(,1.11)</jdk>
             </activation>
             <dependencies>
                 <dependency>
@@ -38,7 +38,7 @@
                 <os>
                     <family>mac</family>
                 </os>
-                <jdk>(,1.9)</jdk>
+                <jdk>(,1.11)</jdk>
             </activation>
             <dependencies>
                 <dependency>

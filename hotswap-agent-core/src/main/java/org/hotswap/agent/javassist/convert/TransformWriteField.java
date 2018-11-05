@@ -18,7 +18,10 @@ package org.hotswap.agent.javassist.convert;
 
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 
 final public class TransformWriteField extends TransformReadField {
     public TransformWriteField(Transformer next, CtField field,
@@ -27,6 +30,7 @@ final public class TransformWriteField extends TransformReadField {
         super(next, field, methodClassname, methodName);
     }
 
+    @Override
     public int transform(CtClass tclazz, int pos, CodeIterator iterator,
                          ConstPool cp) throws BadBytecode
     {

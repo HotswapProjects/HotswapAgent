@@ -39,7 +39,7 @@ public interface ClassPath {
      *
      * <p>This method can return null if the specified class file is not
      * found.  If null is returned, the next search path is examined.
-     * However, if an error happens, this method must throw an exception 
+     * However, if an error happens, this method must throw an exception
      * so that the search will be terminated.
      *
      * <p>This method should not modify the contents of the class file.
@@ -58,11 +58,4 @@ public interface ClassPath {
      * @return null if the specified class file could not be found.
      */
     URL find(String classname);
-
-    /**
-     * This method is invoked when the <code>ClassPath</code> object is
-     * detached from the search path.  It will be an empty method in most of
-     * classes.
-     */
-    void close();
 }

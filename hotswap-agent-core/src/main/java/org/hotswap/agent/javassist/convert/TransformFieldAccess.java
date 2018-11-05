@@ -16,10 +16,12 @@
 
 package org.hotswap.agent.javassist.convert;
 
-import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.Modifier;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 
 final public class TransformFieldAccess extends Transformer {
     private String newClassname, newFieldname;
@@ -43,6 +45,7 @@ final public class TransformFieldAccess extends Transformer {
         this.constPool = null;
     }
 
+    @Override
     public void initialize(ConstPool cp, CodeAttribute attr) {
         if (constPool != cp)
             newIndex = 0;
@@ -54,6 +57,7 @@ final public class TransformFieldAccess extends Transformer {
      * in a superclass of the class in which the original field is
      * declared.
      */
+    @Override
     public int transform(CtClass clazz, int pos,
                          CodeIterator iterator, ConstPool cp)
     {

@@ -20,6 +20,9 @@ package org.hotswap.agent.javassist.tools.reflect;
  * Signals that <code>ClassMetaobject.newInstance()</code> fails.
  */
 public class CannotCreateException extends Exception {
+    /** default serialVersionUID */
+    private static final long serialVersionUID = 1L;
+
     public CannotCreateException(String s) {
         super(s);
     }

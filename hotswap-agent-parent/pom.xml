@@ -225,7 +225,7 @@
         <profile>
             <id>default-tools</id>
             <activation>
-                <jdk>(,1.9)</jdk>
+                <jdk>(,1.11)</jdk>
             </activation>
 
             <dependencyManagement>

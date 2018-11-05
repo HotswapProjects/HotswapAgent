@@ -16,13 +16,15 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
-import org.hotswap.agent.javassist.compiler.TokenId;
 import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.TokenId;
 
 /**
  * Variable declarator.
  */
 public class Declarator extends ASTList implements TokenId {
+    /** default serialVersionUID */
+    private static final long serialVersionUID = 1L;
     protected int varType;
     protected int arrayDim;
     protected int localVar;
@@ -86,16 +88,17 @@ public class Declarator extends ASTList implements TokenId {
         ASTList t = tail();
         if (t != null)
             return t.head();
-        else
-            return null;
+        return null;
     }
 
     public void setLocalVar(int n) { localVar = n; }
 
     public int getLocalVar() { return localVar; }
 
+    @Override
     public String getTag() { return "decl"; }
 
+    @Override
     public void accept(Visitor v) throws CompileError {
         v.atDeclarator(this);
     }

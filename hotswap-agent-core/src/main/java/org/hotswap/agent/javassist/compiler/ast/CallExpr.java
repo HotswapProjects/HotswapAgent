@@ -17,13 +17,15 @@
 package org.hotswap.agent.javassist.compiler.ast;
 
 import org.hotswap.agent.javassist.compiler.CompileError;
-import org.hotswap.agent.javassist.compiler.TokenId;
 import org.hotswap.agent.javassist.compiler.MemberResolver;
+import org.hotswap.agent.javassist.compiler.TokenId;
 
 /**
  * Method call expression.
  */
 public class CallExpr extends Expr {
+    /** default serialVersionUID */
+    private static final long serialVersionUID = 1L;
     private MemberResolver.Method method;  // cached result of lookupMethod()
 
     private CallExpr(ASTree _head, ASTList _tail) {
@@ -43,5 +45,6 @@ public class CallExpr extends Expr {
         return new CallExpr(target, new ASTList(args));
     }
 
+    @Override
     public void accept(Visitor v) throws CompileError { v.atCallExpr(this); }
 }

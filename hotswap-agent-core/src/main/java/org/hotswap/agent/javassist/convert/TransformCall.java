@@ -16,12 +16,15 @@
 
 package org.hotswap.agent.javassist.convert;
 
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 
 public class TransformCall extends Transformer {
     protected String classname, methodname, methodDescriptor;
@@ -51,6 +54,7 @@ public class TransformCall extends Transformer {
         newMethodIsPrivate = Modifier.isPrivate(substMethod.getModifiers());
     }
 
+    @Override
     public void initialize(ConstPool cp, CodeAttribute attr) {
         if (constPool != cp)
             newIndex = 0;
@@ -63,6 +67,7 @@ public class TransformCall extends Transformer {
      * by <code>classname</code>.   This method transforms the instruction
      * in that case unless the subclass overrides the target method.
      */
+    @Override
     public int transform(CtClass clazz, int pos, CodeIterator iterator,
                          ConstPool cp) throws BadBytecode
     {

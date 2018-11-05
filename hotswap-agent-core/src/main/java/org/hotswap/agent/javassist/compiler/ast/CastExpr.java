@@ -16,13 +16,15 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
-import org.hotswap.agent.javassist.compiler.TokenId;
 import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.TokenId;
 
 /**
  * Cast expression.
  */
 public class CastExpr extends ASTList implements TokenId {
+    /** default serialVersionUID */
+    private static final long serialVersionUID = 1L;
     protected int castType;
     protected int arrayDim;
 
@@ -50,7 +52,9 @@ public class CastExpr extends ASTList implements TokenId {
 
     public void setOprand(ASTree t) { getRight().setLeft(t); }
 
+    @Override
     public String getTag() { return "cast:" + castType + ":" + arrayDim; }
 
+    @Override
     public void accept(Visitor v) throws CompileError { v.atCastExpr(this); }
 }

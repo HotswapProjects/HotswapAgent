@@ -19,6 +19,8 @@ package org.hotswap.agent.javassist.compiler.ast;
 import org.hotswap.agent.javassist.compiler.CompileError;
 
 public class MethodDecl extends ASTList {
+    /** default serialVersionUID */
+    private static final long serialVersionUID = 1L;
     public static final String initName = "<init>";
 
     public MethodDecl(ASTree _head, ASTList _tail) {
@@ -40,6 +42,7 @@ public class MethodDecl extends ASTList {
 
     public Stmnt getBody() { return (Stmnt)sublist(4).head(); }
 
+    @Override
     public void accept(Visitor v) throws CompileError {
         v.atMethodDecl(this);
     }

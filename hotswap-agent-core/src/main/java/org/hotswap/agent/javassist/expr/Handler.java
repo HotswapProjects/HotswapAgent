@@ -16,9 +16,19 @@
 
 package org.hotswap.agent.javassist.expr;
 
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.ExceptionTable;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.Javac;
 
 /**
  * A <code>catch</code> clause or a <code>finally</code> block.
@@ -41,6 +51,7 @@ public class Handler extends Expr {
     /**
      * Returns the method or constructor containing the catch clause.
      */
+    @Override
     public CtBehavior where() { return super.where(); }
 
     /**
@@ -48,6 +59,7 @@ public class Handler extends Expr {
      *
      * @return -1       if this information is not available.
      */
+    @Override
     public int getLineNumber() {
         return super.getLineNumber();
     }
@@ -57,6 +69,7 @@ public class Handler extends Expr {
      *
      * @return null     if this information is not available.
      */
+    @Override
     public String getFileName() {
         return super.getFileName();
     }
@@ -64,6 +77,7 @@ public class Handler extends Expr {
     /**
      * Returns the list of exceptions that the catch clause may throw.
      */
+    @Override
     public CtClass[] mayThrow() {
         return super.mayThrow();
     }
@@ -76,11 +90,9 @@ public class Handler extends Expr {
         int type = etable.catchType(index);
         if (type == 0)
             return null;
-        else {
-            ConstPool cp = getConstPool();
-            String name = cp.getClassInfo(type);
-            return thisClass.getClassPool().getCtClass(name);
-        }
+        ConstPool cp = getConstPool();
+        String name = cp.getClassInfo(type);
+        return thisClass.getClassPool().getCtClass(name);
     }
 
     /**
@@ -95,6 +107,7 @@ public class Handler extends Expr {
      *
      * @param statement         a Java statement except try-catch.
      */
+    @Override
     public void replace(String statement) throws CannotCompileException {
         throw new RuntimeException("not implemented yet");
     }
@@ -109,6 +122,7 @@ public class Handler extends Expr {
     public void insertBefore(String src) throws CannotCompileException {
         edited = true;
 
+        @SuppressWarnings("unused")
         ConstPool cp = getConstPool();
         CodeAttribute ca = iterator.get();
         Javac jv = new Javac(thisClass);

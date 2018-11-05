@@ -18,7 +18,8 @@ package org.hotswap.agent.javassist.convert;
 
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
 
 public class TransformAfter extends TransformBefore {
     public TransformAfter(Transformer next,
@@ -28,6 +29,7 @@ public class TransformAfter extends TransformBefore {
         super(next, origMethod, afterMethod);
     }
 
+    @Override
     protected int match2(int pos, CodeIterator iterator) throws BadBytecode {
         iterator.move(pos);
         iterator.insert(saveCode);

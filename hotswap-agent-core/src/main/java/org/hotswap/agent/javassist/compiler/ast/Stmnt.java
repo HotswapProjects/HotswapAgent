@@ -16,13 +16,15 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
-import org.hotswap.agent.javassist.compiler.TokenId;
 import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.TokenId;
 
 /**
  * Statement.
  */
 public class Stmnt extends ASTList implements TokenId {
+    /** default serialVersionUID */
+    private static final long serialVersionUID = 1L;
     protected int operatorId;
 
     public Stmnt(int op, ASTree _head, ASTList _tail) {
@@ -47,14 +49,15 @@ public class Stmnt extends ASTList implements TokenId {
         return new Stmnt(op, op1, new ASTList(op2, new ASTList(op3)));
     }
 
+    @Override
     public void accept(Visitor v) throws CompileError { v.atStmnt(this); }
 
     public int getOperator() { return operatorId; }
 
+    @Override
     protected String getTag() {
         if (operatorId < 128)
             return "stmnt:" + (char)operatorId;
-        else
-            return "stmnt:" + operatorId;
+        return "stmnt:" + operatorId;
     }
 }

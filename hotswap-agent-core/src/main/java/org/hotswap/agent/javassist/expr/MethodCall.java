@@ -16,9 +16,21 @@
 
 package org.hotswap.agent.javassist.expr;
 
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.Javac;
 
 /**
  * Method invocation (caller-side expression).
@@ -39,14 +51,14 @@ public class MethodCall extends Expr {
 
         if (c == INVOKEINTERFACE)
             return cp.getInterfaceMethodrefNameAndType(index);
-        else
-            return cp.getMethodrefNameAndType(index);
+        return cp.getMethodrefNameAndType(index);
     }
 
     /**
      * Returns the method or constructor containing the method-call
      * expression represented by this object.
      */
+    @Override
     public CtBehavior where() { return super.where(); }
 
     /**
@@ -55,6 +67,7 @@ public class MethodCall extends Expr {
      *
      * @return -1       if this information is not available.
      */
+    @Override
     public int getLineNumber() {
         return super.getLineNumber();
     }
@@ -64,6 +77,7 @@ public class MethodCall extends Expr {
      *
      * @return null     if this information is not available.
      */
+    @Override
     public String getFileName() {
         return super.getFileName();
     }
@@ -137,6 +151,7 @@ public class MethodCall extends Expr {
      * including the expression can catch and the exceptions that
      * the throws declaration allows the method to throw.
      */
+    @Override
     public CtClass[] mayThrow() {
         return super.mayThrow();
     }
@@ -176,6 +191,7 @@ public class MethodCall extends Expr {
      *
      * @param statement         a Java statement except try-catch.
      */
+    @Override
     public void replace(String statement) throws CannotCompileException {
         thisClass.getClassFile();   // to call checkModify().
         ConstPool constPool = getConstPool();

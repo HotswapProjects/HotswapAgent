@@ -16,10 +16,15 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.Javac;
-import org.hotswap.agent.javassist.compiler.CompileError;
 import org.hotswap.agent.javassist.CtMethod.ConstParameter;
+import org.hotswap.agent.javassist.bytecode.AccessFlag;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.ExceptionsAttribute;
+import org.hotswap.agent.javassist.bytecode.FieldInfo;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.Javac;
 
 /**
  * A collection of static methods for creating a <code>CtMethod</code>.

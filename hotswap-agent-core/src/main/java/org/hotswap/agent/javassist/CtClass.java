@@ -69,7 +69,7 @@ public abstract class CtClass {
     /**
      * The version number of this release.
      */
-    public static final String version = "3.22.0-GA";
+    public static final String version = "3.24.0-GA";
 
     /**
      * Prints the version number and the copyright notice.
@@ -80,7 +80,7 @@ public abstract class CtClass {
      */
     public static void main(String[] args) {
         System.out.println("Javassist version " + CtClass.version);
-        System.out.println("Copyright (C) 1999-2017 Shigeru Chiba."
+        System.out.println("Copyright (C) 1999-2018 Shigeru Chiba."
                            + " All Rights Reserved.");
     }
 
@@ -198,6 +198,7 @@ public abstract class CtClass {
     /**
      * Converts the object to a string.
      */
+    @Override
     public String toString() {
         StringBuffer buf = new StringBuffer(getClass().getName());
         buf.append("@");
@@ -361,8 +362,7 @@ public abstract class CtClass {
         int index = qname.lastIndexOf('.');
         if (index < 0)
             return qname;
-        else
-            return qname.substring(index + 1);
+        return qname.substring(index + 1);
     }
 
     /**
@@ -373,8 +373,7 @@ public abstract class CtClass {
         int index = qname.lastIndexOf('.');
         if (index < 0)
             return null;
-        else
-            return qname.substring(0, index);
+        return qname.substring(0, index);
     }
 
     /**
@@ -517,27 +516,30 @@ public abstract class CtClass {
      *
      * @return a <code>Collection&lt;String&gt;</code> object.
      */
-    public synchronized Collection getRefClasses() {
+    public synchronized Collection<String> getRefClasses() {
         ClassFile cf = getClassFile2();
         if (cf != null) {
             ClassMap cm = new ClassMap() {
-                public void put(String oldname, String newname) {
-                    put0(oldname, newname);
+                /** default serialVersionUID */
+                private static final long serialVersionUID = 1L;
+                @Override
+                public String put(String oldname, String newname) {
+                    return put0(oldname, newname);
                 }
-
-                public Object get(Object jvmClassName) {
+                @Override
+                public String get(Object jvmClassName) {
                     String n = toJavaName((String)jvmClassName);
                     put0(n, n);
                     return null;
                 }
 
+                @Override
                 public void fix(String name) {}
             };
             cf.getRefClasses(cm);
             return cm.values();
         }
-        else
-            return null;
+        return null;
     }
 
     /**
@@ -588,7 +590,7 @@ public abstract class CtClass {
      * @return <code>true</code> if the annotation is found, otherwise <code>false</code>.
      * @since 3.11
      */
-    public boolean hasAnnotation(Class annotationType) {
+    public boolean hasAnnotation(Class<?> annotationType) {
         return hasAnnotation(annotationType.getName());
     }
 
@@ -614,7 +616,7 @@ public abstract class CtClass {
      * @return the annotation if found, otherwise <code>null</code>.
      * @since 3.11
      */
-    public Object getAnnotation(Class clz) throws ClassNotFoundException {
+    public Object getAnnotation(Class<?> clz) throws ClassNotFoundException {
         return null;
     }
 
@@ -792,6 +794,7 @@ public abstract class CtClass {
      *             Use {@link #getEnclosingBehavior()}.
      * @see #getEnclosingBehavior()
      */
+    @Deprecated
     public final CtMethod getEnclosingMethod() throws NotFoundException {
         CtBehavior b = getEnclosingBehavior();
         if (b == null)
@@ -1268,21 +1271,86 @@ public abstract class CtClass {
      * server, the context class loader might be inappropriate to load the
      * class.
      *
+     * <p><b>Warning:</b> In Java 11 or later, the call to this method will
+     * print a warning message:</p>
+     * <blockquote><pre>
+     * WARNING: An illegal reflective access operation has occurred
+     * WARNING: Illegal reflective access by javassist.util.proxy.SecurityActions$3 ...
+     * WARNING: Please consider reporting this to the maintainers of javassist.util.proxy.SecurityActions$3
+     * WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+     * WARNING: All illegal access operations will be denied in a future release
+     * </pre></blockquote>
+     * <p>To avoid this message, use {@link #toClass(Class)}
+     * or {@link #toClass(java.lang.invoke.MethodHandles.Lookup)}.
+     * {@link #toClass()} will be unavailable in a future release.
+     * </p>
+     *
+     * <p><b>Warning:</b> A Class object returned by this method may not
+     * work with a security manager or a signed jar file because a
+     * protection domain is not specified.</p>
+     *
+     * <p>Note: this method calls <code>toClass()</code>
+     * in <code>ClassPool</code>.</p>
+     *
+     * @see #toClass(java.lang.invoke.MethodHandles.Lookup)
+     * @see #toClass(Class)
+     * @see ClassPool#toClass(CtClass)
+     */
+    public Class<?> toClass() throws CannotCompileException {
+        return getClassPool().toClass(this);
+    }
+
+    /**
+     * Converts this class to a <code>java.lang.Class</code> object.
+     * Once this method is called, further modifications are not
+     * allowed any more.
+     *
+     * <p>This method is provided for convenience.  You should use
+     * {@code toClass(Lookup)} for better compatibility with the
+     * module system.
+     *
+     * <p>Note: this method calls <code>toClass()</code>
+     * in <code>ClassPool</code>.
+     *
+     * <p><b>Warning:</b> A Class object returned by this method may not
+     * work with a security manager or a signed jar file because a
+     * protection domain is not specified.
+     *
+     * @param neighbor    A class belonging to the same package that this
+     *                    class belongs to.  It is used to load the class.
+     * @see ClassPool#toClass(CtClass,Class)
+     * @see #toClass(java.lang.invoke.MethodHandles.Lookup)
+     * @since 3.24
+     */
+    public Class<?> toClass(Class<?> neighbor) throws CannotCompileException
+    {
+        return getClassPool().toClass(this, neighbor);
+    }
+
+    /**
+     * Converts this class to a <code>java.lang.Class</code> object.
+     * Once this method is called, further modifications are not
+     * allowed any more.
+     *
      * <p>This method is provided for convenience.  If you need more
      * complex functionality, you should write your own class loader.
      *
      * <p>Note: this method calls <code>toClass()</code>
      * in <code>ClassPool</code>.
      *
-     * <p><b>Warining:</b> A Class object returned by this method may not
+     * <p><b>Warning:</b> A Class object returned by this method may not
      * work with a security manager or a signed jar file because a
      * protection domain is not specified.
      *
-     * @see #toClass(java.lang.ClassLoader,ProtectionDomain)
-     * @see ClassPool#toClass(CtClass)
+     * @param lookup    used when loading the class.  It has to have
+     *                  an access right to define a new class.
+     * @see ClassPool#toClass(CtClass,java.lang.invoke.MethodHandles.Lookup)
+     * @since 3.24
      */
-    public Class toClass() throws CannotCompileException {
-        return getClassPool().toClass(this);
+    public Class<?> toClass(java.lang.invoke.MethodHandles.Lookup lookup)
+        throws CannotCompileException
+    {
+        return getClassPool().toClass(this, lookup);
     }
 
     /**
@@ -1316,29 +1384,30 @@ public abstract class CtClass {
      * @see ClassPool#toClass(CtClass,java.lang.ClassLoader)
      * @since 3.3
      */
-    public Class toClass(ClassLoader loader, ProtectionDomain domain)
+    public Class<?> toClass(ClassLoader loader, ProtectionDomain domain)
         throws CannotCompileException
     {
         ClassPool cp = getClassPool();
         if (loader == null)
             loader = cp.getClassLoader();
 
-        return cp.toClass(this, loader, domain);
+        return cp.toClass(this, null, loader, domain);
     }
 
     /**
      * Converts this class to a <code>java.lang.Class</code> object.
      *
-     * <p><b>Warining:</b> A Class object returned by this method may not
+     * <p><b>Warning:</b> A Class object returned by this method may not
      * work with a security manager or a signed jar file because a
      * protection domain is not specified.
      *
      * @deprecated      Replaced by {@link #toClass(ClassLoader,ProtectionDomain)}
      */
-    public final Class toClass(ClassLoader loader)
+    @Deprecated
+    public final Class<?> toClass(ClassLoader loader)
         throws CannotCompileException
     {
-        return getClassPool().toClass(this, loader);
+        return getClassPool().toClass(this, null, loader, null);
     }
 
     /**
@@ -1411,7 +1480,7 @@ public abstract class CtClass {
      * @see ClassPool#doPruning
      *
      * @see #toBytecode()
-     * @see #toClass()
+     * @see #toClass(Class)
      * @see #writeFile()
      * @see #instrument(CodeConverter)
      * @see #instrument(ExprEditor)
@@ -1554,27 +1623,32 @@ public abstract class CtClass {
                 file = new FileOutputStream(filename);
         }
 
+        @Override
         public void write(int b) throws IOException {
             init();
             file.write(b);
         }
 
+        @Override
         public void write(byte[] b) throws IOException {
             init();
             file.write(b);
         }
 
+        @Override
         public void write(byte[] b, int off, int len) throws IOException {
             init();
             file.write(b, off, len);
 
         }
 
+        @Override
         public void flush() throws IOException {
             init();
             file.flush();
         }
 
+        @Override
         public void close() throws IOException {
             init();
             file.close();

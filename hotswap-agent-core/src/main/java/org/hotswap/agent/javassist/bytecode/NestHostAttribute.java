@@ -21,40 +21,24 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * <code>SourceFile_attribute</code>.
+ * <code>NestHost_attribute</code>.
+ * It was introduced by JEP-181.  See JVMS 4.7.28 for the specification.
+ *
+ * @since 3.24
  */
-public class SourceFileAttribute extends AttributeInfo {
+public class NestHostAttribute extends AttributeInfo {
     /**
-     * The name of this attribute <code>"SourceFile"</code>.
+     * The name of this attribute <code>"NestHost"</code>.
      */
-    public static final String tag = "SourceFile";
+    public static final String tag = "NestHost";
 
-    SourceFileAttribute(ConstPool cp, int n, DataInputStream in)
-        throws IOException
-    {
+    NestHostAttribute(ConstPool cp, int n, DataInputStream in) throws IOException {
         super(cp, n, in);
     }
 
-    /**
-     * Constructs a SourceFile attribute.
-     *
-     * @param cp                a constant pool table.
-     * @param filename          the name of the source file.
-     */
-    public SourceFileAttribute(ConstPool cp, String filename) {
-        super(cp, tag);
-        int index = cp.addUtf8Info(filename);
-        byte[] bvalue = new byte[2];
-        bvalue[0] = (byte)(index >>> 8);
-        bvalue[1] = (byte)index;
-        set(bvalue);
-    }
-
-    /**
-     * Returns the file name indicated by <code>sourcefile_index</code>.
-     */
-    public String getFileName() {
-        return getConstPool().getUtf8Info(ByteArray.readU16bit(get(), 0));
+    private NestHostAttribute(ConstPool cp, int hostIndex) {
+        super(cp, tag, new byte[2]);
+        ByteArray.write16bit(hostIndex, get(), 0);
     }
 
     /**
@@ -66,7 +50,18 @@ public class SourceFileAttribute extends AttributeInfo {
      *                          class names.
      */
     @Override
-    public AttributeInfo copy(ConstPool newCp, Map<String,String> classnames) {
-        return new SourceFileAttribute(newCp, getFileName());
+    public AttributeInfo copy(ConstPool newCp, Map<String, String> classnames) {
+        int hostIndex = ByteArray.readU16bit(get(), 0);
+        int newHostIndex = getConstPool().copy(hostIndex, newCp, classnames);
+        return new NestHostAttribute(newCp, newHostIndex);
+    }
+
+    /**
+     * Returns <code>host_class_index</code>.  The constant pool entry
+     * at this entry is a <code>CONSTANT_Class_info</code> structure.
+     * @return the value of <code>host_class_index</code>.
+     */
+    public int hostClassIndex() {
+        return ByteArray.readU16bit(info, 0);
     }
 }

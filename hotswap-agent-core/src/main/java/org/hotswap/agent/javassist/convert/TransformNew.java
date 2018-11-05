@@ -16,9 +16,14 @@
 
 package org.hotswap.agent.javassist.convert;
 
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.StackMap;
+import org.hotswap.agent.javassist.bytecode.StackMapTable;
 
 final public class TransformNew extends Transformer {
     private int nested;
@@ -32,6 +37,7 @@ final public class TransformNew extends Transformer {
         this.trapMethod = trapMethod;
     }
 
+    @Override
     public void initialize(ConstPool cp, CodeAttribute attr) {
         nested = 0;
     }
@@ -48,6 +54,7 @@ final public class TransformNew extends Transformer {
      *    ...
      *    INVOKESTATIC trapMethod in trapClass
      */
+    @Override
     public int transform(CtClass clazz, int pos, CodeIterator iterator,
                          ConstPool cp) throws CannotCompileException
     {

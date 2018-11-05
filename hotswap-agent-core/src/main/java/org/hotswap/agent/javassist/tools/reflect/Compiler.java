@@ -16,9 +16,10 @@
 
 package org.hotswap.agent.javassist.tools.reflect;
 
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.ClassPool;
 import java.io.PrintStream;
+
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
 
 class CompiledClass {
     public String classname;

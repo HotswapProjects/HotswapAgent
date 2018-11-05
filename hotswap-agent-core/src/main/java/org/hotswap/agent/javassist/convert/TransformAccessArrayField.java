@@ -16,10 +16,9 @@
 package org.hotswap.agent.javassist.convert;
 
 import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CodeConverter.ArrayAccessReplacementMethodNames;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.CodeConverter.ArrayAccessReplacementMethodNames;
 import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.CodeIterator;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
@@ -49,6 +48,7 @@ public final class TransformAccessArrayField extends Transformer {
 
     }
 
+    @Override
     public void initialize(ConstPool cp, CtClass clazz, MethodInfo minfo) throws CannotCompileException {
         /*
          * This transformer must be isolated from other transformers, since some
@@ -85,11 +85,13 @@ public final class TransformAccessArrayField extends Transformer {
         }
     }
 
+    @Override
     public void clean() {
         frames = null;
         offset = -1;
     }
 
+    @Override
     public int transform(CtClass tclazz, int pos, CodeIterator iterator,
             ConstPool cp) throws BadBytecode {
         // Do nothing, see above comment

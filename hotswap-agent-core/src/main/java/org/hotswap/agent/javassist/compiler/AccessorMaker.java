@@ -16,9 +16,22 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.javassist.bytecode.*;
 import java.util.HashMap;
+import java.util.Map;
+
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.AccessFlag;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.ExceptionsAttribute;
+import org.hotswap.agent.javassist.bytecode.FieldInfo;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.SyntheticAttribute;
 
 /**
  * AccessorMaker maintains accessors to private members of an enclosing
@@ -27,14 +40,14 @@ import java.util.HashMap;
 public class AccessorMaker {
     private CtClass clazz;
     private int uniqueNumber;
-    private HashMap accessors;
+    private Map<String,Object> accessors;
 
     static final String lastParamType = "javassist.runtime.Inner";
 
     public AccessorMaker(CtClass c) {
         clazz = c;
         uniqueNumber = 1;
-        accessors = new HashMap();
+        accessors = new HashMap<String,Object>();
     }
 
     public String getConstructor(CtClass c, String desc, MethodInfo orig)

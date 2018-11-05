@@ -16,7 +16,8 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 
 import org.hotswap.agent.javassist.bytecode.ByteArray;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
