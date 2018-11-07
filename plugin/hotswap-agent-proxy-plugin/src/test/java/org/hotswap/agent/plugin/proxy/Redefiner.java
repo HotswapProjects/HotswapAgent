@@ -28,10 +28,12 @@ import java.lang.instrument.UnmodifiableClassException;
 import java.util.Map;
 
 /**
- * Interface to the class redefinition implementation (JDI-based, Instrumenattion API based)
- * 
+ * Interface to the class redefinition implementation (JDI-based,
+ * Instrumenattion API based)
+ *
  * @author Ivan Dubrov
  */
 public interface Redefiner extends Closeable {
-	void redefineClasses(Map<Class<?>, byte[]> classes) throws ClassNotFoundException, UnmodifiableClassException;
+    void redefineClasses(Map<Class<?>, byte[]> classes)
+            throws ClassNotFoundException, UnmodifiableClassException;
 }

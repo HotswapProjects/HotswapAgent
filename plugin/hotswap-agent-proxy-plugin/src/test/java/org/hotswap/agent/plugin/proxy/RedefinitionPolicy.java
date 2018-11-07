@@ -25,9 +25,9 @@
 package org.hotswap.agent.plugin.proxy;
 
 /**
- * 
+ *
  * @author Thomas Wuerthinger
  */
 public enum RedefinitionPolicy {
-	StaticCheck, DynamicCheck, AccessDeletedMembers, AccessOldMembers
+    StaticCheck, DynamicCheck, AccessDeletedMembers, AccessOldMembers
 }

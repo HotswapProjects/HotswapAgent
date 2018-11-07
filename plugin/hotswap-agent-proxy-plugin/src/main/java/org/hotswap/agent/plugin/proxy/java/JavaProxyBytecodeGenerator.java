@@ -25,11 +25,11 @@ public class JavaProxyBytecodeGenerator implements ProxyBytecodeGenerator {
         Class<?> proxyGeneratorClass = null;
 
         try {
-            proxyGeneratorClass = getClass().getClassLoader().loadClass("sun.misc.ProxyGenerator");
+            // java9
+            proxyGeneratorClass = getClass().getClassLoader().loadClass("java.lang.reflect.ProxyGenerator");
         } catch (ClassNotFoundException e) {
             try {
-                // java9
-                proxyGeneratorClass = getClass().getClassLoader().loadClass("java.lang.reflect.ProxyGenerator");
+                proxyGeneratorClass = getClass().getClassLoader().loadClass("sun.misc.ProxyGenerator");
             } catch (ClassNotFoundException ex) {
                 LOGGER.error("Unable to loadClass ProxyGenerator!");
                 return null;

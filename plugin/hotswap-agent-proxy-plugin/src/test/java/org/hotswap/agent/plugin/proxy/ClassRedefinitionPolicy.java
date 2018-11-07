@@ -31,10 +31,10 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface ClassRedefinitionPolicy {
-	
-	// Default value if no alias is set.
-	public final static class NoClass {
-	}
-	
-	Class<?> alias() default NoClass.class;
+
+    // Default value if no alias is set.
+    public final static class NoClass {
+    }
+
+    Class<?> alias() default NoClass.class;
 }

@@ -315,7 +315,7 @@ public class ProxyGenerator {
 
     /** debugging flag for saving generated class files */
     private final static boolean saveGeneratedFiles = java.security.AccessController.doPrivileged(
-            new GetBooleanAction("sun.misc.ProxyGenerator.saveGeneratedFiles")).booleanValue();
+            new GetBooleanAction("java.lang.reflect.ProxyGenerator.saveGeneratedFiles")).booleanValue();
 
     /**
      * Generate a public proxy class given a name and a list of proxy interfaces.

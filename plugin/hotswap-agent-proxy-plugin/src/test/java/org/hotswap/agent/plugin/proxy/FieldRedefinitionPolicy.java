@@ -27,11 +27,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * 
+ *
  * @author Thomas Wuerthinger
  */
 @Retention(RetentionPolicy.CLASS)
 public @interface FieldRedefinitionPolicy {
-	
-	RedefinitionPolicy value();
+
+    RedefinitionPolicy value();
 }
