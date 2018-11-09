@@ -11,7 +11,7 @@
     <artifactId>hotswap-agent-owb-plugin</artifactId>
 
     <properties>
-        <owb.version>2.0.6</owb.version>
+        <owb.version>2.0.7</owb.version>
     </properties>
 
     <dependencies>
@@ -76,24 +76,4 @@
         </dependency>
 
     </dependencies>
-    <profiles>
-        <profile>
-            <activation>
-                <jdk>[1.9,)</jdk>
-            </activation>
-            <build>
-                <pluginManagement>
-                <plugins>
-                  <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                      <skipTests>true</skipTests>
-                    </configuration>
-                  </plugin>
-                </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-    </profiles>
 </project>
