@@ -140,35 +140,24 @@
         <profile>
             <id>OWB</id>
 
+            <!-- ensures a correct build at analysis.apache.org -->
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
             <properties>
-                <owb.version>1.7.4</owb.version>
+                <owb.version>2.0.7</owb.version>
                 <cdicontainer.version>owb-${owb.version}</cdicontainer.version>
             </properties>
 
             <dependencies>
+
                 <dependency>
                     <groupId>org.hotswapagent</groupId>
                     <artifactId>hotswap-agent-owb-plugin</artifactId>
                     <version>${project.version}</version>
                 </dependency>
 
-                <!-- OWB dependency -->
-                <dependency>
-                    <groupId>org.apache.geronimo.specs</groupId>
-                    <artifactId>geronimo-interceptor_1.2_spec</artifactId>
-                    <version>1.0</version>
-                    <scope>compile</scope>
-                </dependency>
-
-                <!-- JSR 299 API -->
-                <dependency>
-                    <groupId>org.apache.geronimo.specs</groupId>
-                    <artifactId>geronimo-jcdi_1.1_spec</artifactId>
-                    <version>1.0</version>
-                    <scope>compile</scope>
-                </dependency>
-
-                <!-- JSR 330 API -->
                 <dependency>
                     <groupId>org.apache.geronimo.specs</groupId>
                     <artifactId>geronimo-atinject_1.0_spec</artifactId>
@@ -176,10 +165,23 @@
                     <scope>compile</scope>
                 </dependency>
 
-                <!-- JSR-250 API -->
                 <dependency>
                     <groupId>org.apache.geronimo.specs</groupId>
-                    <artifactId>geronimo-annotation_1.2_spec</artifactId>
+                    <artifactId>geronimo-jcdi_2.0_spec</artifactId>
+                    <version>1.0.1</version>
+                    <scope>compile</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.geronimo.specs</groupId>
+                    <artifactId>geronimo-interceptor_1.2_spec</artifactId>
+                    <version>1.0</version>
+                    <scope>compile</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.geronimo.specs</groupId>
+                    <artifactId>geronimo-annotation_1.3_spec</artifactId>
                     <version>1.0</version>
                     <scope>compile</scope>
                 </dependency>
@@ -192,11 +194,18 @@
                 </dependency>
 
                 <dependency>
+                    <groupId>org.apache.openwebbeans</groupId>
+                    <artifactId>openwebbeans-web</artifactId>
+                    <version>${owb.version}</version>
+                </dependency>
+
+                <dependency>
                     <groupId>org.apache.deltaspike.cdictrl</groupId>
                     <artifactId>deltaspike-cdictrl-owb</artifactId>
                     <version>${deltaspike.version}</version>
                     <scope>test</scope>
                 </dependency>
+
             </dependencies>
 
             <build>
@@ -216,16 +225,11 @@
 
         <profile>
             <!-- use this profile to compile and test DeltaSpike with JBoss Weld 2.x on an embedded container -->
-            <id>Weld2</id>
-
-            <!-- ensures a correct build at analysis.apache.org -->
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
+            <id>Weld3</id>
 
             <properties>
                 <!-- Actual Weld version used with this profile -->
-                <weld.version>2.3.5.Final</weld.version>
+                <org.jboss.weld.version>3.0.5.Final</org.jboss.weld.version>
                 <cdicontainer.version>weld-${weld.version}</cdicontainer.version>
             </properties>
 
