@@ -11,10 +11,6 @@
 
     <artifactId>hotswap-agent-weld-plugin</artifactId>
 
-    <properties>
-        <org.jboss.weld.version>3.0.5.Final</org.jboss.weld.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.hotswapagent</groupId>
@@ -40,10 +36,6 @@
         <profile>
             <id>Weld2</id>
 
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-
             <properties>
                 <org.jboss.weld.version>2.3.5.Final</org.jboss.weld.version>
             </properties>
@@ -59,6 +51,10 @@
 
         <profile>
             <id>Weld3</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
 
             <properties>
                 <org.jboss.weld.version>3.0.5.Final</org.jboss.weld.version>

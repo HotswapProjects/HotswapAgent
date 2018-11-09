@@ -20,7 +20,6 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.command.BdaAgentRegistry;
-import org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent;
 import org.hotswap.agent.plugin.weld.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.weld.transformer.AbstractClassBeanTransformer;
 import org.hotswap.agent.plugin.weld.transformer.BeanDeploymentArchiveTransformer;
@@ -42,8 +41,8 @@ import org.hotswap.agent.watch.Watcher;
  */
 @Plugin(name = "Weld",
         description = "Weld framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"2.2.5-2.2.16, 2.3.x, 2.4.0"},
-        expectedVersions = {"All between 2.2.5 - 2.4.x"},
+        testedVersions = {"2.2.5-2.2.16, 2.3.x, 2.4.0, 3.0.x"},
+        expectedVersions = {"All between 2.2.5 - 3.0.x"},
         supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class, AbstractClassBeanTransformer.class, CdiContextsTransformer.class})
 public class WeldPlugin {
 
@@ -200,8 +199,8 @@ public class WeldPlugin {
         if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
             try {
                 String archivePath = getArchivePath(classLoader, ctClass, original.getName());
-                LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
                 if (isBdaRegistered(classLoader, archivePath)) {
+                    LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
                     String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
                     String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
                     String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());

@@ -30,21 +30,15 @@ public class BeanDeploymentArchiveTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
-        CtClass[] constructorParams = new CtClass[] {
-            classPool.get("java.lang.String"),
-            classPool.get("java.util.Collection"),
-            classPool.get("org.jboss.weld.bootstrap.spi.BeansXml"),
-            classPool.get("java.util.Set")
-        };
-
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
         src.append("org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent.registerArchive(getClass().getClassLoader(), this, null);");
         src.append("}");
 
-        CtConstructor declaredConstructor = clazz.getDeclaredConstructor(constructorParams);
-        declaredConstructor.insertAfter(src.toString());
+        for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
+            constructor.insertAfter(src.toString());
+        }
 
         LOGGER.debug("Class '{}' patched with BDA registration.", clazz.getName());
     }
