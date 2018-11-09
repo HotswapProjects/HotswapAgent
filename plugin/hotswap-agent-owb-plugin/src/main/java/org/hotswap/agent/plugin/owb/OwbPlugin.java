@@ -41,8 +41,8 @@ import org.hotswap.agent.watch.Watcher;
  */
 @Plugin(name = "Owb",
         description = "OpenWebBeans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"1.7.5"},
-        expectedVersions = {"All between 1.7.0-2.0.6"},
+        testedVersions = {"2.0.7"},
+        expectedVersions = {"All between 1.7.0-2.0.7"},
         supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, ProxyFactoryTransformer.class})
 public class OwbPlugin {
 
