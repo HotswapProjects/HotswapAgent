@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-proxy-plugin</artifactId>
 
         <properties>
-                <org.springframework.version>4.0.5.RELEASE</org.springframework.version>
+                <org.springframework.version>5.1.2.RELEASE</org.springframework.version>
         </properties>
 
     <dependencies>
@@ -40,8 +40,14 @@
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-all</artifactId>
-            <version>5.0.3</version>
+            <artifactId>asm</artifactId>
+            <version>7.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-commons</artifactId>
+            <version>7.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
