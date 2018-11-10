@@ -5,12 +5,12 @@ notifications:
     - lada.dvorak7@gmail.com
     
 jdk:
-  - openjdk7
+  - openjdk11
 
 env:
 
   matrix:
-    - WELD_VERSION=2.2.13.Final
+    - WELD_VERSION=3.0.5.Final
 
   global:
     # SONATYPE
