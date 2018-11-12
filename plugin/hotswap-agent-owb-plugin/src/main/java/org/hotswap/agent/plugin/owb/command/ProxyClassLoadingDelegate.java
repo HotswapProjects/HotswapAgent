@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.webbeans.proxy.AbstractProxyFactory;
-import org.apache.webbeans.proxy.Unsafe;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -58,7 +57,7 @@ public class ProxyClassLoadingDelegate {
         return null;
     }
 
-    public static Class<?> defineAndLoadClassWithUnsafe(Unsafe unsafe, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
+    public static Class<?> defineAndLoadClassWithUnsafe(Object unsafe, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
         if (MAGIC_IN_PROGRESS.get()) {
             Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes);
             if (reloaded != null) {
@@ -66,7 +65,7 @@ public class ProxyClassLoadingDelegate {
             }
         }
         try {
-            return (Class<?>) ReflectionHelper.invoke(unsafe, Unsafe.class, "defineAndLoadClass",
+            return (Class<?>) ReflectionHelper.invoke(unsafe, unsafe.getClass(), "defineAndLoadClass",
                     new Class[]{ClassLoader.class, String.class, byte[].class},
                     classLoader, proxyName, proxyBytes);
         } catch (Exception e) {
