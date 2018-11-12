@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.webbeans.proxy.AbstractProxyFactory;
+import org.apache.webbeans.proxy.Unsafe;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -40,21 +41,11 @@ public class ProxyClassLoadingDelegate {
         return Class.forName(name, initialize, loader);
     }
 
-    public static Class defineAndLoadClass(AbstractProxyFactory proxyFactory, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
+    public static Class<?> defineAndLoadClass(AbstractProxyFactory proxyFactory, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
         if (MAGIC_IN_PROGRESS.get()) {
-            try {
-                final Class<?> originalProxyClass = classLoader.loadClass(proxyName);
-                try {
-                    Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
-                    reloadMap.put(originalProxyClass, proxyBytes);
-                    // TODO : is this standard way how to reload class?
-                    PluginManager.getInstance().hotswap(reloadMap);
-                    return originalProxyClass;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            } catch (ClassNotFoundException e) {
-                //it has not actually been loaded yet
+            Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes);
+            if (reloaded != null) {
+                return reloaded;
             }
         }
         try {
@@ -67,4 +58,38 @@ public class ProxyClassLoadingDelegate {
         return null;
     }
 
+    public static Class<?> defineAndLoadClassWithUnsafe(Unsafe unsafe, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
+        if (MAGIC_IN_PROGRESS.get()) {
+            Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes);
+            if (reloaded != null) {
+                return reloaded;
+            }
+        }
+        try {
+            return (Class<?>) ReflectionHelper.invoke(unsafe, Unsafe.class, "defineAndLoadClass",
+                    new Class[]{ClassLoader.class, String.class, byte[].class},
+                    classLoader, proxyName, proxyBytes);
+        } catch (Exception e) {
+            LOGGER.error("defineAndLoadClass() exception {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private static Class<?> reloadProxyByteCode(ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
+        try {
+            final Class<?> originalProxyClass = classLoader.loadClass(proxyName);
+            try {
+                Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
+                reloadMap.put(originalProxyClass, proxyBytes);
+                // TODO : is this standard way how to reload class?
+                PluginManager.getInstance().hotswap(reloadMap);
+                return originalProxyClass;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } catch (ClassNotFoundException e) {
+            //it has not actually been loaded yet
+        }
+        return null;
+    }
 }

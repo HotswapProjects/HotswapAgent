@@ -158,7 +158,10 @@ public class CglibEnhancerProxyBytecodeGenerator
             }
             return newClasses;
         } else {
-            return classLoader.loadClass(((Class<?>) fieldState).getName());
+            if (fieldState instanceof Class) {
+                return classLoader.loadClass(((Class<?>) fieldState).getName());
+            }
         }
+        return fieldState;
     }
 }

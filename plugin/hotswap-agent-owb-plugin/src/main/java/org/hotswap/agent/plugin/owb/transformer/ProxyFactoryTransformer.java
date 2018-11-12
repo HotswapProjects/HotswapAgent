@@ -57,7 +57,13 @@ public class ProxyFactoryTransformer {
                 new ExprEditor() {
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getMethodName().equals("defineAndLoadClass"))
-                            m.replace("{ $_ = org.hotswap.agent.plugin.owb.command.ProxyClassLoadingDelegate.defineAndLoadClass(this, $$); }");
+                            if ("org.apache.webbeans.proxy.Unsafe".equals(m.getClassName())) {
+                                // OWB >= 2.0.8
+                                m.replace("{ $_ = org.hotswap.agent.plugin.owb.command.ProxyClassLoadingDelegate.defineAndLoadClassWithUnsafe(this.unsafe, $$); }");
+                            } else {
+                                // OWB < 2.0.8
+                                m.replace("{ $_ = org.hotswap.agent.plugin.owb.command.ProxyClassLoadingDelegate.defineAndLoadClass(this, $$); }");
+                            }
                     }
                 });
     }

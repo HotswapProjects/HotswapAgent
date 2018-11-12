@@ -11,7 +11,7 @@
     <artifactId>hotswap-agent-owb-plugin</artifactId>
 
     <properties>
-        <owb.version>2.0.7</owb.version>
+        <owb.version>2.0.8</owb.version>
     </properties>
 
     <dependencies>
