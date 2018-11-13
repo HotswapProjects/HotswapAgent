@@ -91,7 +91,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <!--This is to override argLine from surefire config in parent pom-->
-                    <argLine> -Dblank </argLine>
+                    <argLine> -Dblank -XX:+DisableHotswapAgent -XX:+TraceRedefineClasses</argLine>
                 </configuration>
             </plugin>
 
