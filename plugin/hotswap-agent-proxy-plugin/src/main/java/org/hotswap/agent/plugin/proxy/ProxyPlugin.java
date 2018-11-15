@@ -15,6 +15,7 @@ import org.hotswap.agent.plugin.proxy.hscglib.CglibEnhancerProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.CglibProxyTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParametersTransformer;
 import org.hotswap.agent.plugin.proxy.hscglib.GeneratorParams;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatcherFactory;
 
@@ -47,6 +48,17 @@ public class ProxyPlugin {
      * OLD definition of proxie's interface. Therefore proxy is defined in deferred command (after some delay)
      * after proxied interface is redefined in DCEVM.
      */
+        Object proxyCache = ReflectionHelper.getNoException(null, java.lang.reflect.Proxy.class, "proxyCache");
+
+        if (proxyCache != null) {
+            try {
+                ReflectionHelper.invoke(proxyCache, proxyCache.getClass().getSuperclass(), "removeAll",
+                        new Class[] { ClassLoader.class }, classLoader);
+            } catch (IllegalArgumentException e) {
+                LOGGER.error("Reflection proxy cache flush failed. {}", e.getMessage());
+            }
+        }
+
         if (!ClassLoaderHelper.isClassLoderStarted(classLoader)) {
             return;
         }
