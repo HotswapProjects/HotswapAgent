@@ -7,8 +7,9 @@ set -e
 
 # run clean package with all unit tests
 function test2 {
-    echo "Running with Weld $1"
-    mvn -Dorg.jboss.weld.version=$1 -PWeld2 clean package
+    echo "Running with OWB $1"
+    mvn -Dowb.version=$1 clean compile
+    JAVA_HOME=/usr/lib/jvm/java-8-openjdk mvn -Ddcevm.test.arguments=-XXaltjvm=dcevm -Dorg.jboss.weld.version=$1 -PWeld2 clean package test
 }
 
 function test3 {
@@ -34,6 +35,7 @@ function test3 {
 # test 2.2.2.Final
 # test 2.2.3.Final
 # test 2.2.4.Final
+
 test2 2.2.5.Final
 test2 2.2.6.Final
 test2 2.2.7.Final
@@ -63,7 +65,6 @@ test2 2.4.5.Final
 test2 2.4.6.Final
 test2 2.4.7.Final
 test2 2.4.8.Final
-
 
 test3 3.0.0.Final
 test3 3.0.1.Final
