@@ -33,12 +33,10 @@ import java.util.Map;
 public class TomcatPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(TomcatPlugin.class);
 
+    // Supported class loaders extended from WebAppClassLoader
     private static final String TOMCAT_WEBAPP_CLASS_LOADER = "org.apache.catalina.loader.WebappClassLoader";
-
     private static final String TOMCAT_PARALLEL_WEBAPP_CLASS_LOADER = "org.apache.catalina.loader.ParallelWebappClassLoader";
-
     private static final String GLASSFISH_WEBAPP_CLASS_LOADER = "org.glassfish.web.loader.WebappClassLoader";
-
     private static final String TOMEE_WEBAPP_CLASS_LOADER = "org.apache.tomee.catalina.TomEEWebappClassLoader";
 
     private static final String WEB_INF_CLASSES = "/WEB-INF/classes/";
@@ -124,6 +122,15 @@ public class TomcatPlugin {
             LOGGER.info("Tomcat plugin initialized - Tomcat version '{}'", version);
         }
         tomcatMajorVersion = resolveTomcatMajorVersion(version);
+    }
+
+    public static void close(ClassLoader classLoader) {
+        Map<String, ClassLoader> registerMap = extraRepositories.remove(classLoader);
+        if (registerMap != null) {
+            for (ClassLoader loader : registerMap.values()) {
+                PluginManager.getInstance().getWatcher().closeClassLoader(loader);
+            }
+        }
     }
 
 

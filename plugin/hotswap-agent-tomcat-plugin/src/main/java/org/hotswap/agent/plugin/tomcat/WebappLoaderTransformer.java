@@ -78,7 +78,8 @@ public class WebappLoaderTransformer {
         if (!stopHandled) {
             try {
                 ctClass.getDeclaredMethod("stopInternal").insertBefore(
-                        PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()")
+                        PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()") +
+                        TomcatPlugin.class.getName() + ".close(getClassLoader());"
                 );
                 stopHandled = true;
             } catch (NotFoundException e) {
@@ -88,10 +89,12 @@ public class WebappLoaderTransformer {
         }
 
         // tomcat 6x
+        // @Deprecated
         if (!stopHandled) {
             try {
                 ctClass.getDeclaredMethod("stop").insertBefore(
-                        PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()")
+                        PluginManagerInvoker.buildCallCloseClassLoader("getClassLoader()") +
+                        TomcatPlugin.class.getName() + ".close(getClassLoader());"
                 );
                 stopHandled = true;
             } catch (NotFoundException e) {
