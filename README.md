@@ -1,7 +1,7 @@
 Hotswap Agent
 =============
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/HotswapProjects/user) [![Build Status](https://travis-ci.org/HotswapProjects/HotswapAgent.svg?branch=master)](https://travis-ci.org/HotswapProjects/HotswapAgent)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/HotswapProjects/user) [![Build Status](https://travis-ci.org/HotswapProjects/HotswapAgent.svg?branch=master)](https://travis-ci.org/HotswapProjects/HotswapAgent) [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 Java unlimited runtime class and resource redefinition.
 
