@@ -1,5 +1,15 @@
 package org.hotswap.agent.plugin.tomcat;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.config.PluginManager;
@@ -7,14 +17,6 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Catalina servlet container support.
@@ -38,7 +40,18 @@ public class TomcatPlugin {
     private static final String TOMCAT_PARALLEL_WEBAPP_CLASS_LOADER = "org.apache.catalina.loader.ParallelWebappClassLoader";
     private static final String GLASSFISH_WEBAPP_CLASS_LOADER = "org.glassfish.web.loader.WebappClassLoader";
     private static final String TOMEE_WEBAPP_CLASS_LOADER = "org.apache.tomee.catalina.TomEEWebappClassLoader";
+    private static final String TOMCAT_EMBEDDED_WEBAPP_CLASS_LOADER = "org.springframework.boot.web.embedded.tomcat.TomcatEmbeddedWebappClassLoader";
 
+    static final Set<String> supportedClassLoaders;
+
+    static {
+        supportedClassLoaders = new HashSet<>();
+        supportedClassLoaders.add(TOMCAT_WEBAPP_CLASS_LOADER);
+        supportedClassLoaders.add(TOMCAT_PARALLEL_WEBAPP_CLASS_LOADER);
+        supportedClassLoaders.add(GLASSFISH_WEBAPP_CLASS_LOADER);
+        supportedClassLoaders.add(TOMEE_WEBAPP_CLASS_LOADER);
+        supportedClassLoaders.add(TOMCAT_EMBEDDED_WEBAPP_CLASS_LOADER);
+    };
     private static final String WEB_INF_CLASSES = "/WEB-INF/classes/";
 
     // resolved tomcat version (6/7/8).
@@ -57,11 +70,7 @@ public class TomcatPlugin {
         String version = resolveTomcatVersion(appClassLoader);
         int majorVersion = resolveTomcatMajorVersion(version);
 
-        String classLoaderName = appClassLoader.getClass().getName();
-        if (classLoaderName.equals(TOMCAT_WEBAPP_CLASS_LOADER)
-                || classLoaderName.equals(TOMCAT_PARALLEL_WEBAPP_CLASS_LOADER)
-                || classLoaderName.equals(GLASSFISH_WEBAPP_CLASS_LOADER)
-                || classLoaderName.equals(TOMEE_WEBAPP_CLASS_LOADER)) {
+        if (supportedClassLoaders.contains(appClassLoader.getClass().getName())) {
             registeredResourcesMap.put(resource, appClassLoader);
 
             // create plugin configuration in advance to get extraClasspath and watchResources properties
