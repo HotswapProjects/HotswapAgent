@@ -19,7 +19,11 @@ package org.hotswap.agent.javassist.util.proxy;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.util.List;
 
@@ -184,6 +188,53 @@ public class DefineClassHelper {
         }
     }
 
+    private static class OnClassLoaderDefiner extends Helper {
+
+        OnClassLoaderDefiner () {
+        }
+
+        @Override
+        Class<?> defineClass(String name, byte[] b, int off, int len, Class<?> neighbor, ClassLoader loader, ProtectionDomain protectionDomain)
+            throws ClassFormatError
+        {
+            Class<?> clazz = loader.getClass();
+
+            Method defineClassMethod = null;
+            do
+            {
+                try
+                {
+                    defineClassMethod = clazz.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+                }
+                catch (NoSuchMethodException e)
+                {
+                    // do nothing, we need to search the superclass
+                }
+
+                clazz = clazz.getSuperclass();
+            } while (defineClassMethod == null && clazz != Object.class);
+
+            Class<?> result = null;
+
+            if (defineClassMethod != null && !defineClassMethod.isAccessible())
+            {
+                try
+                {
+                    defineClassMethod.setAccessible(true);
+                    result = (Class<?>) defineClassMethod.invoke(loader, name, b, 0, len);
+                }
+                catch (RuntimeException re) {
+                    defineClassMethod = null;
+                } catch (IllegalAccessException e) {
+                    defineClassMethod = null;
+                } catch (InvocationTargetException e) {
+                    defineClassMethod = null;
+                }
+            }
+            return result;
+        }
+    }
+
     private static class JavaOther extends Helper {
         private final Method defineClass = getDefineClassMethod();
         private final SecurityActions stack = SecurityActions.stack;
@@ -225,6 +276,15 @@ public class DefineClassHelper {
         }
     }
 
+    public static class OnClassLoaderDefinerContext {
+        private ClassLoader classLoader;
+        public OnClassLoaderDefinerContext(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+        }
+    }
+
+    public static ThreadLocal<OnClassLoaderDefinerContext> onClassLoaderDefinerContext = new ThreadLocal<>();
+
     // Java 11+ removed sun.misc.Unsafe.defineClass, so we fallback to invoking defineClass on
     // ClassLoader until we have an implementation that uses MethodHandles.Lookup.defineClass
     private static final Helper privileged = ClassFile.MAJOR_VERSION > ClassFile.JAVA_10
@@ -260,7 +320,12 @@ public class DefineClassHelper {
         throws CannotCompileException
     {
         try {
-            return privileged.defineClass(className, bcode, 0, bcode.length,
+            Helper helper = privileged;
+            if (ClassFile.MAJOR_VERSION > ClassFile.JAVA_10 && onClassLoaderDefinerContext.get() != null) {
+                loader = onClassLoaderDefinerContext.get().classLoader;
+                helper = new OnClassLoaderDefiner();
+            }
+            return helper.defineClass(className, bcode, 0, bcode.length,
                                           neighbor, loader, domain);
         }
         catch (RuntimeException e) {

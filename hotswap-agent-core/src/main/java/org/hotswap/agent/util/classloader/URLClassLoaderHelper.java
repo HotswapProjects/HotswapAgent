@@ -6,9 +6,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.AccessControlContext;
 import java.util.Arrays;
 import java.util.Enumeration;
 
+import org.hotswap.agent.javassist.util.proxy.DefineClassHelper;
+import org.hotswap.agent.javassist.util.proxy.DefineClassHelper.OnClassLoaderDefinerContext;
 import org.hotswap.agent.javassist.util.proxy.MethodFilter;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.Proxy;
@@ -26,12 +29,13 @@ public class URLClassLoaderHelper {
 
     static {
         Class<?> urlClassPathClass = null;
+        ClassLoader classLoader = URLClassLoaderHelper.class.getClassLoader();
         try {
-            urlClassPathClass = URLClassLoaderHelper.class.getClassLoader().loadClass("sun.misc.URLClassPath");
+            urlClassPathClass = classLoader.loadClass("sun.misc.URLClassPath");
         } catch (ClassNotFoundException e) {
             try {
                 // java9
-                urlClassPathClass = URLClassLoaderHelper.class.getClassLoader().loadClass("jdk.internal.loader.URLClassPath");
+                urlClassPathClass = classLoader.loadClass("jdk.internal.loader.URLClassPath");
             } catch (ClassNotFoundException e1) {
                 LOGGER.error("Unable to loadClass URLClassPath!");
             }
@@ -44,7 +48,14 @@ public class URLClassLoaderHelper {
                     return !m.getName().equals("finalize");
                 }
             });
-            urlClassPathProxyClass = f.createClass();
+            try {
+                // Hack: we need build URLClassPath proxy, but javassist uses MethodHandles.Lookup.define() in java11,
+                //       that not allow to make proxy of JDK's classes!!! (remove this hack when it will be fixed in javassist)
+                DefineClassHelper.onClassLoaderDefinerContext.set(new DefineClassHelper.OnClassLoaderDefinerContext(classLoader));
+                urlClassPathProxyClass = f.createClass();
+            } finally {
+                DefineClassHelper.onClassLoaderDefinerContext.set(null);
+            }
         }
     }
 
@@ -71,8 +82,8 @@ public class URLClassLoaderHelper {
                 System.arraycopy(extraClassPath, 0, modifiedClassPath, 0, extraClassPath.length);
                 System.arraycopy(origClassPath, 0, modifiedClassPath, extraClassPath.length, origClassPath.length);
 
-                Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class });
-                Object urlClassPath = constr.newInstance(new Object[] { modifiedClassPath });
+                Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class, AccessControlContext.class });
+                Object urlClassPath = constr.newInstance(new Object[] { modifiedClassPath, null });
 
                 ExtraURLClassPathMethodHandler methodHandler = new ExtraURLClassPathMethodHandler(modifiedClassPath);
                 ((Proxy)urlClassPath).setHandler(methodHandler);
