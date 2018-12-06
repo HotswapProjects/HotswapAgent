@@ -245,6 +245,7 @@ Hotswap agent:
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
 * Lukasz Warzecha - Log4j2 plugin
+* Thomas Heigl - Wicket plugin
 
 DCEVM:
 
