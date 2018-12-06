@@ -622,7 +622,9 @@ public class ProxyFactory {
      * {@code java.lang.invoke.MethodHandles.Lookup}.
      */
     private Class<?> getClassInTheSamePackage() {
-        if (superClass != null && superClass != OBJECT_TYPE)
+        if (basename.startsWith("org.hotswap.agent.javassist.util.proxy."))       // maybe the super class is java.*
+            return this.getClass();
+        else if (superClass != null && superClass != OBJECT_TYPE)
             return superClass;
         else if (interfaces != null && interfaces.length > 0)
             return interfaces[0];
@@ -919,8 +921,8 @@ public class ProxyFactory {
         if (Modifier.isFinal(superClass.getModifiers()))
             throw new RuntimeException(superName + " is final");
 
-        if (basename.startsWith("java.") || onlyPublicMethods)
-            basename = "javassist.util.proxy." + basename.replace('.', '_');
+        if (basename.startsWith("java.") || basename.startsWith("jdk.") || onlyPublicMethods)
+            basename = "org.hotswap.agent.javassist.util.proxy." + basename.replace('.', '_');
     }
 
     private void allocateClassName() {
@@ -1587,7 +1589,7 @@ public class ProxyFactory {
         code.addAload(0);
         code.addInvokestatic("org.hotswap.agent.javassist.util.proxy.RuntimeSupport",
                              "makeSerializedProxy",
-                             "(Ljava/lang/Object;)Ljavassist/util/proxy/SerializedProxy;");
+                             "(Ljava/lang/Object;)Lorg/hotswap/agent/javassist/util/proxy/SerializedProxy;");
         code.addOpcode(Opcode.ARETURN);
         minfo.setCodeAttribute(code.toCodeAttribute());
         return minfo;

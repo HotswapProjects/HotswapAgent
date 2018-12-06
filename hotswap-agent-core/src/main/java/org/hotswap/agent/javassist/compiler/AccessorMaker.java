@@ -42,7 +42,7 @@ public class AccessorMaker {
     private int uniqueNumber;
     private Map<String,Object> accessors;
 
-    static final String lastParamType = "javassist.runtime.Inner";
+    static final String lastParamType = "org.hotswap.agent.javassist.runtime.Inner";
 
     public AccessorMaker(CtClass c) {
         clazz = c;
@@ -59,7 +59,7 @@ public class AccessorMaker {
             return consDesc;     // already exists.
 
         consDesc = Descriptor.appendParameter(lastParamType, desc);
-        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
         try {
             ConstPool cp = cf.getConstPool();
             ClassPool pool = clazz.getClassPool();
@@ -68,7 +68,7 @@ public class AccessorMaker {
             minfo.setAccessFlags(0);
             minfo.addAttribute(new SyntheticAttribute(cp));
             ExceptionsAttribute ea = orig.getExceptionsAttribute();
-            if (ea != null)  
+            if (ea != null)
                 minfo.addAttribute(ea.copy(cp, null));
 
             CtClass[] params = Descriptor.getParameterTypes(desc, pool);
@@ -103,8 +103,8 @@ public class AccessorMaker {
      * @param accDesc   the descriptor of the accessor method.  The first
      *                  parameter type is <code>clazz</code>.
      *                  If the private method is static,
-     *              <code>accDesc</code> must be identical to <code>desc</code>. 
-     *                  
+     *              <code>accDesc</code> must be identical to <code>desc</code>.
+     *
      * @param orig      the method info of the private method.
      * @return
      */
@@ -117,7 +117,7 @@ public class AccessorMaker {
         if (accName != null)
             return accName;     // already exists.
 
-        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
         accName = findAccessorName(cf);
         try {
             ConstPool cp = cf.getConstPool();
@@ -127,7 +127,7 @@ public class AccessorMaker {
             minfo.setAccessFlags(AccessFlag.STATIC);
             minfo.addAttribute(new SyntheticAttribute(cp));
             ExceptionsAttribute ea = orig.getExceptionsAttribute();
-            if (ea != null)  
+            if (ea != null)
                 minfo.addAttribute(ea.copy(cp, null));
 
             CtClass[] params = Descriptor.getParameterTypes(accDesc, pool);
@@ -169,7 +169,7 @@ public class AccessorMaker {
         if (res != null)
             return (MethodInfo)res;     // already exists.
 
-        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
         String accName = findAccessorName(cf);
         try {
             ConstPool cp = cf.getConstPool();
@@ -220,7 +220,7 @@ public class AccessorMaker {
         if (res != null)
             return (MethodInfo)res;     // already exists.
 
-        ClassFile cf = clazz.getClassFile();    // turn on the modified flag. 
+        ClassFile cf = clazz.getClassFile();    // turn on the modified flag.
         String accName = findAccessorName(cf);
         try {
             ConstPool cp = cf.getConstPool();

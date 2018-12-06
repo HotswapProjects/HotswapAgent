@@ -10,8 +10,6 @@ import java.security.AccessControlContext;
 import java.util.Arrays;
 import java.util.Enumeration;
 
-import org.hotswap.agent.javassist.util.proxy.DefineClassHelper;
-import org.hotswap.agent.javassist.util.proxy.DefineClassHelper.OnClassLoaderDefinerContext;
 import org.hotswap.agent.javassist.util.proxy.MethodFilter;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.Proxy;
@@ -48,14 +46,7 @@ public class URLClassLoaderHelper {
                     return !m.getName().equals("finalize");
                 }
             });
-            try {
-                // Hack: we need build URLClassPath proxy, but javassist uses MethodHandles.Lookup.define() in java11,
-                //       that not allow to make proxy of JDK's classes!!! (remove this hack when it will be fixed in javassist)
-                DefineClassHelper.onClassLoaderDefinerContext.set(new DefineClassHelper.OnClassLoaderDefinerContext(classLoader));
-                urlClassPathProxyClass = f.createClass();
-            } finally {
-                DefineClassHelper.onClassLoaderDefinerContext.set(null);
-            }
+            urlClassPathProxyClass = f.createClass();
         }
     }
 

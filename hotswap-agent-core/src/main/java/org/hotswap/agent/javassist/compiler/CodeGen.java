@@ -83,7 +83,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
 
         /**
          * Returns true if the generated code ends with return,
-         * throw, or goto. 
+         * throw, or goto.
          */
         protected abstract boolean doit(Bytecode b, int opcode);
 
@@ -126,7 +126,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
     }
 
     public static boolean is2word(int type, int dim) {
-        return dim == 0 && (type == DOUBLE || type == LONG); 
+        return dim == 0 && (type == DOUBLE || type == LONG);
     }
 
     public int getMaxLocals() { return bytecode.getMaxLocals(); }
@@ -576,7 +576,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
                 fatal();
             else {
                 pairs[ipairs++]
-                    = ((long)computeLabel(label.head()) << 32) + 
+                    = ((long)computeLabel(label.head()) << 32) +
                       ((long)(bytecode.currentPc() - opcodePc) & 0xffffffff);
             }
 
@@ -590,7 +590,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
             bytecode.write32bit(pc, (int)(pairs[i] >>> 32));
             bytecode.write32bit(pc + 4, (int)pairs[i]);
             pc += 8;
-        } 
+        }
 
         if (defaultPc < 0 || breakList.size() > 0)
             hasReturned = false;
@@ -1169,19 +1169,19 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
                 arrayDim = 0;
                 return true;
             }
-            	int pc = bytecode.currentPc();
-            	bytecode.addIndex(0);       // correct later
-            	if (booleanExpr(isAndAnd, bexpr.oprand2()))
-            		bytecode.addOpcode(Opcode.GOTO);
+                int pc = bytecode.currentPc();
+                bytecode.addIndex(0);       // correct later
+                if (booleanExpr(isAndAnd, bexpr.oprand2()))
+                    bytecode.addOpcode(Opcode.GOTO);
 
-            	bytecode.write16bit(pc, bytecode.currentPc() - pc + 3);
-            	if (branchIf != isAndAnd) {
-            		bytecode.addIndex(6);   // skip GOTO instruction
-            		bytecode.addOpcode(Opcode.GOTO);
-            	}
+                bytecode.write16bit(pc, bytecode.currentPc() - pc + 3);
+                if (branchIf != isAndAnd) {
+                    bytecode.addIndex(6);   // skip GOTO instruction
+                    bytecode.addOpcode(Opcode.GOTO);
+                }
         }
         else if (isAlwaysBranch(expr, branchIf)) {
-        	// Opcode.GOTO is not added here.  The caller must add it.
+            // Opcode.GOTO is not added here.  The caller must add it.
             exprType = BOOLEAN;
             arrayDim = 0;
             return true;	// always branch
@@ -1667,7 +1667,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
         */
 
         bytecode.growStack(1);
-        bytecode.addInvokestatic("javassist.runtime.DotClass", "fail",
+        bytecode.addInvokestatic("org.hotswap.agent.javassist.runtime.DotClass", "fail",
                                  "(Ljava/lang/ClassNotFoundException;)"
                                  + "Ljava/lang/NoClassDefFoundError;");
         bytecode.addOpcode(ATHROW);

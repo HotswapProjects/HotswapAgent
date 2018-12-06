@@ -143,7 +143,7 @@ public class Viewer extends ClassLoader {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         Class<?> c = null;
         if (name.startsWith("java.") || name.startsWith("javax.")
-            || name.equals("javassist.tools.web.Viewer"))
+            || name.equals("org.hotswap.agent.javassist.tools.web.Viewer"))
             c = findSystemClass(name);
 
         if (c == null)

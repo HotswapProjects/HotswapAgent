@@ -192,6 +192,7 @@ public class PluginConfiguration {
             for (String pattern : properties.getProperty(EXCLUDED_CLASS_LOADERS_KEY).split(",")) {
                 excludedClassLoaderPatterns.add(Pattern.compile(pattern));
             }
+            // FIXME: this is wrong since there is single HotswapTransformer versus multiple PluginConfigurations.
             PluginManager.getInstance().getHotswapTransformer()
                     .setExcludedClassLoaderPatterns(excludedClassLoaderPatterns);
         }

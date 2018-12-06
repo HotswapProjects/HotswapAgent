@@ -41,7 +41,7 @@ import org.hotswap.agent.javassist.expr.ExprEditor;
 
 /**
  * <code>CtBehavior</code> represents a method, a constructor,
- * or a static constructor (class initializer). 
+ * or a static constructor (class initializer).
  * It is the abstract super class of
  * <code>CtMethod</code> and <code>CtConstructor</code>.
  *
@@ -191,9 +191,9 @@ public abstract class CtBehavior extends CtMember {
     public boolean hasAnnotation(String typeName) {
        MethodInfo mi = getMethodInfo2();
        AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.invisibleTag);  
+                   mi.getAttribute(AnnotationsAttribute.invisibleTag);
        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.visibleTag);  
+                   mi.getAttribute(AnnotationsAttribute.visibleTag);
        return CtClassType.hasAnnotationType(typeName,
                                             getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2);
@@ -214,9 +214,9 @@ public abstract class CtBehavior extends CtMember {
     public Object getAnnotation(Class<?> clz) throws ClassNotFoundException {
        MethodInfo mi = getMethodInfo2();
        AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.invisibleTag);  
+                   mi.getAttribute(AnnotationsAttribute.invisibleTag);
        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.visibleTag);  
+                   mi.getAttribute(AnnotationsAttribute.visibleTag);
        return CtClassType.getAnnotationType(clz,
                                             getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2);
@@ -238,7 +238,7 @@ public abstract class CtBehavior extends CtMember {
      * Returns the annotations associated with this method or constructor.
      * If any annotations are not on the classpath, they are not included
      * in the returned array.
-     * 
+     *
      * @return an array of annotation-type objects.
      * @see #getAnnotations()
      * @since 3.3
@@ -258,9 +258,9 @@ public abstract class CtBehavior extends CtMember {
     {
        MethodInfo mi = getMethodInfo2();
        AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.invisibleTag);  
+                   mi.getAttribute(AnnotationsAttribute.invisibleTag);
        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.visibleTag);  
+                   mi.getAttribute(AnnotationsAttribute.visibleTag);
        return CtClassType.toAnnotationType(ignoreNotFound,
                                            getDeclaringClass().getClassPool(),
                                            ainfo, ainfo2);
@@ -285,7 +285,7 @@ public abstract class CtBehavior extends CtMember {
      * Returns the parameter annotations associated with this method or constructor.
      * If any annotations are not on the classpath, they are not included in the
      * returned array.
-     * 
+     *
      * @return an array of annotation-type objects.  The length of the returned array is
      * equal to the number of the formal parameters.  If each parameter has no
      * annotation, the elements of the returned array are empty arrays.
@@ -308,9 +308,9 @@ public abstract class CtBehavior extends CtMember {
     {
         MethodInfo mi = getMethodInfo2();
         ParameterAnnotationsAttribute ainfo = (ParameterAnnotationsAttribute)
-                    mi.getAttribute(ParameterAnnotationsAttribute.invisibleTag);  
+                    mi.getAttribute(ParameterAnnotationsAttribute.invisibleTag);
         ParameterAnnotationsAttribute ainfo2 = (ParameterAnnotationsAttribute)
-                    mi.getAttribute(ParameterAnnotationsAttribute.visibleTag);  
+                    mi.getAttribute(ParameterAnnotationsAttribute.visibleTag);
         return CtClassType.toAnnotationType(ignoreNotFound,
                                             getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2, mi);
@@ -580,7 +580,7 @@ public abstract class CtBehavior extends CtMember {
 
         pool.recordCflow(name, declaringClass.getName(), fname);
         try {
-            CtClass type = pool.get("javassist.runtime.Cflow");
+            CtClass type = pool.get("org.hotswap.agent.javassist.runtime.Cflow");
             CtField field = new CtField(type, fname, cc);
             field.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
             cc.addField(field, CtField.Initializer.byNew(type));
@@ -727,7 +727,7 @@ public abstract class CtBehavior extends CtMember {
      * in <code>Expr</code> is available for bytecode modification.
      * Other methods such as <code>insertBefore()</code> may collapse
      * the bytecode because the <code>ExprEditor</code> loses
-     * its current position.  
+     * its current position.
      *
      * @param editor            specifies how to modify.
      * @see javassist.expr.Expr#replace(String)
@@ -864,7 +864,7 @@ public abstract class CtBehavior extends CtMember {
                                                 jv, src);
             int handlerPos = iterator.getCodeLength();
             if (asFinally)
-                ca.getExceptionTable().add(getStartPosOfBody(ca), handlerPos, handlerPos, 0); 
+                ca.getExceptionTable().add(getStartPosOfBody(ca), handlerPos, handlerPos, 0);
 
             int adviceLen = 0;
             int advicePos = 0;
@@ -964,7 +964,7 @@ public abstract class CtBehavior extends CtMember {
         else {
             if (gap.length < 4) {
                 CodeIterator.Gap gap2 =  iterator.insertGapAt(gap.position, 2, false);
-                pos = gap2.position + gap2.length + gap.length - 4; 
+                pos = gap2.position + gap2.length + gap.length - 4;
             }
 
             iterator.writeByte(Opcode.GOTO_W, pos);
@@ -1181,7 +1181,7 @@ public abstract class CtBehavior extends CtMember {
      * For example, if there is only a closing brace at that line, the
      * bytecode would be inserted at another line below.
      * To know exactly where the bytecode will be inserted, call with
-     * <code>modify</code> set to <code>false</code>. 
+     * <code>modify</code> set to <code>false</code>.
      *
      * @param lineNum   the line number.  The bytecode is inserted at the
      *                  beginning of the code at the line specified by this
