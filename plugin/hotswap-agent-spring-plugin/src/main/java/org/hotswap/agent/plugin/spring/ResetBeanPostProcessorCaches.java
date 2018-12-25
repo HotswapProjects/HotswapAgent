@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013-2019 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.logging.AgentLogger;
@@ -20,15 +38,15 @@ import java.util.Map;
 public class ResetBeanPostProcessorCaches {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ResetBeanPostProcessorCaches.class);
 
-	private static Class<?> getReflectionUtilsClassOrNull() {
-		try {
-			//This is probably a bad idea as Class.forName has lots of issues but this was easiest for now.
-			return Class.forName("org.springframework.util.ReflectionUtils");
-		} catch (ClassNotFoundException e) {
-			LOGGER.trace("Spring 4.1.x or below - ReflectionUtils class not found");
-			return null;
-		}
-	}
+    private static Class<?> getReflectionUtilsClassOrNull() {
+        try {
+            //This is probably a bad idea as Class.forName has lots of issues but this was easiest for now.
+            return Class.forName("org.springframework.util.ReflectionUtils");
+        } catch (ClassNotFoundException e) {
+            LOGGER.trace("Spring 4.1.x or below - ReflectionUtils class not found");
+            return null;
+        }
+    }
 
     /**
      * Reset all post processors associated with a bean factory.
@@ -36,12 +54,12 @@ public class ResetBeanPostProcessorCaches {
      * @param beanFactory beanFactory to use
      */
     public static void reset(DefaultListableBeanFactory beanFactory) {
-		Class<?> c = getReflectionUtilsClassOrNull();
-		if (c != null) {
-			try {
-				Method m = c.getDeclaredMethod("clearCache");
-				m.invoke(c);
-			} catch (Exception version42Failed) {
+        Class<?> c = getReflectionUtilsClassOrNull();
+        if (c != null) {
+            try {
+                Method m = c.getDeclaredMethod("clearCache");
+                m.invoke(c);
+            } catch (Exception version42Failed) {
                 try {
                     // spring 4.0.x, 4.1.x without clearCache method, clear manually
                     Field declaredMethodsCache = c.getDeclaredField("declaredMethodsCache");
@@ -55,9 +73,9 @@ public class ResetBeanPostProcessorCaches {
                 } catch (Exception version40Failed) {
                     LOGGER.debug("Failed to clear internal method/field cache, it's normal with spring 4.1x or lower", version40Failed);
                 }
-			}
-			LOGGER.trace("Cleared Spring 4.2+ internal method/field cache.");
-		}
+            }
+            LOGGER.trace("Cleared Spring 4.2+ internal method/field cache.");
+        }
         for (BeanPostProcessor bpp : beanFactory.getBeanPostProcessors()) {
             if (bpp instanceof AutowiredAnnotationBeanPostProcessor) {
                 resetAutowiredAnnotationBeanPostProcessorCache((AutowiredAnnotationBeanPostProcessor)bpp);

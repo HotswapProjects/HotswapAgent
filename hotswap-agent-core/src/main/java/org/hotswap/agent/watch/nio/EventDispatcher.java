@@ -1,18 +1,18 @@
 /*
- * Copyright 2016 the original author or authors.
- * 
+ * Copyright 2013-2019 the HotswapAgent authors.
+ *
  * This file is part of HotswapAgent.
- * 
+ *
  * HotswapAgent is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 2 of the License, or (at your
  * option) any later version.
- * 
+ *
  * HotswapAgent is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
@@ -33,11 +33,11 @@ import org.hotswap.agent.watch.WatchFileEvent;
  * The EventDispatcher holds a queue of all events collected by the watcher but
  * not yet processed. It runs on its own thread and is responsible for calling
  * all the registered listeners.
- * 
+ *
  * Since file system events can spawn too fast, this implementation works as
  * buffer for fast spawning events. The watcher is now responsible for
  * collecting and pushing events in this queue.
- * 
+ *
  */
 public class EventDispatcher implements Runnable {
 
@@ -95,14 +95,14 @@ public class EventDispatcher implements Runnable {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Runnable#run()
      */
     @Override
     public void run() {
 
         /*
-         * The algorithm is naive: 
+         * The algorithm is naive:
          * a) work with not processed (in case);
          * b) drain the queue
          * c) work on newly collected
@@ -155,8 +155,8 @@ public class EventDispatcher implements Runnable {
 
     /**
      * Call the listeners.
-     * Listeners are organized per path in a Map. The number of paths is low so a simple iteration should be fast enough. 
-     *  
+     * Listeners are organized per path in a Map. The number of paths is low so a simple iteration should be fast enough.
+     *
      * @param event
      *            the event
      * @param path

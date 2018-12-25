@@ -1,18 +1,18 @@
 /*
- * Copyright 2016 the original author or authors.
- * 
+ * Copyright 2013-2019 the HotswapAgent authors.
+ *
  * This file is part of HotswapAgent.
- * 
+ *
  * HotswapAgent is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 2 of the License, or (at your
  * option) any later version.
- * 
+ *
  * HotswapAgent is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
@@ -24,14 +24,14 @@ import java.util.jar.Attributes.Name;
 
 /**
  * The Class ManifestMiniDumper.
- * 
+ *
  * @author alpapad@gmail.com
  */
 public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Extension-List</code> manifest
      * attribute used for declaring dependencies on installed extensions.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/extensions/spec.html#dependency">
      *      Installed extension dependency</a>
@@ -41,7 +41,7 @@ public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Extension-Name</code> manifest
      * attribute used for declaring dependencies on installed extensions.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/extensions/spec.html#dependency">
      *      Installed extension dependency</a>
@@ -51,7 +51,7 @@ public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Implementation-Title</code> manifest
      * attribute used for package versioning.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/versioning/spec/versioning2.html#wp90779">
      *      Java Product Versioning Specification</a>
@@ -61,7 +61,7 @@ public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Implementation-Version</code> manifest
      * attribute used for package versioning.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/versioning/spec/versioning2.html#wp90779">
      *      Java Product Versioning Specification</a>
@@ -71,7 +71,7 @@ public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Implementation-Vendor</code> manifest
      * attribute used for package versioning.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/versioning/spec/versioning2.html#wp90779">
      *      Java Product Versioning Specification</a>
@@ -82,7 +82,7 @@ public class ManifestMiniDumper {
      * <code>Name</code> object for <code>Implementation-Vendor-Id</code>
      * manifest attribute used for package versioning. Extension mechanism will
      * be removed in a future release. Use class path instead.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/extensions/versioning.html#applet">
      *      Optional Package Versioning</a>
@@ -92,7 +92,7 @@ public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Specification-Version</code> manifest
      * attribute used for package versioning.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/versioning/spec/versioning2.html#wp90779">
      *      Java Product Versioning Specification</a>
@@ -102,7 +102,7 @@ public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Specification-Vendor</code> manifest
      * attribute used for package versioning.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/versioning/spec/versioning2.html#wp90779">
      *      Java Product Versioning Specification</a>
@@ -112,7 +112,7 @@ public class ManifestMiniDumper {
     /**
      * <code>Name</code> object for <code>Specification-Title</code> manifest
      * attribute used for package versioning.
-     * 
+     *
      * @see <a href=
      *      "../../../../technotes/guides/versioning/spec/versioning2.html#wp90779">
      *      Java Product Versioning Specification</a>
@@ -133,10 +133,10 @@ public class ManifestMiniDumper {
 
     /** The Constant VERSIONS. */
     public static final Name[] VERSIONS = new Name[] { BUNDLE_VERSION, IMPLEMENTATION_VERSION, SPECIFICATION_VENDOR };
-    
+
     /** The Constant PACKAGE. */
     public static final Name[] PACKAGE = new Name[] { BUNDLE_SYMBOLIC_NAME, IMPLEMENTATION_VENDOR_ID, SPECIFICATION_VENDOR };
-    
+
     /** The Constant TITLE. */
     public static final Name[] TITLE = new Name[] { BUNDLE_NAME, IMPLEMENTATION_TITLE, SPECIFICATION_VENDOR };
 

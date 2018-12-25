@@ -1,20 +1,22 @@
+/*
+ * Copyright 2013-2019 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring;
-
-import org.hotswap.agent.annotation.*;
-import org.hotswap.agent.command.Scheduler;
-import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.*;
-import org.hotswap.agent.util.HotswapTransformer;
-import org.hotswap.agent.util.IOUtils;
-import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.util.classloader.*;
-import org.hotswap.agent.watch.WatchFileEvent;
-import org.hotswap.agent.watch.WatchEventListener;
-import org.hotswap.agent.watch.Watcher;
 
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
@@ -25,6 +27,32 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+
+import org.hotswap.agent.annotation.FileEvent;
+import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.annotation.OnResourceFileEvent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
+import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
+import org.hotswap.agent.util.HotswapTransformer;
+import org.hotswap.agent.util.IOUtils;
+import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.classloader.ClassLoaderHelper;
+import org.hotswap.agent.watch.WatchEventListener;
+import org.hotswap.agent.watch.WatchFileEvent;
+import org.hotswap.agent.watch.Watcher;
 
 /**
  * Spring plugin.
@@ -193,7 +221,7 @@ public class SpringPlugin {
         resourceName = resourceName.replace('.', '/');
         return appClassLoader.getResources(resourceName);
     }
-    
+
     /**
      * Plugin initialization is after Spring has finished its startup and freezeConfiguration is called.
      *
