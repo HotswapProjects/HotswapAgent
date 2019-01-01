@@ -77,24 +77,29 @@ public class Log4j2Plugin {
 
             Object configurationSource = configurationClass.getDeclaredMethod("getConfigurationSource").invoke(config);
             String url = (String) configurationSourceClass.getDeclaredMethod("getLocation").invoke(configurationSource);
-            configURI = Paths.get(url).toUri();
 
-            if (registeredURIs.contains(configURI)) {
-                return;
-            }
+            if (url == null) {
+                LOGGER.warning("Location url is NULL on configurationSource={} - exiting.", configurationSource);
+            } else {
+                configURI = Paths.get(url).toUri();
 
-            final URI parentUri = Paths.get(configURI).getParent().toUri();
-            LOGGER.debug("Watching '{}' URI for Log4j2 configuration changes.", configURI);
-            registeredURIs.add(configURI);
-            watcher.addEventListener(appClassLoader, parentUri, new WatchEventListener() {
-
-                @Override
-                public void onEvent(WatchFileEvent event) {
-                    if (event.getEventType() != FileEvent.DELETE && registeredURIs.contains(event.getURI())) {
-                        reload(event.getURI());
-                    }
+                if (registeredURIs.contains(configURI)) {
+                    return;
                 }
-            });
+
+                final URI parentUri = Paths.get(configURI).getParent().toUri();
+                LOGGER.debug("Watching '{}' URI for Log4j2 configuration changes.", configURI);
+                registeredURIs.add(configURI);
+                watcher.addEventListener(appClassLoader, parentUri, new WatchEventListener() {
+
+                    @Override
+                    public void onEvent(WatchFileEvent event) {
+                        if (event.getEventType() != FileEvent.DELETE && registeredURIs.contains(event.getURI())) {
+                            reload(event.getURI());
+                        }
+                    }
+                });
+            }
 
             if (!initialized) {
                 LOGGER.info("Log4j2 plugin initialized.");
