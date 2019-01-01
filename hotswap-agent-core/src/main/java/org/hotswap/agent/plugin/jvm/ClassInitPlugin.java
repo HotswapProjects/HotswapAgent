@@ -50,7 +50,7 @@ public class ClassInitPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassInitPlugin.class);
 
-    private static final String HOTSWAP_AGENT_CLINIT_METHOD = "__ha_clinit";
+    private static final String HOTSWAP_AGENT_CLINIT_METHOD = "$ha$$clinit";
 
     public static boolean reloadFlag;
 
@@ -73,7 +73,7 @@ public class ClassInitPlugin {
         CtConstructor clinit = ctClass.getClassInitializer();
 
         if (clinit != null) {
-            LOGGER.debug("Adding __ha_clinit to class: {}", className);
+            LOGGER.debug("Adding " + HOTSWAP_AGENT_CLINIT_METHOD + " to class: {}", className);
             CtConstructor haClinit = new CtConstructor(clinit, ctClass, null);
             haClinit.getMethodInfo().setName(HOTSWAP_AGENT_CLINIT_METHOD);
             haClinit.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
@@ -108,7 +108,7 @@ public class ClassInitPlugin {
                                 }
                             }
                         } catch (Exception e) {
-                            LOGGER.error("Patching __ha_clinit method failed.", e);
+                            LOGGER.error("Patching " + HOTSWAP_AGENT_CLINIT_METHOD + " method failed.", e);
                         }
                     }
 
@@ -131,10 +131,9 @@ public class ClassInitPlugin {
                             reloadFlag = false;
                         }
                     }
-                }, 150); // Hack : init should be done after dependant class redefinition. Since the class can
-                         // be proxied by syntetic proxy, the class init must be scheduled after proxy redefinition.
-                         // Currently proxy redefinition (in ProxyPlugin) is scheduled with 100ms delay, therefore
-                         // the class init must be scheduled after it.
+                }, 150); // Hack : init must be called after dependant class redefinition. Since the class can
+                         // be proxied, the class init must be scheduled after proxy redefinition. Currently proxy
+                         // redefinition (in ProxyPlugin) is scheduled with 100ms delay, therefore we use delay 150ms.
             } else {
                 reloadFlag = false;
             }
@@ -154,7 +153,7 @@ public class ClassInitPlugin {
                 }
             }
         } else {
-            LOGGER.error("Patching __ha_clinit method failed. Enum type expected {}", ctClass.getName());
+            LOGGER.error("Patching " + HOTSWAP_AGENT_CLINIT_METHOD + " method failed. Enum type expected {}", ctClass.getName());
         }
         return false;
     }
