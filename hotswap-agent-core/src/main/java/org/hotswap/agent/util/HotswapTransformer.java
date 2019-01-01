@@ -54,8 +54,13 @@ public class HotswapTransformer implements ClassFileTransformer {
     /**
      * Exclude these classLoaders from initialization (system classloaders). Note that
      */
+    private static final Set<String> skippedClassLoaders = new HashSet<String>(Arrays.asList(
+            "jdk.internal.reflect.DelegatingClassLoader",
+            "sun.reflect.DelegatingClassLoader"
+    ));
+
+    // TODO : check if felix class loaders could be skipped
     private static final Set<String> excludedClassLoaders = new HashSet<String>(Arrays.asList(
-            "sun.reflect.DelegatingClassLoader",
             "org.apache.felix.framework.BundleWiringImpl$BundleClassLoader", // delegating ClassLoader in GlassFish
             "org.apache.felix.framework.BundleWiringImpl$BundleClassLoaderJava5" // delegating ClassLoader in_GlassFish
     ));
@@ -156,6 +161,13 @@ public class HotswapTransformer implements ClassFileTransformer {
     @Override
     public byte[] transform(final ClassLoader classLoader, String className, Class<?> redefiningClass,
                             final ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+
+        // Skip delegating classloaders used for reflection
+        String classLoaderClassName = classLoader != null ? classLoader.getClass().getName() : null;
+        if (skippedClassLoaders.contains(classLoaderClassName)) {
+            return bytes;
+        }
+
         LOGGER.trace("Transform on class '{}' @{} redefiningClass '{}'.", className, classLoader, redefiningClass);
 
         List<ClassFileTransformer> toApply = new LinkedList<>();
