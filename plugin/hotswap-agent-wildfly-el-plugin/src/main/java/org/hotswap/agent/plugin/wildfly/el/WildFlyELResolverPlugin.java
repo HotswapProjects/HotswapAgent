@@ -50,17 +50,13 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 @Versions(maven = { @Maven(value = "[1.0,)", artifactId = "jboss-el-api_3.0_spec", groupId = "org.jboss.spec.javax.el") })
 public class WildFlyELResolverPlugin {
 
-    /** The logger. */
     private static AgentLogger LOGGER = AgentLogger.getLogger(WildFlyELResolverPlugin.class);
 
-    /** The Constant PURGE_CLASS_CACHE_METHOD_NAME. */
     public static final String PURGE_CLASS_CACHE_METHOD_NAME = "$$ha$resetCache";
 
-    /** The scheduler. */
     @Init
     Scheduler scheduler;
 
-    /** The app class loader. */
     @Init
     ClassLoader appClassLoader;
 
