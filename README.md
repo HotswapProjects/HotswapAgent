@@ -166,6 +166,7 @@ uses agent services to:
 * [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (10.x) - Update routes, template models and in practice anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
 * [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2-2.4) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
+* [Wicket](plugin/hotswap-agent-wicket-plugin/README.md) - clear wicket caches if property files are changed
 * [WildFlyELResolver](plugin/hotswap-agent-wildfly-el-plugin/README.md) - Clear BeanELResolver after any class redefinition.
 * [ZK](plugin/hotswap-agent-zk-plugin/README.md) (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and bean resolver cache.
 
@@ -250,6 +251,6 @@ Hotswap agent:
 DCEVM:
 
 * Ivan Dubrov - current project coordinator, update to Java7+Java8, patches, build system (Gradle)
-* Thomas Würthinger - initial implementation.
+* Thomas W??rthinger - initial implementation.
 * Kerstin Breitender - contributor.
 * Christoph Wimberger - contributor.
