@@ -14,9 +14,7 @@ The main purpose of this project is to avoid infamous change->restart + *wait*->
 Save&Reload during development should be standard and many other languages (including C#) contain this feature.
 
 ### Easy to start
-Download and install latest [DCEVM Java patch](https://github.com/dcevm/dcevm/releases) +
-[agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) and launch your application server
-with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup. You can attach [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) to the running JVM using the following example [code snippet](https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53). Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.
+Download and install latest [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) or [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and launch your application server with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup. You can attach [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) to the running JVM using the following example [code snippet](https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53). Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.
 
 ### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs special reloading mechanism to keep
