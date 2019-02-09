@@ -195,7 +195,7 @@ public class PluginConfiguration {
             if (classLoader instanceof URLClassLoader) {
                 URLClassLoaderHelper.prependClassPath((URLClassLoader) classLoader, extraClassPath);
             } else if (classLoader instanceof HotswapAgentClassLoaderExt) {
-                ((HotswapAgentClassLoaderExt) classLoader).setExtraClassPath(extraClassPath);
+                ((HotswapAgentClassLoaderExt) classLoader).$$ha$setExtraClassPath(extraClassPath);
             } else {
                 LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. " +
                         "Only URLClassLoader is supported.\n" +

@@ -73,7 +73,7 @@ public class ModuleClassLoaderTransformer {
 
             // Implementation of HotswapAgentClassLoaderExt.setExtraClassPath(...)
             ctClass.addMethod(CtNewMethod.make(
-                    "public void setExtraClassPath(java.net.URL[] extraClassPath) {" +
+                    "public void $$ha$setExtraClassPath(java.net.URL[] extraClassPath) {" +
                         "try {" +
                             "java.util.List resLoaderList = new java.util.ArrayList();" +
                             "for (int i=0; i<extraClassPath.length; i++) {" +
@@ -99,7 +99,7 @@ public class ModuleClassLoaderTransformer {
             ctClass.addField(watchResClassLoaderField);
 
             ctClass.addMethod(CtNewMethod.make(
-                    "public void setWatchResourceLoader(" + WatchResourcesClassLoader.class.getName() + " watchResourceLoader) {" +
+                    "public void $$ha$setWatchResourceLoader(" + WatchResourcesClassLoader.class.getName() + " watchResourceLoader) {" +
                         "this.$$ha$watchResourceLoader = watchResourceLoader;" +
                     "}", ctClass)
             );
@@ -188,7 +188,7 @@ public class ModuleClassLoaderTransformer {
 
     public static void logSetExtraClassPathException(Exception e)
     {
-        LOGGER.warning("patched ModuleClassLoader.setExtraClassPath(URL[]) exception : ", e.getMessage());
+        LOGGER.warning("patched ModuleClassLoader.$$ha$setExtraClassPath(URL[]) exception : ", e.getMessage());
     }
 
 }

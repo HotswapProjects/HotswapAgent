@@ -109,7 +109,7 @@ public class WatchResourcesPlugin {
             // modify the application classloader to look for resources first in watchResourcesClassLoader
             URLClassLoaderHelper.setWatchResourceLoader((URLClassLoader)appClassLoader, watchResourcesClassLoader);
         } else if (appClassLoader instanceof HotswapAgentClassLoaderExt) {
-            ((HotswapAgentClassLoaderExt)appClassLoader).setWatchResourceLoader(watchResourcesClassLoader);
+            ((HotswapAgentClassLoaderExt)appClassLoader).$$ha$setWatchResourceLoader(watchResourcesClassLoader);
         }
     }
 }

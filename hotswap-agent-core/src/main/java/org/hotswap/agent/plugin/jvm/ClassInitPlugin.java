@@ -50,7 +50,7 @@ public class ClassInitPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassInitPlugin.class);
 
-    private static final String HOTSWAP_AGENT_CLINIT_METHOD = "$ha$$clinit";
+    private static final String HOTSWAP_AGENT_CLINIT_METHOD = "$$ha$clinit";
 
     public static boolean reloadFlag;
 

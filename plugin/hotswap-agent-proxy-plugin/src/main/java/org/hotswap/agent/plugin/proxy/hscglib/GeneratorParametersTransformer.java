@@ -29,6 +29,7 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 
 /**
  * Inits plugin and adds bytecode generation call parameter recording
@@ -72,7 +73,6 @@ public class GeneratorParametersTransformer {
             // We use class name strings because some libraries repackage cglib to a different namespace to avoid
             // conflicts.
             if (interfaceName.endsWith(".GeneratorStrategy")) {
-                @SuppressWarnings("unchecked")
                 List<MethodInfo> methodInfos = cc.getClassFile2().getMethods();
                 for (MethodInfo method : methodInfos) {
                     if (method.getName().equals("generate") && method.getDescriptor().endsWith("[B")) {
@@ -97,14 +97,16 @@ public class GeneratorParametersTransformer {
             synchronized (classLoaderMaps) {
                 mapRef = classLoaderMaps.get(loader);
                 if (mapRef == null) {
-                    Map<String, Object> map = (Map<String, Object>) loader
-                            .loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
-                            .get(null);
-                    mapRef = new WeakReference<Map<String, Object>>(map);
-                    classLoaderMaps.put(loader, mapRef);
+                    if (ClassLoaderHelper.isClassLoderStarted(loader)) {
+                        Map<String, Object> map = (Map<String, Object>) loader
+                                .loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
+                                .get(null);
+                        mapRef = new WeakReference<Map<String, Object>>(map);
+                        classLoaderMaps.put(loader, mapRef);
+                    }
                 }
             }
-            Map<String, Object> map = mapRef.get();
+            Map<String, Object> map = mapRef != null ? mapRef.get() : null;
             if (map == null) {
                 return new HashMap<>();
             }

@@ -98,53 +98,17 @@ public class ProxyPlugin {
         PluginManager.getInstance().getScheduler().scheduleCommand(new ReloadJavaProxyCommand(classLoader, className, signatureMapOrig), 50);
     }
 
-//    @OnClassLoadEvent(classNameRegexp = "com/sun/proxy/\\$Proxy.*", events = LoadEvent.REDEFINE, skipSynthetic = false)
-//    public static byte[] transformJavaProxy(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
-//            final ClassPool cp, final CtClass cc) throws IllegalClassFormatException, IOException, RuntimeException {
-//        try {
-//            return JavassistProxyTransformer.transform(classBeingRedefined, classfileBuffer, cc, cp);
-//        } catch (Exception e) {
-//            LOGGER.error("Error redifining Cglib proxy {}", e, classBeingRedefined.getName());
-//        }
-//        return classfileBuffer;
-//    }
-
-    // alternative method of redefining Java proxies, uses a new classlaoder instance
-    // @OnClassLoadEvent(classNameRegexp = "com/sun/proxy/\\$Proxy.*", events = LoadEvent.REDEFINE, skipSynthetic =
-    // false)
-    // public static byte[] transformJavaProxy(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
-    // final ClassLoader loader) throws IllegalClassFormatException, IOException, RuntimeException {
-    // try {
-    // return NewClassLoaderJavaProxyTransformer.transform(classBeingRedefined, classfileBuffer, loader);
-    // } catch (Exception e) {
-    // LOGGER.error("Error redifining Cglib proxy {}", e, classBeingRedefined.getName());
-    // }
-    // return classfileBuffer;
-    // }
-    //
-    // // alternative method of redefining Java proxies, uses a 2 step process. Crashed with jvm8
-    // @OnClassLoadEvent(classNameRegexp = "com/sun/proxy/\\$Proxy.*", events = LoadEvent.REDEFINE, skipSynthetic =
-    // false)
-    // public static byte[] transformJavaProxy(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
-    // final ClassPool cp) {
-    // try {
-    // return JavaProxyTransformer.transform(classBeingRedefined, cp, classfileBuffer);
-    // } catch (Exception e) {
-    // LOGGER.error("Error redifining Cglib proxy {}", e, classBeingRedefined.getName());
-    // }
-    // return classfileBuffer;
-    // }
-
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
     public static byte[] transformCglibProxy(final Class<?> classBeingRedefined, final byte[] classfileBuffer,
             final ClassLoader loader, final ClassPool cp) throws Exception {
+
         GeneratorParams generatorParams = GeneratorParametersTransformer.getGeneratorParams(loader, classBeingRedefined.getName());
 
-        if (!ClassLoaderHelper.isClassLoderStarted(loader)) {
+        if (generatorParams == null) {
             return classfileBuffer;
         }
 
-        if (generatorParams == null) {
+        if (!ClassLoaderHelper.isClassLoderStarted(loader)) {
             return classfileBuffer;
         }
 

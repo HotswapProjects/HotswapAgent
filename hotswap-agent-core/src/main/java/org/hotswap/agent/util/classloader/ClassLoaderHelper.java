@@ -62,11 +62,20 @@ public class ClassLoaderHelper {
      * Some class loader has activity state. e.g. WebappClassLoader must be started before it can be used
      *
      * @param classLoader the class loader
-     * @return true, if is class loder active
+     * @return true, if is class loader active
      */
     public static boolean isClassLoderStarted(ClassLoader classLoader) {
-        if ("org.glassfish.web.loader.WebappClassLoader".equals(classLoader.getClass().getName())||
-            "org.apache.catalina.loader.WebappClassLoader".equals(classLoader.getClass().getName())) {
+
+        String classLoaderClassName = (classLoader != null) ? classLoader.getClass().getName() : null;
+
+        // TODO: use interface instead of this hack
+        if ("org.glassfish.web.loader.WebappClassLoader".equals(classLoaderClassName)||
+            "org.apache.catalina.loader.WebappClassLoader".equals(classLoaderClassName) ||
+            "org.apache.catalina.loader.ParallelWebappClassLoader".equals(classLoaderClassName) ||
+            "org.apache.tomee.catalina.TomEEWebappClassLoader".equals(classLoaderClassName) ||
+            "org.springframework.boot.web.embedded.tomcat.TomcatEmbeddedWebappClassLoader".equals(classLoaderClassName)
+            )
+        {
             try {
                 Class<?> clazz = classLoader.getClass();
                 boolean isStarted;
