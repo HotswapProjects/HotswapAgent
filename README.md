@@ -10,8 +10,7 @@ This is an overview page, please visit [hotswapagent.org](http://hotswapagent.or
 
 Java unlimited runtime class and resource redefinition.
 
-The main purpose of this project is to avoid infamous change->restart + *wait*->check development lifecycle.
-Save&Reload during development should be standard and many other languages (including C#) contain this feature.
+Originally, the main purpose of this project used to be avoiding of infamous **change code**->**restart and wait...**->**check development** lifecycle. Lately this schema evolved to a new paradigm in the Java world, based on development of software in running application, that approach can be used even in closed enviroment like Docker.
 
 ### Easy to start
 Download and install latest [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) or [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and launch your application server with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get basic setup. You can attach [agent jar](https://github.com/HotswapProjects/HotswapAgent/releases) to the running JVM using the following example [code snippet](https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53). Optionally add hotswap-agent.properties to your application to configure plugins and agent behaviour.
