@@ -40,9 +40,9 @@ public class CxfJAXRSCommand extends MergeableCommand {
     @Override
     public void executeCommand() {
 
-        ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
+        LOGGER.debug("Reloading service={}, in classLoader={}", criProxy.getServiceClass(), classLoader);
 
-        LOGGER.debug("Reloading resource info={}, in classLoader={}", classLoader, criProxy.getServiceClass());
+        ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
             Thread.currentThread().setContextClassLoader(classLoader);

@@ -59,13 +59,16 @@ public class CxfJAXRSPlugin {
 
     private static final String PATH_ANNOTATION = "javax.ws.rs.Path";
 
+    private static final int WAIT_ON_REDEFINE = 300; // Should be bigger then DI plugins (CDI..)
+    private static final int WAIT_ON_CREATE = 600; // Should be bigger then DI plugins (CDI..)
+
     @Init
     ClassLoader appClassLoader;
 
     @Init
     Scheduler scheduler;
 
-    Map<Class<?>, Object> classResourceInfoRegistry = new HashMap<>();
+    Map<String, Object> classResourceInfoRegistry = new HashMap<>();
 
     @Init
     public void init(PluginConfiguration pluginConfiguration) {
@@ -115,7 +118,7 @@ public class CxfJAXRSPlugin {
     }
 
     public void registerClassResourceInfo(Class<?> serviceClass, Object classResourceInfo) {
-        classResourceInfoRegistry.put(serviceClass, classResourceInfo);
+        classResourceInfoRegistry.put(serviceClass.getName(), classResourceInfo);
         LOGGER.debug("Registered service {} ", serviceClass.getClass().getName());
     }
 
@@ -126,7 +129,7 @@ public class CxfJAXRSPlugin {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
                 LOGGER.trace("Reload @Path annotated class {}", clazz.getName());
             }
-            refreshClass(classLoader, clazz.getName(), original, 250);
+            refreshClass(classLoader, clazz.getName(), original, WAIT_ON_REDEFINE);
         }
     }
 
@@ -136,15 +139,15 @@ public class CxfJAXRSPlugin {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
                 LOGGER.trace("Load @Path annotated class {}", clazz.getName());
             }
-            refreshClass(classLoader, clazz.getName(), null, 500);
+            refreshClass(classLoader, clazz.getName(), null, WAIT_ON_CREATE);
         }
     }
 
-    private void refreshClass(ClassLoader classLoader, String name, Class<?> original, int timeout) {
+    private void refreshClass(ClassLoader classLoader, String className, Class<?> original, int timeout) {
         try {
-            Object classResourceInfoProxy = classResourceInfoRegistry.get(original);
-            if (classResourceInfoRegistry == null) {
-                LOGGER.error("refreshClass() ClassResourceInfo Proxy not found for classResourceInfo={}.", original);
+            Object classResourceInfoProxy = classResourceInfoRegistry.get(className);
+            if (classResourceInfoProxy == null) {
+                LOGGER.error("refreshClass() ClassResourceInfo proxy not found for classResourceInfo={}.", className);
                 return;
             }
             Class<?> cmdClass = Class.forName(CxfJAXRSCommand.class.getName(), true, appClassLoader);

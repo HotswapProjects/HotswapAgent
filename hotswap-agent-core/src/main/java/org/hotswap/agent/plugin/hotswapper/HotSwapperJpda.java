@@ -57,7 +57,7 @@ class Trigger {
 }
 
 /**
- * Example HotSwapperJpda class from javaassist is copied to the plugin, becuse it needs to reside
+ * Example HotSwapperJpda class from javaassist is copied to the plugin, because it needs to reside
  * in the application classloader to avoid NoClassDefFound error on tools.jar classes. Otherwise
  * it is the same code as in javassist.
  * <p/>
