@@ -81,9 +81,14 @@ public class CxfJAXRSPlugin {
                 if (method.getParameterTypes()[0].getName().equals(Class.class.getName())) {
                     method.insertAfter(
                         "if($_ != null && !$_.getClass().getName().contains(\"$$\") ) { " +
-                             "ClassLoader $$cl = $1.getClassLoader();" +
-                             PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
-                            "$_ = org.hotswap.agent.plugin.cxf.jaxrs.ClassResourceInfoProxyHelper.createProxy($_, $sig, $args);" +
+                            "ClassLoader $$cl = $1.getClassLoader();" +
+                            PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
+                            "try {" +
+                                "org.hotswap.agent.javassist.runtime.Desc.setUseContextClassLoaderLocally();" +
+                                "$_ = org.hotswap.agent.plugin.cxf.jaxrs.ClassResourceInfoProxyHelper.createProxy($_, $sig, $args);" +
+                            "} finally {"+
+                                "org.hotswap.agent.javassist.runtime.Desc.resetUseContextClassLoaderLocally();" +
+                            "}" +
                             "if ($_.getClass().getName().contains(\"$$\")) {" +
                                  PluginManagerInvoker.buildCallPluginMethod("$$cl", CxfJAXRSPlugin.class, "registerClassResourceInfo",
                                 "$_.getServiceClass()", "java.lang.Class", "$_", "java.lang.Object") +

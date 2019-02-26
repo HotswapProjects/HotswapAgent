@@ -34,10 +34,22 @@ public class Desc {
      */
     public static boolean useContextClassLoader = false;
 
+    private static final ThreadLocal<Boolean> USE_CONTEXT_CLASS_LOADER_LOCALLY = new ThreadLocal<Boolean>();
+
+    public static void setUseContextClassLoaderLocally() {
+        if (USE_CONTEXT_CLASS_LOADER_LOCALLY.get() == null) {
+            USE_CONTEXT_CLASS_LOADER_LOCALLY.set(true);
+        }
+    }
+
+    public static void resetUseContextClassLoaderLocally() {
+        USE_CONTEXT_CLASS_LOADER_LOCALLY.remove();
+    }
+
     private static Class<?> getClassObject(String name)
         throws ClassNotFoundException
     {
-        if (useContextClassLoader)
+        if (useContextClassLoader || USE_CONTEXT_CLASS_LOADER_LOCALLY.get() != null)
             return Class.forName(name, true, Thread.currentThread().getContextClassLoader());
         return Class.forName(name);
     }
@@ -52,9 +64,9 @@ public class Desc {
         }
         catch (ClassNotFoundException e) {
             throw new RuntimeException(
-                    "$class: internal error, could not find class '" + name 
-                    + "' (Desc.useContextClassLoader: " 
-                    + Boolean.toString(useContextClassLoader) + ")", e); 
+                    "$class: internal error, could not find class '" + name
+                    + "' (Desc.useContextClassLoader: "
+                    + Boolean.toString(useContextClassLoader) + ")", e);
         }
     }
 
