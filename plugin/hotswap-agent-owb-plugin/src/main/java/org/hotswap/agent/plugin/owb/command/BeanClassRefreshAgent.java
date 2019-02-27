@@ -152,7 +152,7 @@ public class BeanClassRefreshAgent {
                             // just now only managed beans
                             if (bean instanceof InjectionTargetBean) {
                                 createAnnotatedTypeForExistingBeanClass(beanManager, (InjectionTargetBean) bean);
-                                if (isReinjectingContext(bean)) {
+                                if (isReinjectingContext(bean) || HaCdiCommons.isInExtraScope(bean)) {
                                     doReloadInjectionTargetBean(beanManager, (InjectionTargetBean) bean, oldSignatures, reloadStrategy);
                                     LOGGER.debug("Bean reloaded '{}'.", bean.getBeanClass().getName());
                                 } else {
@@ -207,7 +207,8 @@ public class BeanClassRefreshAgent {
 
     private static void doReinjectBean(BeanManagerImpl beanManager, InjectionTargetBean<?> bean) {
         try {
-            if (!bean.getScope().equals(ApplicationScoped.class) && HaCdiCommons.isRegisteredScope(bean.getScope())) {
+            if (!bean.getScope().equals(ApplicationScoped.class) &&
+                    (HaCdiCommons.isRegisteredScope(bean.getScope()) || HaCdiCommons.isInExtraScope(bean))) {
                 doReinjectRegisteredBeanInstances(beanManager, bean);
             } else {
                 doReinjectBeanInstance(beanManager, bean, beanManager.getContext(bean.getScope()));

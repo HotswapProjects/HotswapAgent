@@ -46,6 +46,17 @@ public class HaCdiCommons {
 
     private static final String BEAN_REGISTRY_FIELD = "$$ha$beanRegistry";
     private static final Map<Class<? extends Annotation>, Class<? extends Context>> scopeToContextMap = new HashMap<>();
+    private static Map<HaCdiExtraContext, Boolean> extraContexts = new HashMap<>();
+
+    public static boolean isInExtraScope(Bean<?> bean) {
+        Class<?> beanClass = bean.getBeanClass();
+        for (HaCdiExtraContext extraContext: extraContexts.keySet()) {
+            if (extraContext.containsBeanInstances(beanClass)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Add bean registry field to context, register bean instances in get(...) methods
@@ -156,6 +167,12 @@ public class HaCdiCommons {
         } else {
             LOGGER.error("BeanRegistry field not found in context class '{}'", contextClass.getName());
         }
+        for (HaCdiExtraContext extraContext: extraContexts.keySet()) {
+            List<Object> instances = extraContext.getBeanInstances(bean.getBeanClass());
+            if (instances != null) {
+                result.addAll(instances);
+            }
+        }
         return result;
     }
 
@@ -225,6 +242,24 @@ public class HaCdiCommons {
             }
         }
         return scopeToContextMap;
+    }
+
+    /**
+     * Register extra context.
+     *
+     * @param extraContext the extra context
+     */
+    public static void registerExtraContext(HaCdiExtraContext extraContext) {
+        extraContexts.put(extraContext, Boolean.TRUE);
+    }
+
+    /**
+     * Unregister extra context.
+     *
+     * @param extraContext the extra context
+     */
+    public static void unregisterExtraContext(HaCdiExtraContext extraContext) {
+        extraContexts.remove(extraContext);
     }
 
 }

@@ -189,14 +189,11 @@
             <artifactId>hotswap-agent-wicket-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--
         <dependency>
             <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-cxf-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
-    -->
-
 
     </dependencies>
 </project>

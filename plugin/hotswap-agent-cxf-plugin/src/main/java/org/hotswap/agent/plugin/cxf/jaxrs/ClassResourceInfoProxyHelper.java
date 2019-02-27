@@ -20,8 +20,11 @@ package org.hotswap.agent.plugin.cxf.jaxrs;
 
 import java.lang.reflect.Method;
 
+import org.apache.cxf.jaxrs.lifecycle.ResourceProvider;
+import org.apache.cxf.jaxrs.lifecycle.SingletonResourceProvider;
 import org.apache.cxf.jaxrs.model.ClassResourceInfo;
 import org.apache.cxf.jaxrs.utils.ResourceUtils;
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.javassist.util.proxy.MethodFilter;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.Proxy;
@@ -113,6 +116,24 @@ public class ClassResourceInfoProxyHelper {
 
         public Object invoke(Object self, Method method, Method proceed, Object[] args) throws Throwable {
             // simple delegate to delegate object
+            if (method.getName() == "setResourceProvider" &&
+                    args != null &&
+                    args[0] != null &&
+                    args[0] instanceof SingletonResourceProvider) {
+                try {
+                    SingletonResourceProvider resourceProvider = (SingletonResourceProvider) args[0];
+                    ClassLoader pluginClassLoader = delegate.getServiceClass().getClassLoader();
+                    Object pluginInstance = PluginManager.getInstance().getPlugin(CxfJAXRSPlugin.class.getName(), pluginClassLoader);
+                    if (pluginInstance != null) {
+                        ReflectionHelper.invoke(pluginInstance, pluginInstance.getClass(),
+                                "registerServiceInstance", new Class[] {Object.class}, resourceProvider.getInstance(null));
+                    } else {
+                      LOGGER.error("registerServiceInstance() CxfJAXRSPlugin not found in classLoader {}", pluginClassLoader);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("registerServiceInstance() exception {}", e);
+                }
+            }
             return method.invoke(delegate, args);
         }
     }

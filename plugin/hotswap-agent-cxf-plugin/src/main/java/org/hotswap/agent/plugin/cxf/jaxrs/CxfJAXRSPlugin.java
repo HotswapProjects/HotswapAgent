@@ -18,8 +18,11 @@
  */
 package org.hotswap.agent.plugin.cxf.jaxrs;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
@@ -69,10 +72,39 @@ public class CxfJAXRSPlugin {
     Scheduler scheduler;
 
     Map<String, Object> classResourceInfoRegistry = new HashMap<>();
+    WeakHashMap<Object, Boolean> serviceInstances = new WeakHashMap<>();
 
     @Init
     public void init(PluginConfiguration pluginConfiguration) {
         LOGGER.info("CxfJAXRSPlugin initialized.");
+    }
+
+    public void registerClassResourceInfo(Class<?> serviceClass, Object classResourceInfo) {
+        classResourceInfoRegistry.put(serviceClass.getName(), classResourceInfo);
+        LOGGER.debug("Registered service {} ", serviceClass.getClass().getName());
+    }
+
+    public boolean containsServiceInstance(Class<?> serviceClass) {
+        for (Object provider: serviceInstances.keySet()) {
+            if (provider.getClass().getName().equals(serviceClass.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public List<Object> getServiceInstances(Class<?> serviceClass) {
+        List<Object> result = new ArrayList<>();
+        for (Object service: serviceInstances.keySet()) {
+            if (service.getClass().getName().equals(serviceClass.getName())) {
+                result.add(service);
+            }
+        }
+        return result;
+    }
+
+    public void registerServiceInstance(Object serviceInstance) {
+        serviceInstances.put(serviceInstance, Boolean.TRUE);
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.cxf.jaxrs.utils.ResourceUtils")
@@ -101,6 +133,22 @@ public class CxfJAXRSPlugin {
                     );
                 }
             }
+        } catch(NotFoundException | CannotCompileException e){
+            LOGGER.error("Error patching ResourceUtils", e);
+        }
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.cxf.cdi.JAXRSCdiResourceExtension")
+    public static void patchCxfJARSCdiExtension(CtClass ctClass, ClassPool classPool){
+        try{
+            CtMethod loadMethod = ctClass.getDeclaredMethod("load");
+
+            loadMethod.insertAfter( "{ " +
+                    "ClassLoader $$cl = this.bus.getClass().getClassLoader();" +
+                    "Object $$plugin =" + PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
+                    "org.hotswap.agent.plugin.cxf.jaxrs.HaCdiExtraCxfContext.registerExtraContext($$plugin);" +
+                "}"
+            );
     } catch(NotFoundException | CannotCompileException e){
             LOGGER.error("Error patching ResourceUtils", e);
         }
@@ -115,11 +163,6 @@ public class CxfJAXRSPlugin {
         } catch (CannotCompileException e) {
             LOGGER.error("Error patching ClassResourceInfo", e);
         }
-    }
-
-    public void registerClassResourceInfo(Class<?> serviceClass, Object classResourceInfo) {
-        classResourceInfoRegistry.put(serviceClass.getName(), classResourceInfo);
-        LOGGER.debug("Registered service {} ", serviceClass.getClass().getName());
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
