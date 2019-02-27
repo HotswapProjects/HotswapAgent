@@ -156,16 +156,18 @@ public class HaCdiCommons {
     public static List<Object> getBeanInstances(Bean<?> bean) {
         List<Object> result = new ArrayList<>();
         Class<? extends Context> contextClass = getContextClass(bean.getScope());
-        Map beanRegistry = (Map) getBeanRegistry(contextClass);
-        if (beanRegistry != null) {
-            Map m = (Map) beanRegistry.get(bean.getBeanClass().getName());
-            if (m != null) {
-                result.addAll(m.keySet());
-            } else {
-                LOGGER.debug("BeanRegistry is empty for bean class '{}'", bean.getBeanClass().getName());
-            }
-        } else {
-            LOGGER.error("BeanRegistry field not found in context class '{}'", contextClass.getName());
+        if (contextClass != null) {
+          Map beanRegistry = (Map) getBeanRegistry(contextClass);
+          if (beanRegistry != null) {
+              Map m = (Map) beanRegistry.get(bean.getBeanClass().getName());
+              if (m != null) {
+                  result.addAll(m.keySet());
+              } else {
+                  LOGGER.debug("BeanRegistry is empty for bean class '{}'", bean.getBeanClass().getName());
+              }
+          } else {
+              LOGGER.error("BeanRegistry field not found in context class '{}'", contextClass.getName());
+          }
         }
         for (HaCdiExtraContext extraContext: extraContexts.keySet()) {
             List<Object> instances = extraContext.getBeanInstances(bean.getBeanClass());
