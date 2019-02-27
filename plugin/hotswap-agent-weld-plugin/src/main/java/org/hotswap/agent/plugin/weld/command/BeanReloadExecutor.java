@@ -128,7 +128,7 @@ public class BeanReloadExecutor {
                     EnhancedAnnotatedType eat = createAnnotatedTypeForExistingBeanClass(bdaId, bean);
                     if (!eat.isAbstract() || !eat.getJavaClass().isInterface()) { // injectionTargetCannotBeCreatedForInterface
                         ((AbstractClassBean)bean).setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false));
-                        if (isReinjectingContext(bean)) {
+                        if (isReinjectingContext(bean) || HaCdiCommons.isInExtraScope(bean)) {
                             doReloadAbstractClassBean(beanManager, (AbstractClassBean) bean, oldSignatures, reloadStrategy);
                             LOGGER.debug("Bean reloaded '{}'", bean.getBeanClass().getName());
                             continue;
@@ -186,7 +186,8 @@ public class BeanReloadExecutor {
 
     private static void doReinjectBean(BeanManagerImpl beanManager, AbstractClassBean<?> bean) {
         try {
-            if (!bean.getScope().equals(ApplicationScoped.class) && HaCdiCommons.isRegisteredScope(bean.getScope())) {
+            if (!bean.getScope().equals(ApplicationScoped.class) &&
+                    (HaCdiCommons.isRegisteredScope(bean.getScope()) || HaCdiCommons.isInExtraScope(bean))) {
                 doReinjectRegisteredBeanInstances(beanManager, bean);
             } else {
                 doReinjectBeanInstance(beanManager, bean, beanManager.getContext(bean.getScope()));
