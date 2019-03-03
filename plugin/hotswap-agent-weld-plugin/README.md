@@ -1,11 +1,11 @@
 [Weld/CDI](http://weld.cdi-spec.org/)
 =====================================
-Reinject injection points after bean redefinition. Define and register new bean in BeanManager if a new bean class is defined.
-Redefine proxy class if proxied class is redefined. Appropriate redefinition can be specified in `hotswap-agent.properties` file. Generally
-there are 2 approaches what to do after bean class redefinition:
+Reinject injection points after bean redefinition. Define and register a new bean in BeanManager on new bean definition.
+Redefine proxy class if proxied class is redefined. Appropriate redefinition can be specified in `hotswap-agent.properties` file.
+There are 2 approaches what to do after bean class redefinition:
 
-* reinject injection points in existing bean instances - bean instances **survives**
-* reload existing bean instances in contexts - bean instances are **lost**
+* reinject injection points in existing bean instances - old bean instances **survives**
+* reload existing bean instances in contexts - old bean instances are **lost**
 
 Weld plugin uses reinjection by default, but it is not desired in some cases. Therefore it is possible to specify precise reloading strategy
 in `hotswap-agent.properties config` file using parameter `weld.beanReloadStrategy` using following values:

@@ -145,6 +145,7 @@ uses agent services to:
 
 #### Java frameworks plugins:
 
+* [CXF-JAXRS](plugin/hotswap-agent-cxf-plugin/README.md) (3.x) - redefine JAXRS resource after resource class redefinition, reinject instance if integrated with CDI (Weld/OWB).
 * [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x) - messages, ViewConfig, repository, proxy reloading. Deltaspike scoped CDI beans reinjection.
 * [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3x,4x,5x) - Reload Hibernate configuration after entity create/change.

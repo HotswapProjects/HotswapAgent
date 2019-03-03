@@ -38,6 +38,8 @@ import org.hotswap.agent.logging.AgentLogger;
  */
 public class DetachableBeanHolder implements Serializable {
 
+    private static final long serialVersionUID = -7443802320153815102L;
+
     private Object bean;
     private Object beanFactory;
     private Class<?>[] paramClasses;
@@ -128,8 +130,8 @@ public class DetachableBeanHolder implements Serializable {
                     Object freshBean = factoryMethod.invoke(beanFactory, paramValues);
 
                     // Factory returns HA proxy, but current method is invoked from HA proxy!
-                    // It migt be the same object (if factory returns same object - meaning
-                    //   that although clearAllProxies() was called, this bean did not change)
+                    // It might be the same object (if factory returns same object - meaning
+                    // that although clearAllProxies() was called, this bean did not change)
                     // Unwrap the target bean, it is always available
                     // see org.hotswap.agent.plugin.spring.getbean.EnhancerProxyCreater.create()
                     if (freshBean instanceof SpringHotswapAgentProxy) {

@@ -20,7 +20,6 @@ package org.hotswap.agent.plugin.cxf.jaxrs;
 
 import java.lang.reflect.Method;
 
-import org.apache.cxf.jaxrs.lifecycle.ResourceProvider;
 import org.apache.cxf.jaxrs.lifecycle.SingletonResourceProvider;
 import org.apache.cxf.jaxrs.model.ClassResourceInfo;
 import org.apache.cxf.jaxrs.utils.ResourceUtils;

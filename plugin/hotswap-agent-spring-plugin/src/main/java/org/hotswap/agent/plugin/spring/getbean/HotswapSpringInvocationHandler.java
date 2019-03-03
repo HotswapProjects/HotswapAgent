@@ -30,6 +30,9 @@ import java.lang.reflect.Method;
  *
  */
 public class HotswapSpringInvocationHandler extends DetachableBeanHolder implements InvocationHandler {
+
+    private static final long serialVersionUID = 8037007940960065166L;
+
     /**
      *
      * @param beanFactry

@@ -24,10 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
-import org.hotswap.agent.annotation.OnClassFileEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
@@ -53,7 +51,7 @@ import org.hotswap.agent.util.ReflectionHelper;
  *
  */
 @Plugin(name = "CxfJAXRS",
-        description = "CXF-JAXRS forntend plugin. Reload services on class change.", //
+        description = "CXF-JAXRS plugin for JAXRS CXF frontend. Reload jaxrs resource on resource class change. Reinject resource's injection points.", //
         testedVersions = { "3.2.7" },
         expectedVersions = { "3.2.7" })
 public class CxfJAXRSPlugin {
@@ -166,7 +164,7 @@ public class CxfJAXRSPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void entityReload(ClassLoader classLoader, CtClass clazz, Class<?> original) {
+    public void classReload(ClassLoader classLoader, CtClass clazz, Class<?> original) {
         if (AnnotationHelper.hasAnnotation(original, PATH_ANNOTATION)
                 || AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)) {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
@@ -176,8 +174,9 @@ public class CxfJAXRSPlugin {
         }
     }
 
+    /*
     @OnClassFileEvent(classNameRegexp = ".*", events = { FileEvent.CREATE })
-    public void newEntity(ClassLoader classLoader, CtClass clazz) throws Exception {
+    public void newClass(ClassLoader classLoader, CtClass clazz) throws Exception {
         if (AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)) {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
                 LOGGER.trace("Load @Path annotated class {}", clazz.getName());
@@ -185,6 +184,7 @@ public class CxfJAXRSPlugin {
             refreshClass(classLoader, clazz.getName(), null, WAIT_ON_CREATE);
         }
     }
+    */
 
     private void refreshClass(ClassLoader classLoader, String className, Class<?> original, int timeout) {
         try {
