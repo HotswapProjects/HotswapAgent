@@ -134,7 +134,9 @@ public class PluginClassFileTransformer implements ClassFileTransformer {
      * Skip proxy and javassist synthetic classes.
      */
     protected static boolean isSyntheticClass(String className) {
-        return className.contains("$$_javassist") || className.startsWith("com/sun/proxy");
+        return className.contains("$$_javassist")
+                || className.contains("$$_jvst")
+                || className.startsWith("com/sun/proxy");
     }
 
     /**

@@ -160,6 +160,7 @@ public class ClassInitPlugin {
 
     private static boolean isSyntheticClass(Class<?> classBeingRedefined) {
         return classBeingRedefined.getSimpleName().contains("$$_javassist")
+                || classBeingRedefined.getSimpleName().contains("$$_jvst")
                 || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
                 || classBeingRedefined.getSimpleName().contains("$$");
     }

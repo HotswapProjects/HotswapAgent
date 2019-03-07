@@ -72,7 +72,9 @@ public class SpringChangesAnalyzer {
     protected boolean isSyntheticClass(Class<?> classBeingRedefined) {
         return classBeingRedefined.getSimpleName().contains("$$_javassist")
                 || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
-                || classBeingRedefined.getSimpleName().contains("$$Enhancer");
+                || classBeingRedefined.getSimpleName().contains("$$Enhancer")
+                || classBeingRedefined.getSimpleName().contains("$$_jvst") // javassist proxy
+                ;
     }
 
 }
