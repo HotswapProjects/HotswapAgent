@@ -43,6 +43,7 @@ import org.hotswap.agent.plugin.weld.transformer.AbstractClassBeanTransformer;
 import org.hotswap.agent.plugin.weld.transformer.BeanDeploymentArchiveTransformer;
 import org.hotswap.agent.plugin.weld.transformer.CdiContextsTransformer;
 import org.hotswap.agent.plugin.weld.transformer.ProxyFactoryTransformer;
+import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
@@ -65,6 +66,9 @@ import org.hotswap.agent.watch.Watcher;
 public class WeldPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WeldPlugin.class);
+
+    private static final String VETOED_ANNOTATION = "javax.enterprise.inject.Vetoed";
+    private static final String DS_EXCLUDED_ANNOTATION = "org.apache.deltaspike.core.api.exclude.Exclude";
 
     /** True for UnitTests */
     static boolean isTestEnvironment = false;
@@ -214,20 +218,40 @@ public class WeldPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
-        if (original != null && !isSyntheticCdiClass(ctClass.getName()) && !isInnerNonPublicStaticClass(ctClass)) {
-            try {
-                String archivePath = getArchivePath(classLoader, ctClass, original.getName());
-                if (isBdaRegistered(classLoader, archivePath)) {
-                    LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
-                    String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
-                    String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
-                    String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
-                    scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
-                            original.getName(), oldFullSignature, oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
-                }
-            } catch (Exception e) {
-                LOGGER.error("classReload() exception {}.", e, e.getMessage());
+        if (AnnotationHelper.hasAnnotation(ctClass, VETOED_ANNOTATION)) {
+            LOGGER.trace("Skipping @Vetoed class {}.", ctClass.getName());
+            return;
+        }
+
+        if (original == null || isSyntheticCdiClass(ctClass.getName()) || isInnerNonPublicStaticClass(ctClass)) {
+            if (original != null) {
+                LOGGER.trace("Skipping synthetic or inner class {}.", original.getName());
             }
+            return;
+        }
+
+        if (AnnotationHelper.hasAnnotation(ctClass, VETOED_ANNOTATION)) {
+            LOGGER.trace("Skipping @Vetoed class {}.", ctClass.getName());
+            return;
+        }
+
+        if (AnnotationHelper.hasAnnotation(ctClass, DS_EXCLUDED_ANNOTATION)) {
+            LOGGER.trace("Skipping @Excluded class {}.", ctClass.getName());
+            return;
+        }
+
+        try {
+        	String archivePath = getArchivePath(classLoader, ctClass, original.getName());
+        	if (isBdaRegistered(classLoader, archivePath)) {
+        		LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
+        		String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
+        		String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
+        		String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
+        		scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
+        				original.getName(), oldFullSignature, oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
+        	}
+        } catch (Exception e) {
+        	LOGGER.error("classReload() exception {}.", e, e.getMessage());
         }
     }
 

@@ -44,6 +44,7 @@ import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.owb.transformer.BeansDeployerTransformer;
 import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
 import org.hotswap.agent.plugin.owb.transformer.ProxyFactoryTransformer;
+import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.util.signature.ClassSignatureComparerHelper;
@@ -65,6 +66,9 @@ import org.hotswap.agent.watch.Watcher;
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);
+
+    private static final String VETOED_ANNOTATION = "javax.enterprise.inject.Vetoed";
+    private static final String DS_EXCLUDED_ANNOTATION = "org.apache.deltaspike.core.api.exclude.Exclude";
 
     // True for UnitTests
     static boolean isTestEnvironment = false;
@@ -217,6 +221,17 @@ public class OwbPlugin {
             }
             return;
         }
+
+        if (AnnotationHelper.hasAnnotation(ctClass, VETOED_ANNOTATION)) {
+            LOGGER.trace("Skipping @Vetoed class {}.", ctClass.getName());
+            return;
+        }
+
+        if (AnnotationHelper.hasAnnotation(ctClass, DS_EXCLUDED_ANNOTATION)) {
+            LOGGER.trace("Skipping @Excluded class {}.", ctClass.getName());
+            return;
+        }
+
         try {
             String classUrl = ctClass.getURL().toExternalForm();
             Iterator<Entry<URL, URL>> iterator = registeredArchives.entrySet().iterator();
