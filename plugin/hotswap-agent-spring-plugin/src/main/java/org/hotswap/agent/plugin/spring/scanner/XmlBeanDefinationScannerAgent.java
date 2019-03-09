@@ -55,7 +55,6 @@ public class XmlBeanDefinationScannerAgent {
      */
     public static boolean reloadFlag = false;
 
-
     /**
      * need to ensure that when method is invoked first time , this class is not loaded,
      * so this class is will be loaded by appClassLoader
@@ -83,7 +82,11 @@ public class XmlBeanDefinationScannerAgent {
             LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinationScannerAgent, not reloading");
             return;
         }
-        xmlBeanDefinationScannerAgent.reloadBeanFromXml(url);
+        try {
+            xmlBeanDefinationScannerAgent.reloadBeanFromXml(url);
+        } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
+            LOGGER.error("Reloading XML failed: {}", e.getMessage());
+        }
     }
 
     private static boolean basePackageInited = false;
@@ -135,7 +138,7 @@ public class XmlBeanDefinationScannerAgent {
      *  @param url url of xml
      */
     public void reloadBeanFromXml(URL url) {
-        LOGGER.info("reloading xml file: " + url);
+        LOGGER.info("Reloading XML file: " + url);
         // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
         // maybe should use watchResourceClassLoader.getResource?
         this.reader.loadBeanDefinitions(new FileSystemResource(url.getPath()));
