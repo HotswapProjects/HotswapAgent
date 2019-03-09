@@ -13,4 +13,5 @@ ClassResource info is recreated using original creational parameters from first 
 are re-injected in following enviroments:
 * CDI - Weld
 * CDI - OWB
+* Spring - default singleton beans reloading using SpringPlugin
 
