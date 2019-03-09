@@ -48,6 +48,10 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     WatchFileEvent event;
     byte[] classDefinition;
 
+    public ClassPathBeanRefreshCommand() {
+
+    }
+
     public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className, byte[] classDefinition) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
