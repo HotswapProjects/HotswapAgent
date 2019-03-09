@@ -47,6 +47,7 @@ public class CxfJAXRSCommand extends MergeableCommand {
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
             ClassResourceInfoProxyHelper.reloadClassResourceInfo(criProxy);
+            LOGGER.info("Resource class {} reloaded.", criProxy.getResourceClass().getName());
         } catch (Exception e) {
             LOGGER.error("Could not reload JAXRS service class {}", e, criProxy.getServiceClass());
         } finally {

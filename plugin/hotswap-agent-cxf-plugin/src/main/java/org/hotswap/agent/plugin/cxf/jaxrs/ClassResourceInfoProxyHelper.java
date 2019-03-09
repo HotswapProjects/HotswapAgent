@@ -54,7 +54,7 @@ public class ClassResourceInfoProxyHelper {
             f.setSuperclass(cri.getClass());
             f.setFilter(new MethodFilter() {
                 public boolean isHandled(Method m) {
-                    return !m.getName().equals("finalize");
+                    return true;
                 }
             });
             classResourceInfoProxyClass = f.createClass();

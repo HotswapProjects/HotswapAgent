@@ -117,10 +117,10 @@ public class CxfJAXRSPlugin {
                             "ClassLoader $$cl = $1.getClassLoader();" +
                             PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
                             "try {" +
-                                "org.hotswap.agent.javassist.runtime.Desc.setUseContextClassLoaderLocally();" +
-                                "$_ = org.hotswap.agent.plugin.cxf.jaxrs.ClassResourceInfoProxyHelper.createProxy($_, $sig, $args);" +
+                                org.hotswap.agent.javassist.runtime.Desc.class.getName() + ".setUseContextClassLoaderLocally();" +
+                                "$_ = " + ClassResourceInfoProxyHelper.class.getName() + ".createProxy($_, $sig, $args);" +
                             "} finally {"+
-                                "org.hotswap.agent.javassist.runtime.Desc.resetUseContextClassLoaderLocally();" +
+                                org.hotswap.agent.javassist.runtime.Desc.class.getName() + ".resetUseContextClassLoaderLocally();" +
                             "}" +
                             "if ($_.getClass().getName().contains(\"$$\")) {" +
                                  PluginManagerInvoker.buildCallPluginMethod("$$cl", CxfJAXRSPlugin.class, "registerClassResourceInfo",
@@ -144,7 +144,7 @@ public class CxfJAXRSPlugin {
             loadMethod.insertAfter( "{ " +
                     "ClassLoader $$cl = this.bus.getClass().getClassLoader();" +
                     "Object $$plugin =" + PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
-                    "org.hotswap.agent.plugin.cxf.jaxrs.HaCdiExtraCxfContext.registerExtraContext($$plugin);" +
+                    HaCdiExtraCxfContext.class.getName() + ".registerExtraContext($$plugin);" +
                 "}"
             );
     } catch(NotFoundException | CannotCompileException e){
@@ -165,6 +165,10 @@ public class CxfJAXRSPlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass clazz, Class<?> original) {
+        if (isSyntheticClass(clazz.getName())) {
+            LOGGER.trace("Skipping synthetic class {}.", clazz.getName());
+            return;
+        }
         if (AnnotationHelper.hasAnnotation(original, PATH_ANNOTATION)
                 || AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)) {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
@@ -201,6 +205,10 @@ public class CxfJAXRSPlugin {
         } catch (Exception e) {
             LOGGER.error("refreshClass() exception {}.", e.getMessage());
         }
+    }
+
+    private boolean isSyntheticClass(String className) {
+        return className.contains("$$");
     }
 
 }
