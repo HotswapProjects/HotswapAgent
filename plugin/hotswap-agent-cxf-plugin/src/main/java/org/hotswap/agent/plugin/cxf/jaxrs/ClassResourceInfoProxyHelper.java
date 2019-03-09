@@ -20,6 +20,7 @@ package org.hotswap.agent.plugin.cxf.jaxrs;
 
 import java.lang.reflect.Method;
 
+import org.apache.cxf.jaxrs.lifecycle.ResourceProvider;
 import org.apache.cxf.jaxrs.lifecycle.SingletonResourceProvider;
 import org.apache.cxf.jaxrs.model.ClassResourceInfo;
 import org.apache.cxf.jaxrs.utils.ResourceUtils;
@@ -95,12 +96,24 @@ public class ClassResourceInfoProxyHelper {
             ClassResourceInfo newClassResourceInfo = (ClassResourceInfo) ReflectionHelper.invoke(null, ResourceUtils.class, "createClassResourceInfo",
                     criMethodHandler.generatorTypes, criMethodHandler.generatorParams);
             ClassResourceInfo oldClassResourceInfo = criMethodHandler.delegate;
-            newClassResourceInfo.setResourceProvider(oldClassResourceInfo.getResourceProvider());
+            ResourceProvider resourceProvider = oldClassResourceInfo.getResourceProvider();
+            updateResourceProvider(resourceProvider);
+            newClassResourceInfo.setResourceProvider(resourceProvider);
             criMethodHandler.delegate = newClassResourceInfo;
         } catch (Exception e) {
             LOGGER.error("reloadClassResourceInfo() exception {}", e.getMessage());
         } finally {
             DISABLE_PROXY_GENERATION.remove();
+        }
+    }
+
+    private static void updateResourceProvider(ResourceProvider resourceProvider) {
+        if (resourceProvider.getClass().getName().equals("org.apache.cxf.jaxrs.spring.SpringResourceFactory")){
+            try {
+                ReflectionHelper.invoke(resourceProvider, resourceProvider.getClass(), "clearSingletonInstance", null, null);
+            } catch (Exception e) {
+                LOGGER.error("updateResourceProvider() clearSingletonInstance failed. {}", e);
+            }
         }
     }
 

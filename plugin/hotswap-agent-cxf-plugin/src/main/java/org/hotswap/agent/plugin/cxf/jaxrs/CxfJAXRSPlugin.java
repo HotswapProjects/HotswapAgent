@@ -31,17 +31,10 @@ import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewConstructor;
-import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.logging.AgentLogger.Level;
 import org.hotswap.agent.util.AnnotationHelper;
-import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -53,7 +46,8 @@ import org.hotswap.agent.util.ReflectionHelper;
 @Plugin(name = "CxfJAXRS",
         description = "CXF-JAXRS plugin for JAXRS CXF frontend. Reload jaxrs resource on resource class change. Reinject resource's injection points.", //
         testedVersions = { "3.2.7" },
-        expectedVersions = { "3.2.7" })
+        expectedVersions = { "3.2.7" },
+        supportClass = { CxfJAXRSTransformer.class})
 public class CxfJAXRSPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CxfJAXRSPlugin.class);
@@ -103,64 +97,6 @@ public class CxfJAXRSPlugin {
 
     public void registerServiceInstance(Object serviceInstance) {
         serviceInstances.put(serviceInstance, Boolean.TRUE);
-    }
-
-    @OnClassLoadEvent(classNameRegexp = "org.apache.cxf.jaxrs.utils.ResourceUtils")
-    public static void patchResourceUtils(CtClass ctClass, ClassPool classPool){
-        try{
-            CtMethod createCriMethods[] = ctClass.getDeclaredMethods("createClassResourceInfo");
-
-            for (CtMethod method: createCriMethods) {
-                if (method.getParameterTypes()[0].getName().equals(Class.class.getName())) {
-                    method.insertAfter(
-                        "if($_ != null && !$_.getClass().getName().contains(\"$$\") ) { " +
-                            "ClassLoader $$cl = $1.getClassLoader();" +
-                            PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
-                            "try {" +
-                                org.hotswap.agent.javassist.runtime.Desc.class.getName() + ".setUseContextClassLoaderLocally();" +
-                                "$_ = " + ClassResourceInfoProxyHelper.class.getName() + ".createProxy($_, $sig, $args);" +
-                            "} finally {"+
-                                org.hotswap.agent.javassist.runtime.Desc.class.getName() + ".resetUseContextClassLoaderLocally();" +
-                            "}" +
-                            "if ($_.getClass().getName().contains(\"$$\")) {" +
-                                 PluginManagerInvoker.buildCallPluginMethod("$$cl", CxfJAXRSPlugin.class, "registerClassResourceInfo",
-                                "$_.getServiceClass()", "java.lang.Class", "$_", "java.lang.Object") +
-                            "}" +
-                        "}" +
-                        "return $_;"
-                    );
-                }
-            }
-        } catch(NotFoundException | CannotCompileException e){
-            LOGGER.error("Error patching ResourceUtils", e);
-        }
-    }
-
-    @OnClassLoadEvent(classNameRegexp = "org.apache.cxf.cdi.JAXRSCdiResourceExtension")
-    public static void patchCxfJARSCdiExtension(CtClass ctClass, ClassPool classPool){
-        try{
-            CtMethod loadMethod = ctClass.getDeclaredMethod("load");
-
-            loadMethod.insertAfter( "{ " +
-                    "ClassLoader $$cl = this.bus.getClass().getClassLoader();" +
-                    "Object $$plugin =" + PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
-                    HaCdiExtraCxfContext.class.getName() + ".registerExtraContext($$plugin);" +
-                "}"
-            );
-    } catch(NotFoundException | CannotCompileException e){
-            LOGGER.error("Error patching ResourceUtils", e);
-        }
-    }
-
-    @OnClassLoadEvent(classNameRegexp = "org.apache.cxf.jaxrs.model.ClassResourceInfo")
-    public static void patchClassResourceInfo(CtClass ctClass, ClassPool classPool) {
-        try {
-            // Add default constructor to simplify proxy creation
-            CtConstructor c = CtNewConstructor.make("public " + ctClass.getSimpleName() + "() { super(null); }", ctClass);
-            ctClass.addConstructor(c);
-        } catch (CannotCompileException e) {
-            LOGGER.error("Error patching ClassResourceInfo", e);
-        }
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
