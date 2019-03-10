@@ -96,4 +96,19 @@ public class CxfJAXRSTransformer {
         }
     }
 
+    @OnClassLoadEvent(classNameRegexp = "org.apache.cxf.jaxrs.provider.AbstractJAXBProvider")
+    public static void patchAbstractJAXBProvider(CtClass ctClass, ClassPool classPool){
+        try{
+            CtMethod loadMethod = ctClass.getDeclaredMethod("init");
+            loadMethod.insertAfter( "{ " +
+                    "ClassLoader $$cl = getClass().getClassLoader();" +
+                    PluginManagerInvoker.buildCallPluginMethod("$$cl", CxfJAXRSPlugin.class, "registerJAXBProvider",
+                                "this", "java.lang.Object") +
+                "}"
+            );
+    } catch(NotFoundException | CannotCompileException e){
+            LOGGER.error("Error patching ResourceUtils", e);
+        }
+    }
+
 }

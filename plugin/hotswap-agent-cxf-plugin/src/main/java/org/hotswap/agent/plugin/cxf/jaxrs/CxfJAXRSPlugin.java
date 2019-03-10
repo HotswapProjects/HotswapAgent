@@ -65,6 +65,7 @@ public class CxfJAXRSPlugin {
 
     Map<String, Object> classResourceInfoRegistry = new HashMap<>();
     WeakHashMap<Object, Boolean> serviceInstances = new WeakHashMap<>();
+    WeakHashMap<Object, Boolean> jaxbProviderRegistry = new WeakHashMap<>();
 
     @Init
     public void init(PluginConfiguration pluginConfiguration) {
@@ -74,6 +75,11 @@ public class CxfJAXRSPlugin {
     public void registerClassResourceInfo(Class<?> serviceClass, Object classResourceInfo) {
         classResourceInfoRegistry.put(serviceClass.getName(), classResourceInfo);
         LOGGER.debug("Registered service {} ", serviceClass.getClass().getName());
+    }
+
+    public void registerJAXBProvider(Object jaxbProvider) {
+        jaxbProviderRegistry.put(jaxbProvider, Boolean.TRUE);
+        LOGGER.debug("Registered JAXB Provider {} ", jaxbProvider);
     }
 
     public boolean containsServiceInstance(Class<?> serviceClass) {
@@ -112,6 +118,7 @@ public class CxfJAXRSPlugin {
             }
             refreshClass(classLoader, clazz.getName(), original, WAIT_ON_REDEFINE);
         }
+        clearJAXBProviderContexts();
     }
 
     /*
@@ -140,6 +147,16 @@ public class CxfJAXRSPlugin {
             scheduler.scheduleCommand(cmd, timeout);
         } catch (Exception e) {
             LOGGER.error("refreshClass() exception {}.", e.getMessage());
+        }
+    }
+
+    private void clearJAXBProviderContexts() {
+        try {
+            for (Object provider: jaxbProviderRegistry.keySet()) {
+                ReflectionHelper.invoke(provider, provider.getClass(), "clearContexts", null, null);
+            }
+        } catch (Exception e) {
+            LOGGER.error("clearJAXBProviderContexts() exception {}.", e.getMessage());
         }
     }
 
