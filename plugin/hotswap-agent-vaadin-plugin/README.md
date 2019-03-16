@@ -11,5 +11,6 @@ To create a vaadin project, go to https://vaadin.com/start
 * All internal metadata caches are cleared whenever a class is changed
 
 Known issues:
+* The plugin is currently compatible with Vaadin versions 10-12. Latest version 13 don't work properly due to changes in Route registration.
 * Removing a class with `@Route` does not remove the mapping
 
