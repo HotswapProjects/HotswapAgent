@@ -37,6 +37,7 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.FieldAccess;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 
 /**
  * ClassInitPlugin initializes static (class) variables after class redefinition. Initializes new enumeration values.
@@ -123,6 +124,7 @@ public class ClassInitPlugin {
                             Class<?> clazz = classLoader.loadClass(className);
                             Method m = clazz.getDeclaredMethod(HOTSWAP_AGENT_CLINIT_METHOD, new Class[] {});
                             if (m != null) {
+                                m.setAccessible(true);
                                 m.invoke(null, new Object[] {});
                             }
                         } catch (Exception e) {
