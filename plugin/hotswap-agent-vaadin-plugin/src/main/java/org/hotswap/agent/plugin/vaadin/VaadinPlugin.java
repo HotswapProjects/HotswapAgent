@@ -27,9 +27,10 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * https://vaadin.com
  *
  * @author Artur Signell
+ * @author Matti Tahvonen
  */
 @Plugin(name = "Vaadin", description = "Vaadin Platform support", testedVersions = {
-        "10.0.0.beta9" }, expectedVersions = { "10.0+" })
+    "10.0.0.beta9","13.0.1"}, expectedVersions = {"10.0+"})
 public class VaadinPlugin {
 
     @Init
@@ -47,8 +48,12 @@ public class VaadinPlugin {
 
     private Method routeRegistryGet;
 
+    private boolean vaadin13orNewer;
+
     private static AgentLogger LOGGER = AgentLogger
             .getLogger(VaadinPlugin.class);
+    private Object routeConfiguration;
+    private Method setRouteMethod;
 
     public VaadinPlugin() {
     }
@@ -65,6 +70,29 @@ public class VaadinPlugin {
         LOGGER.info("Initialized Vaadin plugin");
     }
 
+    @OnClassLoadEvent(classNameRegexp = "com.vaadin.flow.router.RouteConfiguration")
+    public static void initRouteRegistry(CtClass ctClass)
+            throws NotFoundException, CannotCompileException {
+        String src = PluginManagerInvoker
+                .buildInitializePlugin(VaadinPlugin.class);
+        src += PluginManagerInvoker.buildCallPluginMethod(VaadinPlugin.class,
+                "registerRouteConfiguration", "this", "java.lang.Object");
+        ctClass.getDeclaredConstructors()[0].insertAfter(src);
+    }
+    
+    public void registerRouteConfiguration(Object routeConfiguration) {
+        try {
+            if(routeConfiguration != null) {
+                // first RouteConfiguration is the one used for global routes
+                setRouteMethod = routeConfiguration.getClass().getMethod("setAnnotatedRoute", Class.class);
+                this.routeConfiguration = routeConfiguration;
+            }
+        } catch (NoSuchMethodException | SecurityException ex) {
+            LOGGER.error(null, ex);
+        }
+        
+    }
+
     public void registerServlet(Object vaadinServlet) {
         this.vaadinServlet = vaadinServlet;
 
@@ -73,12 +101,14 @@ public class VaadinPlugin {
                     "javax.servlet.ServletContext");
             vaadinServletGetServletContext = resolveClass(
                     "javax.servlet.GenericServlet")
-                            .getDeclaredMethod("getServletContext");
+                    .getDeclaredMethod("getServletContext");
             routeRegistryGet = getRouteRegistryClass()
                     .getDeclaredMethod("getInstance", servletContextClass);
         } catch (NoSuchMethodException | SecurityException
                 | ClassNotFoundException e) {
             e.printStackTrace();
+        } catch (IllegalArgumentException ex) {
+            LOGGER.error(null, ex);
         }
 
         LOGGER.info("Plugin {} initialized for servlet {}", getClass(),
@@ -86,7 +116,14 @@ public class VaadinPlugin {
     }
 
     private Class<?> getRouteRegistryClass() throws ClassNotFoundException {
-        return resolveClass("com.vaadin.flow.server.startup.RouteRegistry");
+        try {
+            return resolveClass("com.vaadin.flow.server.startup.RouteRegistry");
+        } catch (ClassNotFoundException e) {
+            // Vaadin 13+ app
+            LOGGER.debug("Vaadin 13 app detected");
+            vaadin13orNewer = true;
+            return resolveClass("com.vaadin.flow.server.startup.ApplicationRouteRegistry");
+        }
     }
 
     public Object getRouteRegistry() {
@@ -110,18 +147,25 @@ public class VaadinPlugin {
         scheduler.scheduleCommand(clearReflectionCache);
     }
 
-    @OnClassFileEvent(classNameRegexp = ".*", events = { FileEvent.CREATE,
-            FileEvent.MODIFY })
+    @OnClassFileEvent(classNameRegexp = ".*", events = {FileEvent.CREATE,
+        FileEvent.MODIFY})
     public void addNewRoute(CtClass ctClass) throws Exception {
         LOGGER.debug("Class file event for " + ctClass.getName());
         if (ctClass.hasAnnotation("com.vaadin.flow.router.Route")) {
-            LOGGER.debug("New route class: " + ctClass.getName());
-            ensureInRouter(ctClass);
+            LOGGER.info("HotSwapAgent dynamically added new route to " + ctClass.getName());
+            if (vaadin13orNewer) {
+                addToRouterConfiguration(ctClass);
+            } else {
+                ensureInRouter(ctClass);
+            }
         }
     }
 
     private void ensureInRouter(CtClass ctClass)
             throws ReflectiveOperationException {
+        if (vaadin13orNewer) {
+            throw new RuntimeException("This method is not supported with Vaadin 13");
+        }
         Object routeRegistry = getRouteRegistry();
         Set<Class<?>> routeClasses = getCurrentRouteClasses(routeRegistry);
 
@@ -134,7 +178,6 @@ public class VaadinPlugin {
         add.invoke(classSet, resolveClass(ctClass.getName()));
 
         forceRouteUpdate(routeRegistry, classSet);
-
     }
 
     private void forceRouteUpdate(Object routeRegistry, Object routeClassSet)
@@ -177,6 +220,29 @@ public class VaadinPlugin {
 
     private Class<?> resolveClass(String name) throws ClassNotFoundException {
         return Class.forName(name, true, appClassLoader);
+    }
+
+    /**
+     * Metacode: conf = new RouteConfiguration(getApplicationRegistry()) conf =
+     * RouteConfiguration.forApplicationScope(); conf.setAnnotatedRoute(cls)
+     *
+     *
+     * @param ctClass
+     */
+    private void addToRouterConfiguration(CtClass ctClass) {
+        try {
+            setRouteMethod.invoke(routeConfiguration, resolveClass(ctClass.getName()));
+        } catch(InvocationTargetException ex) {
+            //com.vaadin.flow.server.InvalidRouteConfigurationException
+            if(ex.getCause().getClass().getName().equals("com.vaadin.flow.server.InvalidRouteConfigurationException")) {
+                LOGGER.debug("Already registered");
+            } else {
+                LOGGER.error(null, ex);
+            }
+        } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
+            LOGGER.error(null, ex);
+        }
+
     }
 
 }
