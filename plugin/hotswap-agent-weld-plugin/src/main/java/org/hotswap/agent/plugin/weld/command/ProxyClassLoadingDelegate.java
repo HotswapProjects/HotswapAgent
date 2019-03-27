@@ -64,10 +64,8 @@ public class ProxyClassLoadingDelegate {
             try {
                 final Class<?> originalProxyClass = loader.loadClass(ct.getName());
                 try {
-                    ByteArrayDataOutputStream out = new ByteArrayDataOutputStream();
-                    ct.write(out);
                     Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
-                    reloadMap.put(originalProxyClass, out.getBytes());
+                    reloadMap.put(originalProxyClass, ct.toBytecode());
                     // TODO : is this standard way how to reload class?
                     PluginManager.getInstance().hotswap(reloadMap);
                     return originalProxyClass;

@@ -28,6 +28,7 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -38,6 +39,8 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * @author Vladimir Dvorak
  */
 public class ProxyFactoryTransformer {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyFactoryTransformer.class);
 
     /**
      * Patch ProxyFactory class.
@@ -90,7 +93,17 @@ public class ProxyFactoryTransformer {
                 new ExprEditor() {
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getClassName().equals("org.jboss.weld.util.bytecode.ClassFileUtils") && m.getMethodName().equals("toClass"))
-                            m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.toClass($$); }");
+                            try {
+                                if (m.getMethod().getParameterTypes().length == 3) {
+                                    m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.toClass($$); }");
+                                } else if (m.getMethod().getParameterTypes().length == 4) {
+                                    LOGGER.debug("Proxy factory patch for delegating method skipped.", m.getClassName(), m.getMethodName());
+                                } else {
+                                    LOGGER.error("Method '{}.{}' patch failed. Unknown method arguments.", m.getClassName(), m.getMethodName());
+                                }
+                            } catch (NotFoundException e) {
+                                LOGGER.error("Method '{}' not found in '{}'.", m.getMethodName(), m.getClassName());
+                            }
                     }
                 });
     }
