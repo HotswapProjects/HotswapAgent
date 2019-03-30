@@ -148,6 +148,7 @@ uses agent services to:
 * [CXF-JAXRS](plugin/hotswap-agent-cxf-plugin/README.md) (3.x) - redefine JAXRS resource after resource class redefinition, reinject instance if integrated with Spring and CDI (Weld/OWB).
 * [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x) - messages, ViewConfig, repository, proxy reloading. Deltaspike scoped CDI beans reinjection.
 * [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
+* [FreeMarker](plugin/hotswap-agent-freemarker-plugin/README.md) - clear the Apache Freemarker beans class-introspection cache on class definition change.
 * [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3x,4x,5x) - Reload Hibernate configuration after entity create/change.
 * [Jersey1](plugin/hotswap-agent-jersey1-plugin/README.md) - reload Jersey1 container after root resource or provider class definition or redefinition.
 * [Jersey2](plugin/hotswap-agent-jersey2-plugin/README.md) - reload Jersey2 container after root resource or provider class definition or redefinition.
@@ -245,6 +246,7 @@ Hotswap agent:
 * Jan Tecl - web design
 * Lukasz Warzecha - Log4j2 plugin
 * Thomas Heigl - Wicket plugin
+* AJ Banck - FreeMarker plugin
 
 DCEVM:
 
