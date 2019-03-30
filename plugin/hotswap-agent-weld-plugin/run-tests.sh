@@ -73,3 +73,5 @@ test3 3.0.3.Final
 test3 3.0.4.Final
 test3 3.0.5.Final
 
+test3 3.1.0.Final
+

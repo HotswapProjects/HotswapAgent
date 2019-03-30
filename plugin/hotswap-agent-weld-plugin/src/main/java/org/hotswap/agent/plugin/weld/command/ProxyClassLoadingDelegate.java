@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.hotswap.agent.config.PluginManager;
 import org.jboss.classfilewriter.ClassFile;
-import org.jboss.classfilewriter.util.ByteArrayDataOutputStream;
 import org.jboss.weld.util.bytecode.ClassFileUtils;
 
 /**
