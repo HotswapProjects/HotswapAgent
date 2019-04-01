@@ -18,20 +18,20 @@
  */
 package org.hotswap.agent.annotation.handler;
 
+import static junit.framework.Assert.assertTrue;
+
+import java.lang.reflect.Method;
+
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.config.PluginRegistry;
 import org.hotswap.agent.testData.SimplePlugin;
+import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.lib.legacy.ClassImposteriser;
 import org.junit.Test;
-
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.reflect.Method;
-
-import static junit.framework.Assert.assertTrue;
 
 /**
  * @author Jiri Bubnik
@@ -58,7 +58,7 @@ public class OnClassLoadEventHandlerTest {
             allowing(pluginRegistry).getAppClassLoader(with(any(Object.class))); will(returnValue(appClassLoader));
 
             oneOf(hotswapTransformer).registerTransformer(with(appClassLoader),
-                    with("org.hotswap.example.type"), with(any(ClassFileTransformer.class)));
+                    with("org.hotswap.example.type"), with(any(HaClassFileTransformer.class)));
         }});
 
         OnClassLoadedHandler onClassLoadedHandler = new OnClassLoadedHandler(pluginManager);

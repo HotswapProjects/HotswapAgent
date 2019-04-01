@@ -19,7 +19,6 @@
 package org.hotswap.agent.plugin.spring;
 
 import java.io.IOException;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
 import java.security.ProtectionDomain;
@@ -49,6 +48,7 @@ import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
@@ -132,7 +132,7 @@ public class SpringPlugin {
         // v.d.: Force load/Initialize ClassPathBeanRefreshCommand classe in JVM. This is hack, in whatever reason sometimes new ClassPathBeanRefreshCommand()
         //       stays locked inside agent's transform() call. It looks like some bug in JVMTI or JVMTI-debugger() locks handling.
         ClassPathBeanRefreshCommand fooCmd = new ClassPathBeanRefreshCommand();
-        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage), new ClassFileTransformer() {
+        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage), new HaClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 if (classBeingRedefined != null) {
@@ -142,6 +142,11 @@ public class SpringPlugin {
                     }
                 }
                 return classfileBuffer;
+            }
+
+            @Override
+            public boolean isForRedefinitionOnly() {
+                return true;
             }
         });
     }

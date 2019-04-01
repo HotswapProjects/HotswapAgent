@@ -18,22 +18,26 @@
  */
 package org.hotswap.agent.plugin.jvm;
 
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.LoadEvent;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.HotswapTransformer;
-import org.hotswap.agent.util.classloader.*;
-
 import java.io.IOException;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
+
+import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassMap;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.HotswapTransformer;
+import org.hotswap.agent.util.HaClassFileTransformer;
+import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 
 /**
  * Class names MyClass$1, MyClass$2 are created in the order as anonymous class appears in the source code.
@@ -142,7 +146,7 @@ public class AnonymousClassPatchPlugin {
     // new anonymous class, not covered by hotswap (patchAnonymousClass) - register custom transformer and
     // on event swap and unregister.
     private static void registerReplaceOnLoad(final String newName, final CtClass anonymous) {
-        hotswapTransformer.registerTransformer(null, newName, new ClassFileTransformer() {
+        hotswapTransformer.registerTransformer(null, newName, new HaClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                 LOGGER.trace("Anonymous class '{}' - replaced.", newName);
@@ -153,6 +157,10 @@ public class AnonymousClassPatchPlugin {
                     LOGGER.error("Unable to create bytecode of class {}.", e, anonymous.getName());
                     return null;
                 }
+            }
+            @Override
+            public boolean isForRedefinitionOnly() {
+                return false;
             }
         });
     }

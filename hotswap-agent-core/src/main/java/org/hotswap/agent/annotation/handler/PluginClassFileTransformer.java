@@ -20,7 +20,6 @@ package org.hotswap.agent.annotation.handler;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.ProtectionDomain;
@@ -38,9 +37,10 @@ import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AppClassLoaderExecutor;
+import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.versions.DeploymentInfo;
 
-public class PluginClassFileTransformer implements ClassFileTransformer {
+public class PluginClassFileTransformer implements HaClassFileTransformer {
     protected static AgentLogger LOGGER = AgentLogger.getLogger(PluginClassFileTransformer.class);
 
 
@@ -57,6 +57,11 @@ public class PluginClassFileTransformer implements ClassFileTransformer {
         this.pluginAnnotation = pluginAnnotation;
         this.onClassLoadAnnotation = pluginAnnotation.getAnnotation();
         this.events = Arrays.asList(onClassLoadAnnotation.events());
+    }
+
+    @Override
+    public boolean isForRedefinitionOnly() {
+        return !events.contains(LoadEvent.DEFINE);
     }
 
     public boolean isPluginDisabled(ClassLoader loader){
