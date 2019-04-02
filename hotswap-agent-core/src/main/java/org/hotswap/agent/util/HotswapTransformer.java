@@ -51,7 +51,6 @@ public class HotswapTransformer implements ClassFileTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapTransformer.class);
 
-
     /**
      * Exclude these classLoaders from initialization (system classloaders). Note that
      */
@@ -187,10 +186,26 @@ public class HotswapTransformer implements ClassFileTransformer {
 
         LOGGER.trace("Transform on class '{}' @{} redefiningClass '{}'.", className, classLoader, redefiningClass);
 
-        List<ClassFileTransformer> toApply = new LinkedList<>();
-        List<PluginClassFileTransformer> pluginTransformers = new LinkedList<>();
+        List<ClassFileTransformer> toApply = new ArrayList<>();
+        List<PluginClassFileTransformer> pluginTransformers = new ArrayList<>();
         try {
-            // call transform on all registered transformers
+            // 1. call transform method of defining transformers
+            for (RegisteredTransformersRecord transformerRecord : new ArrayList<RegisteredTransformersRecord>(otherTransformers.values())) {
+                if ((className != null && transformerRecord.pattern.matcher(className).matches()) ||
+                        (redefiningClass != null && transformerRecord.pattern.matcher(redefiningClass.getName()).matches())) {
+                    for (ClassFileTransformer transformer : new ArrayList<ClassFileTransformer>(transformerRecord.transformerList)) {
+                        if(transformer instanceof PluginClassFileTransformer) {
+                            PluginClassFileTransformer pcft = PluginClassFileTransformer.class.cast(transformer);
+                            if(!pcft.isPluginDisabled(classLoader)) {
+                                pluginTransformers.add(pcft);
+                            }
+                        } else {
+                            toApply.add(transformer);
+                        }
+                    }
+                }
+            }
+            // 2. call transform method of redefining ttansformars
             if (redefiningClass != null && className != null) {
                 for (RegisteredTransformersRecord transformerRecord : new ArrayList<RegisteredTransformersRecord>(redefinitionTransformers.values())) {
                     if (transformerRecord.pattern.matcher(className).matches()) {
@@ -207,21 +222,6 @@ public class HotswapTransformer implements ClassFileTransformer {
                     }
                 }
             }
-            for (RegisteredTransformersRecord transformerRecord : new ArrayList<RegisteredTransformersRecord>(otherTransformers.values())) {
-                if ((className != null && transformerRecord.pattern.matcher(className).matches()) ||
-                        (redefiningClass != null && transformerRecord.pattern.matcher(redefiningClass.getName()).matches())) {
-                    for (ClassFileTransformer transformer : new ArrayList<ClassFileTransformer>(transformerRecord.transformerList)) {
-                        if(transformer instanceof PluginClassFileTransformer) {
-                            PluginClassFileTransformer pcft = PluginClassFileTransformer.class.cast(transformer);
-                            if(!pcft.isPluginDisabled(classLoader)) {
-                                pluginTransformers.add(pcft);
-                            }
-                        } else {
-                            toApply.add(transformer);
-                        }
-                    }
-                }
-            }
         } catch (Throwable t) {
             LOGGER.error("Error transforming class '" + className + "'.", t);
         }
@@ -230,13 +230,13 @@ public class HotswapTransformer implements ClassFileTransformer {
             pluginTransformers =  reduce(classLoader, pluginTransformers, className);
         }
 
+        // ensure classloader initialized
+       ensureClassLoaderInitialized(classLoader, protectionDomain);
+
         if(toApply.isEmpty() && pluginTransformers.isEmpty()) {
             LOGGER.trace("No transformers defing for {} ", className);
             return bytes;
         }
-
-        // ensure classloader initialized
-       ensureClassLoaderInitialized(classLoader, protectionDomain);
 
        try {
            byte[] result = bytes;
