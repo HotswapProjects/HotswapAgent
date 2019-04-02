@@ -78,6 +78,9 @@ public class TomcatPlugin {
     // tomcat associated resource object to a web application classloader
     static Map<Object, ClassLoader> registeredResourcesMap = new HashMap<Object, ClassLoader>();
 
+    // for each app classloader map of tomcat repository name to associated watch resource classloader
+    private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<ClassLoader,  Map<String, ClassLoader>>();
+
     /**
      * Init the plugin during WebappLoader.start lifecycle. This method is invoked before the plugin is initialized.
      * @param appClassLoader main tomcat classloader for the webapp (in creation process). Only standard WebappClassLoader is supported.
@@ -159,10 +162,6 @@ public class TomcatPlugin {
             }
         }
     }
-
-
-    // for each app classloader map of tomcat repository name to associated watch resource classloader
-    private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<ClassLoader,  Map<String, ClassLoader>>();
 
     private static void addRepositoriesAtStart(ClassLoader appClassLoader, URL[] newRepositories, boolean watchResources) {
 
