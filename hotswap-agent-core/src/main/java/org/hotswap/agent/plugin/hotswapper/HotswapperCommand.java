@@ -59,7 +59,7 @@ public class HotswapperCommand {
 
                 // convert to Map Class name -> bytecode
                 // We loose some information here, reload use always first class name that it finds reference to.
-                Map<String, byte[]> reloadMapClassNames = new HashMap<String, byte[]>();
+                Map<String, byte[]> reloadMapClassNames = new HashMap<>();
                 for (Map.Entry<Class<?>, byte[]> entry : reloadMap.entrySet()) {
                     reloadMapClassNames.put(entry.getKey().getName(), entry.getValue());
                 }

@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BdaAgentRegistry {
 
     // map archive path -> BeanClassRefreshAgent
-    private static Map<String, BeanClassRefreshAgent> INSTANCES = new ConcurrentHashMap<String, BeanClassRefreshAgent>();
+    private static Map<String, BeanClassRefreshAgent> INSTANCES = new ConcurrentHashMap<>();
 
     public static Map<String, BeanClassRefreshAgent> getInstances() {
         return INSTANCES;

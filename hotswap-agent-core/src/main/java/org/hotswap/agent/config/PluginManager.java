@@ -146,8 +146,8 @@ public class PluginManager {
     }
 
     ClassLoaderPatcher classLoaderPatcher = new ClassLoaderDefineClassPatcher();
-    Map<ClassLoader, PluginConfiguration> classLoaderConfigurations = new HashMap<ClassLoader, PluginConfiguration>();
-    Set<ClassLoaderInitListener> classLoaderInitListeners = new HashSet<ClassLoaderInitListener>();
+    Map<ClassLoader, PluginConfiguration> classLoaderConfigurations = new HashMap<>();
+    Set<ClassLoaderInitListener> classLoaderInitListeners = new HashSet<>();
 
     public void registerClassLoaderInitListener(ClassLoaderInitListener classLoaderInitListener) {
         classLoaderInitListeners.add(classLoaderInitListener);

@@ -44,7 +44,7 @@ import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 public class SessionFactoryProxy {
 
     /** The proxied factories. */
-    private static Map<Configuration, SessionFactoryProxy> proxiedFactories = new HashMap<Configuration, SessionFactoryProxy>();
+    private static Map<Configuration, SessionFactoryProxy> proxiedFactories = new HashMap<>();
 
     /**
      * Gets the wrapper.

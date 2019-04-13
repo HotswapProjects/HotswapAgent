@@ -45,7 +45,7 @@ public class HotswapAgent {
      * <p/>
      * Plugin might be disabled in hotswap-agent.properties for application classloaders as well.
      */
-    private static Set<String> disabledPlugins = new HashSet<String>();
+      private static Set<String> disabledPlugins = new HashSet<>();
 
     /**
      * Default value for autoHotswap property.

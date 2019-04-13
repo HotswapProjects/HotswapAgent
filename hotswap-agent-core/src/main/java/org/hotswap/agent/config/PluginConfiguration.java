@@ -206,7 +206,7 @@ public class PluginConfiguration {
 
     private void initExcludedClassLoaderPatterns() {
         if (properties != null && properties.containsKey(EXCLUDED_CLASS_LOADERS_KEY)) {
-            List<Pattern> excludedClassLoaderPatterns = new ArrayList<Pattern>();
+            List<Pattern> excludedClassLoaderPatterns = new ArrayList<>();
             for (String pattern : properties.getProperty(EXCLUDED_CLASS_LOADERS_KEY).split(",")) {
                 excludedClassLoaderPatterns.add(Pattern.compile(pattern));
             }
@@ -296,7 +296,7 @@ public class PluginConfiguration {
      * List of disabled plugin names
      */
     public List<String> getDisabledPlugins() {
-        List<String> ret = new ArrayList<String>();
+        List<String> ret = new ArrayList<>();
         for (String disabledPlugin : getProperty("disabledPlugins", "").split(",")) {
             ret.add(disabledPlugin.trim());
         }
@@ -321,7 +321,7 @@ public class PluginConfiguration {
 
 
     private URL[] convertToURL(String resources) {
-        List<URL> ret = new ArrayList<URL>();
+        List<URL> ret = new ArrayList<>();
 
         if (resources != null) {
             StringTokenizer tokenizer = new StringTokenizer(resources, ",;");

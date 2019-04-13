@@ -95,7 +95,7 @@ public class PluginRegistry {
 
         try {
             List<String> discoveredPlugins = annotationScanner.scanPlugins(classLoader, pluginPath);
-            List<String> discoveredPluginNames = new ArrayList<String>();
+            List<String> discoveredPluginNames = new ArrayList<>();
 
             // Plugin class must be always defined directly in the agent classloader, otherwise it will not be available
             // to the instrumentation process. Copy the definition using patcher

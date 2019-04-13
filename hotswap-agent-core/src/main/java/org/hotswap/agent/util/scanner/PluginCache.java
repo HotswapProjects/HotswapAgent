@@ -34,7 +34,7 @@ public class PluginCache {
 
     public static final String PLUGIN_PATH = "org/hotswap/agent/plugin";
 
-    private Map<ClassLoader, Set<CtClass>> pluginDefs = new HashMap<ClassLoader, Set<CtClass>>();
+    private Map<ClassLoader, Set<CtClass>> pluginDefs = new HashMap<>();
 
     Scanner scanner = new ClassPathScanner();
 
@@ -49,7 +49,7 @@ public class PluginCache {
         if (!pluginDefs.containsKey(classLoader)) {
             synchronized (pluginDefs) {
                 if (!pluginDefs.containsKey(classLoader)) {
-                    final Set<CtClass> plugins = new HashSet<CtClass>();
+                    final Set<CtClass> plugins = new HashSet<>();
                     final ClassPool classPool = ClassPool.getDefault();
 
                     scanner.scan(getClass().getClassLoader(), PLUGIN_PATH, new ScannerVisitor() {

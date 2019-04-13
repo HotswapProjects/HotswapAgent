@@ -68,10 +68,10 @@ public abstract class AbstractNIO2Watcher implements Watcher {
 
     protected WatchService watcher;
     protected final Map<WatchKey, PathPair> keys;
-    private final Map<Path, List<WatchEventListener>> listeners = new ConcurrentHashMap<Path, List<WatchEventListener>>();
+    private final Map<Path, List<WatchEventListener>> listeners = new ConcurrentHashMap<>();
 
     // keep track about which classloader requested which event
-    protected Map<WatchEventListener, ClassLoader> classLoaderListeners = new ConcurrentHashMap<WatchEventListener, ClassLoader>();
+    protected Map<WatchEventListener, ClassLoader> classLoaderListeners = new ConcurrentHashMap<>();
 
     private Thread runner;
 
@@ -81,7 +81,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
 
     public AbstractNIO2Watcher() throws IOException {
         this.watcher = FileSystems.getDefault().newWatchService();
-        this.keys = new ConcurrentHashMap<WatchKey, PathPair>();
+        this.keys = new ConcurrentHashMap<>();
         dispatcher = new EventDispatcher(listeners);
     }
 

@@ -49,7 +49,7 @@ public class EntityManagerFactoryProxy {
 
     /** The proxied factories. */
     // Map persistenceUnitName -> Wrapper instance
-    private static Map<String, EntityManagerFactoryProxy> proxiedFactories = new HashMap<String, EntityManagerFactoryProxy>();
+    private static Map<String, EntityManagerFactoryProxy> proxiedFactories = new HashMap<>();
 
     /** The reload lock. */
     // hold lock during refresh. The lock is checked on each factory method call.

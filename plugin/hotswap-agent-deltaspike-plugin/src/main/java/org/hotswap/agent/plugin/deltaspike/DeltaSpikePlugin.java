@@ -68,9 +68,9 @@ public class DeltaSpikePlugin {
     @Init
     Scheduler scheduler;
 
-    Map<Object, String> registeredRepoComponents = new WeakHashMap<Object, String>();
-    Map<Object, String> registeredPartialBeans = new WeakHashMap<Object, String>();
-    Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<Object, List<String>>();
+    Map<Object, String> registeredRepoComponents = new WeakHashMap<>();
+    Map<Object, String> registeredPartialBeans = new WeakHashMap<>();
+    Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<>();
     Set<Object> registeredWindowContexts = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
 
     public void registerRepoComponent(Object repoComponent, Class<?> repositoryClass) {
@@ -143,7 +143,7 @@ public class DeltaSpikePlugin {
 
     public void registerViewConfigRootClasses(Object viewConfigExtension, List rootClassList) {
         if (rootClassList != null ) {
-            List<String> rootClassNameList = new ArrayList<String>();
+            List<String> rootClassNameList = new ArrayList<>();
             for (Object viewConfigClassObj : rootClassList) {
                 Class<?> viewConfigClass = (Class<?>) viewConfigClassObj;
                 LOGGER.debug("ViewConfigRoot class '{}' registered.", viewConfigClass.getName());

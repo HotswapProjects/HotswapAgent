@@ -40,7 +40,7 @@ public class AgentLogger {
         return new AgentLogger(clazz);
     }
 
-    private static Map<String, Level> currentLevels = new HashMap<String, Level>();
+    private static Map<String, Level> currentLevels = new HashMap<>();
 
     public static void setLevel(String classPrefix, Level level) {
         currentLevels.put(classPrefix, level);

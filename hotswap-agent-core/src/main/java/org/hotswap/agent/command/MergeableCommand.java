@@ -35,7 +35,7 @@ import java.util.List;
  */
 public abstract class MergeableCommand implements Command {
 
-    List<Command> mergedCommands = new ArrayList<Command>();
+    List<Command> mergedCommands = new ArrayList<>();
 
     /**
      * Merge commands

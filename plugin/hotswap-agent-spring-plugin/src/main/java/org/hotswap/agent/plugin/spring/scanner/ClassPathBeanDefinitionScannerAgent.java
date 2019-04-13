@@ -60,7 +60,7 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 public class ClassPathBeanDefinitionScannerAgent {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassPathBeanDefinitionScannerAgent.class);
 
-    private static Map<ClassPathBeanDefinitionScanner, ClassPathBeanDefinitionScannerAgent> instances = new HashMap<ClassPathBeanDefinitionScanner, ClassPathBeanDefinitionScannerAgent>();
+    private static Map<ClassPathBeanDefinitionScanner, ClassPathBeanDefinitionScannerAgent> instances = new HashMap<>();
 
     /**
      * Flag to check reload status.
@@ -73,7 +73,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     ClassPathBeanDefinitionScanner scanner;
 
     // list of basePackages registered with target scanner
-    Set<String> basePackages = new HashSet<String>();
+    Set<String> basePackages = new HashSet<>();
 
     // registry obtained from the scanner
     BeanDefinitionRegistry registry;

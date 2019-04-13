@@ -76,10 +76,10 @@ public class TomcatPlugin {
     int tomcatMajorVersion = 8;
 
     // tomcat associated resource object to a web application classloader
-    static Map<Object, ClassLoader> registeredResourcesMap = new HashMap<Object, ClassLoader>();
+    static Map<Object, ClassLoader> registeredResourcesMap = new HashMap<>();
 
     // for each app classloader map of tomcat repository name to associated watch resource classloader
-    private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<ClassLoader,  Map<String, ClassLoader>>();
+    private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<>();
 
     /**
      * Init the plugin during WebappLoader.start lifecycle. This method is invoked before the plugin is initialized.

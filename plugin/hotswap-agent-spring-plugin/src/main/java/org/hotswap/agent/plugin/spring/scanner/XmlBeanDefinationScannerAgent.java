@@ -43,7 +43,7 @@ import java.util.Map;
 public class XmlBeanDefinationScannerAgent {
     private static AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanDefinationScannerAgent.class);
 
-    private static Map<String, XmlBeanDefinationScannerAgent> instances = new HashMap<String, XmlBeanDefinationScannerAgent>();
+    private static Map<String, XmlBeanDefinationScannerAgent> instances = new HashMap<>();
 
     // xmlReader for corresponding url
     BeanDefinitionReader reader;

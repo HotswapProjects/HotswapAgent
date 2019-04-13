@@ -133,8 +133,8 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                 ((BeanClassRefreshCommand)cmd).recreateProxy(mergedCommands);
             }
 
-            Map<String, String> oldFullSignatures = new HashMap<String, String>();
-            Map<String, String> oldSignatures = new HashMap<String, String>();
+            Map<String, String> oldFullSignatures = new HashMap<>();
+            Map<String, String> oldSignatures = new HashMap<>();
 
             for (Command cmd: mergedCommands) {
                 BeanClassRefreshCommand bcrCmd = (BeanClassRefreshCommand) cmd;

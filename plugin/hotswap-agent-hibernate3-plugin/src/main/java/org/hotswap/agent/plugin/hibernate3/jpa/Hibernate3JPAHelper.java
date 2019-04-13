@@ -43,7 +43,7 @@ public class Hibernate3JPAHelper {
 
     /** The wrapped persistence unit names. */
     // each persistence unit should be wrapped only once
-    static Set<String> wrappedPersistenceUnitNames = new HashSet<String>();
+    static Set<String> wrappedPersistenceUnitNames = new HashSet<>();
 
     /**
      * Creates the container entity manager factory proxy.

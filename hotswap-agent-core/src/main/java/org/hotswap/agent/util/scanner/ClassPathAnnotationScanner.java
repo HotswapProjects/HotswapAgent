@@ -61,7 +61,7 @@ public class ClassPathAnnotationScanner {
      * @throws IOException scan exception.
      */
     public List<String> scanPlugins(ClassLoader classLoader, String path) throws IOException {
-        final List<String> files = new LinkedList<String>();
+        final List<String> files = new LinkedList<>();
         scanner.scan(classLoader, path, new ScannerVisitor() {
             @Override
             public void visit(InputStream file) throws IOException {

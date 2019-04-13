@@ -96,7 +96,7 @@ public class WeldPlugin {
 
     boolean initialized = false;
 
-    private Map<Object, Object> registeredProxiedBeans = new WeakHashMap<Object, Object>();
+    private Map<Object, Object> registeredProxiedBeans = new WeakHashMap<>();
 
     private BeanReloadStrategy beanReloadStrategy;
 
@@ -241,17 +241,17 @@ public class WeldPlugin {
         }
 
         try {
-        	String archivePath = getArchivePath(classLoader, ctClass, original.getName());
-        	if (isBdaRegistered(classLoader, archivePath)) {
-        		LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
-        		String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
-        		String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
-        		String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
-        		scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
-        				original.getName(), oldFullSignature, oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
-        	}
+            String archivePath = getArchivePath(classLoader, ctClass, original.getName());
+            if (isBdaRegistered(classLoader, archivePath)) {
+                LOGGER.debug("Class '{}' redefined for archive {} ", original.getName(), archivePath);
+                String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
+                String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
+                String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
+                scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
+                        original.getName(), oldFullSignature, oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
+            }
         } catch (Exception e) {
-        	LOGGER.error("classReload() exception {}.", e, e.getMessage());
+            LOGGER.error("classReload() exception {}.", e, e.getMessage());
         }
     }
 

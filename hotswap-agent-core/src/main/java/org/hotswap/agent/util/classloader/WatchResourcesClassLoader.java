@@ -47,7 +47,7 @@ public class WatchResourcesClassLoader extends URLClassLoader {
      * URLs of changed resources. Use this set to check if the resource was changed and hence should
      * be returned by this classloader.
      */
-    Set<URL> changedUrls = new HashSet<URL>();
+    Set<URL> changedUrls = new HashSet<>();
 
     /**
      * Watch for requested resource in parent classloader in case it is not found by this classloader?
@@ -182,7 +182,7 @@ public class WatchResourcesClassLoader extends URLClassLoader {
             URL resource = watchResourcesClassLoader.getResource(name);
             if (resource != null && isResourceChanged(resource)) {
                 LOGGER.trace("watchResources - using changed resource {}", name);
-                Vector<URL> res = new Vector<URL>();
+                Vector<URL> res = new Vector<>();
                 res.add(resource);
                 return res.elements();
             }

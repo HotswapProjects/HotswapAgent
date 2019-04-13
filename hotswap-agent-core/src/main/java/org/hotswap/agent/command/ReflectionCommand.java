@@ -55,7 +55,7 @@ public class ReflectionCommand extends MergeableCommand {
      * For norma use (call application classloader from plugin class) this means that you can use only
      * Java default types.
      */
-    private List<Object> params = new ArrayList<Object>();
+    private List<Object> params = new ArrayList<>();
 
     /**
      * Plugin object to resolve target classloader (if not set directly). May be null.

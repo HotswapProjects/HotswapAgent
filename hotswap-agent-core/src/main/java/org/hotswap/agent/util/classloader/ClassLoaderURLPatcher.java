@@ -47,7 +47,7 @@ public class ClassLoaderURLPatcher implements ClassLoaderPatcher {
 
     @Override
     public void patch(ClassLoader classLoaderFrom, String pluginPath, ClassLoader classLoader, ProtectionDomain protectionDomain) {
-        Set<ClassLoader> patchedClassLoaders = new HashSet<ClassLoader>();
+        Set<ClassLoader> patchedClassLoaders = new HashSet<>();
         if (classLoader != getClass().getClassLoader() && !patchedClassLoaders.contains(classLoader)) {
             synchronized (patchedClassLoaders) {
                 if (!patchedClassLoaders.contains(classLoader)) {

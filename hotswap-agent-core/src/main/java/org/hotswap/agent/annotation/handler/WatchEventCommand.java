@@ -159,7 +159,7 @@ public class WatchEventCommand<T extends Annotation> extends MergeableCommand {
                 pluginAnnotation.getMethod().getName(), plugin.getClass().getName(), event);
 
 
-        List<Object> args = new ArrayList<Object>();
+        List<Object> args = new ArrayList<>();
         for (Class<?> type : pluginAnnotation.getMethod().getParameterTypes()) {
             if (type.isAssignableFrom(ClassLoader.class)) {
                 args.add(classLoader);

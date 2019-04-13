@@ -42,7 +42,7 @@ import sun.reflect.ReflectionFactory;
  * @author Jiri Bubnik
  */
 public class SessionFactoryProxy {
-    private static Map<Configuration, SessionFactoryProxy> proxiedFactories = new HashMap<Configuration, SessionFactoryProxy>();
+    private static Map<Configuration, SessionFactoryProxy> proxiedFactories = new HashMap<>();
 
     private SessionFactoryProxy(Configuration configuration) {
         this.configuration = configuration;

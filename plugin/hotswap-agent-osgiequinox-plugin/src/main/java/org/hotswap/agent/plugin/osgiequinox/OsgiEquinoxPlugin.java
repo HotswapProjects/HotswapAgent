@@ -78,7 +78,7 @@ public class OsgiEquinoxPlugin {
     Watcher watcher;
 
     // synchronize on this map to wait for previous processing
-    final Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
+    final Map<Class<?>, byte[]> reloadMap = new HashMap<>();
 
     private AutoHotswapPathEventListener listener;
 

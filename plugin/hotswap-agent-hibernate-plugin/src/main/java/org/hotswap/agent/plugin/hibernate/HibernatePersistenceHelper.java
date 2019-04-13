@@ -40,7 +40,7 @@ public class HibernatePersistenceHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(HibernatePersistenceHelper.class);
 
     // each persistence unit should be wrapped only once
-    static Set<String> wrappedPersistenceUnitNames = new HashSet<String>();
+    static Set<String> wrappedPersistenceUnitNames = new HashSet<>();
 
     /**
      * @param info       persistent unit definition

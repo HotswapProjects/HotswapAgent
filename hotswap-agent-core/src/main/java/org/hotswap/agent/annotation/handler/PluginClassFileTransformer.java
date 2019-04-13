@@ -178,7 +178,7 @@ public class PluginClassFileTransformer implements HaClassFileTransformer {
         // after invocation.
         CtClass ctClass = null;
 
-        List<Object> args = new ArrayList<Object>();
+        List<Object> args = new ArrayList<>();
         for (Class<?> type : pluginAnnotation.getMethod().getParameterTypes()) {
             if (type.isAssignableFrom(ClassLoader.class)) {
                 args.add(classLoader);

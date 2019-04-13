@@ -55,7 +55,7 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassLoaderDefineClassPatcher.class);
 
-    private static Map<String, List<byte[]>> pluginClassCache = new HashMap<String, List<byte[]>>();
+    private static Map<String, List<byte[]>> pluginClassCache = new HashMap<>();
 
     @Override
     public void patch(final ClassLoader classLoaderFrom, final String pluginPath,
@@ -106,7 +106,7 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
         synchronized(pluginClassCache) {
             ret = pluginClassCache.get(pluginPath);
             if (ret == null) {
-                final List<byte[]> retList = new ArrayList<byte[]>();
+                final List<byte[]> retList = new ArrayList<>();
                 Scanner scanner = new ClassPathScanner();
                 try {
                     scanner.scan(classLoaderFrom, pluginPath, new ScannerVisitor() {

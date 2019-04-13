@@ -96,7 +96,7 @@ public class InitHandler implements PluginHandler<Init> {
 
     // resolve all method parameter types to actual values and invoke the plugin method (both static and non static)
     private boolean invokeInitMethod(PluginAnnotation pluginAnnotation, Object plugin, ClassLoader classLoader) {
-        List<Object> args = new ArrayList<Object>();
+        List<Object> args = new ArrayList<>();
         for (Class type : pluginAnnotation.getMethod().getParameterTypes()) {
             args.add(resolveType(classLoader, pluginAnnotation.getPluginClass(), type));
         }

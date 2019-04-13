@@ -48,10 +48,10 @@ public class UndertowPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(UndertowPlugin.class);
 
     // Undertow resource manager object to a application classloader
-    static Map<Object, ClassLoader> registeredResourceManagersMap = new HashMap<Object, ClassLoader>();
+    static Map<Object, ClassLoader> registeredResourceManagersMap = new HashMap<>();
 
     // For each app classloader map of undertow repository name to associated watch resource classloader
-    private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<ClassLoader,  Map<String, ClassLoader>>();
+    private static Map<ClassLoader, Map<String, ClassLoader>> extraRepositories = new HashMap<>();
 
     String undertowVersion = "";
 

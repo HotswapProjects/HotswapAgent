@@ -107,7 +107,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
      */
     private boolean isDeleteEvent() {
         // for all merged commands including this command
-        List<ClassPathBeanRefreshCommand> mergedCommands = new ArrayList<ClassPathBeanRefreshCommand>();
+        List<ClassPathBeanRefreshCommand> mergedCommands = new ArrayList<>();
         for (Command command : getMergedCommands()) {
             mergedCommands.add((ClassPathBeanRefreshCommand) command);
         }

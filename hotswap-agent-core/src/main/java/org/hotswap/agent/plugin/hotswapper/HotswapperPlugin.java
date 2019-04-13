@@ -61,7 +61,7 @@ public class HotswapperPlugin {
     PluginManager pluginManager;
 
     // synchronize on this map to wait for previous processing
-    final Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
+    final Map<Class<?>, byte[]> reloadMap = new HashMap<>();
 
     // command to do actual hotswap. Single command to merge possible multiple reload actions.
     Command hotswapCommand;

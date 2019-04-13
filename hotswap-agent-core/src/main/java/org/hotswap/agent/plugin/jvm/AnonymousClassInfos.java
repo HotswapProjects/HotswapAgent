@@ -66,7 +66,7 @@ public class AnonymousClassInfos {
     String className;
 
     // zero based index list of anonymous classes
-    List<AnonymousClassInfo> anonymousClassInfoList = new ArrayList<AnonymousClassInfo>();
+    List<AnonymousClassInfo> anonymousClassInfoList = new ArrayList<>();
 
     /**
      * Create info of the current state from the classloader via reflection.
@@ -141,11 +141,11 @@ public class AnonymousClassInfos {
      * @return map previous -> new. If no mapping to previous exists, synthetic class name is created.
      */
     private void calculateCompatibleTransitions() {
-        compatibleTransitions = new HashMap<AnonymousClassInfo, AnonymousClassInfo>();
+        compatibleTransitions = new HashMap<>();
 
         // create a copy to remove resolved items
-        List<AnonymousClassInfo> previousInfos = new ArrayList<AnonymousClassInfo>(previous.anonymousClassInfoList);
-        List<AnonymousClassInfo> currentInfos = new ArrayList<AnonymousClassInfo>(anonymousClassInfoList);
+        List<AnonymousClassInfo> previousInfos = new ArrayList<>(previous.anonymousClassInfoList);
+        List<AnonymousClassInfo> currentInfos = new ArrayList<>(anonymousClassInfoList);
 
         // previous classes are discarded and cannot be used
         if (previousInfos.size() > currentInfos.size()) {

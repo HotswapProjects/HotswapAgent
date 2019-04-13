@@ -54,13 +54,13 @@ public class HotswapTransformer implements ClassFileTransformer {
     /**
      * Exclude these classLoaders from initialization (system classloaders). Note that
      */
-    private static final Set<String> skippedClassLoaders = new HashSet<String>(Arrays.asList(
+    private static final Set<String> skippedClassLoaders = new HashSet<>(Arrays.asList(
             "jdk.internal.reflect.DelegatingClassLoader",
             "sun.reflect.DelegatingClassLoader"
     ));
 
     // TODO : check if felix class loaders could be skipped
-    private static final Set<String> excludedClassLoaders = new HashSet<String>(Arrays.asList(
+    private static final Set<String> excludedClassLoaders = new HashSet<>(Arrays.asList(
             "org.apache.felix.framework.BundleWiringImpl$BundleClassLoader", // delegating ClassLoader in GlassFish
             "org.apache.felix.framework.BundleWiringImpl$BundleClassLoaderJava5" // delegating ClassLoader in_GlassFish
     ));
@@ -70,13 +70,13 @@ public class HotswapTransformer implements ClassFileTransformer {
         List<HaClassFileTransformer> transformerList = new LinkedList<>();
     }
 
-    protected Map<String, RegisteredTransformersRecord> redefinitionTransformers = new LinkedHashMap<String, RegisteredTransformersRecord>();
-    protected Map<String, RegisteredTransformersRecord> otherTransformers = new LinkedHashMap<String, RegisteredTransformersRecord>();
+    protected Map<String, RegisteredTransformersRecord> redefinitionTransformers = new LinkedHashMap<>();
+    protected Map<String, RegisteredTransformersRecord> otherTransformers = new LinkedHashMap<>();
 
     // keep track about which classloader requested which transformer
-    protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<ClassFileTransformer, ClassLoader>();
+    protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<>();
 
-    protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<ClassLoader, Object>();
+    protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<>();
 
     private List<Pattern> excludedClassLoaderPatterns;
 

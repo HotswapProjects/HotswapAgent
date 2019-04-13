@@ -54,7 +54,7 @@ public class HotSwapper {
     }
 
     private static void reload(Class original, byte[] bytes) {
-        Map<Class<?>, byte[]> reloadMap = new HashMap<Class<?>, byte[]>();
+        Map<Class<?>, byte[]> reloadMap = new HashMap<>();
         reloadMap.put(original, bytes);
 
         PluginManager.getInstance().hotswap(reloadMap);
