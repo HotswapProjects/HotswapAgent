@@ -18,20 +18,23 @@
  */
 package org.hotswap.agent.config;
 
+import java.io.IOException;
+import java.lang.instrument.ClassDefinition;
+import java.lang.instrument.Instrumentation;
+import java.security.ProtectionDomain;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.command.impl.SchedulerImpl;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.classloader.ClassLoaderDefineClassPatcher;
-import org.hotswap.agent.util.classloader.ClassLoaderPatcher;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
-
-import java.io.IOException;
-import java.lang.instrument.ClassDefinition;
-import java.lang.instrument.Instrumentation;
-import java.security.ProtectionDomain;
-import java.util.*;
 
 /**
  * The main agent plugin manager, well known singleton controller.
@@ -145,7 +148,7 @@ public class PluginManager {
         instrumentation.addTransformer(hotswapTransformer);
     }
 
-    ClassLoaderPatcher classLoaderPatcher = new ClassLoaderDefineClassPatcher();
+    ClassLoaderDefineClassPatcher classLoaderPatcher = new ClassLoaderDefineClassPatcher();
     Map<ClassLoader, PluginConfiguration> classLoaderConfigurations = new HashMap<>();
     Set<ClassLoaderInitListener> classLoaderInitListeners = new HashSet<>();
 

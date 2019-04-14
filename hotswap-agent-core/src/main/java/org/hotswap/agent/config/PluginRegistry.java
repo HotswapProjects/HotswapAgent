@@ -18,15 +18,20 @@
  */
 package org.hotswap.agent.config;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.hotswap.agent.HotswapAgent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.handler.AnnotationProcessor;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.classloader.ClassLoaderPatcher;
+import org.hotswap.agent.util.classloader.ClassLoaderDefineClassPatcher;
 import org.hotswap.agent.util.scanner.ClassPathAnnotationScanner;
 import org.hotswap.agent.util.scanner.ClassPathScanner;
-
-import java.util.*;
 
 /**
  * Registry to support plugin manager.
@@ -67,16 +72,16 @@ public class PluginRegistry {
     }
 
     // copy plugin classes from application classloader to the agent classloader
-    private ClassLoaderPatcher classLoaderPatcher;
+    private ClassLoaderDefineClassPatcher classLoaderPatcher;
 
-    public void setClassLoaderPatcher(ClassLoaderPatcher classLoaderPatcher) {
+    public void setClassLoaderPatcher(ClassLoaderDefineClassPatcher classLoaderPatcher) {
         this.classLoaderPatcher = classLoaderPatcher;
     }
 
     /**
      * Create an instanec of plugin registry and initialize scanner and processor.
      */
-    public PluginRegistry(PluginManager pluginManager, ClassLoaderPatcher classLoaderPatcher) {
+    public PluginRegistry(PluginManager pluginManager, ClassLoaderDefineClassPatcher classLoaderPatcher) {
         this.pluginManager = pluginManager;
         this.classLoaderPatcher = classLoaderPatcher;
         annotationScanner = new ClassPathAnnotationScanner(Plugin.class.getName(), new ClassPathScanner());

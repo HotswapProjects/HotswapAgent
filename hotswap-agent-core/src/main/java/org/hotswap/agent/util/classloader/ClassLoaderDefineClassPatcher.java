@@ -51,13 +51,20 @@ import org.hotswap.agent.util.scanner.ScannerVisitor;
  *
  * @author Jiri Bubnik
  */
-public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
+public class ClassLoaderDefineClassPatcher {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassLoaderDefineClassPatcher.class);
 
     private static Map<String, List<byte[]>> pluginClassCache = new HashMap<>();
 
-    @Override
+    /**
+     * Patch the classloader.
+     *
+     * @param classLoaderFrom  classloader to load classes from
+     * @param path             path to copy
+     * @param classLoaderTo    classloader to copy classes to
+     * @param protectionDomain required protection in target classloader
+     */
     public void patch(final ClassLoader classLoaderFrom, final String pluginPath,
                       final ClassLoader classLoaderTo, final ProtectionDomain protectionDomain) {
 
@@ -145,7 +152,13 @@ public class ClassLoaderDefineClassPatcher implements ClassLoaderPatcher {
         return ret;
     }
 
-    @Override
+    /**
+     * Check if the classloader can be patched.
+     * Typically skip synthetic classloaders.
+     *
+     * @param classLoader classloader to check
+     * @return if true, call patch()
+     */
     public boolean isPatchAvailable(ClassLoader classLoader) {
         // we can define class in any class loader
         // exclude synthetic classloader where it does not make any sense
