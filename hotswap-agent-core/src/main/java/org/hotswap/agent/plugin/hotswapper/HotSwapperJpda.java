@@ -110,7 +110,7 @@ class Trigger {
 public class HotSwapperJpda {
     private VirtualMachine jvm;
     private MethodEntryRequest request;
-    private Map newClassFiles;
+    private Map<ReferenceType,byte[]> newClassFiles;
 
     private Trigger trigger;
 
@@ -139,25 +139,22 @@ public class HotSwapperJpda {
         newClassFiles = null;
         trigger = new Trigger();
         AttachingConnector connector
-                = (AttachingConnector) findConnector("com.sun.jdi.SocketAttach");
+            = (AttachingConnector)findConnector("com.sun.jdi.SocketAttach");
 
-        Map arguments = connector.defaultArguments();
-        ((Connector.Argument) arguments.get("hostname")).setValue(HOST_NAME);
-        ((Connector.Argument) arguments.get("port")).setValue(port);
+        Map<String,Connector.Argument> arguments = connector.defaultArguments();
+        arguments.get("hostname").setValue(HOST_NAME);
+        arguments.get("port").setValue(port);
         jvm = connector.attach(arguments);
         EventRequestManager manager = jvm.eventRequestManager();
         request = methodEntryRequests(manager, TRIGGER_NAME);
     }
 
     private Connector findConnector(String connector) throws IOException {
-        List connectors = Bootstrap.virtualMachineManager().allConnectors();
-        Iterator iter = connectors.iterator();
-        while (iter.hasNext()) {
-            Connector con = (Connector) iter.next();
-            if (con.name().equals(connector)) {
+        List<Connector> connectors = Bootstrap.virtualMachineManager().allConnectors();
+
+        for (Connector con:connectors)
+            if (con.name().equals(connector))
                 return con;
-            }
-        }
 
         throw new IOException("Not found: " + connector);
     }
@@ -173,6 +170,7 @@ public class HotSwapperJpda {
 
     /* Stops triggering a hotswapper when reload() is called.
      */
+    @SuppressWarnings("unused")
     private void deleteEventRequest(EventRequestManager manager,
                                     MethodEntryRequest request) {
         manager.deleteEventRequest(request);
@@ -186,7 +184,7 @@ public class HotSwapperJpda {
      */
     public void reload(String className, byte[] classFile) {
         ReferenceType classtype = toRefType(className);
-        Map map = new HashMap();
+        Map<ReferenceType,byte[]> map = new HashMap<ReferenceType,byte[]>();
         map.put(classtype, classFile);
         reload2(map, className);
     }
@@ -199,14 +197,11 @@ public class HotSwapperJpda {
      *                   is <code>String</code> and the type of the
      *                   class files is <code>byte[]</code>.
      */
-    public void reload(Map classFiles) {
-        Set set = classFiles.entrySet();
-        Iterator it = set.iterator();
-        Map map = new HashMap();
+    public void reload(Map<String,byte[]> classFiles) {
+        Map<ReferenceType,byte[]> map = new HashMap<ReferenceType,byte[]>();
         String className = null;
-        while (it.hasNext()) {
-            Map.Entry e = (Map.Entry) it.next();
-            className = (String) e.getKey();
+        for (Map.Entry<String,byte[]> e:classFiles.entrySet()) {
+            className = e.getKey();
             map.put(toRefType(className), e.getValue());
         }
 
@@ -215,21 +210,20 @@ public class HotSwapperJpda {
     }
 
     private ReferenceType toRefType(String className) {
-        List list = jvm.classesByName(className);
+        List<ReferenceType> list = jvm.classesByName(className);
         if (list == null || list.isEmpty())
             throw new RuntimeException("no such class: " + className);
-        else
-            return (ReferenceType) list.get(0);
+        return list.get(0);
     }
 
-    private void reload2(Map map, String msg) {
+    private void reload2(Map<ReferenceType,byte[]> map, String msg) {
         synchronized (trigger) {
             startDaemon();
             newClassFiles = map;
             request.enable();
             trigger.doSwap();
             request.disable();
-            Map ncf = newClassFiles;
+            Map<ReferenceType,byte[]> ncf = newClassFiles;
             if (ncf != null) {
                 newClassFiles = null;
                 throw new RuntimeException("failed to reload: " + msg);
@@ -244,6 +238,7 @@ public class HotSwapperJpda {
                 e.printStackTrace(System.err);
             }
 
+            @Override
             public void run() {
                 EventSet events = null;
                 try {
@@ -275,7 +270,7 @@ public class HotSwapperJpda {
     }
 
     void hotswap() {
-        Map map = newClassFiles;
+        Map<ReferenceType,byte[]> map = newClassFiles;
         jvm.redefineClasses(map);
         newClassFiles = null;
     }
