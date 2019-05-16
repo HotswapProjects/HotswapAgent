@@ -30,11 +30,11 @@ import java.util.regex.Pattern;
  *
  * example:
  * hotswap-agent.properties:
- *     extraClassPath=${extra.class.path}
+ *     extraClasspath=${extra.class.path}
  * jvm argument:
  *     -Dextra.class.path=/project_extra_class_path
  * result:
- *     extraClassPath=/project_extra_class_path
+ *     extraClasspath=/project_extra_class_path
  *
  */
 public class HotswapProperties extends Properties {
