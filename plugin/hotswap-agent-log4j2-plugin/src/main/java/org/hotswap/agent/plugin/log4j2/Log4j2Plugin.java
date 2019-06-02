@@ -153,7 +153,7 @@ public class Log4j2Plugin {
 
         m.insertAfter(PluginManagerInvoker.buildInitializePlugin(Log4j2Plugin.class));
         m.insertAfter(PluginManagerInvoker.buildCallPluginMethod(Log4j2Plugin.class, "init",
-                "config", "java.lang.Object"));
+                "$1", "java.lang.Object"));
 
     }
 
