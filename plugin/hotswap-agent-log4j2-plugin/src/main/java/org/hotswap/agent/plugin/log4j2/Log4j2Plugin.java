@@ -70,13 +70,14 @@ public class Log4j2Plugin {
     public void init(final Object config) {
 
         URI configURI = null;
+        String url = null;
 
         try {
             Class<?> configurationClass = appClassLoader.loadClass("org.apache.logging.log4j.core.config.Configuration");
             Class<?> configurationSourceClass = appClassLoader.loadClass("org.apache.logging.log4j.core.config.ConfigurationSource");
 
             Object configurationSource = configurationClass.getDeclaredMethod("getConfigurationSource").invoke(config);
-            String url = (String) configurationSourceClass.getDeclaredMethod("getLocation").invoke(configurationSource);
+            url = (String) configurationSourceClass.getDeclaredMethod("getLocation").invoke(configurationSource);
 
             if (url == null) {
                 LOGGER.warning("Location url is NULL on configurationSource={} - exiting.", configurationSource);
@@ -105,6 +106,8 @@ public class Log4j2Plugin {
                 LOGGER.info("Log4j2 plugin initialized.");
                 initialized = true;
             }
+        } catch (java.nio.file.InvalidPathException e) {
+            LOGGER.debug("Cannot convert {} to Path", url);
         } catch (Exception e) {
             LOGGER.error("Exception initializing Log4j2 on uri {}.", e, configURI);
         }
