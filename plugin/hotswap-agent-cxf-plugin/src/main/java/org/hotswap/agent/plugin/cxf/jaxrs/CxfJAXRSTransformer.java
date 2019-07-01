@@ -27,7 +27,8 @@ public class CxfJAXRSTransformer {
                 if (method.getParameterTypes()[0].getName().equals(Class.class.getName())) {
                     method.insertAfter(
                         "if($_ != null && !$_.getClass().getName().contains(\"$$\") ) { " +
-                            "ClassLoader $$cl = $1.getClassLoader();" +
+							"ClassLoader $$cl = java.lang.Thread.currentThread().getContextClassLoader();" +
+							"if ($$cl==null) $$cl = $1.getClassLoader();" +
                             PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
                             "try {" +
                                 org.hotswap.agent.javassist.runtime.Desc.class.getName() + ".setUseContextClassLoaderLocally();" +
@@ -66,7 +67,8 @@ public class CxfJAXRSTransformer {
             CtMethod loadMethod = ctClass.getDeclaredMethod("load");
 
             loadMethod.insertAfter( "{ " +
-                    "ClassLoader $$cl = this.bus.getClass().getClassLoader();" +
+            		"ClassLoader $$cl = java.lang.Thread.currentThread().getContextClassLoader();" +
+                    "if ($$cl==null) $$cl = this.bus.getClass().getClassLoader();" +
                     "Object $$plugin =" + PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
                     HaCdiExtraCxfContext.class.getName() + ".registerExtraContext($$plugin);" +
                 "}"
@@ -101,7 +103,8 @@ public class CxfJAXRSTransformer {
         try{
             CtMethod loadMethod = ctClass.getDeclaredMethod("init");
             loadMethod.insertAfter( "{ " +
-                    "ClassLoader $$cl = getClass().getClassLoader();" +
+            		"ClassLoader $$cl = java.lang.Thread.currentThread().getContextClassLoader();" +
+                    "if ($$cl==null) $$cl = getClass().getClassLoader();" +
                     PluginManagerInvoker.buildCallPluginMethod("$$cl", CxfJAXRSPlugin.class, "registerJAXBProvider",
                                 "this", "java.lang.Object") +
                 "}"
