@@ -91,8 +91,7 @@ public class URLClassLoaderHelper {
                 System.arraycopy(extraClassPath, 0, modifiedClassPath, 0, extraClassPath.length);
                 System.arraycopy(origClassPath, 0, modifiedClassPath, extraClassPath.length, origClassPath.length);
 
-                Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class, AccessControlContext.class });
-                Object urlClassPath = constr.newInstance(new Object[] { modifiedClassPath, null });
+                Object urlClassPath = createClassPathInstance(modifiedClassPath);
 
                 ExtraURLClassPathMethodHandler methodHandler = new ExtraURLClassPathMethodHandler(modifiedClassPath);
                 ((Proxy)urlClassPath).setHandler(methodHandler);
@@ -116,9 +115,7 @@ public class URLClassLoaderHelper {
                 ucpField.setAccessible(true);
 
                 URL[] origClassPath = getOrigClassPath(classLoader, ucpField);
-
-                Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class });
-                Object urlClassPath = constr.newInstance(new Object[] { origClassPath });
+                Object urlClassPath = createClassPathInstance(origClassPath);
 
                 ExtraURLClassPathMethodHandler methodHandler = new ExtraURLClassPathMethodHandler(origClassPath, watchResourceLoader);
                 ((Proxy)urlClassPath).setHandler(methodHandler);
@@ -129,6 +126,18 @@ public class URLClassLoaderHelper {
             } catch (Exception e) {
                 LOGGER.debug("Unable to register WatchResourceLoader to classLoader {}", e, classLoader);
             }
+        }
+    }
+
+    private static Object createClassPathInstance(URL[] urls) throws Exception {
+        try {
+            // java8
+            Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class });
+            return constr.newInstance(new Object[] { urls });
+        } catch (NoSuchMethodException e) {
+            // java9
+            Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class, AccessControlContext.class });
+            return constr.newInstance(new Object[] { urls, null });
         }
     }
 
