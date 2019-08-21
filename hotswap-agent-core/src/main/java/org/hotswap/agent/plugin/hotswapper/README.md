@@ -7,7 +7,8 @@ can be utilized to reload classes even on production server! Be careful and test
 
 Plugin configuration
 --------------------
-Just specify 
+Just specify
+
     # Watch for changed class files on watchResources path and reload class definition in the running application.
     #
     # Usually you will launch debugging session from your IDE and use standard hotswap feature.
