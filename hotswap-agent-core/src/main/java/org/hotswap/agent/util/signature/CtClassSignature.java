@@ -66,8 +66,9 @@ public class CtClassSignature extends ClassSignatureBase {
         }
 
         if (hasElement(ClassSignatureElement.SUPER_CLASS)) {
-            if (ctClass.getSuperclass() != null && !ctClass.getSuperclass().getName().equals(Object.class.getName()))
-                strings.add(ctClass.getSuperclass().getName());
+            String superclassName = ctClass.getSuperclassName();
+            if (superclassName != null && !superclassName.equals(Object.class.getName()))
+                strings.add(superclassName);
         }
 
         if (hasElement(ClassSignatureElement.FIELD)) {

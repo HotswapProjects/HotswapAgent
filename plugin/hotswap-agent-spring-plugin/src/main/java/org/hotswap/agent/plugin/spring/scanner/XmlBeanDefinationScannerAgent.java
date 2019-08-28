@@ -74,7 +74,7 @@ public class XmlBeanDefinationScannerAgent {
         this.reader = reader;
 
         if (SpringPlugin.basePackagePrefixes != null && !basePackageInited) {
-            ClassPathBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = ClassPathBeanDefinitionScannerAgent.getInstance(getClass().getClassLoader(), new ClassPathBeanDefinitionScanner(reader.getRegistry()));
+            ClassPathBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = ClassPathBeanDefinitionScannerAgent.getInstance(new ClassPathBeanDefinitionScanner(reader.getRegistry()));
             for (String basePackage : SpringPlugin.basePackagePrefixes) {
                 xmlBeanDefinitionScannerAgent.registerBasePackage(basePackage);
             }

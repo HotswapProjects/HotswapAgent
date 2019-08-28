@@ -780,6 +780,11 @@ class CtClassType extends CtClass {
             return classPool.get(supername);
     }
 
+    @Override
+    public String getSuperclassName() throws NotFoundException {
+        return getClassFile2().getSuperclass();
+    }
+
     public void setSuperclass(CtClass clazz) throws CannotCompileException {
         checkModify();
         if (isInterface())

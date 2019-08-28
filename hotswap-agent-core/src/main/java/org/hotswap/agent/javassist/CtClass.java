@@ -714,6 +714,10 @@ public abstract class CtClass {
         return null;
     }
 
+    public String getSuperclassName() throws NotFoundException {
+        return null;
+    }
+
     /**
      * Changes a super class unless this object represents an interface.
      * The new super class must be compatible with the old one; for example,

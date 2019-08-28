@@ -61,19 +61,17 @@ public class ClassPathBeanDefinitionScannerAgent {
     // bean name generator obtained from the scanner
     BeanNameGenerator beanNameGenerator;
 
-    ClassLoader appClassLoader;
-
     /**
      * Return an agent instance for a scanner. If the instance does not exists yet, it is created.
      *
      * @param scanner the scanner
      * @return agent instance
      */
-    public static ClassPathBeanDefinitionScannerAgent getInstance(ClassLoader appClassLoader, ClassPathBeanDefinitionScanner scanner) {
+    public static ClassPathBeanDefinitionScannerAgent getInstance(ClassPathBeanDefinitionScanner scanner) {
         ClassPathBeanDefinitionScannerAgent classPathBeanDefinitionScannerAgent = instances.get(scanner);
         // registry may be different if there is multiple app. (this is just a temporary solution)
         if (classPathBeanDefinitionScannerAgent == null || classPathBeanDefinitionScannerAgent.registry != scanner.getRegistry()) {
-            instances.put(scanner, new ClassPathBeanDefinitionScannerAgent(appClassLoader, scanner));
+            instances.put(scanner, new ClassPathBeanDefinitionScannerAgent(scanner));
         }
         return instances.get(scanner);
     }
@@ -93,13 +91,12 @@ public class ClassPathBeanDefinitionScannerAgent {
     }
 
     // Create new instance from getInstance(ClassPathBeanDefinitionScanner scanner) and obtain services from the scanner
-    private ClassPathBeanDefinitionScannerAgent(ClassLoader appClassLoader, ClassPathBeanDefinitionScanner scanner) {
+    private ClassPathBeanDefinitionScannerAgent(ClassPathBeanDefinitionScanner scanner) {
         this.scanner = scanner;
 
         this.registry = scanner.getRegistry();
         this.scopeMetadataResolver = (ScopeMetadataResolver) ReflectionHelper.get(scanner, "scopeMetadataResolver");
         this.beanNameGenerator = (BeanNameGenerator) ReflectionHelper.get(scanner, "beanNameGenerator");
-        this.appClassLoader = appClassLoader;
     }
 
     /**
@@ -110,7 +107,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     public void registerBasePackage(String basePackage) {
         this.basePackages.add(basePackage);
 
-        PluginManagerInvoker.callPluginMethod(SpringPlugin.class, appClassLoader,
+        PluginManagerInvoker.callPluginMethod(SpringPlugin.class, getClass().getClassLoader(),
                 "registerComponentScanBasePackage", new Class[]{String.class}, new Object[]{basePackage});
     }
 
@@ -128,15 +125,10 @@ public class ClassPathBeanDefinitionScannerAgent {
             return;
         }
 
-        scannerAgent.resolveAndDefineBeanDefinition(classDefinition);
-    }
-
-    public void resolveAndDefineBeanDefinition(byte[] classDefinition) throws IOException {
-        BeanDefinition beanDefinition = resolveBeanDefinition(classDefinition);
+        BeanDefinition beanDefinition = scannerAgent.resolveBeanDefinition(classDefinition);
         if (beanDefinition != null) {
-            defineBean(beanDefinition);
+            scannerAgent.defineBean(beanDefinition);
         }
-
         reloadFlag = false;
     }
 

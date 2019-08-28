@@ -63,7 +63,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
 
             LOGGER.debug("Executing ClassPathBeanDefinitionScannerAgent.refreshClass('{}')", className);
 
-            Class<?> clazz = loadClass("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent");
+            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent", true, appClassLoader);
             Method method  = clazz.getDeclaredMethod(
                     "refreshClass", new Class[] {String.class, byte[].class});
             method.invoke(null, basePackage, classDefinition);
@@ -76,17 +76,6 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
         }
-    }
-
-    private Class<?> loadClass(String className) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException {
-        //if jboss
-        if (appClassLoader.getClass().getName().equals("org.jboss.modules.ModuleClassLoader")) {
-            Method method = ClassLoader.class.getDeclaredMethod("findClass", String.class);
-            method.setAccessible(true);
-            return (Class<?>) method.invoke(appClassLoader, className);
-        }
-
-        return appClassLoader.loadClass(className);
     }
 
     /**

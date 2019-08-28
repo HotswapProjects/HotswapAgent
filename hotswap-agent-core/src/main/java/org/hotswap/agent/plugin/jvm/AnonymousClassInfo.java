@@ -78,7 +78,7 @@ public class AnonymousClassInfo {
         try {
             this.className = c.getName();
 
-            StringBuilder classSignature = new StringBuilder(c.getSuperclass().getName());
+            StringBuilder classSignature = new StringBuilder(c.getSuperclassName());
             for (CtClass intef : c.getInterfaces()) {
                 classSignature.append(";");
                 classSignature.append(intef.getName());

@@ -107,7 +107,7 @@
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-            <url>http://artifactory.cg.ru/artifactory/all</url>
+            <url>http://repo.cg.ru/repository/all</url>
         </repository>
     </repositories>
 
@@ -115,12 +115,12 @@
         <repository>
             <id>mikord</id>
             <name>ASD CG Release repository</name>
-            <url>http://artifactory.cg.ru/artifactory/libs-releases-local</url>
+            <url>http://repo.cg.ru/repository/libs-releases-local</url>
         </repository>
         <snapshotRepository>
             <id>snapshots</id>
             <name>ASD CG Snapshots repository</name>
-            <url>http://artifactory.cg.ru/artifactory/libs-snapshots-local</url>
+            <url>http://repo.cg.ru/repository/libs-snapshots-local</url>
         </snapshotRepository>
     </distributionManagement>
 </project>
