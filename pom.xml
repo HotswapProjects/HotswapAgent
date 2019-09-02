@@ -99,15 +99,20 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>central</name>
+            <url>http://repo.cg.ru/repository/maven-public</url>
+        </repository>
+        <repository>
             <id>mikord</id>
-            <name>CG Repo</name>
+            <name>mikord</name>
             <releases>
                 <enabled>true</enabled>
             </releases>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-            <url>http://repo.cg.ru/repository/all</url>
+            <url>http://repo.cg.ru/repository/maven-mikord</url>
         </repository>
     </repositories>
 
