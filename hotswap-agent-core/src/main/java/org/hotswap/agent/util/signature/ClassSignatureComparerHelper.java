@@ -56,7 +56,7 @@ public class ClassSignatureComparerHelper {
             String sig2 = getJavaClassSignature(clazz, signatureElements);
             return !sig1.equals(sig2);
         } catch (Exception e) {
-            LOGGER.error("Error reading siganture", e);
+            LOGGER.error("Error reading signature", e);
             return false;
         }
     }
@@ -67,7 +67,7 @@ public class ClassSignatureComparerHelper {
             String sig2 = getJavaClassSignature(clazz2, signatureElements);
             return !sig1.equals(sig2);
         } catch (Exception e) {
-            LOGGER.error("Error reading siganture", e);
+            LOGGER.error("Error reading signature", e);
             return false;
         }
     }
