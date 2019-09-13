@@ -66,45 +66,40 @@ public class TreeWatcherNIO extends AbstractNIO2Watcher {
     /**
      * Register the given directory with the WatchService.
      *
-     * @param watched the watched path
-     * @param target the target path (could be different than watched)
+     * @param dir the directory to register watch on
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    private void register(Path watched, Path target) throws IOException {
+    private void register(Path dir) throws IOException {
 
-        for(PathPair p: keys.values()) {
+        for(Path p: keys.values()) {
             // This may NOT be correct for all cases (ensure resolve will work!)
-            if(p.isWatching(target)) {
-                LOGGER.debug("Path {} watched via {}", target, p.getWatched());
+            if(dir.startsWith(p)) {
+                LOGGER.debug("Path {} watched via {}", dir, p);
                 return;
             }
         }
 
         if (FILE_TREE == null) {
-            LOGGER.debug("WATCHING:ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY - high} {}", watched);
+            LOGGER.debug("WATCHING:ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY - high} {}", dir);
         } else {
-            LOGGER.debug("WATCHING: ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY - fileTree,high {}", watched);
+            LOGGER.debug("WATCHING: ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY - fileTree,high {}", dir);
         }
 
-        final WatchKey key = watched.register(watcher, KINDS,  MODIFIERS);
+        final WatchKey key = dir.register(watcher, KINDS,  MODIFIERS);
 
-        keys.put(key, new PathPair(target, watched));
+        keys.put(key, dir);
     }
 
     /**
      * Register the given directory,  with the
      * WatchService. Sub-directories are automatically watched (filesystem supported)
      *
-     * @param watched the watched
-     * @param target the target
+     * @param dir the dir
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    protected void registerAll(Path watched, Path target) throws IOException {
-        if(watched == null){
-            watched = target;
-        }
-        LOGGER.info("Registering directory target {} via watched: {}", target, watched);
-
-        register(watched, target);
+    @Override
+    protected void registerAll(Path dir) throws IOException {
+        LOGGER.info("Registering directory {} ", dir);
+        register(dir);
     }
 }

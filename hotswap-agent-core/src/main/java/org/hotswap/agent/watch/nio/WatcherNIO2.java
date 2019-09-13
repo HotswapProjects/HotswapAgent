@@ -50,21 +50,12 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         super();
     }
 
-
-    /**
-     * Register the given directory, and all its sub-directories, with the
-     * WatchService.
-     */
     @Override
-    protected void registerAll(final Path parent, Path start) throws IOException {
+    protected void registerAll(final Path dir) throws IOException {
         // register directory and sub-directories
-        if (parent != null) {
-            LOGGER.debug("Registering directory  {} under parent {}", start, parent);
-        } else {
-            LOGGER.debug("Registering directory  {}", start);
-        }
+        LOGGER.debug("Registering directory  {}", dir);
 
-        Files.walkFileTree(start, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(dir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 register(dir);
@@ -79,7 +70,6 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
     private void register(Path dir) throws IOException {
         // try to set high sensitivity
         final WatchKey key = HIGH == null ? dir.register(watcher, KINDS) : dir.register(watcher, KINDS, HIGH);
-
-        keys.put(key, PathPair.get(dir));
+        keys.put(key, dir);
     }
 }

@@ -67,7 +67,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
     protected final static WatchEvent.Kind<?>[] KINDS = new WatchEvent.Kind<?>[] { ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY };
 
     protected WatchService watcher;
-    protected final Map<WatchKey, PathPair> keys;
+    protected final Map<WatchKey, Path> keys;
     private final Map<Path, List<WatchEventListener>> listeners = new ConcurrentHashMap<>();
 
     // keep track about which classloader requested which event
@@ -203,10 +203,10 @@ public abstract class AbstractNIO2Watcher implements Watcher {
      * Registers the given directory
      */
     public void addDirectory(Path path) throws IOException {
-       registerAll(null, path);
+       registerAll(path);
     }
 
-    protected abstract void registerAll(final Path watched, final Path target) throws IOException;
+    protected abstract void registerAll(final Path dir) throws IOException;
 
     /**
      * Process all events for keys queued to the watcher
@@ -216,13 +216,13 @@ public abstract class AbstractNIO2Watcher implements Watcher {
      */
     private boolean processEvents() throws InterruptedException {
 
-        // wait for key to be signalled
+        // wait for key to be signaled
         WatchKey key = watcher.poll(10, TimeUnit.MILLISECONDS);
         if (key == null) {
             return true;
         }
 
-        PathPair dir = keys.get(key);
+        Path dir = keys.get(key);
 
         if (dir == null) {
             LOGGER.warning("WatchKey '{}' not recognized", key);
@@ -251,7 +251,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             if (kind == ENTRY_CREATE) {
                 try {
                     if (Files.isDirectory(child, NOFOLLOW_LINKS)) {
-                        registerAll(dir.getWatched(), child);
+                        registerAll(child);
                     }
                 } catch (IOException x) {
                     LOGGER.warning("Unable to register events for directory {}", x, child);
@@ -262,7 +262,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
         // reset key and remove from set if directory no longer accessible
         boolean valid = key.reset();
         if (!valid) {
-            LOGGER.warning("Watcher on {} not valid, removing...", keys.get(key).getShortDescription());
+            LOGGER.warning("Watcher on {} not valid, removing path=", keys.get(key));
             keys.remove(key);
             // all directories are inaccessible
             if (keys.isEmpty()) {
