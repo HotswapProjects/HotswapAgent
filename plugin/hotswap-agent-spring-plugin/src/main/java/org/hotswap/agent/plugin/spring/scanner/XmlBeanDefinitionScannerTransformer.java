@@ -43,8 +43,8 @@ public class XmlBeanDefinitionScannerTransformer {
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         CtMethod method = clazz.getDeclaredMethod("loadBeanDefinitions", new CtClass[]{classPool.get("org.springframework.core.io.support.EncodedResource")});
-        method.insertAfter("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinationScannerAgent." +
-                "registerXmlBeanDefinationScannerAgent(this, $1.getResource());");
+        method.insertAfter("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent." +
+                "registerXmlBeanDefinitionScannerAgent(this, $1.getResource());");
 
         LOGGER.debug("Class 'org.springframework.beans.factory.xml.XmlBeanDefinitionReader' patched with xmlReader registration.");
     }
