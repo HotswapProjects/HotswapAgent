@@ -20,7 +20,7 @@ package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinationScannerAgent;
+import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
@@ -76,7 +76,7 @@ public class SpringPluginTest {
      * Switch method implementation (using bean definition or interface).
      */
     @Test
-    public void hotswapSeviceTest() throws Exception {
+    public void hotswapServiceTest() throws Exception {
         BeanServiceImpl bean = applicationContext.getBean(BeanServiceImpl.class);
         assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
@@ -94,7 +94,7 @@ public class SpringPluginTest {
      * Add new method - invoke via reflection (not available at compilation time).
      */
     @Test
-    public void hotswapSeviceAddMethodTest() throws Exception {
+    public void hotswapServiceAddMethodTest() throws Exception {
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class.getName());
 
         String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(applicationContext.getBean(BeanService.class),
@@ -233,23 +233,23 @@ public class SpringPluginTest {
         BeanService beanService = xmlApplicationContext.getBean("beanService", BeanService.class);
         Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
 
-        XmlBeanDefinationScannerAgent.reloadFlag = true;
+        XmlBeanDefinitionScannerAgent.reloadFlag = true;
         writeChangedRepositoryToXml();
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !XmlBeanDefinationScannerAgent.reloadFlag;
+                return !XmlBeanDefinitionScannerAgent.reloadFlag;
             }
         }, 5000));
 
         Assert.assertEquals(beanService.hello(), "Hello from ChangedRepository ServiceWithAspect");
 
-        XmlBeanDefinationScannerAgent.reloadFlag = true;
+        XmlBeanDefinitionScannerAgent.reloadFlag = true;
         writeRepositoryToXml();
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !XmlBeanDefinationScannerAgent.reloadFlag;
+                return !XmlBeanDefinitionScannerAgent.reloadFlag;
             }
         }, 5000));
         Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");

@@ -40,10 +40,10 @@ import java.util.Map;
 /**
  * IMPORTANT: DON'T REFER TO THIS CLASS IN OTHER CLASS!!
  */
-public class XmlBeanDefinationScannerAgent {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanDefinationScannerAgent.class);
+public class XmlBeanDefinitionScannerAgent {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanDefinitionScannerAgent.class);
 
-    private static Map<String, XmlBeanDefinationScannerAgent> instances = new HashMap<>();
+    private static Map<String, XmlBeanDefinitionScannerAgent> instances = new HashMap<>();
 
     // xmlReader for corresponding url
     BeanDefinitionReader reader;
@@ -59,7 +59,7 @@ public class XmlBeanDefinationScannerAgent {
      * need to ensure that when method is invoked first time , this class is not loaded,
      * so this class is will be loaded by appClassLoader
      */
-    public static void registerXmlBeanDefinationScannerAgent(XmlBeanDefinitionReader reader, Resource resource) {
+    public static void registerXmlBeanDefinitionScannerAgent(XmlBeanDefinitionReader reader, Resource resource) {
         String path;
         if (resource instanceof ClassPathResource) {
             path = ((ClassPathResource)resource).getPath();
@@ -73,17 +73,17 @@ public class XmlBeanDefinationScannerAgent {
             }
         }
 
-        instances.put(path, new XmlBeanDefinationScannerAgent(reader));
+        instances.put(path, new XmlBeanDefinitionScannerAgent(reader));
     }
 
     public static void reloadXml(URL url) {
-        XmlBeanDefinationScannerAgent xmlBeanDefinationScannerAgent = instances.get(convertToClasspathURL(url.getPath()));
-        if (xmlBeanDefinationScannerAgent == null) {
-            LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinationScannerAgent, not reloading");
+        XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = instances.get(convertToClasspathURL(url.getPath()));
+        if (xmlBeanDefinitionScannerAgent == null) {
+            LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
             return;
         }
         try {
-            xmlBeanDefinationScannerAgent.reloadBeanFromXml(url);
+            xmlBeanDefinitionScannerAgent.reloadBeanFromXml(url);
         } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
             LOGGER.error("Reloading XML failed: {}", e.getMessage());
         }
@@ -91,7 +91,7 @@ public class XmlBeanDefinationScannerAgent {
 
     private static boolean basePackageInited = false;
 
-    private XmlBeanDefinationScannerAgent(BeanDefinitionReader reader) {
+    private XmlBeanDefinitionScannerAgent(BeanDefinitionReader reader) {
         this.reader = reader;
 
         if (SpringPlugin.basePackagePrefixes != null && !basePackageInited) {
@@ -119,6 +119,11 @@ public class XmlBeanDefinationScannerAgent {
             return paths[1];
         }
 
+        paths = filePath.split("WEB-INF/");
+        if (paths.length == 2) {
+          return paths[1];
+        }
+
         paths = filePath.split("target/classes/");
         if (paths.length == 2) {
             return paths[1];
@@ -134,7 +139,7 @@ public class XmlBeanDefinationScannerAgent {
     }
 
     /**
-     *  reload bean from xml defination
+     *  reload bean from xml definition
      *  @param url url of xml
      */
     public void reloadBeanFromXml(URL url) {
