@@ -136,7 +136,7 @@ public class BeanReloadExecutor {
                     }
                     LOGGER.info("Bean '{}' redefined", bean.getBeanClass().getName());
                 } else {
-                    LOGGER.warning("Bean '{}' reloading not supported.", bean.getBeanClass().getName());
+                    LOGGER.warning("Bean '{}' is not AbstractClassBean, reloading/reinjection not supported.", bean.getBeanClass().getName());
                 }
             }
         } else {

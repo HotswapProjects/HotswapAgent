@@ -159,7 +159,7 @@ public class BeanClassRefreshAgent {
                                     LOGGER.info("Bean '{}' redefined.", bean.getBeanClass().getName());
                                 }
                             }  else {
-                                LOGGER.warning("Class '{}' reloading not supported.", bean.getBeanClass().getName());
+                                LOGGER.warning("Class '{}' is not InjectionTargetBean, reloading/reinjection not supported.", bean.getBeanClass().getName());
                             }
                         }
                     } else {
