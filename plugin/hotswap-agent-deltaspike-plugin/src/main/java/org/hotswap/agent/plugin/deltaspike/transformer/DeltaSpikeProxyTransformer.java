@@ -87,4 +87,18 @@ public class DeltaSpikeProxyTransformer {
                 });
     }
 
+    @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator")
+    public static void patchAsmDeltaSpikeProxyClassGenerator(CtClass ctClass) throws NotFoundException, CannotCompileException {
+
+        CtMethod generateProxyClassMethod = ctClass.getDeclaredMethod("generateProxyClass");
+        generateProxyClassMethod.instrument(
+                new ExprEditor() {
+                    public void edit(MethodCall m) throws CannotCompileException {
+                        if (m.getClassName().equals("org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator") && m.getMethodName().equals("loadClass"))
+                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate.loadClass($$); }");
+                    }
+                });
+    }
+
+
 }
