@@ -54,6 +54,7 @@ import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
 import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
+import org.apache.webbeans.spi.BeanArchiveService.BeanDiscoveryMode;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.owb.BeanReloadStrategy;
@@ -164,8 +165,10 @@ public class BeanClassRefreshAgent {
                         }
                     } else {
                         // Define new bean
-                        doDefineNewBean(beanManager, beanClass);
+                        doDefineNewBean(beanManager, beanClass, beanArchiveUrl);
                     }
+                } else {
+                    LOGGER.debug("Bean '{}' is excluded in BeanArchive.", beanClass.getName());
                 }
             }
         } finally {
@@ -327,7 +330,23 @@ public class BeanClassRefreshAgent {
     }
 
     @SuppressWarnings("rawtypes")
-    private static void doDefineNewBean(BeanManagerImpl beanManager, Class<?> beanClass) {
+    private static void doDefineNewBean(BeanManagerImpl beanManager, Class<?> beanClass, URL beanArchiveUrl) {
+
+        BeanArchiveInformation beanArchiveInfo =
+                beanManager.getWebBeansContext().getBeanArchiveService().getBeanArchiveInformation(beanArchiveUrl);
+
+        if (beanArchiveInfo.isClassExcluded(beanClass.getName())) {
+            LOGGER.debug("Bean '{}' is excluded in BeanArchive.", beanClass.getName());
+            return;
+        }
+
+        if (beanArchiveInfo.getBeanDiscoveryMode() == BeanDiscoveryMode.ANNOTATED) {
+            if (beanClass.getAnnotations().length == 0) {
+                LOGGER.debug("Class '{}' is not considered as bean for BeanArchive with bean-discovery-mode=\"annotated\"", beanClass.getName());
+                return;
+            }
+        }
+
         WebBeansContext wbc = beanManager.getWebBeansContext();
 
         AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
