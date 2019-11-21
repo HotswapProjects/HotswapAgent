@@ -26,6 +26,7 @@ import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.jvm.ClassInitPlugin;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
+import org.junit.Test;
 
 public class ClassInitTest {
 
@@ -36,10 +37,13 @@ public class ClassInitTest {
         swapClasses(StaticTest1.class, StaticTest2.class.getName());
         assertEquals(ReflectionHelper.get(o, "int1"), StaticTest1.int1); // must have original value (10)
         assertEquals(ReflectionHelper.get(o, "int2"), StaticTest2.int2); // must have new value (20)
+        assertEquals(ReflectionHelper.get(o, "int3"), StaticTest2.int3); // must have new value (20)
         assertEquals(ReflectionHelper.get(o, "str1"), StaticTest1.str1); // must have original value ("str1")
         assertEquals(ReflectionHelper.get(o, "str2"), StaticTest2.str2); // must have new value  ("str2")
+        assertEquals(ReflectionHelper.get(o, "str3"), StaticTest2.str3); // must have new value  ("str2")
         assertEquals(ReflectionHelper.get(o, "obj1"), StaticTest1.obj1); // must have original value ("obj1")
         assertEquals(ReflectionHelper.get(o, "obj2"), StaticTest2.obj2); // must have new value ("obj2")
+        assertEquals(ReflectionHelper.get(o, "obj3"), StaticTest2.obj3); // must have new value ("obj2")
     }
 
 //    @Test
