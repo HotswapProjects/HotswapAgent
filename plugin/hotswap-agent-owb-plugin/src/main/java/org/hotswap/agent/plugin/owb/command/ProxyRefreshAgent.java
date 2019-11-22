@@ -19,6 +19,8 @@
 package org.hotswap.agent.plugin.owb.command;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,6 +63,7 @@ public class ProxyRefreshAgent {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void doRecreateProxy(ClassLoader appClassLoader, Class<?> beanClass) {
 
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -76,15 +79,15 @@ public class ProxyRefreshAgent {
             Map cachedProxyClasses = (Map) ReflectionHelper.get(proxyFactory, "cachedProxyClasses");
             Set<Bean<?>> beans = wbc.getBeanManagerImpl().getBeans(beanClass);
             if (beans != null) {
-                boolean recreateIt = false;
+                List<Bean<?>> proxiedBeans = new ArrayList<>();
                 for (Bean<?> bean : beans) {
                     if (cachedProxyClasses.containsKey(bean)) {
                         cachedProxyClasses.remove(bean);
-                        recreateIt = true;
+                        proxiedBeans.add(bean);
                     }
                 }
-                if (recreateIt) {
-                    proxyFactory.createProxyClass(appClassLoader, beanClass);
+                for (Bean bean : proxiedBeans) {
+                    proxyFactory.createProxyClass(bean, appClassLoader, beanClass);
                 }
             }
 

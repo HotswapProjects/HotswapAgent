@@ -1,7 +1,23 @@
 Hotswap Agent
 =============
 
-[![Maven](https://img.shields.io/maven-central/v/org.hotswapagent/hotswap-agent-core.svg)](https://mvnrepository.com/artifact/org.hotswapagent/hotswap-agent-core) [![Build Status](https://travis-ci.org/HotswapProjects/HotswapAgent.svg?branch=master)](https://travis-ci.org/HotswapProjects/HotswapAgent) [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/HotswapProjects/user) 
+<p align="left">
+    <a href="https://mvnrepository.com/artifact/org.hotswapagent/hotswap-agent-core">
+        <img src="https://img.shields.io/maven-central/v/org.hotswapagent/hotswap-agent-core.svg" alt="Maven">
+    </a>
+    <a href="https://travis-ci.org/HotswapProjects/HotswapAgent">
+        <img src="https://travis-ci.org/HotswapProjects/HotswapAgent.svg?branch=master" alt="Build Status">
+    </a>
+    <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html">
+        <img src="https://img.shields.io/badge/License-GPL%20v2-blue.svg" alt="License: GPL v2">
+    </a>
+    <a href="https://gitter.im/HotswapProjects/user">
+        <img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter">
+    </a>
+    <a href="https://twitter.com/intent/follow?screen_name=HSwapAgent">
+        <img src="https://img.shields.io/twitter/follow/HSwapAgent.svg?style=social&logo=twitter" alt="follow on Twitter">
+    </a>
+</p>
 
 This is an overview page, please visit [hotswapagent.org](http://hotswapagent.org/) for more information.
 

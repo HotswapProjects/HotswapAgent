@@ -37,7 +37,6 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.FieldAccess;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.ReflectionHelper;
 
 /**
  * ClassInitPlugin initializes static (class) variables after class redefinition. Initializes new enumeration values.

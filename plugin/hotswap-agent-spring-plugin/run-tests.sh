@@ -93,5 +93,18 @@ test 5.0.0.RELEASE
 test 5.0.1.RELEASE
 test 5.0.2.RELEASE
 
+test 5.1.0.RELEASE
+test 5.1.1.RELEASE
+test 5.1.2.RELEASE
+test 5.1.3.RELEASE
+test 5.1.4.RELEASE
+test 5.1.5.RELEASE
+test 5.1.6.RELEASE
+test 5.1.7.RELEASE
+test 5.1.8.RELEASE
+test 5.1.9.RELEASE
+test 5.1.10.RELEASE
+test 5.1.11.RELEASE
 
-
+test 5.2.0.RELEASE
+test 5.2.1.RELEASE

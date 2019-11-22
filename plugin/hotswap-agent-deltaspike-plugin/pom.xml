@@ -12,7 +12,7 @@
     <artifactId>hotswap-agent-deltaspike-plugin</artifactId>
 
     <properties>
-        <deltaspike.version>1.9.0</deltaspike.version>
+        <deltaspike.version>1.9.1</deltaspike.version>
     </properties>
 
     <dependencies>
