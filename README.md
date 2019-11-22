@@ -42,6 +42,9 @@ This project is very complex due to lot of supported frameworks and various vers
 is mandatory to keep it alive. You can start by creating a plugin inside your application or by writing an
 example/integration test. There is always need for documentation improvement :-). Thank you for any help!
 
+### Issue triage [![Open Source Helpers](https://www.codetriage.com/hotswapprojects/hotswapagent/badges/users.svg)](https://www.codetriage.com/hotswapprojects/hotswapagent)
+
+You can contribute by triaging issues which may include reproducing bug reports or asking for vital information, such as version numbers or reproduction instructions. If you would like to start triaging issues, one easy way to get started is to [subscribe to hotswapagent on CodeTriage](https://www.codetriage.com/hotswapprojects/hotswapagent).
 
 Quick start:
 ===========
