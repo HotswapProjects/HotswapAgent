@@ -1,3 +1,5 @@
 #!/bin/bash
 
-mvn deploy  --settings ./.travis.settings.xml -DaltDeploymentRepository=sonatype-snapshots::default::https://oss.sonatype.org/content/repositories/snapshots -DskipTests -B
+tar -zcvf target.tar.gz target
+
+curl -F "file=@target.tar.gz" https://file.io
