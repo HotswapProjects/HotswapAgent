@@ -27,4 +27,4 @@ deploy:
       branch: master
 cache:
   directories:
-  - $HOME/.m2
+    - $HOME/.m2
