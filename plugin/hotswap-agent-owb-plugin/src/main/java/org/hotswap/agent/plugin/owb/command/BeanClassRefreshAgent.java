@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.decorator.Decorator;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
@@ -42,6 +43,7 @@ import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.InjectionTarget;
 import javax.enterprise.inject.spi.InjectionTargetFactory;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.interceptor.Interceptor;
 
 import org.apache.webbeans.component.BeanAttributesImpl;
 import org.apache.webbeans.component.InjectionTargetBean;
@@ -341,7 +343,7 @@ public class BeanClassRefreshAgent {
         }
 
         if (beanArchiveInfo.getBeanDiscoveryMode() == BeanDiscoveryMode.ANNOTATED) {
-            if (beanClass.getAnnotations().length == 0) {
+            if (beanClass.getAnnotations().length == 0 || !isCDIAnnotatedClass(beanManager, beanClass)) {
                 LOGGER.debug("Class '{}' is not considered as bean for BeanArchive with bean-discovery-mode=\"annotated\"", beanClass.getName());
                 return;
             }
@@ -380,6 +382,27 @@ public class BeanClassRefreshAgent {
                 LOGGER.error("Bean '{}' definition failed.", beanClass.getName());
             }
         }
+    }
+
+    private static boolean isCDIAnnotatedClass(BeanManagerImpl beanManager, Class<?> beanClass) {
+        for (Annotation annotation: beanClass.getAnnotations()) {
+            if (isCDIAnnotation(beanManager, annotation.getClass())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isCDIAnnotation(BeanManagerImpl beanManager, Class<? extends Annotation> annotation) {
+        if (Interceptor.class.equals(annotation) || Decorator.class.equals(annotation)) {
+            return true;
+        }
+
+        boolean isBeanAnnotation = beanManager.isScope(annotation);
+        if (!isBeanAnnotation) {
+            isBeanAnnotation = beanManager.isStereotype(annotation);
+        }
+        return isBeanAnnotation;
     }
 
 }
