@@ -24,6 +24,7 @@ import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -39,8 +40,8 @@ import org.hotswap.agent.util.ReflectionHelper;
  */
 @Plugin(name = "JdkPlugin",
         description = "",
-        testedVersions = {"openjdk 1.7.0.95, 1.8.0_74"},
-        expectedVersions = {"All between openjdk 1.7 - 1.8"}
+        testedVersions = {"openjdk 1.7.0.95, 1.8.0_74, 1.11.0_5"},
+        expectedVersions = {"All between openjdk 1.7 - 1.11"}
         )
 public class JdkPlugin {
 
@@ -53,7 +54,7 @@ public class JdkPlugin {
     public static boolean reloadFlag;
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
-    public static void flushBeanIntrospectorsCaches(ClassLoader classLoader, CtClass ctClass) {
+    public static void flushBeanIntrospectorCaches(ClassLoader classLoader, CtClass ctClass) {
         try {
             LOGGER.debug("Flushing {} from introspector", ctClass.getName());
 
@@ -92,6 +93,29 @@ public class JdkPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
+    public static void flushIntrospectClassInfoCache(ClassLoader classLoader, CtClass ctClass) {
+        // com.sun.beans.introspect.ClassInfo was intruduced in j9
+        if (ClassFile.MAJOR_VERSION < ClassFile.JAVA_9) {
+            return;
+        }
+        try {
+            LOGGER.debug("Flushing {} from com.sun.beans.introspect.ClassInfo cache", ctClass.getName());
+
+            Class<?> clazz = classLoader.loadClass(ctClass.getName());
+            Class<?> classInfo = classLoader.loadClass("com.sun.beans.introspect.ClassInfo");
+
+            Object cache = ReflectionHelper.get(null, classInfo, "CACHE");
+            if (cache != null) {
+                ReflectionHelper.invoke(cache, cache.getClass(), "clear", new Class[] { }, null);
+            }
+        } catch (Exception e) {
+            LOGGER.error("flushClassInfoCache() exception {}.", e.getMessage());
+        } finally {
+            reloadFlag = false;
+        }
+    }
+
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
     public static void flushObjectStreamCaches(ClassLoader classLoader, CtClass ctClass) {
         try {
             LOGGER.debug("Flushing {} from ObjectStreamClass caches", ctClass.getName());
@@ -117,4 +141,5 @@ public class JdkPlugin {
             reloadFlag = false;
         }
     }
+
 }
