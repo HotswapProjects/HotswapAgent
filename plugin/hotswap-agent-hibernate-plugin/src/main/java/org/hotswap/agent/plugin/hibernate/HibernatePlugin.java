@@ -49,8 +49,8 @@ import org.hotswap.agent.util.AnnotationHelper;
         group = "groupHibernate",
         fallback = true,
         description = "Reload Hibernate configuration after entity create/change.",
-        testedVersions = {"All between 4.0.1 - 4.2.13"},
-        expectedVersions = {"4.0.x", "4.1.x", "4.2.x", "5.0.[0-4,7-x]", "5.1.x", "5.2.x" },
+        testedVersions = {"All between 4.0.1 - 4.3.11, 5.0.0 - 5.2.10"},
+        expectedVersions = {"4.0.x", "4.1.x", "4.2.x", "5.0.[0-4,7-x]", "5.1.x", "5.2.x", "5.3.x", "5.4.x" },
         supportClass = {HibernateTransformers.class})
 @Versions(
         maven = {
