@@ -31,15 +31,19 @@ import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.deltaspike.command.PartialBeanClassRefreshCommand;
+import org.hotswap.agent.plugin.deltaspike.command.RepoMetadataHandlerRefreshCommand;
 import org.hotswap.agent.plugin.deltaspike.jsf.ViewConfigReloadCommand;
-import org.hotswap.agent.plugin.deltaspike.proxy.PartialBeanClassRefreshCommand;
 import org.hotswap.agent.plugin.deltaspike.transformer.DeltaSpikeProxyTransformer;
+import org.hotswap.agent.plugin.deltaspike.transformer.DeltaspikeContextsTransformer;
 import org.hotswap.agent.plugin.deltaspike.transformer.PartialBeanTransformer;
+import org.hotswap.agent.plugin.deltaspike.transformer.RepositoryMetadataHandlerTransformer;
 import org.hotswap.agent.plugin.deltaspike.transformer.RepositoryTransformer;
 import org.hotswap.agent.plugin.deltaspike.transformer.ViewConfigTransformer;
-import org.hotswap.agent.plugin.deltaspike.transformer.DeltaspikeContextsTransformer;
 import org.hotswap.agent.util.AnnotationHelper;
 
 /**
@@ -52,7 +56,7 @@ import org.hotswap.agent.util.AnnotationHelper;
         expectedVersions = {"1.5-1.7"},
         supportClass = {
             DeltaSpikeProxyTransformer.class, PartialBeanTransformer.class, RepositoryTransformer.class, ViewConfigTransformer.class,
-            DeltaspikeContextsTransformer.class
+            DeltaspikeContextsTransformer.class, RepositoryMetadataHandlerTransformer.class
         }
 )
 public class DeltaSpikePlugin {
@@ -72,6 +76,11 @@ public class DeltaSpikePlugin {
     Map<Object, String> registeredPartialBeans = new WeakHashMap<>();
     Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<>();
     Set<Object> registeredWindowContexts = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    boolean hasRepoMetadataHandler;
+
+    public void registerRepositoryMetadataHandler(Object repoMetadataHandler) {
+    	hasRepoMetadataHandler = true;
+    }
 
     public void registerRepoComponent(Object repoComponent, Class<?> repositoryClass) {
         if (!registeredRepoComponents.containsKey(repoComponent)) {
@@ -95,26 +104,51 @@ public class DeltaSpikePlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void classReload(CtClass clazz, Class original) {
-        checkRefreshPartialBean(clazz, original);
+    public void classReload(CtClass clazz, Class original, ClassPool classPool) throws NotFoundException {
+        checkRefreshPartialBean(clazz, original, classPool);
         checkRefreshViewConfigExtension(clazz, original);
+        if (hasRepoMetadataHandler) {
+        	checkRefreshRepositoryMetadataHandler(clazz, classPool);
+        }
     }
 
-    private void checkRefreshPartialBean(CtClass clazz, Class original) {
+	private void checkRefreshPartialBean(CtClass clazz, Class original, ClassPool classPool) throws NotFoundException {
         Object partialBean = getObjectByName(registeredPartialBeans, clazz.getName());
         if (partialBean != null) {
 
             PartialBeanClassRefreshCommand cmd = new PartialBeanClassRefreshCommand(appClassLoader, partialBean, clazz.getName());
 
-            if (AnnotationHelper.hasAnnotation(clazz, REPOSITORY_ANNOTATION)) {
+            if (isRepository(clazz, classPool)) {
                 Object repositoryComponent = getObjectByName(registeredRepoComponents, clazz.getName());
                 if (repositoryComponent != null) {
+                	// for ds < 1.9
                     cmd.setRepositoryComponent(repositoryComponent);
                 }
             }
 
             scheduler.scheduleCommand(cmd, WAIT_ON_REDEFINE);
         }
+    }
+
+    private void checkRefreshRepositoryMetadataHandler(CtClass clazz, ClassPool classPool) throws NotFoundException {
+		if (isRepository(clazz, classPool)) {
+            RepoMetadataHandlerRefreshCommand cmd = new RepoMetadataHandlerRefreshCommand(appClassLoader, clazz.getName());
+            scheduler.scheduleCommand(cmd, WAIT_ON_REDEFINE);
+		}
+	}
+
+    private boolean isRepository(CtClass clazz, ClassPool classPool) throws NotFoundException {
+    	if (isSyntheticCdiClass(clazz.getName())) {
+    		return false;
+    	}
+		CtClass ctInvocationHandler = classPool.get("java.lang.reflect.InvocationHandler");
+		if (clazz.subtypeOf(ctInvocationHandler)) {
+			return false;
+		}
+    	if (AnnotationHelper.hasAnnotation(clazz, REPOSITORY_ANNOTATION)) {
+    		return true;
+    	}
+    	return false;
     }
 
     private Object getObjectByName(Map<Object, String> registeredComponents, String className) {
@@ -151,6 +185,10 @@ public class DeltaSpikePlugin {
             }
             registeredViewConfExtRootClasses.put(viewConfigExtension, rootClassNameList);
         }
+    }
+
+    private boolean isSyntheticCdiClass(String className) {
+        return className.contains("$$");
     }
 
 }

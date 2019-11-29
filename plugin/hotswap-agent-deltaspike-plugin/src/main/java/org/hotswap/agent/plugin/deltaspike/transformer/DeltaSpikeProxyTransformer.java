@@ -37,7 +37,7 @@ public class DeltaSpikeProxyTransformer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(DeltaSpikeProxyTransformer.class);
 
     /**
-     * Delegates ClassUtils.tryToLoadClassForName to org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate::tryToLoadClassForName
+     * Delegates ClassUtils.tryToLoadClassForName to org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate::tryToLoadClassForName
      *
      * @param ctClass
      * @throws NotFoundException the not found exception
@@ -59,7 +59,7 @@ public class DeltaSpikeProxyTransformer {
                     new ExprEditor() {
                         public void edit(MethodCall m) throws CannotCompileException {
                             if (m.getClassName().equals("org.apache.deltaspike.core.util.ClassUtils") && m.getMethodName().equals("tryToLoadClassForName"))
-                                m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate.tryToLoadClassForName($$); }");
+                                m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate.tryToLoadClassForName($$); }");
                         }
                     });
         } catch (NotFoundException e) {
@@ -68,7 +68,7 @@ public class DeltaSpikeProxyTransformer {
     }
 
     /**
-     * Delegates loadClass to org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate::loadClass
+     * Delegates loadClass to org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate::loadClass
      *
      * @param ctClass
      * @throws NotFoundException the not found exception
@@ -82,7 +82,7 @@ public class DeltaSpikeProxyTransformer {
                 new ExprEditor() {
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getClassName().equals("org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator") && m.getMethodName().equals("loadClass"))
-                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate.loadClass($$); }");
+                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate.loadClass($$); }");
                     }
                 });
     }
@@ -95,7 +95,7 @@ public class DeltaSpikeProxyTransformer {
                 new ExprEditor() {
                     public void edit(MethodCall m) throws CannotCompileException {
                         if (m.getClassName().equals("org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator") && m.getMethodName().equals("loadClass"))
-                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.proxy.ProxyClassLoadingDelegate.loadClass($$); }");
+                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate.loadClass($$); }");
                     }
                 });
     }

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.deltaspike.proxy;
+package org.hotswap.agent.plugin.deltaspike.command;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
