@@ -20,15 +20,17 @@ package org.hotswap.agent.plugin.deltaspike.transformer;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtNewMethod;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.deltaspike.DeltaSpikePlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
- * Hook and patch RepositoryComponent
+ * Hook and patch Repository classes
  *
  * @author Vladimir Dvorak
  */
@@ -39,7 +41,7 @@ public class RepositoryTransformer {
     public static final String REINITIALIZE_METHOD = "$$ha$reinitialize";
 
     /**
-     * Register DeltaspikePlugin and add reinitialization method to RepositoryComponent
+     * Register DeltaspikePlugin and add reinitialization method to RepositoryComponent (ds<1.9)
      *
      * @param ctClass
      * @throws CannotCompileException the cannot compile exception
@@ -65,4 +67,41 @@ public class RepositoryTransformer {
         LOGGER.debug("org.apache.deltaspike.data.impl.meta.RepositoryComponent - registration hook and reinitialization method added.");
     }
 
+
+    /**
+     * Register DeltaspikePlugin and add reinitialization method to RepositoryMetadataHandler. (ds>=1.9)
+     *
+     * @param ctClass the ctclass
+     * @throws CannotCompileException the cannot compile exception
+     * @throws NotFoundException
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.data.impl.meta.RepositoryMetadataHandler")
+    public static void patchRepositoryMetadataHandler(CtClass ctClass) throws CannotCompileException, NotFoundException {
+        ctClass.addMethod(CtNewMethod.make("public void " + REINITIALIZE_METHOD + "(java.lang.Class repositoryClass) {" +
+                    "org.apache.deltaspike.data.impl.meta.RepositoryMetadata metadata = metadataInitializer.init(repositoryClass, this.beanManager);" +
+                    "this.repositoriesMetadata.put(repositoryClass, metadata);" +
+                "}", ctClass));
+
+        LOGGER.debug("org.apache.deltaspike.data.impl.meta.RepositoryMetadataHandler - registration hook and reinitialization method added.");
+    }
+
+    /**
+     * Register DeltaspikePlugin and register repository classes.
+     *
+     * @param ctClass the ctclass
+     * @throws CannotCompileException the cannot compile exception
+     * @throws NotFoundException
+     * @throws org.hotswap.agent.javassist.CannotCompileException
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.data.impl.RepositoryExtension")
+    public static void patchRepositoryExtension(CtClass ctClass, ClassPool classPool) throws CannotCompileException, NotFoundException, org.hotswap.agent.javassist.CannotCompileException {
+
+        if (ctClass.getSuperclassName().equals(Object.class.getName())) {
+            ctClass.setSuperclass(classPool.get(HaAfteBeanDiscovery.class.getName()));
+        } else {
+            LOGGER.error("org.apache.deltaspike.data.impl.RepositoryExtension patch failed. Expected superclass java.lang.Object, found:" + ctClass.getSuperclassName());
+        }
+
+        LOGGER.debug("org.apache.deltaspike.data.impl.RepositoryExtension - registration hook and registration repository classes added.");
+    }
 }

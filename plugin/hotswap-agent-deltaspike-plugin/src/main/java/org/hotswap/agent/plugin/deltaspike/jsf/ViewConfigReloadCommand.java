@@ -54,7 +54,7 @@ public class ViewConfigReloadCommand extends MergeableCommand {
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
-            LOGGER.error("Error refreshing classes '{}' in classLoader {}", e, rootClassNameList, classLoader);
+            LOGGER.error("Error refreshing classes '{}' in appClassLoader {}", e, rootClassNameList, classLoader);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Plugin error, illegal access", e);
         } catch (ClassNotFoundException e) {
@@ -86,7 +86,7 @@ public class ViewConfigReloadCommand extends MergeableCommand {
     @Override
     public String toString() {
         return "ViewConfigExtensionRefreshCommand{" +
-                "classLoader=" + classLoader +
+                "appClassLoader=" + classLoader +
                 ", viewConfigRootClassNames='" + rootClassNameList + '\'' +
                 '}';
     }

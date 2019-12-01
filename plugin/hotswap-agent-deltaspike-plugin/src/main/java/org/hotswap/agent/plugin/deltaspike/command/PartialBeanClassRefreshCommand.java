@@ -20,10 +20,14 @@ package org.hotswap.agent.plugin.deltaspike.command;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
+import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.deltaspike.transformer.RepositoryTransformer;
+import org.hotswap.agent.plugin.deltaspike.DeltaSpikePlugin;
 
 /**
  * The Class PartialBeanClassRefreshCommand.
@@ -34,19 +38,21 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(PartialBeanClassRefreshCommand.class);
 
-    ClassLoader classLoader;
+    ClassLoader appClassLoader;
     Object partialBean;
     String className;
-    Object repositoryComponent;
+    private Scheduler scheduler;
+    List<Command> chainedCommands = new ArrayList<>();
 
-    public PartialBeanClassRefreshCommand(ClassLoader classLoader, Object partialBean, String className) {
-        this.classLoader = classLoader;
+    public PartialBeanClassRefreshCommand(ClassLoader classLoader, Object partialBean, String className, Scheduler scheduler) {
+        this.appClassLoader = classLoader;
         this.partialBean = partialBean;
         this.className = className;
+        this.scheduler = scheduler;
     }
 
-    public void setRepositoryComponent(Object repositoryComponent) {
-        this.repositoryComponent = repositoryComponent;
+    public void addChainedCommand(Command cmd) {
+        chainedCommands.add(cmd);
     }
 
     @Override
@@ -54,34 +60,24 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
         boolean reloaded = false;
         try {
             LOGGER.debug("Executing PartialBeanClassRefreshAgent.refreshPartialBeanClass('{}')", className);
-            Class<?> agentClazz = Class.forName(PartialBeanClassRefreshAgent.class.getName(), true, classLoader);
+            Class<?> agentClazz = Class.forName(PartialBeanClassRefreshAgent.class.getName(), true, appClassLoader);
             Method m  = agentClazz.getDeclaredMethod("refreshPartialBeanClass", new Class[] {ClassLoader.class, Object.class});
-            m.invoke(null, classLoader, partialBean);
+            m.invoke(null, appClassLoader, partialBean);
             reloaded = true;
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
-            LOGGER.error("Error refreshing class {} in classLoader {}", e, className, classLoader);
+            LOGGER.error("Error refreshing class {} in appClassLoader {}", e, className, appClassLoader);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Plugin error, illegal access", e);
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Plugin error, CDI class not found in classloader", e);
         }
         if (reloaded) {
-            if (repositoryComponent != null) {
-                try {
-                    Method reinitializeMethod = resolveClass("org.apache.deltaspike.data.impl.meta.RepositoryComponent")
-                            .getDeclaredMethod(RepositoryTransformer.REINITIALIZE_METHOD);
-                    reinitializeMethod.invoke(repositoryComponent);
-                } catch (Exception e) {
-                    LOGGER.error("Error reinitializing repository {}", e, className);
-                }
+            for (Command cmd: chainedCommands) {
+                scheduler.scheduleCommand(cmd, DeltaSpikePlugin.WAIT_ON_REDEFINE);
             }
         }
-    }
-
-    private Class<?> resolveClass(String name) throws ClassNotFoundException {
-        return Class.forName(name, true, classLoader);
     }
 
     @Override
@@ -91,7 +87,7 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
 
         PartialBeanClassRefreshCommand that = (PartialBeanClassRefreshCommand) o;
 
-        if (!classLoader.equals(that.classLoader)) return false;
+        if (!appClassLoader.equals(that.appClassLoader)) return false;
         if (!partialBean.equals(that.partialBean)) return false;
         if (!className.equals(that.className)) return false;
 
@@ -100,7 +96,7 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
 
     @Override
     public int hashCode() {
-        int result = classLoader.hashCode();
+        int result = appClassLoader.hashCode();
         result = 31 * result + partialBean.hashCode();
         return result;
     }
@@ -108,7 +104,7 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
     @Override
     public String toString() {
         return "PartialBeanClassRefreshCommand{" +
-                "classLoader=" + classLoader +
+                "appClassLoader=" + appClassLoader +
                 ", partialBean='" + partialBean + '\'' +
                 '}';
     }
