@@ -6,27 +6,25 @@
 set -e
 
 # run clean package with all unit tests
-function testBefore11 {
+function testCDI1 {
     echo "Running with OWB $1"
-    mvn -Dowb.version=$1 clean compile
-    JAVA_HOME=/usr/lib/jvm/java-8-openjdk mvn -Ddcevm.test.arguments=-XXaltjvm=dcevm -Dowb.version=$1 test
+    mvn -PCDI1 -Dowb.version=$1 clean compile
+    JAVA_HOME=/usr/lib/jvm/java-8-openjdk mvn -Ddcevm.test.arguments=-XXaltjvm=dcevm -Dowb.version=$1 -PCDI1 test
 }
 
-function test {
+function testCDI2 {
     echo "Running with OWB $1"
-    mvn -Dowb.version=$1 clean package
+    mvn -PCDI2 -Dowb.version=$1 clean package
 }
 
 ### start of j11 incompatible versions
-testBefore11 1.7.0
-testBefore11 1.7.5
+testCDI1 1.7.0
+testCDI1 1.7.5
 
-testBefore11 2.0.0
-### end of j11 incompatible versions
-
-test 2.0.7
-test 2.0.8
-test 2.0.9
-test 2.0.10
-test 2.0.11
-test 2.0.12
+testCDI2 2.0.7
+testCDI2 2.0.8
+testCDI2 2.0.9
+testCDI2 2.0.10
+testCDI2 2.0.11
+testCDI2 2.0.12
+testCDI2 2.0.13
