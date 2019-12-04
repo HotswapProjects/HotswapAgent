@@ -44,8 +44,8 @@ public class DetachableBeanHolder implements Serializable {
     private Object beanFactory;
     private Class<?>[] paramClasses;
     private Object[] paramValues;
-    private static List<WeakReference<DetachableBeanHolder>> beanProxies = Collections
-            .synchronizedList(new ArrayList<WeakReference<DetachableBeanHolder>>());
+    private static List<WeakReference<DetachableBeanHolder>> beanProxies =
+            Collections.synchronizedList(new ArrayList<WeakReference<DetachableBeanHolder>>());
     private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 
     /**

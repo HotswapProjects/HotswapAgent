@@ -25,6 +25,9 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
+/**
+ * The Class UndertowTransformer - patch DeploymentManagerImpl
+ */
 public class UndertowTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(UndertowTransformer.class);

@@ -17,10 +17,11 @@ function testCDI2 {
     mvn -PCDI2 -Dowb.version=$1 clean package
 }
 
-### start of j11 incompatible versions
+### Run tests CDI1 on j8
 testCDI1 1.7.0
 testCDI1 1.7.5
 
+### Run tests CDI2 on j11
 testCDI2 2.0.7
 testCDI2 2.0.8
 testCDI2 2.0.9

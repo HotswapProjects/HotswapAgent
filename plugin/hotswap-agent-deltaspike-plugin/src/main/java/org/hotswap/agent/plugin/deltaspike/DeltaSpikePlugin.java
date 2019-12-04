@@ -52,8 +52,8 @@ import org.hotswap.agent.util.AnnotationHelper;
  */
 @Plugin(name = "Deltaspike",
         description = "Apache DeltaSpike (http://deltaspike.apache.org/), support repository reloading",
-        testedVersions = {"1.5.2, 1.7.2, 1.9.1"},
-        expectedVersions = {"1.5-1.9"},
+        testedVersions = {"1.5.2, 1.7.x-1.9.x"},
+        expectedVersions = {"1.5.x-1.9.x"},
         supportClass = {
             DeltaSpikeProxyTransformer.class, PartialBeanTransformer.class, RepositoryTransformer.class, ViewConfigTransformer.class,
             DeltaspikeContextsTransformer.class, DeltaSpikeProxyContextualLifecycleTransformer.class

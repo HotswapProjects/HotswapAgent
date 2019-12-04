@@ -209,8 +209,11 @@ public class EnhancerProxyCreater {
                          "e.setCallback(handler);" +
                          "return e.create();" +
                 "}";
-        String body = rawBody.replaceAll("\\{0\\}", proxy).replaceAll("\\{1\\}", core)
-                .replaceAll("\\{2\\}", callback.getName()).replaceAll("\\{3\\}", namingPolicy.getName());
+        String body = rawBody
+                .replaceAll("\\{0\\}", proxy)
+                .replaceAll("\\{1\\}", core)
+                .replaceAll("\\{2\\}", callback.getName())
+                .replaceAll("\\{3\\}", namingPolicy.getName());
         CtMethod m = CtNewMethod.make(body, ct);
         ct.addMethod(m);
         return ct.toClass(loader, pd);

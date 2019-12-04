@@ -53,8 +53,7 @@ public class HotswapSpringInvocationHandler extends DetachableBeanHolder impleme
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (method.getName().equals("getWrappedObject")
-                && method.getDeclaringClass().getName()
-                        .equals("org.springframework.core.InfrastructureProxy")) {
+                && method.getDeclaringClass().getName().equals("org.springframework.core.InfrastructureProxy")) {
             for (Class<?> beanInterface : getBean().getClass().getInterfaces()) {
                 if (beanInterface.getName().equals("org.springframework.core.InfrastructureProxy")) {
                     return doInvoke(method, args);
