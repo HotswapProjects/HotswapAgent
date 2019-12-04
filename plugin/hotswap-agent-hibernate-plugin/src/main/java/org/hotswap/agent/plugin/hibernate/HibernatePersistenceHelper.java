@@ -51,8 +51,9 @@ public class HibernatePersistenceHelper {
     public static EntityManagerFactory createContainerEntityManagerFactoryProxy(Object builder, PersistenceUnitInfo info, Map properties,
                                                                                 EntityManagerFactory original) {
         // ensure only once
-        if (wrappedPersistenceUnitNames.contains(info.getPersistenceUnitName()))
+        if (wrappedPersistenceUnitNames.contains(info.getPersistenceUnitName())) {
             return original;
+        }
         wrappedPersistenceUnitNames.add(info.getPersistenceUnitName());
 
         EntityManagerFactoryProxy wrapper = EntityManagerFactoryProxy.getWrapper(info.getPersistenceUnitName());
@@ -73,8 +74,9 @@ public class HibernatePersistenceHelper {
     public static EntityManagerFactory createEntityManagerFactoryProxy(Object builder, String persistenceUnitName, Map properties,
                                                                        EntityManagerFactory original) {
         // ensure only once
-        if (wrappedPersistenceUnitNames.contains(persistenceUnitName))
+        if (wrappedPersistenceUnitNames.contains(persistenceUnitName)) {
             return original;
+        }
         wrappedPersistenceUnitNames.add(persistenceUnitName);
 
         EntityManagerFactoryProxy wrapper = EntityManagerFactoryProxy.getWrapper(persistenceUnitName);

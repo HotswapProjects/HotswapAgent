@@ -13,7 +13,8 @@
     <artifactId>hotswap-agent-hibernate-plugin</artifactId>
 
     <properties>
-        <org.hibernateframework.version>4.3.11.Final</org.hibernateframework.version>
+        <org.hibernateframework.version>5.3.14.Final</org.hibernateframework.version>
+        <jaxb.version>2.3.0</jaxb.version>
     </properties>
 
 
@@ -33,7 +34,7 @@
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.2.8</version>
+            <version>2.5.0</version>
             <scope>test</scope>
         </dependency>
 
@@ -48,6 +49,13 @@
         <dependency>
             <groupId>org.jmock</groupId>
             <artifactId>jmock-legacy</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>${jaxb.version}</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

@@ -164,10 +164,11 @@ public class HibernatePlugin {
     // reload the configuration - schedule a command to run in the application classloader and merge
     // duplicate commands.
     private void refresh(int timeout) {
-        if (hibernateEjb)
+        if (hibernateEjb) {
             scheduler.scheduleCommand(reloadEntityManagerFactoryCommand, timeout);
-        else
+        } else {
             scheduler.scheduleCommand(reloadSessionFactoryCommand, timeout);
+        }
     }
 
     public void registerAnnotationMetaDataProvider(Object annotatedMetaDataProvider) {

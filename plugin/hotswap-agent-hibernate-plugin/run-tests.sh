@@ -53,16 +53,17 @@ test 4.3.9.Final
 test 4.3.10.Final
 test 4.3.11.Final
 
-test 5.0.0.Final
-test 5.0.1.Final
-test 5.0.2.Final
-test 5.0.3.Final
-# test 5.0.4.Final
-# test 5.0.5.Final
-# test 5.0.6.Final
-test 5.0.7.Final
-test 5.0.8.Final
-test 5.0.9.Final
+# 5.0.0-5.0.9 are failing on j11
+#test 5.0.0.Final
+#test 5.0.1.Final
+#test 5.0.2.Final
+#test 5.0.3.Final
+#test 5.0.4.Final
+#test 5.0.5.Final
+#test 5.0.6.Final
+#test 5.0.7.Final
+#test 5.0.8.Final
+#test 5.0.9.Final
 test 5.0.10.Final
 test 5.0.11.Final
 test 5.1.0.Final
@@ -78,7 +79,7 @@ test 5.2.8.Final
 test 5.2.9.Final
 test 5.2.10.Final
 
-test 5.3.0.Final
+# test 5.3.0.Final # 5.3.0 is broken on j11
 test 5.3.1.Final
 test 5.3.2.Final
 test 5.3.3.Final
@@ -103,4 +104,3 @@ test 5.4.5.Final
 test 5.4.6.Final
 test 5.4.7.Final
 test 5.4.8.Final
-
