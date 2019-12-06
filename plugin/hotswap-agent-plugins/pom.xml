@@ -108,12 +108,6 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
-            <artifactId>hotswap-agent-seam-plugin</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-el-resolver-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
