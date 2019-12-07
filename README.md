@@ -179,7 +179,7 @@ uses agent services to:
 * [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.7.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
-* [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3x, 4.x) - Reload Spring configuration after class definition/change.
+* [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3x, 4.x, 5.x) - Reload Spring configuration after class definition/change.
 * [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (10.x) - Update routes, template models and in practice anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
 * [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2-2.4) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
