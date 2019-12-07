@@ -63,17 +63,17 @@ public class GlassFishPlugin {
                     "if ($1 == null) { " +
                         "$1 = new java.util.HashMap();" +
                     "}" +
-                    "String $ha$$bootDeleg = (String) $1.get(\"" + FRAMEWORK_BOOTDELEGATION + "\");" +
-                    "if ($ha$$bootDeleg == null) {" +
-                        "$ha$$bootDeleg = \"\";" +
+                    "String $$ha$bootDeleg = (String) $1.get(\"" + FRAMEWORK_BOOTDELEGATION + "\");" +
+                    "if ($$ha$bootDeleg == null) {" +
+                        "$$ha$bootDeleg = \"\";" +
                     "}" +
-                    "if ($ha$$bootDeleg.indexOf(\"org.hotswap.agent\") == -1) {" +
-                        "$ha$$bootDeleg = $ha$$bootDeleg.trim();" +
-                        "if (!$ha$$bootDeleg.isEmpty()) {" +
-                            "$ha$$bootDeleg = $ha$$bootDeleg + \", \";" +
+                    "if ($$ha$bootDeleg.indexOf(\"org.hotswap.agent\") == -1) {" +
+                        "$$ha$bootDeleg = $$ha$bootDeleg.trim();" +
+                        "if (!$$ha$bootDeleg.isEmpty()) {" +
+                            "$$ha$bootDeleg = $$ha$bootDeleg + \", \";" +
                         "}" +
-                        "$ha$$bootDeleg = $ha$$bootDeleg + \"" + BOOTDELEGATION_PACKAGES + "\";" +
-                        "$1.put(\"" + FRAMEWORK_BOOTDELEGATION + "\", $ha$$bootDeleg);" +
+                        "$$ha$bootDeleg = $$ha$bootDeleg + \"" + BOOTDELEGATION_PACKAGES + "\";" +
+                        "$1.put(\"" + FRAMEWORK_BOOTDELEGATION + "\", $$ha$bootDeleg);" +
                     "}" +
                 "}"
         );

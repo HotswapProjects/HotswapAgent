@@ -32,7 +32,7 @@ import org.hotswap.agent.util.ReflectionHelper;
  */
 public class HaAfteBeanDiscovery {
 
-    public void $ha$$afterBeanDiscovery(@Observes AfterBeanDiscovery before) {
+    public void $$ha$afterBeanDiscovery(@Observes AfterBeanDiscovery before) {
         PluginManagerInvoker.callPluginMethod(DeltaSpikePlugin.class, getClass().getClassLoader(),
                 "registerRepositoryClasses", new Class[] { List.class }, new Object[] { ReflectionHelper.get(this, "repositoryClasses") });
     }
