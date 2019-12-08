@@ -30,6 +30,7 @@ import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
@@ -54,6 +55,11 @@ public class MojarraPlugin {
     ClassLoader appClassLoader;
 
     Set<Object> registeredRBMaps = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+
+    @Init
+    public void init(PluginConfiguration pluginConfiguration) {
+        LOGGER.info("Mojarra plugin initialized.");
+    }
 
     @OnClassLoadEvent(classNameRegexp = "com.sun.faces.config.ConfigManager")
     public static void facesConfigManagerInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {

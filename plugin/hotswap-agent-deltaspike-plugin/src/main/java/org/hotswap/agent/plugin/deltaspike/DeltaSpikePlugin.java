@@ -31,6 +31,7 @@ import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
@@ -81,6 +82,10 @@ public class DeltaSpikePlugin {
     Map<Object, String> registeredRepoProxies = new WeakHashMap<>();
     List<Class<?>> repositoryClasses;
 
+    @Init
+    public void init(PluginConfiguration pluginConfiguration) {
+        LOGGER.info("Deltaspike plugin initialized.");
+    }
 
     // ds<1.9
     public void registerRepoComponent(Object repoComponent, Class<?> repositoryClass) {

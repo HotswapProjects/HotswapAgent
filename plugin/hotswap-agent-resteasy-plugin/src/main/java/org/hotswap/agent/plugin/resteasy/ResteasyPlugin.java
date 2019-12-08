@@ -30,6 +30,7 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -69,6 +70,11 @@ public class ResteasyPlugin {
     Scheduler scheduler;
 
     Set<Object> registeredDispatchers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+
+    @Init
+    public void init(PluginConfiguration pluginConfiguration) {
+        LOGGER.info("Resteasy plugin initialized.");
+    }
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.resteasy.plugins.server.servlet.FilterDispatcher")
     public static void patchFilterDispatcher(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {

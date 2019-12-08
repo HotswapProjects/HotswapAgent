@@ -32,6 +32,7 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Versions;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
@@ -97,6 +98,11 @@ public class ELResolverPlugin {
 
     public void registerJBossReflectionUtil() {
         jbossReflectionUtil = true;
+    }
+
+    @Init
+    public void init(PluginConfiguration pluginConfiguration) {
+        LOGGER.info("ELResolver plugin initialized.");
     }
 
     /**

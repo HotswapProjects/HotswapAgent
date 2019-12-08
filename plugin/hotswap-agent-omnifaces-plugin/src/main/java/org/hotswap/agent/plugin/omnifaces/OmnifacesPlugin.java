@@ -46,7 +46,8 @@ public class OmnifacesPlugin {
 
     public void init() {
         if (!initialized) {
-            LOGGER.info("OmnifacesPlugin plugin initialized.");
+            LOGGER.info("Omnifaces plugin initialized.");
+            initialized = true;
         }
     }
 

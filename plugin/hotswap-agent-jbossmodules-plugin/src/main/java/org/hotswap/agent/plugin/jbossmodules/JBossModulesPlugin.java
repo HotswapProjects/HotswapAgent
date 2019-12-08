@@ -21,6 +21,7 @@ package org.hotswap.agent.plugin.jbossmodules;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -49,6 +50,11 @@ public class JBossModulesPlugin {
 
     @Init
     ClassLoader moduleClassLoader;
+
+    @Init
+    public void init(PluginConfiguration pluginConfiguration) {
+        LOGGER.info("JBossModules plugin plugin initialized.");
+    }
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.modules.ModuleLoader")
     public static void transformModule(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {

@@ -26,6 +26,7 @@ import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
@@ -48,6 +49,11 @@ public class MyFacesPlugin {
 
     @Init
     ClassLoader appClassLoader;
+
+    @Init
+    public void init(PluginConfiguration pluginConfiguration) {
+        LOGGER.info("MyFaces plugin initialized.");
+    }
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.myfaces.config.RuntimeConfig")
     public static void facesApplicationAssociateInitialized(CtClass ctClass) throws NotFoundException, CannotCompileException {

@@ -55,6 +55,8 @@ public class LogbackPlugin {
     // ensure uri registered only once
     Set<URI> registeredURIs = new HashSet<URI>();
 
+    boolean initialized;
+
     /**
      * Callback method from ch.qos.logback.core.joran.GenericConfigurator.
      *
@@ -78,6 +80,10 @@ public class LogbackPlugin {
                         reload(configurator, url);
                 }
             });
+            if (!initialized) {
+                LOGGER.info("Logback plugin initialized.");
+                initialized = true;
+            }
         } catch (Exception e) {
             LOGGER.error("Exception initializing logback configurator {} on url {}.", e, configurator, url);
         }

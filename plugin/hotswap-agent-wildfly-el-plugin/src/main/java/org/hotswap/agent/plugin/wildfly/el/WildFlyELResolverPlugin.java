@@ -168,6 +168,6 @@ public class WildFlyELResolverPlugin {
      */
     @Init
     public void initializeInstance(PluginConfiguration pluginConfiguration) {
-        LOGGER.info("WildFlyELResolverPlugin Initializing");
+        LOGGER.info("WildFlyELResolver plugin initialized");
     }
 }

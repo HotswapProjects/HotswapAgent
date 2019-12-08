@@ -103,7 +103,7 @@ public class Jersey2Plugin {
         try {
             Class<?> resourceConfigClass = resolveClass("org.glassfish.jersey.server.ResourceConfig");
 
-            LOGGER.info("registerJerseyContainer : " + jerseyContainer.getClass().getName());
+            LOGGER.info("Jersey2Plugin - registerJerseyContainer : " + jerseyContainer.getClass().getName());
 
             Set<Class<?>> containerClasses = getContainerClasses(resourceConfigClass, resourceConfig);
 

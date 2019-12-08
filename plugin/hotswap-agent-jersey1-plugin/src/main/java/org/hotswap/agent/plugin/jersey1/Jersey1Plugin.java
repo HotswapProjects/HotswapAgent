@@ -80,12 +80,12 @@ public class Jersey1Plugin {
         try {
             Class<?> resourceConfigClass = resolveClass("com.sun.jersey.api.core.ResourceConfig");
 
-            LOGGER.info("registerJerseyContainer : " + jerseyContainer.getClass().getName());
+            LOGGER.info("Jersey1 plugin - registerJerseyContainer : " + jerseyContainer.getClass().getName());
 
             Set<Class<?>> containerClasses = getContainerClasses(resourceConfigClass, resourceConfig);
 
-               registeredJerseyContainers.add(jerseyContainer);
-               allRegisteredClasses.addAll(containerClasses);
+            registeredJerseyContainers.add(jerseyContainer);
+            allRegisteredClasses.addAll(containerClasses);
 
             LOGGER.debug("registerJerseyContainer : finished");
         } catch (Exception e) {

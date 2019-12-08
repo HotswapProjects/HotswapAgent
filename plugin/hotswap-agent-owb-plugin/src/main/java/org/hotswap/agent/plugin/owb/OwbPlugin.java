@@ -107,7 +107,7 @@ public class OwbPlugin {
      */
     public void init() {
         if (!initialized) {
-            LOGGER.info("CDI/Owb plugin initialized.");
+            LOGGER.info("OpenWebBeans plugin initialized.");
             initialized = true;
             beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
         }

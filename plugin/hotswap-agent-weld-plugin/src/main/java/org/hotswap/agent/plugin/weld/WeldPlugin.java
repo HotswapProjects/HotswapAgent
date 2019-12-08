@@ -102,7 +102,7 @@ public class WeldPlugin {
 
     public void init() {
         if (!initialized) {
-            LOGGER.info("CDI/Weld plugin initialized.");
+            LOGGER.info("Weld plugin initialized.");
             doInit();
         }
     }
@@ -110,14 +110,14 @@ public class WeldPlugin {
 
     public void initInJBossAS() {
         if (!initialized) {
-            LOGGER.info("CDI/Weld plugin initialized in JBossAS.");
+            LOGGER.info("Weld plugin initialized in JBossAS.");
             doInit();
         }
     }
 
     public void initInGlassFish() {
         if (!initialized) {
-            LOGGER.info("CDI/Weld plugin initialized in GlassFish.");
+            LOGGER.info("Weld plugin initialized in GlassFish.");
             doInit();
         }
     }

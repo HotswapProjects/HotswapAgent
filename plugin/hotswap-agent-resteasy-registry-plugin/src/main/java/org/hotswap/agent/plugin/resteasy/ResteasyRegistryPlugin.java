@@ -62,7 +62,6 @@ public class ResteasyRegistryPlugin {
     @Init
     Scheduler scheduler;
 
-
     Object servletContext;
 
     Object servletContainerDispatcher;
@@ -173,6 +172,6 @@ public class ResteasyRegistryPlugin {
 
     @Init
     public void initializeInstance(PluginConfiguration pluginConfiguration) {
-        LOGGER.info("ResteasyRegistryPlugin Initializing");
+        LOGGER.info("ResteasyRegistry plugin initializing");
     }
 }
