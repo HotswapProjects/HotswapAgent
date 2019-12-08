@@ -28,8 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -104,7 +102,7 @@ public class MyBatisPluginTest {
             public boolean result() throws Exception {
                 return !MyBatisRefreshCommands.reloadFlag;
             }
-        }, 200000 )); // Repository is regenerated within 2*DeltaSpikePlugin.WAIT_ON_REDEFINE
+        }, 2000 )); // Repository is regenerated within 2*DeltaSpikePlugin.WAIT_ON_REDEFINE
 
         // TODO do not know why sleep is needed, maybe a separate thread in owb refresh?
         Thread.sleep(100);

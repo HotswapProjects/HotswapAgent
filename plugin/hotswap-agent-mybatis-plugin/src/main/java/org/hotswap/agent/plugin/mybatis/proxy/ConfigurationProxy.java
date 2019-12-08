@@ -34,6 +34,11 @@ import org.hotswap.agent.util.ReflectionHelper;
 
 import sun.reflect.ReflectionFactory;
 
+/**
+ * The Class ConfigurationProxy.
+ *
+ * @author Vladimir Dvorak
+ */
 public class ConfigurationProxy {
     private static Map<XMLConfigBuilder, ConfigurationProxy> proxiedConfigurations = new HashMap<>();
 

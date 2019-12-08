@@ -35,6 +35,8 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
  * Static transformers for MyBatis plugin.
+ *
+ * @author Vladimir Dvorak
  */
 public class MyBatisTransformers {
 
@@ -73,7 +75,6 @@ public class MyBatisTransformers {
         CtField configField = ctClass.getField("configuration");
         configField.setModifiers(configField.getModifiers() & ~AccessFlag.FINAL);
     }
-
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.xml.XMLConfigBuilder")
     public static void patchXMLConfigBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
