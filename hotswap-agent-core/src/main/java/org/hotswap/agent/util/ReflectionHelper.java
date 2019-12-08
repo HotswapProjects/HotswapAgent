@@ -71,6 +71,18 @@ public class ReflectionHelper {
 
 
     /**
+     * Convenience wrapper to reflection method invoke API. Invoke the method and hide checked exceptions.
+     *
+     * @param target         object to invoke the method on (or null for static methods)
+     * @param methodName     method name
+     * @return invocation result or null
+     * @throws IllegalArgumentException if method not found
+     * @throws IllegalStateException    for InvocationTargetException (exception in invoked method)
+     */
+    public static Object invoke(Object target, String methodName) {
+        return invoke(target, target.getClass(), methodName, new Class[] {});
+    }
+    /**
      * Convenience wrapper to reflection method invoke API. Get field value and hide checked exceptions.
      * Field class is set by
      *
