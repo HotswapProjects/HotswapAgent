@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.plugin.mybatis.transformers;
 
+import org.apache.ibatis.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
@@ -27,8 +28,7 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.expr.ConstructorCall;
-import org.hotswap.agent.javassist.expr.ExprEditor;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -37,6 +37,9 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * Static transformers for MyBatis plugin.
  */
 public class MyBatisTransformers {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisTransformers.class);
+
     public static final String SRC_FILE_NAME_FIELD = "$$ha$srcFileName";
     public static final String REFRESH_DOCUMENT_METHOD = "$$ha$refreshDocument";
     public static final String REFRESH_METHOD = "$$ha$refresh";
@@ -61,7 +64,16 @@ public class MyBatisTransformers {
                 "return false;" +
             "}", ctClass);
         ctClass.addMethod(newMethod);
+        LOGGER.debug("org.apache.ibatis.parsing.XPathParser patched.");
     }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.BaseBuilder")
+    public static void patchBaseBuilder(CtClass ctClass) throws NotFoundException, CannotCompileException {
+        LOGGER.debug("org.apache.ibatis.builder.BaseBuilder patched.");
+        CtField configField = ctClass.getField("configuration");
+        configField.setModifiers(configField.getModifiers() & ~AccessFlag.FINAL);
+    }
+
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.xml.XMLConfigBuilder")
     public static void patchXMLConfigBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
@@ -70,6 +82,7 @@ public class MyBatisTransformers {
         src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlugin.class, "registerConfigurationFile",
                 XPathParserCaller.class.getName() + ".getSrcFileName(this.parser)", "java.lang.String", "this", "java.lang.Object"));
+        src.append("this.configuration = " + ConfigurationProxy.class.getName() + ".getWrapper(this).proxy(this.configuration);");
         src.append("}");
 
         CtClass[] constructorParams = new CtClass[] {
@@ -78,16 +91,7 @@ public class MyBatisTransformers {
             classPool.get("java.util.Properties")
         };
 
-        CtConstructor constructor = ctClass.getDeclaredConstructor(constructorParams);
-        constructor.instrument(
-                new ExprEditor() {
-                    public void edit(ConstructorCall c) throws CannotCompileException {
-                        if (c.getClassName().equals("org.apache.ibatis.session.Configuration")) {
-                            c.replace("{ $_ = " + ConfigurationProxy.class.getName() + "\".getWrapper(this).proxy($$); }");
-                        }
-                    }
-                });
-        constructor.insertAfter(src.toString());
+        ctClass.getDeclaredConstructor(constructorParams).insertAfter(src.toString());
         CtMethod newMethod = CtNewMethod.make(
             "public void " + REFRESH_METHOD + "() {" +
                 "if(" + XPathParserCaller.class.getName() + ".refreshDocument(this.parser)) {" +
@@ -96,6 +100,7 @@ public class MyBatisTransformers {
                 "}" +
             "}", ctClass);
         ctClass.addMethod(newMethod);
+        LOGGER.debug("org.apache.ibatis.builder.xml.XMLConfigBuilder patched.");
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.xml.XMLMapperBuilder")
@@ -115,5 +120,6 @@ public class MyBatisTransformers {
 
         CtConstructor constructor = ctClass.getDeclaredConstructor(constructorParams);
         constructor.insertAfter(src.toString());
+        LOGGER.debug("org.apache.ibatis.builder.xml.XMLMapperBuilder patched.");
     }
 }

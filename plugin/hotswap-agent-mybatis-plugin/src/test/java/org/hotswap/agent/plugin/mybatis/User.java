@@ -16,12 +16,13 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.mybatis.entity;
+package org.hotswap.agent.plugin.mybatis;
 
 public class User {
 
   private Integer id;
-  private String name;
+  private String name1;
+  private String name2;
 
   public Integer getId() {
     return id;
@@ -31,11 +32,19 @@ public class User {
     this.id = id;
   }
 
-  public String getName() {
-    return name;
+  public String getName1() {
+    return name1;
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public void setName1(String name1) {
+    this.name1 = name1;
+  }
+
+  public String getName2() {
+    return name2;
+  }
+
+  public void setName2(String name2) {
+    this.name2 = name2;
   }
 }

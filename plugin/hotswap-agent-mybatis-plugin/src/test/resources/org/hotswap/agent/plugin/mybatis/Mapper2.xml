@@ -5,8 +5,8 @@
 
 <mapper namespace="org.hotswap.agent.plugin.mybatis.Mapper">
 
-    <select id="getUserXML" resultType="org.hotswap.agent.plugin.mybatis.entity.User" parameterType="map">
-        select * from users where id = #{id} and name = #{name}
+    <select id="getUserXML" resultType="org.hotswap.agent.plugin.mybatis.User">
+        select * from users where name2 = #{name}
     </select>
 
 </mapper>
