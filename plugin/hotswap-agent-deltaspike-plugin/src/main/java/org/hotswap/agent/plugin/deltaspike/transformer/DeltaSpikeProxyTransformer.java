@@ -85,6 +85,7 @@ public class DeltaSpikeProxyTransformer {
                             m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate.loadClass($$); }");
                     }
                 });
+        LOGGER.debug("org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator patched.");
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator")
@@ -98,6 +99,7 @@ public class DeltaSpikeProxyTransformer {
                             m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate.loadClass($$); }");
                     }
                 });
+        LOGGER.debug("org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator patched.");
     }
 
 

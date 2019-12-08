@@ -31,7 +31,6 @@ import org.hotswap.agent.javassist.util.proxy.Proxy;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
 import org.hotswap.agent.util.ReflectionHelper;
-import org.hotswap.agent.util.spring.util.ReflectionUtils;
 
 import sun.reflect.ReflectionFactory;
 

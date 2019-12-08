@@ -60,6 +60,7 @@ public class PartialBeanTransformer {
             "}" +
             "return $_;"
         );
+        LOGGER.debug("org.apache.deltaspike.partialbean.impl.PartialBeanBindingExtension patched.");
     }
 
 }
