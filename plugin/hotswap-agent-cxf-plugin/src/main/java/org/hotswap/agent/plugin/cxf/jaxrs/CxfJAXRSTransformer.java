@@ -92,7 +92,6 @@ public class CxfJAXRSTransformer {
             );
             ctClass.addMethod(CtMethod.make(
                     "public void clearSingletonInstance() { this.singletonInstance=null; }", ctClass));
-            ctClass.addMethod(loadMethod);
     } catch(NotFoundException | CannotCompileException e){
             LOGGER.error("Error patching ResourceUtils", e);
         }
@@ -105,6 +104,7 @@ public class CxfJAXRSTransformer {
             loadMethod.insertAfter( "{ " +
             		"ClassLoader $$cl = java.lang.Thread.currentThread().getContextClassLoader();" +
                     "if ($$cl==null) $$cl = getClass().getClassLoader();" +
+                    PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
                     PluginManagerInvoker.buildCallPluginMethod("$$cl", CxfJAXRSPlugin.class, "registerJAXBProvider",
                                 "this", "java.lang.Object") +
                 "}"
