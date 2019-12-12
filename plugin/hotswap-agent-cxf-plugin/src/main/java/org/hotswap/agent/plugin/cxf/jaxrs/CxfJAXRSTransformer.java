@@ -105,6 +105,7 @@ public class CxfJAXRSTransformer {
             loadMethod.insertAfter( "{ " +
             		"ClassLoader $$cl = java.lang.Thread.currentThread().getContextClassLoader();" +
                     "if ($$cl==null) $$cl = getClass().getClassLoader();" +
+                    PluginManagerInvoker.buildInitializePlugin(CxfJAXRSPlugin.class, "$$cl") +
                     PluginManagerInvoker.buildCallPluginMethod("$$cl", CxfJAXRSPlugin.class, "registerJAXBProvider",
                                 "this", "java.lang.Object") +
                 "}"
