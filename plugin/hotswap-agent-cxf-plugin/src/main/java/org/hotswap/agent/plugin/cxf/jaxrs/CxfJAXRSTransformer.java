@@ -92,7 +92,6 @@ public class CxfJAXRSTransformer {
             );
             ctClass.addMethod(CtMethod.make(
                     "public void clearSingletonInstance() { this.singletonInstance=null; }", ctClass));
-            ctClass.addMethod(loadMethod);
     } catch(NotFoundException | CannotCompileException e){
             LOGGER.error("Error patching ResourceUtils", e);
         }
