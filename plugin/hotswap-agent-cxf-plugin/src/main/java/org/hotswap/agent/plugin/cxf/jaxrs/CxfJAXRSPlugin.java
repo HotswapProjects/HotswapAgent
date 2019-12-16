@@ -137,7 +137,7 @@ public class CxfJAXRSPlugin {
         try {
             Object classResourceInfoProxy = classResourceInfoRegistry.get(className);
             if (classResourceInfoProxy == null) {
-                LOGGER.error("refreshClass() ClassResourceInfo proxy not found for classResourceInfo={}.", className);
+                LOGGER.debug("refreshClass() ClassResourceInfo proxy not found for classResourceInfo={}.", className);
                 return;
             }
             Class<?> cmdClass = Class.forName(CxfJAXRSCommand.class.getName(), true, appClassLoader);
