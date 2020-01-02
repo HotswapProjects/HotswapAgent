@@ -174,6 +174,7 @@ uses agent services to:
 * [Logback](plugin/hotswap-agent-logback-plugin/README.md) - Logback configuration reload.
 * [Log4j2](plugin/hotswap-agent-log4j2-plugin/README.md) - Log4j2 configuration reload.
 * [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.1,2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
+* [MyBatis](plugin/hotswap-agent-mybatis-plugin/README.md) (5.3) - reload configuration after mapper file changes
 * [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
 * [OmniFaces](plugin/hotswap-agent-owb-plugin/README.md) - support for ViewScoped beans reinjection/reloading.
 * [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.7.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
