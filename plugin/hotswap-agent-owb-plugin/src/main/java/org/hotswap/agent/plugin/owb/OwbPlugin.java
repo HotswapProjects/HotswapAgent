@@ -159,6 +159,7 @@ public class OwbPlugin {
                 continue;
             }
 
+            LOGGER.info("OWB: Registerering '{}' for changes....", archivePath);
             OwbPlugin.archivePath = archivePath; // store path for unit tests (single archive expected)
 
             try {
