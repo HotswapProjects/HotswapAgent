@@ -183,7 +183,7 @@ uses agent services to:
 * [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3x, 4.x, 5.x) - Reload Spring configuration after class definition/change.
 * [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (10.x) - Update routes, template models and in practice anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
-* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2-2.4) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
+* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2,2.3,3.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [Wicket](plugin/hotswap-agent-wicket-plugin/README.md) - clear wicket caches if property files are changed
 * [WildFlyELResolver](plugin/hotswap-agent-wildfly-el-plugin/README.md) - Clear BeanELResolver after any class redefinition.
 * [ZK](plugin/hotswap-agent-zk-plugin/README.md) (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and bean resolver cache.
