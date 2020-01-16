@@ -102,14 +102,14 @@ public class DeltaSpikePlugin {
     // ds>=1.9
     public void registerRepoProxy(Object repoProxy, Class<?> repositoryClass) {
         if (repositoryClasses == null) {
-        	return;
+            return;
         }
         if (!registeredRepoProxies.containsKey(repoProxy)) {
             LOGGER.debug("DeltaspikePlugin - repository proxy registered : {}", repositoryClass.getName());
         }
         Class<?> checkedClass = repositoryClass;
         while(checkedClass != null && !repositoryClasses.contains(checkedClass)) {
-        	checkedClass = checkedClass.getSuperclass();
+            checkedClass = checkedClass.getSuperclass();
         }
         if (checkedClass != null) {
             registeredRepoProxies.put(repoProxy, repositoryClass.getName());
@@ -134,7 +134,9 @@ public class DeltaSpikePlugin {
     public void classReload(CtClass clazz, Class original, ClassPool classPool) throws NotFoundException {
         checkRefreshViewConfigExtension(clazz, original);
         PartialBeanClassRefreshCommand cmd = checkRefreshPartialBean(clazz, original, classPool);
-        checkRefreshRepository(clazz, classPool, cmd);
+        if (cmd != null) {
+            checkRefreshRepository(clazz, classPool, cmd);
+        }
     }
 
     private PartialBeanClassRefreshCommand checkRefreshPartialBean(CtClass clazz, Class original, ClassPool classPool) throws NotFoundException {
@@ -158,11 +160,7 @@ public class DeltaSpikePlugin {
                 cmd = new RepositoryRefreshCommand(appClassLoader, clazz.getName(), getRepositoryProxies(clazz.getName()));
             }
             if (cmd != null) {
-            	if (masterCmd != null) {
-            		masterCmd.addChainedCommand(cmd);
-            	} else {
-                    scheduler.scheduleCommand(cmd, WAIT_ON_REDEFINE);
-            	}
+                masterCmd.addChainedCommand(cmd);
             }
         }
     }
@@ -190,7 +188,7 @@ public class DeltaSpikePlugin {
         }
         CtClass superClass = clazz.getSuperclass();
         if (superClass != null) {
-        	return isRepository(superClass, classPool);
+            return isRepository(superClass, classPool);
         }
         return false;
     }
