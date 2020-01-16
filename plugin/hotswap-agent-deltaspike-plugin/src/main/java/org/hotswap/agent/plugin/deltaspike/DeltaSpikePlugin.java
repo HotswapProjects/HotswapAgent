@@ -101,13 +101,19 @@ public class DeltaSpikePlugin {
 
     // ds>=1.9
     public void registerRepoProxy(Object repoProxy, Class<?> repositoryClass) {
-        if (repositoryClasses == null || !repositoryClasses.contains(repositoryClass)) {
-            return;
+        if (repositoryClasses == null) {
+        	return;
         }
         if (!registeredRepoProxies.containsKey(repoProxy)) {
             LOGGER.debug("DeltaspikePlugin - repository proxy registered : {}", repositoryClass.getName());
         }
-        registeredRepoProxies.put(repoProxy, repositoryClass.getName());
+        Class<?> checkedClass = repositoryClass;
+        while(checkedClass != null && !repositoryClasses.contains(checkedClass)) {
+        	checkedClass = checkedClass.getSuperclass();
+        }
+        if (checkedClass != null) {
+            registeredRepoProxies.put(repoProxy, repositoryClass.getName());
+        }
     }
 
     public void registerPartialBean(Object bean, Class<?> partialBeanClass) {
@@ -152,7 +158,11 @@ public class DeltaSpikePlugin {
                 cmd = new RepositoryRefreshCommand(appClassLoader, clazz.getName(), getRepositoryProxies(clazz.getName()));
             }
             if (cmd != null) {
-                masterCmd.addChainedCommand(cmd);
+            	if (masterCmd != null) {
+            		masterCmd.addChainedCommand(cmd);
+            	} else {
+                    scheduler.scheduleCommand(cmd, WAIT_ON_REDEFINE);
+            	}
             }
         }
     }
@@ -177,6 +187,10 @@ public class DeltaSpikePlugin {
         }
         if (AnnotationHelper.hasAnnotation(clazz, REPOSITORY_ANNOTATION)) {
             return true;
+        }
+        CtClass superClass = clazz.getSuperclass();
+        if (superClass != null) {
+        	return isRepository(superClass, classPool);
         }
         return false;
     }
