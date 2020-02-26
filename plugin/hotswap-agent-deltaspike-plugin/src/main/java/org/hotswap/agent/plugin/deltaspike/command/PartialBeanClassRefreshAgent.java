@@ -21,11 +21,13 @@ package org.hotswap.agent.plugin.deltaspike.command;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
+import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 
 import org.apache.deltaspike.core.api.provider.BeanManagerProvider;
 import org.apache.deltaspike.partialbean.impl.PartialBeanProxyFactory;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.deltaspike.DeltaspikeClassSignatureHelper;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -37,8 +39,17 @@ public class PartialBeanClassRefreshAgent {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(PartialBeanClassRefreshAgent.class);
 
-    public static void refreshPartialBeanClass(ClassLoader classLoader, Object partialBean) {
+    public static void refreshPartialBeanClass(ClassLoader classLoader, Object partialBean, String oldSignaturesForProxyCheck) {
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
+
+        Bean<?> bean = (Bean<?>) partialBean;
+        Class<?> beanClass = bean.getBeanClass();
+
+        String newClassSignature = DeltaspikeClassSignatureHelper.getSignaturePartialBeanClass(beanClass);
+        if (newClassSignature != null && newClassSignature.equals(oldSignaturesForProxyCheck)) {
+            return;
+        }
+
         ProxyClassLoadingDelegate.beginProxyRegeneration();
 
         try {

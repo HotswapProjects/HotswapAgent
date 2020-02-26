@@ -42,12 +42,14 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
     Object partialBean;
     String className;
     private Scheduler scheduler;
+    String oldSignForProxyCheck;
     List<Command> chainedCommands = new ArrayList<>();
 
-    public PartialBeanClassRefreshCommand(ClassLoader classLoader, Object partialBean, String className, Scheduler scheduler) {
+    public PartialBeanClassRefreshCommand(ClassLoader classLoader, Object partialBean, String className, String oldSignForProxyCheck, Scheduler scheduler) {
         this.appClassLoader = classLoader;
         this.partialBean = partialBean;
         this.className = className;
+        this.oldSignForProxyCheck = oldSignForProxyCheck;
         this.scheduler = scheduler;
     }
 
@@ -58,11 +60,12 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
     @Override
     public void executeCommand() {
         boolean reloaded = false;
+
         try {
             LOGGER.debug("Executing PartialBeanClassRefreshAgent.refreshPartialBeanClass('{}')", className);
             Class<?> agentClazz = Class.forName(PartialBeanClassRefreshAgent.class.getName(), true, appClassLoader);
-            Method m  = agentClazz.getDeclaredMethod("refreshPartialBeanClass", new Class[] {ClassLoader.class, Object.class});
-            m.invoke(null, appClassLoader, partialBean);
+            Method m  = agentClazz.getDeclaredMethod("refreshPartialBeanClass", new Class[] {ClassLoader.class, Object.class, String.class});
+            m.invoke(null, appClassLoader, partialBean, oldSignForProxyCheck);
             reloaded = true;
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
