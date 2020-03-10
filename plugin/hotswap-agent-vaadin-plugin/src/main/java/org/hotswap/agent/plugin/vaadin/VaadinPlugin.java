@@ -30,7 +30,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * @author Matti Tahvonen
  */
 @Plugin(name = "Vaadin", description = "Vaadin Platform support", testedVersions = {
-    "10.0.0.beta9","13.0.1"}, expectedVersions = {"10.0+"})
+    "10.0.0.beta9","13.0.1", "15.0.0"}, expectedVersions = {"10.0+"})
 public class VaadinPlugin {
 
     @Init
@@ -102,8 +102,17 @@ public class VaadinPlugin {
             vaadinServletGetServletContext = resolveClass(
                     "javax.servlet.GenericServlet")
                     .getDeclaredMethod("getServletContext");
-            routeRegistryGet = getRouteRegistryClass()
-                    .getDeclaredMethod("getInstance", servletContextClass);
+            try {
+                // Vaadin 14+
+                Class<?> vaadinContextClass = resolveClass(
+                        "com.vaadin.flow.server.VaadinContext");
+                routeRegistryGet = getRouteRegistryClass()
+                        .getDeclaredMethod("getInstance", vaadinContextClass);
+            } catch (NoSuchMethodException e) {
+                // Previous versions
+                routeRegistryGet = getRouteRegistryClass()
+                        .getDeclaredMethod("getInstance", servletContextClass);
+            }
         } catch (NoSuchMethodException | SecurityException
                 | ClassNotFoundException e) {
             e.printStackTrace();
@@ -231,18 +240,22 @@ public class VaadinPlugin {
      */
     private void addToRouterConfiguration(CtClass ctClass) {
         try {
-            setRouteMethod.invoke(routeConfiguration, resolveClass(ctClass.getName()));
-        } catch(InvocationTargetException ex) {
-            //com.vaadin.flow.server.InvalidRouteConfigurationException
-            if(ex.getCause().getClass().getName().equals("com.vaadin.flow.server.InvalidRouteConfigurationException")) {
-                LOGGER.debug("Already registered");
-            } else {
-                LOGGER.error(null, ex);
+            try {
+                setRouteMethod.invoke(routeConfiguration, resolveClass(ctClass.getName()));
+            } catch (InvocationTargetException ex) {
+                // This is the superclass of route configuration exceptions. Assume that if `setRouteMethod` throws
+                // this most likely because the route already exists, so it is fine. Note that this will silence
+                // legitimate problems, such as two views with the same route.
+                Class<?> routeExceptionSuperclass = resolveClass("com.vaadin.flow.server.InvalidRouteConfigurationException");
+                if (routeExceptionSuperclass.isAssignableFrom(ex.getCause().getClass())) {
+                    LOGGER.debug("Unable to add route", ex);
+                } else {
+                    LOGGER.error(null, ex);
+                }
             }
         } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
             LOGGER.error(null, ex);
         }
-
     }
 
 }
