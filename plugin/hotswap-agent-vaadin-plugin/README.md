@@ -9,8 +9,9 @@ To create a vaadin project, go to https://vaadin.com/start
 * Register changes in `@Route` to the router when a class is modified (add new views on the fly)
 * Changes to a template model are live after a browser refresh
 * All internal metadata caches are cleared whenever a class is changed
+* Automatic browser refresh when Java classes are reloaded  
 
 Known issues:
-* The plugin is currently compatible with Vaadin versions 10-12. Latest version 13 don't work properly due to changes in Route registration.
+* The plugin is currently compatible with Vaadin versions 13 or older 
 * Removing a class with `@Route` does not remove the mapping
 

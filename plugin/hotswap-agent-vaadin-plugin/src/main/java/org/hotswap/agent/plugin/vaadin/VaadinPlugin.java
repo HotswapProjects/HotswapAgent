@@ -1,11 +1,9 @@
 package org.hotswap.agent.plugin.vaadin;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
@@ -22,15 +20,18 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
- * Vaadin Platform hotswap support
+ * Vaadin 14.0+ plugin for HotswapAgent.
  *
  * https://vaadin.com
  *
  * @author Artur Signell
  * @author Matti Tahvonen
+ * @autho Johannes Eriksson
  */
-@Plugin(name = "Vaadin", description = "Vaadin Platform support", testedVersions = {
-    "10.0.0.beta9","13.0.1", "15.0.0"}, expectedVersions = {"10.0+"})
+@Plugin(name = "Vaadin",
+        description = "Vaadin Platform support",
+        testedVersions = {"14.1.20", "14.2.0.alpha7", "15.0.2"},
+        expectedVersions = {"14.1.20", "15.0.2"})
 public class VaadinPlugin {
 
     @Init
@@ -39,21 +40,20 @@ public class VaadinPlugin {
     @Init
     ClassLoader appClassLoader;
 
-    ReflectionCommand clearReflectionCache = new ReflectionCommand(this,
+    private UpdateRoutesCommand updateRouteRegistryCommand;
+
+    private ReflectionCommand reloadCommand;
+
+    private ReflectionCommand clearReflectionCache = new ReflectionCommand(this,
             "com.vaadin.flow.internal.ReflectionCache", "clearAll");
 
-    private Object vaadinServlet;
+    private Set<Class<?>> addedClasses = new HashSet<>();
 
-    private Method vaadinServletGetServletContext;
+    private Set<Class<?>> modifiedClasses = new HashSet<>();
 
-    private Method routeRegistryGet;
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(VaadinPlugin.class);
 
-    private boolean vaadin13orNewer;
-
-    private static AgentLogger LOGGER = AgentLogger
-            .getLogger(VaadinPlugin.class);
-    private Object routeConfiguration;
-    private Method setRouteMethod;
+    private static final int RELOAD_QUIET_TIME =1750; // ms
 
     public VaadinPlugin() {
     }
@@ -64,198 +64,79 @@ public class VaadinPlugin {
         String src = PluginManagerInvoker
                 .buildInitializePlugin(VaadinPlugin.class);
         src += PluginManagerInvoker.buildCallPluginMethod(VaadinPlugin.class,
-                "registerServlet", "this", "java.lang.Object");
+                "registerServlet", "this", Object.class.getName());
         ctClass.getDeclaredConstructor(new CtClass[0]).insertAfter(src);
 
         LOGGER.info("Initialized Vaadin plugin");
     }
 
-    @OnClassLoadEvent(classNameRegexp = "com.vaadin.flow.router.RouteConfiguration")
-    public static void initRouteRegistry(CtClass ctClass)
-            throws NotFoundException, CannotCompileException {
-        String src = PluginManagerInvoker
-                .buildInitializePlugin(VaadinPlugin.class);
-        src += PluginManagerInvoker.buildCallPluginMethod(VaadinPlugin.class,
-                "registerRouteConfiguration", "this", "java.lang.Object");
-        ctClass.getDeclaredConstructors()[0].insertAfter(src);
-    }
-    
-    public void registerRouteConfiguration(Object routeConfiguration) {
-        try {
-            if(routeConfiguration != null) {
-                // first RouteConfiguration is the one used for global routes
-                setRouteMethod = routeConfiguration.getClass().getMethod("setAnnotatedRoute", Class.class);
-                this.routeConfiguration = routeConfiguration;
-            }
-        } catch (NoSuchMethodException | SecurityException ex) {
-            LOGGER.error(null, ex);
-        }
-        
-    }
-
     public void registerServlet(Object vaadinServlet) {
-        this.vaadinServlet = vaadinServlet;
-
         try {
-            Class<?> servletContextClass = resolveClass(
-                    "javax.servlet.ServletContext");
-            vaadinServletGetServletContext = resolveClass(
-                    "javax.servlet.GenericServlet")
-                    .getDeclaredMethod("getServletContext");
-            try {
-                // Vaadin 14+
-                Class<?> vaadinContextClass = resolveClass(
-                        "com.vaadin.flow.server.VaadinContext");
-                routeRegistryGet = getRouteRegistryClass()
-                        .getDeclaredMethod("getInstance", vaadinContextClass);
-            } catch (NoSuchMethodException e) {
-                // Previous versions
-                routeRegistryGet = getRouteRegistryClass()
-                        .getDeclaredMethod("getInstance", servletContextClass);
-            }
-        } catch (NoSuchMethodException | SecurityException
-                | ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IllegalArgumentException ex) {
+            Class<?> vaadinIntegrationClass = appClassLoader.loadClass(
+                    VaadinIntegration.class.getName());
+            Object vaadinIntegration = vaadinIntegrationClass.getConstructor()
+                    .newInstance();
+            scheduler.scheduleCommand(new ReflectionCommand(vaadinIntegration,
+                    "servletInitialized", vaadinServlet));
+            updateRouteRegistryCommand = new UpdateRoutesCommand(vaadinIntegration);
+            reloadCommand = new ReflectionCommand(vaadinIntegration, "reload");
+        } catch (ClassNotFoundException | NoSuchMethodException
+                | InstantiationException | IllegalAccessException
+                | InvocationTargetException ex) {
             LOGGER.error(null, ex);
         }
-
-        LOGGER.info("Plugin {} initialized for servlet {}", getClass(),
-                vaadinServlet);
-    }
-
-    private Class<?> getRouteRegistryClass() throws ClassNotFoundException {
-        try {
-            return resolveClass("com.vaadin.flow.server.startup.RouteRegistry");
-        } catch (ClassNotFoundException e) {
-            // Vaadin 13+ app
-            LOGGER.debug("Vaadin 13 app detected");
-            vaadin13orNewer = true;
-            return resolveClass("com.vaadin.flow.server.startup.ApplicationRouteRegistry");
-        }
-    }
-
-    public Object getRouteRegistry() {
-        try {
-            Object servletContext = vaadinServletGetServletContext
-                    .invoke(vaadinServlet);
-            Object routeRegistry = routeRegistryGet.invoke(null,
-                    servletContext);
-            return routeRegistry;
-        } catch (IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return null;
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
-    public void invalidateReflectionCache() throws Exception {
-        LOGGER.debug("Clearing Vaadin reflection cache");
+    public void invalidateReflectionCache(CtClass ctClass) throws Exception {
+        LOGGER.debug("Redefined class {}, clearing Vaadin reflection cache and reloading browser", ctClass.getName());
         scheduler.scheduleCommand(clearReflectionCache);
+        scheduler.scheduleCommand(reloadCommand, RELOAD_QUIET_TIME);
     }
 
-    @OnClassFileEvent(classNameRegexp = ".*", events = {FileEvent.CREATE,
-        FileEvent.MODIFY})
-    public void addNewRoute(CtClass ctClass) throws Exception {
-        LOGGER.debug("Class file event for " + ctClass.getName());
-        if (ctClass.hasAnnotation("com.vaadin.flow.router.Route")) {
-            LOGGER.info("HotSwapAgent dynamically added new route to " + ctClass.getName());
-            if (vaadin13orNewer) {
-                addToRouterConfiguration(ctClass);
-            } else {
-                ensureInRouter(ctClass);
-            }
+    @OnClassFileEvent(classNameRegexp = ".*", events = { FileEvent.CREATE, FileEvent.MODIFY })
+    public void classCreated(FileEvent eventType, CtClass ctClass) throws Exception {
+        if (FileEvent.CREATE.equals(eventType)) {
+            LOGGER.debug("Create class file event for " + ctClass.getName());
+            addedClasses.add(resolveClass(ctClass.getName()));
+        } else if (FileEvent.MODIFY.equals(eventType)) {
+            LOGGER.debug("Modify class file event for " + ctClass.getName());
+            modifiedClasses.add(resolveClass(ctClass.getName()));
         }
-    }
-
-    private void ensureInRouter(CtClass ctClass)
-            throws ReflectiveOperationException {
-        if (vaadin13orNewer) {
-            throw new RuntimeException("This method is not supported with Vaadin 13");
-        }
-        Object routeRegistry = getRouteRegistry();
-        Set<Class<?>> routeClasses = getCurrentRouteClasses(routeRegistry);
-
-        Class<?> hashSet = resolveClass("java.util.HashSet");
-        Object classSet = hashSet.newInstance();
-        Method addAll = hashSet.getMethod("addAll",
-                resolveClass("java.util.Collection"));
-        Method add = hashSet.getMethod("add", resolveClass("java.lang.Object"));
-        addAll.invoke(classSet, routeClasses);
-        add.invoke(classSet, resolveClass(ctClass.getName()));
-
-        forceRouteUpdate(routeRegistry, classSet);
-    }
-
-    private void forceRouteUpdate(Object routeRegistry, Object routeClassSet)
-            throws ReflectiveOperationException {
-
-        Field targetRoutesField = getRouteRegistryClass()
-                .getDeclaredField("targetRoutes");
-        Field routesField = getRouteRegistryClass().getDeclaredField("routes");
-        Field routeDataField = getRouteRegistryClass()
-                .getDeclaredField("routeData");
-
-        targetRoutesField.setAccessible(true);
-        routesField.setAccessible(true);
-        routeDataField.setAccessible(true);
-
-        targetRoutesField.set(routeRegistry, createAtomicRef());
-        routesField.set(routeRegistry, createAtomicRef());
-        routeDataField.set(routeRegistry, createAtomicRef());
-
-        Method setNavigationTargets = getRouteRegistryClass().getDeclaredMethod(
-                "setNavigationTargets", resolveClass("java.util.Set"));
-        setNavigationTargets.invoke(routeRegistry, routeClassSet);
-    }
-
-    private Object createAtomicRef() throws InstantiationException,
-            IllegalAccessException, ClassNotFoundException {
-        return resolveClass("java.util.concurrent.atomic.AtomicReference")
-                .newInstance();
-    }
-
-    private Set<Class<?>> getCurrentRouteClasses(Object routeRegistry)
-            throws ReflectiveOperationException {
-        Field targetRoutesField = getRouteRegistryClass()
-                .getDeclaredField("targetRoutes");
-        targetRoutesField.setAccessible(true);
-        AtomicReference<Map> ref = (AtomicReference<Map>) targetRoutesField
-                .get(routeRegistry);
-        return ref.get().keySet();
+        // Note that scheduling multiple calls to the same command postpones it
+        scheduler.scheduleCommand(updateRouteRegistryCommand);
+        scheduler.scheduleCommand(reloadCommand, RELOAD_QUIET_TIME);
     }
 
     private Class<?> resolveClass(String name) throws ClassNotFoundException {
         return Class.forName(name, true, appClassLoader);
     }
 
-    /**
-     * Metacode: conf = new RouteConfiguration(getApplicationRegistry()) conf =
-     * RouteConfiguration.forApplicationScope(); conf.setAnnotatedRoute(cls)
-     *
-     *
-     * @param ctClass
-     */
-    private void addToRouterConfiguration(CtClass ctClass) {
-        try {
-            try {
-                setRouteMethod.invoke(routeConfiguration, resolveClass(ctClass.getName()));
-            } catch (InvocationTargetException ex) {
-                // This is the superclass of route configuration exceptions. Assume that if `setRouteMethod` throws
-                // this most likely because the route already exists, so it is fine. Note that this will silence
-                // legitimate problems, such as two views with the same route.
-                Class<?> routeExceptionSuperclass = resolveClass("com.vaadin.flow.server.InvalidRouteConfigurationException");
-                if (routeExceptionSuperclass.isAssignableFrom(ex.getCause().getClass())) {
-                    LOGGER.debug("Unable to add route", ex);
-                } else {
-                    LOGGER.error(null, ex);
-                }
-            }
-        } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
-            LOGGER.error(null, ex);
+    private class UpdateRoutesCommand extends ReflectionCommand {
+        private Object flowIntegration;
+
+        UpdateRoutesCommand(Object vaadinIntegration) {
+            super(vaadinIntegration, "updateRoutes", addedClasses, modifiedClasses);
+            this.flowIntegration = vaadinIntegration;
+        }
+
+        // NOTE: Identity equality semantics
+
+        @Override
+        public boolean equals(Object that) {
+            return this == that;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(flowIntegration);
+        }
+
+        @Override
+        public void executeCommand() {
+            super.executeCommand();
+            addedClasses.clear();
+            modifiedClasses.clear();
         }
     }
-
 }
