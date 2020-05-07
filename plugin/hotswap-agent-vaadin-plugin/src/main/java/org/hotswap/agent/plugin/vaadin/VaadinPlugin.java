@@ -13,6 +13,7 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
@@ -31,7 +32,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 @Plugin(name = "Vaadin",
         description = "Vaadin Platform support",
         testedVersions = {"14.1.20", "14.2.0.alpha7", "15.0.2"},
-        expectedVersions = {"14.1.20", "15.0.2"})
+        expectedVersions = {"14 - 16"})
 public class VaadinPlugin {
 
     @Init
@@ -39,6 +40,9 @@ public class VaadinPlugin {
 
     @Init
     ClassLoader appClassLoader;
+
+    @Init
+    PluginConfiguration pluginConfiguration;
 
     private UpdateRoutesCommand updateRouteRegistryCommand;
 
@@ -53,7 +57,11 @@ public class VaadinPlugin {
 
     private static final AgentLogger LOGGER = AgentLogger.getLogger(VaadinPlugin.class);
 
-    private static final int RELOAD_QUIET_TIME =1750; // ms
+    private static final String RELOAD_QUIET_TIME_PARAMETER = "vaadin.liveReloadQuietTime";
+
+    private static final int DEFAULT_RELOAD_QUIET_TIME = 1000; // ms
+
+    private int reloadQuietTime = 0;
 
     public VaadinPlugin() {
     }
@@ -76,8 +84,12 @@ public class VaadinPlugin {
                     VaadinIntegration.class.getName());
             Object vaadinIntegration = vaadinIntegrationClass.getConstructor()
                     .newInstance();
-            scheduler.scheduleCommand(new ReflectionCommand(vaadinIntegration,
-                    "servletInitialized", vaadinServlet));
+            Class<?> vaadinServletClass = Class.forName("com.vaadin.flow.server.VaadinServlet",
+                    true, appClassLoader);
+            Method m = vaadinIntegrationClass.getDeclaredMethod("servletInitialized",
+                    vaadinServletClass);
+            m.invoke(vaadinIntegration, vaadinServlet);
+
             updateRouteRegistryCommand = new UpdateRoutesCommand(vaadinIntegration);
             reloadCommand = new ReflectionCommand(vaadinIntegration, "reload");
         } catch (ClassNotFoundException | NoSuchMethodException
@@ -91,7 +103,7 @@ public class VaadinPlugin {
     public void invalidateReflectionCache(CtClass ctClass) throws Exception {
         LOGGER.debug("Redefined class {}, clearing Vaadin reflection cache and reloading browser", ctClass.getName());
         scheduler.scheduleCommand(clearReflectionCache);
-        scheduler.scheduleCommand(reloadCommand, RELOAD_QUIET_TIME);
+        scheduler.scheduleCommand(reloadCommand, getReloadQuietTime());
     }
 
     @OnClassFileEvent(classNameRegexp = ".*", events = { FileEvent.CREATE, FileEvent.MODIFY })
@@ -105,19 +117,35 @@ public class VaadinPlugin {
         }
         // Note that scheduling multiple calls to the same command postpones it
         scheduler.scheduleCommand(updateRouteRegistryCommand);
-        scheduler.scheduleCommand(reloadCommand, RELOAD_QUIET_TIME);
     }
 
     private Class<?> resolveClass(String name) throws ClassNotFoundException {
         return Class.forName(name, true, appClassLoader);
     }
 
+    private int getReloadQuietTime() {
+        if (reloadQuietTime <= 0) {
+            reloadQuietTime = DEFAULT_RELOAD_QUIET_TIME;
+            String reloadQuietTimeValue = pluginConfiguration.getProperty(RELOAD_QUIET_TIME_PARAMETER);
+            if (reloadQuietTimeValue != null) {
+                if (reloadQuietTimeValue.matches("[1-9][0-1]+")) {
+                    reloadQuietTime = Integer.parseInt(reloadQuietTimeValue);
+                    LOGGER.info("Live-reload quiet time is {} ms", reloadQuietTime);
+                } else {
+                    LOGGER.error("Illegal value '{}' for parameter {}, using default of {} ms",
+                            reloadQuietTimeValue, RELOAD_QUIET_TIME_PARAMETER, DEFAULT_RELOAD_QUIET_TIME);
+                }
+            }
+        }
+        return reloadQuietTime;
+    }
+
     private class UpdateRoutesCommand extends ReflectionCommand {
-        private Object flowIntegration;
+        private final Object vaadinIntegration;
 
         UpdateRoutesCommand(Object vaadinIntegration) {
             super(vaadinIntegration, "updateRoutes", addedClasses, modifiedClasses);
-            this.flowIntegration = vaadinIntegration;
+            this.vaadinIntegration = vaadinIntegration;
         }
 
         // NOTE: Identity equality semantics
@@ -129,7 +157,7 @@ public class VaadinPlugin {
 
         @Override
         public int hashCode() {
-            return System.identityHashCode(flowIntegration);
+            return System.identityHashCode(vaadinIntegration);
         }
 
         @Override

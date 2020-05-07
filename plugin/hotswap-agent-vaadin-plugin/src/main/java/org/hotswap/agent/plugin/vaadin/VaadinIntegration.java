@@ -150,7 +150,7 @@ public class VaadinIntegration {
                     .forEach(clazz -> {
                         Class<? extends Component> componentClass = (Class<? extends Component>) clazz;
                         LOGGER.info(
-                                "Updating route {} to {}", componentClass
+                                "Updating route '{}' to {}", componentClass
                                         .getAnnotation(Route.class).value(),
                                 clazz);
                         routeConf.removeRoute(componentClass);
