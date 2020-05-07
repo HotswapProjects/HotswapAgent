@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.vaadin;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -83,8 +84,12 @@ public class VaadinPlugin {
                     VaadinIntegration.class.getName());
             Object vaadinIntegration = vaadinIntegrationClass.getConstructor()
                     .newInstance();
-            scheduler.scheduleCommand(new ReflectionCommand(vaadinIntegration,
-                    "servletInitialized", vaadinServlet));
+            Class<?> vaadinServletClass = Class.forName("com.vaadin.flow.server.VaadinServlet",
+                    true, appClassLoader);
+            Method m = vaadinIntegrationClass.getDeclaredMethod("servletInitialized",
+                    vaadinServletClass);
+            m.invoke(vaadinIntegration, vaadinServlet);
+
             updateRouteRegistryCommand = new UpdateRoutesCommand(vaadinIntegration);
             reloadCommand = new ReflectionCommand(vaadinIntegration, "reload");
         } catch (ClassNotFoundException | NoSuchMethodException
@@ -136,11 +141,11 @@ public class VaadinPlugin {
     }
 
     private class UpdateRoutesCommand extends ReflectionCommand {
-        private final Object flowIntegration;
+        private final Object vaadinIntegration;
 
         UpdateRoutesCommand(Object vaadinIntegration) {
             super(vaadinIntegration, "updateRoutes", addedClasses, modifiedClasses);
-            this.flowIntegration = vaadinIntegration;
+            this.vaadinIntegration = vaadinIntegration;
         }
 
         // NOTE: Identity equality semantics
@@ -152,7 +157,7 @@ public class VaadinPlugin {
 
         @Override
         public int hashCode() {
-            return System.identityHashCode(flowIntegration);
+            return System.identityHashCode(vaadinIntegration);
         }
 
         @Override
