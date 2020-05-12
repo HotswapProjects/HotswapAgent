@@ -271,6 +271,6 @@ Hotswap agent:
 DCEVM:
 
 * Ivan Dubrov - current project coordinator, update to Java7+Java8, patches, build system (Gradle)
-* Thomas W??rthinger - initial implementation.
+* Thomas Würthinger - initial implementation.
 * Kerstin Breitender - contributor.
 * Christoph Wimberger - contributor.
