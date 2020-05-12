@@ -274,3 +274,5 @@ DCEVM:
 * Thomas Würthinger - initial implementation.
 * Kerstin Breitender - contributor.
 * Christoph Wimberger - contributor.
+* Vladimir Dvorak - java9,java11 migration, contributor
+* Jiri Bubnik - java9,java11 migration
