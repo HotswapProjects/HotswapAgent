@@ -33,6 +33,13 @@
 
         <dependency>
             <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${org.springframework.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>${org.springframework.version}</version>
         </dependency>
@@ -76,6 +83,13 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.0.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

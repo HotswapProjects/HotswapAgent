@@ -24,12 +24,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
-import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.testBeans.BeanPrototype;
 import org.hotswap.agent.plugin.spring.testBeans.BeanRepository;
@@ -44,9 +39,9 @@ import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
 import org.hotswap.agent.util.spring.io.resource.Resource;
 import org.hotswap.agent.util.test.WaitHelper;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,7 +64,8 @@ public class SpringPluginTest {
     @Autowired
     ApplicationContext applicationContext;
 
-    private Set<Class<?>> swappedClasses;
+    @Rule
+    public ClassSwappingRule swappingRule = new ClassSwappingRule();
 
     /**
      * Check correct setup.
@@ -169,22 +165,7 @@ public class SpringPluginTest {
     }
 
     private void swapClasses(Class<?> original, Class<?> swap) throws Exception {
-        if (original.equals(swap))
-            swappedClasses.remove(original);
-        else
-            swappedClasses.add(original);
-        ClassPathBeanDefinitionScannerAgent.reloadFlag = true;
-        HotSwapper.swapClasses(original, swap.getName());
-        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !ClassPathBeanDefinitionScannerAgent.reloadFlag;
-            }
-        }));
-
-        // TODO do not know why sleep is needed, maybe a separate thread in Spring
-        // refresh?
-        Thread.sleep(100);
+        swappingRule.swapClasses(original, swap);
     }
 
     private static ApplicationContext xmlApplicationContext;
@@ -201,17 +182,10 @@ public class SpringPluginTest {
      */
     @Before
     public void before() throws IOException {
-        swappedClasses = new HashSet<>();
         if (xmlApplicationContext == null) {
             writeRepositoryToXml();
             xmlApplicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");
         }
-    }
-
-    @After
-    public void after() throws Exception {
-        for (Class<?> cls : new ArrayList<>(swappedClasses))
-            swapClasses(cls, cls);
     }
 
     private void writeRepositoryToXml() throws IOException {
