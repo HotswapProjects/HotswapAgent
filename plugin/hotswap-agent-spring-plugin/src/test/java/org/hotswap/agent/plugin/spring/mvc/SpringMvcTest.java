@@ -43,7 +43,13 @@ public class SpringMvcTest {
 
     @Test
     public void changeMappingAndMethodBody() throws Exception {
+        // warm up to fill all caches
+        mockMvc.perform(get("/hello")).andExpect(status().isOk());
+
+        // swap classes
         swappingRule.swapClasses(SampleRestController.class, SampleRestController2.class);
+
+        // make sure classes are swapped
         mockMvc.perform(get("/hello")).andExpect(status().isNotFound());
         mockMvc.perform(get("/helloSwapped")).andExpect(status().isOk())
                 .andExpect(content().string("Hello World Swapped"));
