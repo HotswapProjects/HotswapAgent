@@ -18,6 +18,8 @@
  */
 package org.hotswap.agent.plugin.spring.testBeans;
 
+import javax.inject.Inject;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,9 +30,17 @@ import org.springframework.stereotype.Service;
 public class BeanServiceImpl implements BeanService {
     @Autowired
     BeanRepository beanRepository;
-    //BeanChangedRepository beanRepository;
 
+    @Inject
+    BeanChangedRepository beanRepositoryWithInject;
+
+    @Override
     public String hello() {
         return beanRepository.hello() + " Service";
+    }
+
+    @Override
+    public String isInjectFieldInjected() {
+        return "injected:" + (beanRepositoryWithInject != null);
     }
 }

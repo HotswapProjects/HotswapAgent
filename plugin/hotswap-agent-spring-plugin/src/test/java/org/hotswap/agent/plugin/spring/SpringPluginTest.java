@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
+import javax.inject.Inject;
+
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.testBeans.BeanPrototype;
 import org.hotswap.agent.plugin.spring.testBeans.BeanRepository;
@@ -109,6 +111,16 @@ public class SpringPluginTest {
                 applicationContext.getBean(BeanServiceImpl.class), BeanServiceImpl.class, "helloNewMethod",
                 new Class[] {});
         assertEquals("Hello from helloNewMethod Service2", helloNewMethodImplVal);
+    }
+
+    /**
+     * Make sure added field with {@link Inject} annotation is injected
+     */
+    @Test
+    public void hotswapServiceAddFieldWithInject() throws Exception {
+        assertEquals("injected:true", applicationContext.getBean(BeanService.class).isInjectFieldInjected());
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class);
+        assertEquals("injectedChanged:true", applicationContext.getBean(BeanService.class).isInjectFieldInjected());
     }
 
     @Test
