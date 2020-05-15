@@ -14,6 +14,9 @@ Hotswap Agent
     <a href="https://gitter.im/HotswapProjects/user">
         <img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter">
     </a>
+    <a href='https://sourcespy.com/github/hotswapprojectshotswapagent/' title='SourceSpy Dashboard'>
+        <img src='https://sourcespy.com/shield.svg'/>
+    </a>    
     <a href="https://twitter.com/intent/follow?screen_name=HSwapAgent">
         <img src="https://img.shields.io/twitter/follow/HSwapAgent.svg?style=social&logo=twitter" alt="follow on Twitter">
     </a>
@@ -41,6 +44,8 @@ to write your custom plugin even as part of your application.
 This project is very complex due to lot of supported frameworks and various versions. Community contribution
 is mandatory to keep it alive. You can start by creating a plugin inside your application or by writing an
 example/integration test. There is always need for documentation improvement :-). Thank you for any help!
+
+The [sourcespy dashboard](https://sourcespy.com/github/hotswapprojectshotswapagent/) provides a high level overview of the repository including [module dependencies](https://sourcespy.com/github/hotswapprojectshotswapagent/xx-omodulesc-.html), [module hierarchy](https://sourcespy.com/github/hotswapprojectshotswapagent/xx-omodules-.html), [external libraries](https://sourcespy.com/github/hotswapprojectshotswapagent/xx-ojavalibs-.html), and other components of the system.
 
 ### Issue triage [![Open Source Helpers](https://www.codetriage.com/hotswapprojects/hotswapagent/badges/users.svg)](https://www.codetriage.com/hotswapprojects/hotswapagent)
 
