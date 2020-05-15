@@ -39,14 +39,36 @@ public class SpringMvcTest {
     @Test
     public void baseCase() throws Exception {
         mockMvc.perform(get("/hello")).andExpect(status().isOk()).andExpect(content().string("Hello World"));
+        mockMvc.perform(get("/helloRequestMapping")).andExpect(status().isOk())
+                .andExpect(content().string("Hello World2"));
     }
 
     @Test
-    public void changeMappingAndMethodBody() throws Exception {
+    public void changeGetMappingAndMethodBody() throws Exception {
+        // warm up to fill all caches
+        mockMvc.perform(get("/hello")).andExpect(status().isOk());
+
+        // swap classes
         swappingRule.swapClasses(SampleRestController.class, SampleRestController2.class);
+
+        // make sure classes are swapped
         mockMvc.perform(get("/hello")).andExpect(status().isNotFound());
         mockMvc.perform(get("/helloSwapped")).andExpect(status().isOk())
                 .andExpect(content().string("Hello World Swapped"));
+    }
+
+    @Test
+    public void changeRequestMappingAndMethodBody() throws Exception {
+        // warm up to fill all caches
+        mockMvc.perform(get("/helloRequestMapping")).andExpect(status().isOk());
+
+        // swap classes
+        swappingRule.swapClasses(SampleRestController.class, SampleRestController2.class);
+
+        // make sure classes are swapped
+        mockMvc.perform(get("/helloRequestMapping")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/helloRequestMappingSwapped")).andExpect(status().isOk())
+                .andExpect(content().string("Hello World2 Swapped"));
     }
 
 }

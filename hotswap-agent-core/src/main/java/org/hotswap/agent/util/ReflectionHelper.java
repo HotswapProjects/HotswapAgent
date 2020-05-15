@@ -43,7 +43,8 @@ public class ReflectionHelper {
      * @throws IllegalArgumentException if method not found
      * @throws IllegalStateException    for InvocationTargetException (exception in invoked method)
      */
-    public static Object invoke(Object target, Class<?> clazz, String methodName, Class[] parameterTypes, Object... args) {
+    public static Object invoke(Object target, Class<?> clazz, String methodName, Class<?>[] parameterTypes,
+            Object... args) {
         try {
             Method method = null;
             try {
@@ -69,22 +70,58 @@ public class ReflectionHelper {
         }
     }
 
+    /**
+     * Convenience wrapper to reflection method invoke API. Invoke the method and
+     * swallow exceptions due to missing methods. Use this method if you have
+     * multiple framework support and the method may not exist in current version.
+     *
+     * @param target         object to invoke the method on (or null for static
+     *                       methods)
+     * @param clazz          className name
+     * @param cl             Classloader to load the class
+     * @param methodName     method name
+     * @param parameterTypes parameter types to resolve method name
+     * @param args           actual arguments
+     * @return invocation result or null
+     * @throws IllegalStateException for InvocationTargetException (exception in
+     *                               invoked method)
+     */
+    public static Object invokeNoException(Object target, String className, ClassLoader cl, String methodName,
+            Class<?>[] parameterTypes, Object... args) {
+        Class<?> clazz;
+        try {
+            clazz = cl.loadClass(className);
+        } catch (ClassNotFoundException e) {
+            LOGGER.trace("Class {} not found", e, className);
+            return null;
+        }
+
+        try {
+            return invoke(target, clazz, methodName, parameterTypes, args);
+        } catch (IllegalArgumentException e) {
+            LOGGER.trace("Method {}.{} not found", e, className, methodName);
+            return null;
+        }
+    }
 
     /**
-     * Convenience wrapper to reflection method invoke API. Invoke the method and hide checked exceptions.
+     * Convenience wrapper to reflection method invoke API. Invoke the method and
+     * hide checked exceptions.
      *
-     * @param target         object to invoke the method on (or null for static methods)
-     * @param methodName     method name
+     * @param target     object to invoke the method on (or null for static methods)
+     * @param methodName method name
      * @return invocation result or null
      * @throws IllegalArgumentException if method not found
-     * @throws IllegalStateException    for InvocationTargetException (exception in invoked method)
+     * @throws IllegalStateException    for InvocationTargetException (exception in
+     *                                  invoked method)
      */
     public static Object invoke(Object target, String methodName) {
         return invoke(target, target.getClass(), methodName, new Class[] {});
     }
+
     /**
-     * Convenience wrapper to reflection method invoke API. Get field value and hide checked exceptions.
-     * Field class is set by
+     * Convenience wrapper to reflection field access API. Get field value and hide
+     * checked exceptions. Field class is set by
      *
      * @param target    object to get field value (or null for static methods)
      * @param fieldName field name
@@ -95,7 +132,7 @@ public class ReflectionHelper {
         if (target == null)
             throw new NullPointerException("Target object cannot be null.");
 
-        Class clazz = target.getClass();
+        Class<?> clazz = target.getClass();
 
         while (clazz != null) {
             try {
@@ -116,7 +153,8 @@ public class ReflectionHelper {
     }
 
     /**
-     * Convenience wrapper to reflection method invoke API. Get field value and hide checked exceptions.
+     * Convenience wrapper to reflection field access API. Get field value and hide
+     * checked exceptions.
      *
      * @param target    object to get field value (or null for static methods)
      * @param clazz     class name
@@ -137,8 +175,9 @@ public class ReflectionHelper {
     }
 
     /**
-     * Convenience wrapper to reflection method invoke API. Get field value and swallow exceptions.
-     * Use this method if you have multiple framework support and the field may not exist in current version.
+     * Convenience wrapper to reflection field access API. Get field value and
+     * swallow exceptions. Use this method if you have multiple framework support
+     * and the field may not exist in current version.
      *
      * @param target    object to get field value (or null for static methods)
      * @param clazz     class name
@@ -155,12 +194,13 @@ public class ReflectionHelper {
     }
 
     /**
-     * Convenience wrapper to reflection method invoke API. Set field value and hide checked exceptions.
+     * Convenience wrapper to reflection field access API. Set field value and hide
+     * checked exceptions.
      *
      * @param target    object to get field value (or null for static methods)
      * @param clazz     class name
      * @param fieldName field name
-     * @param value field value
+     * @param value     field value
      * @throws IllegalArgumentException if field not found
      */
     public static void set(Object target, Class<?> clazz, String fieldName, Object value) {

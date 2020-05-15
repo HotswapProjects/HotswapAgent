@@ -18,6 +18,9 @@
  */
 package org.hotswap.agent.plugin.spring;
 
+import java.lang.reflect.Field;
+import java.util.Map;
+
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.CachedIntrospectionResults;
@@ -25,9 +28,6 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
-
-import java.lang.reflect.Field;
-import java.util.Map;
 
 /**
  * Reset various Spring static caches. It is safe to run multiple times,
@@ -83,8 +83,14 @@ public class ResetSpringStaticCaches {
         resetTypeVariableCache();
         resetAnnotationUtilsCache();
         resetReflectionUtilsCache();
+        resetResolvableTypeCache();
         resetPropetyCache();
         CachedIntrospectionResults.clearClassLoader(ResetSpringStaticCaches.class.getClassLoader());
+    }
+
+    private static void resetResolvableTypeCache() {
+        ReflectionHelper.invokeNoException(null, "org.springframework.core.ResolvableType",
+                ResetSpringStaticCaches.class.getClassLoader(), "clearCache", new Class<?>[] {});
     }
 
     private static void resetTypeVariableCache() {
@@ -101,7 +107,11 @@ public class ResetSpringStaticCaches {
     }
 
     private static void resetReflectionUtilsCache() {
-        Map declaredMethodsCache = (Map) ReflectionHelper.getNoException(null, ReflectionUtils.class, "declaredMethodsCache");
+        ReflectionHelper.invokeNoException(null, "org.springframework.util.ReflectionUtils",
+                ResetSpringStaticCaches.class.getClassLoader(), "clearCache", new Class<?>[] {});
+
+        Map declaredMethodsCache = (Map) ReflectionHelper.getNoException(null, ReflectionUtils.class,
+                "declaredMethodsCache");
         if (declaredMethodsCache != null) {
             declaredMethodsCache.clear();
             LOGGER.trace("Cache cleared: ReflectionUtils.declaredMethodsCache");
@@ -111,7 +121,11 @@ public class ResetSpringStaticCaches {
     }
 
     private static void resetAnnotationUtilsCache() {
-        Map annotatedInterfaceCache = (Map) ReflectionHelper.getNoException(null, AnnotationUtils.class, "annotatedInterfaceCache");
+        ReflectionHelper.invokeNoException(null, "org.springframework.core.annotation.AnnotationUtils",
+                ResetSpringStaticCaches.class.getClassLoader(), "clearCache", new Class<?>[] {});
+
+        Map annotatedInterfaceCache = (Map) ReflectionHelper.getNoException(null, AnnotationUtils.class,
+                "annotatedInterfaceCache");
         if (annotatedInterfaceCache != null) {
             annotatedInterfaceCache.clear();
             LOGGER.trace("Cache cleared: AnnotationUtils.annotatedInterfaceCache");
