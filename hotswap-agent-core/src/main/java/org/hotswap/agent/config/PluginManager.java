@@ -305,4 +305,21 @@ public class PluginManager {
     public Instrumentation getInstrumentation() {
         return instrumentation;
     }
+
+    /**
+     * Redefine the supplied set of classes using the supplied bytecode in scheduled command. Actual hotswap is postponed by timeout
+     *
+     * This method operates on a set in order to allow interdependent changes to more than one class at the same time
+     * (a redefinition of class A can require a redefinition of class B).
+     *
+     * @param reloadMap class -> new bytecode
+     * @see java.lang.instrument.Instrumentation#redefineClasses(java.lang.instrument.ClassDefinition...)
+     */
+    public void scheduleHotswap(Map<Class<?>, byte[]> reloadMap, int timeout) {
+        if (instrumentation == null) {
+            throw new IllegalStateException("Plugin manager is not correctly initialized - no instrumentation available.");
+        }
+        getScheduler().scheduleCommand(new ScheduledHotswapCommand(reloadMap), timeout);
+    }
+
 }
