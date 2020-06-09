@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.4.1-SNAPSHOT</version>
+        <version>1.4.1</version>
         <relativePath>../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
