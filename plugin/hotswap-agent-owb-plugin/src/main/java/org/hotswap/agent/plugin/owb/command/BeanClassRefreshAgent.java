@@ -55,6 +55,7 @@ import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
+import org.apache.webbeans.proxy.OwbInterceptorProxy;
 import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
 import org.apache.webbeans.spi.BeanArchiveService.BeanDiscoveryMode;
 import org.hotswap.agent.logging.AgentLogger;
@@ -268,6 +269,10 @@ public class BeanClassRefreshAgent {
     private static void doReinjectBeanInstance(BeanManagerImpl beanManager, InjectionTargetBean bean, Context context) {
         Object instance = context.get(bean);
         if (instance != null) {
+            if (instance instanceof OwbInterceptorProxy) {
+                instance = beanManager.getWebBeansContext().getInterceptorDecoratorProxyFactory().unwrapInstance(instance);
+            }
+
             bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
             LOGGER.info("Bean '{}' injection points was reinjected.", bean.getBeanClass().getName());
         }
