@@ -29,3 +29,7 @@ testCDI2 2.0.10
 testCDI2 2.0.11
 testCDI2 2.0.12
 testCDI2 2.0.13
+testCDI2 2.0.14
+testCDI2 2.0.15
+testCDI2 2.0.16
+testCDI2 2.0.17

@@ -5,7 +5,7 @@
     <groupId>org.hotswapagent</groupId>
     <artifactId>hotswap-agent-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.4.1</version>
+    <version>1.4.2-SNAPSHOT</version>
 
     <name>HotswapAgent</name>
     <description>Java unlimited runtime class and resource redefinition.</description>
