@@ -27,11 +27,11 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  *
  * @author Artur Signell
  * @author Matti Tahvonen
- * @autho Johannes Eriksson
+ * @author Johannes Eriksson
  */
 @Plugin(name = "Vaadin",
         description = "Vaadin Platform support",
-        testedVersions = {"14.1.20", "14.2.0.alpha7", "15.0.2"},
+        testedVersions = {"14.1.20", "14.2.0.alpha7", "14.3.0.beta2", "15.0.2"},
         expectedVersions = {"14 - 16"})
 public class VaadinPlugin {
 
@@ -80,12 +80,10 @@ public class VaadinPlugin {
 
     public void registerServlet(Object vaadinServlet) {
         try {
-            Class<?> vaadinIntegrationClass = appClassLoader.loadClass(
-                    VaadinIntegration.class.getName());
+            Class<?> vaadinIntegrationClass = resolveClass("org.hotswap.agent.plugin.vaadin.VaadinIntegration");
             Object vaadinIntegration = vaadinIntegrationClass.getConstructor()
                     .newInstance();
-            Class<?> vaadinServletClass = Class.forName("com.vaadin.flow.server.VaadinServlet",
-                    true, appClassLoader);
+            Class<?> vaadinServletClass = resolveClass("com.vaadin.flow.server.VaadinServlet");
             Method m = vaadinIntegrationClass.getDeclaredMethod("servletInitialized",
                     vaadinServletClass);
             m.invoke(vaadinIntegration, vaadinServlet);
