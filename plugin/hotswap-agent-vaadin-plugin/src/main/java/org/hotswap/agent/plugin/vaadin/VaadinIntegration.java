@@ -13,6 +13,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteConfiguration;
+import com.vaadin.flow.router.internal.RouteUtil;
 import com.vaadin.flow.server.RouteRegistry;
 import com.vaadin.flow.server.VaadinContext;
 import com.vaadin.flow.server.VaadinService;
@@ -149,9 +150,10 @@ public class VaadinIntegration {
                     .filter(clazz -> clazz.isAnnotationPresent(Route.class))
                     .forEach(clazz -> {
                         Class<? extends Component> componentClass = (Class<? extends Component>) clazz;
+
+                        final Route route = componentClass.getAnnotation(Route.class);
                         LOGGER.info(
-                                "Updating route '{}' to {}", componentClass
-                                        .getAnnotation(Route.class).value(),
+                                "Updating route '{}' to {}", RouteUtil.resolve(componentClass, route),
                                 clazz);
                         routeConf.removeRoute(componentClass);
                         routeConf.setAnnotatedRoute(componentClass);
