@@ -55,7 +55,9 @@ import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
+import org.apache.webbeans.proxy.NormalScopeProxyFactory;
 import org.apache.webbeans.proxy.OwbInterceptorProxy;
+import org.apache.webbeans.proxy.OwbNormalScopeProxy;
 import org.apache.webbeans.spi.BeanArchiveService.BeanArchiveInformation;
 import org.apache.webbeans.spi.BeanArchiveService.BeanDiscoveryMode;
 import org.hotswap.agent.logging.AgentLogger;
@@ -257,6 +259,7 @@ public class BeanClassRefreshAgent {
     private static void doReinjectRegisteredBeanInstances(BeanManagerImpl beanManager, InjectionTargetBean bean) {
         for (Object instance: HaCdiCommons.getBeanInstances(bean)) {
             if (instance != null) {
+                instance = unwrapInstance(beanManager, instance);
                 bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
                 LOGGER.info("Bean '{}' injection points was reinjected.", bean.getBeanClass().getName());
             } else {
@@ -269,13 +272,20 @@ public class BeanClassRefreshAgent {
     private static void doReinjectBeanInstance(BeanManagerImpl beanManager, InjectionTargetBean bean, Context context) {
         Object instance = context.get(bean);
         if (instance != null) {
-            if (instance instanceof OwbInterceptorProxy) {
-                instance = beanManager.getWebBeansContext().getInterceptorDecoratorProxyFactory().unwrapInstance(instance);
-            }
-
+            instance = unwrapInstance(beanManager, instance);
             bean.getProducer().inject(instance, beanManager.createCreationalContext(bean));
             LOGGER.info("Bean '{}' injection points was reinjected.", bean.getBeanClass().getName());
         }
+    }
+
+    private static Object unwrapInstance(BeanManagerImpl beanManager, Object instance) {
+        if (instance instanceof OwbNormalScopeProxy) {
+            instance = NormalScopeProxyFactory.unwrapInstance(instance);
+        }
+        if (instance instanceof OwbInterceptorProxy) {
+            instance = beanManager.getWebBeansContext().getInterceptorDecoratorProxyFactory().unwrapInstance(instance);
+        }
+        return instance;
     }
 
     private static void doReloadBeanInBeanContexts(BeanManagerImpl beanManager, InjectionTargetBean<?> bean) {
