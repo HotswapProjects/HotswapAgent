@@ -36,7 +36,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  */
 @Plugin(name = "JBossModules",
         description = "JBossModules - Jboss modular class loading implementation. ",
-        testedVersions = {"1.4.4, 1.5.1"},
+        testedVersions = {"1.4.4, 1.5.1, 1.6.x, 1.7.x, 1.8.x, 1.9.x, 1.10.x"},
         expectedVersions = {"1.x"},
         supportClass={ModuleClassLoaderTransformer.class}
 )
@@ -58,18 +58,32 @@ public class JBossModulesPlugin {
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.modules.ModuleLoader")
     public static void transformModule(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
-        ctClass.getDeclaredMethod("loadModule", new CtClass[]{classPool.get("org.jboss.modules.ModuleIdentifier")}).insertAfter(
-                    "if (identifier.getName().matches(\"" + USE_MODULES_REGEXP + "\")) {" +
+        try {
+            ctClass.getDeclaredMethod("loadModule", new CtClass[]{classPool.get(String.class.getName())}).insertAfter(
+                    "if ($1.matches(\"" + USE_MODULES_REGEXP + "\")) {" +
                         PluginManagerInvoker.buildInitializePlugin(JBossModulesPlugin.class, "$_.getClassLoaderPrivate()") +
                     "}" +
                     "return $_;"
                 );
+            ctClass.getDeclaredMethod("unloadModuleLocal", new CtClass[]{classPool.get(String.class.getName()), classPool.get("org.jboss.modules.Module")}).insertBefore(
+                        "if(!$1.matches(\"" + SKIP_MODULES_REGEXP + "\")) {" +
+                            PluginManagerInvoker.buildCallCloseClassLoader("$1.getClassLoaderPrivate()") +
+                        "}"
+                    );
+        } catch (NotFoundException e) {
+            ctClass.getDeclaredMethod("loadModule", new CtClass[]{classPool.get("org.jboss.modules.ModuleIdentifier")}).insertAfter(
+                        "if ($1.getName().matches(\"" + USE_MODULES_REGEXP + "\")) {" +
+                            PluginManagerInvoker.buildInitializePlugin(JBossModulesPlugin.class, "$_.getClassLoaderPrivate()") +
+                        "}" +
+                        "return $_;"
+                    );
+            ctClass.getDeclaredMethod("unloadModuleLocal", new CtClass[]{classPool.get("org.jboss.modules.Module")}).insertBefore(
+                        "if(!$1.getIdentifier().getName().matches(\"" + SKIP_MODULES_REGEXP + "\")) {" +
+                            PluginManagerInvoker.buildCallCloseClassLoader("$1.getClassLoaderPrivate()") +
+                        "}"
+                    );
 
-        ctClass.getDeclaredMethod("unloadModuleLocal", new CtClass[]{classPool.get("org.jboss.modules.Module")}).insertBefore(
-                    "if(!$1.getIdentifier().getName().matches(\"" + SKIP_MODULES_REGEXP + "\")) {" +
-                        PluginManagerInvoker.buildCallCloseClassLoader("$1.getClassLoaderPrivate()") +
-                    "}"
-                );
+        }
 
         LOGGER.debug("Class 'org.jboss.modules.Module' patched.");
     }
