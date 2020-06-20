@@ -43,6 +43,12 @@ public class ProxyClassLoadingDelegate {
         }
     };
 
+    private static String generatingProxyName;
+
+    public static void setGeneratingProxyName(String generatingProxyName) {
+        ProxyClassLoadingDelegate.generatingProxyName = generatingProxyName;
+    }
+
     public static final void beginProxyRegeneration() {
         MAGIC_IN_PROGRESS.set(true);
     }
@@ -53,7 +59,9 @@ public class ProxyClassLoadingDelegate {
 
     public static Class<?> forName(String name, boolean initialize, ClassLoader loader) throws ClassNotFoundException {
         if (MAGIC_IN_PROGRESS.get()) {
-            throw new ClassNotFoundException("HotswapAgent");
+            if (generatingProxyName == null || generatingProxyName.equals(name)) {
+                throw new ClassNotFoundException("HotswapAgent");
+            }
         }
         return Class.forName(name, initialize, loader);
     }
@@ -99,7 +107,7 @@ public class ProxyClassLoadingDelegate {
                 Map<Class<?>, byte[]> reloadMap = new HashMap<>();
                 reloadMap.put(originalProxyClass, proxyBytes);
                 // TODO : is this standard way how to reload class?
-                PluginManager.getInstance().scheduleHotswap(reloadMap, 200);
+                PluginManager.getInstance().hotswap(reloadMap);
                 return originalProxyClass;
             } catch (Exception e) {
                 throw new RuntimeException(e);

@@ -41,6 +41,7 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
+import org.hotswap.agent.plugin.owb.transformer.AbstractProducerTransformer;
 import org.hotswap.agent.plugin.owb.transformer.BeansDeployerTransformer;
 import org.hotswap.agent.plugin.owb.transformer.CdiContextsTransformer;
 import org.hotswap.agent.plugin.owb.transformer.ProxyFactoryTransformer;
@@ -60,9 +61,9 @@ import org.hotswap.agent.watch.Watcher;
  */
 @Plugin(name = "Owb",
         description = "OpenWebBeans framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"1.7.0-2.0.13"},
-        expectedVersions = {"All between 1.7.0-2.0.13"},
-        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, ProxyFactoryTransformer.class})
+        testedVersions = {"1.7.0-2.0.16"},
+        expectedVersions = {"All between 1.7.0-2.0.16"},
+        supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, ProxyFactoryTransformer.class, AbstractProducerTransformer.class })
 public class OwbPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(OwbPlugin.class);

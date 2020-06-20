@@ -119,45 +119,50 @@ public class BeanClassRefreshCommand extends MergeableCommand {
         List<Command> mergedCommands = popMergedCommands();
         mergedCommands.add(0, this);
 
-        do {
-            for (Command cmd: mergedCommands) {
-                BeanClassRefreshCommand bcrCmd = (BeanClassRefreshCommand) cmd;
-                try {
-                    bcrCmd.beanClass = appClassLoader.loadClass(bcrCmd.className);
-                } catch (ClassNotFoundException e) {
-                    LOGGER.error("Class '{}' not found in appClassLoader {}", bcrCmd.className, appClassLoader);
-                }
-            }
-
-            for (Command cmd: mergedCommands) {
-                ((BeanClassRefreshCommand)cmd).recreateProxy(mergedCommands);
-            }
-
-            Map<String, String> oldFullSignatures = new HashMap<>();
-            Map<String, String> oldSignatures = new HashMap<>();
-
-            for (Command cmd: mergedCommands) {
-                BeanClassRefreshCommand bcrCmd = (BeanClassRefreshCommand) cmd;
-                oldFullSignatures.put(bcrCmd.className, bcrCmd.oldFullSignature);
-                oldSignatures.put(bcrCmd.className, bcrCmd.oldSignatureByStrategy);
-            }
-
-            for (Command cmd1: mergedCommands) {
-                BeanClassRefreshCommand bcrCmd1 = (BeanClassRefreshCommand) cmd1;
-                boolean found = false;
-                for (Command cmd2: mergedCommands) {
-                    BeanClassRefreshCommand bcrCmd2 = (BeanClassRefreshCommand) cmd2;
-                    if (bcrCmd1 != bcrCmd2 && !bcrCmd1.beanClass.equals(bcrCmd2.beanClass) && bcrCmd2.beanClass.isAssignableFrom(bcrCmd1.beanClass)) {
-                        found = true;
-                        break;
+        try {
+            do {
+                for (Command cmd: mergedCommands) {
+                    BeanClassRefreshCommand bcrCmd = (BeanClassRefreshCommand) cmd;
+                    try {
+                        bcrCmd.beanClass = appClassLoader.loadClass(bcrCmd.className);
+                    } catch (ClassNotFoundException e) {
+                        LOGGER.error("Class '{}' not found in appClassLoader {}", bcrCmd.className, appClassLoader);
                     }
                 }
-                if (!found) {
-                    bcrCmd1.reloadBean(mergedCommands, oldFullSignatures, oldSignatures);
+
+                Map<String, String> oldFullSignatures = new HashMap<>();
+                Map<String, String> oldSignatures = new HashMap<>();
+
+                for (Command cmd: mergedCommands) {
+                    BeanClassRefreshCommand bcrCmd = (BeanClassRefreshCommand) cmd;
+                    oldFullSignatures.put(bcrCmd.className, bcrCmd.oldFullSignature);
+                    oldSignatures.put(bcrCmd.className, bcrCmd.oldSignatureByStrategy);
                 }
-            }
-            mergedCommands = popMergedCommands();
-        } while (!mergedCommands.isEmpty());
+
+                for (Command cmd1: mergedCommands) {
+                    BeanClassRefreshCommand bcrCmd1 = (BeanClassRefreshCommand) cmd1;
+                    boolean found = false;
+                    for (Command cmd2: mergedCommands) {
+                        BeanClassRefreshCommand bcrCmd2 = (BeanClassRefreshCommand) cmd2;
+                        if (bcrCmd1 != bcrCmd2 && !bcrCmd1.beanClass.equals(bcrCmd2.beanClass) && bcrCmd2.beanClass.isAssignableFrom(bcrCmd1.beanClass)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        bcrCmd1.reloadBean(mergedCommands, oldFullSignatures, oldSignatures);
+                    }
+                }
+
+                for (Command cmd: mergedCommands) {
+                    ((BeanClassRefreshCommand)cmd).recreateProxy(mergedCommands);
+                }
+
+                mergedCommands = popMergedCommands();
+            } while (!mergedCommands.isEmpty());
+       } finally {
+           BeanClassRefreshAgent.reloadFlag = false;
+       }
     }
 
     private void recreateProxy(List<Command> mergedCommands) {

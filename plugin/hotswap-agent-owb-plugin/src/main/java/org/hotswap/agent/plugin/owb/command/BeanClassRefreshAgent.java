@@ -54,6 +54,7 @@ import org.apache.webbeans.config.WebBeansContext;
 import org.apache.webbeans.container.BeanManagerImpl;
 import org.apache.webbeans.container.InjectableBeanManager;
 import org.apache.webbeans.container.InjectionTargetFactoryImpl;
+import org.apache.webbeans.portable.AbstractProducer;
 import org.apache.webbeans.portable.AnnotatedElementFactory;
 import org.apache.webbeans.proxy.NormalScopeProxyFactory;
 import org.apache.webbeans.proxy.OwbInterceptorProxy;
@@ -112,8 +113,6 @@ public class BeanClassRefreshAgent {
 
         } catch (ClassNotFoundException e) {
             LOGGER.error("Bean class '{}' not found.", e, beanClassName);
-        } finally {
-            reloadFlag = false;
         }
     }
 
@@ -231,6 +230,18 @@ public class BeanClassRefreshAgent {
 
         WebBeansContext wbc = beanManager.getWebBeansContext();
 
+        Object forwardingMethIterceptors = null;
+
+        if (bean.getProducer() instanceof AbstractProducer) {
+            // methodInterceptors must be the same instance. It is stored in field owbIntDecHandler of existing
+            // InterceptedProxy's instances
+            try {
+                forwardingMethIterceptors = ReflectionHelper.get(bean.getProducer(), "methodInterceptors");
+            } catch (IllegalArgumentException e) {
+                LOGGER.warning("Field AbstractProducer.methodInterceptors is not accessible", e);
+            }
+        }
+
         AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
         // Clear AnnotatedElementFactory caches
         annotatedElementFactory.clear();
@@ -251,6 +262,12 @@ public class BeanClassRefreshAgent {
         InjectionTargetFactory factory = new InjectionTargetFactoryImpl(annotatedType, bean.getWebBeansContext());
         InjectionTarget injectionTarget = factory.createInjectionTarget(bean);
         ReflectionHelper.set(bean, InjectionTargetBean.class, "injectionTarget", injectionTarget);
+
+        if (injectionTarget instanceof AbstractProducer) {
+            if (forwardingMethIterceptors != null) {
+                ReflectionHelper.set(injectionTarget, AbstractProducer.class, "methodInterceptors", forwardingMethIterceptors);
+            }
+        }
 
         LOGGER.debug("New annotated type created for bean '{}'", bean.getBeanClass());
     }
