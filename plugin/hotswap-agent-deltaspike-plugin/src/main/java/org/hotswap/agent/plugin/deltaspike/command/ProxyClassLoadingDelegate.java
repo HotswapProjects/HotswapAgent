@@ -75,7 +75,7 @@ public class ProxyClassLoadingDelegate {
                 try {
                     Map<Class<?>, byte[]> reloadMap = new HashMap<>();
                     reloadMap.put(originalProxyClass, bytes);
-                    PluginManager.getInstance().scheduleHotswap(reloadMap, 200);
+                    PluginManager.getInstance().hotswap(reloadMap);
                     return originalProxyClass;
                 } catch (Exception e) {
                     throw new RuntimeException(e);
