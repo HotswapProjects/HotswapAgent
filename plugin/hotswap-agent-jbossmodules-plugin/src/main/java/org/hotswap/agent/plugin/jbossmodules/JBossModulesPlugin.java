@@ -67,7 +67,7 @@ public class JBossModulesPlugin {
                 );
             ctClass.getDeclaredMethod("unloadModuleLocal", new CtClass[]{classPool.get(String.class.getName()), classPool.get("org.jboss.modules.Module")}).insertBefore(
                         "if(!$1.matches(\"" + SKIP_MODULES_REGEXP + "\")) {" +
-                            PluginManagerInvoker.buildCallCloseClassLoader("$1.getClassLoaderPrivate()") +
+                            PluginManagerInvoker.buildCallCloseClassLoader("$2.getClassLoaderPrivate()") +
                         "}"
                     );
         } catch (NotFoundException e) {
