@@ -76,7 +76,7 @@ public class DeltaspikePluginContextsTest extends HAAbstractUnitTest {
         if (System.getProperty("cdicontainer.version").startsWith("weld")) {
             clazz = getClass().getClassLoader().loadClass("org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent");
         } else {
-            clazz = getClass().getClassLoader().loadClass("org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent");
+            clazz = getClass().getClassLoader().loadClass("org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand");
         }
         ReflectionHelper.set(null, clazz, "reloadFlag", true);
         HotSwapper.swapClasses(original, swap);

@@ -45,6 +45,12 @@ public class BeanClassRefreshCommand extends MergeableCommand {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshCommand.class);
 
+    /**
+     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
+     * Set flag to true in the unit test class and wait until the flag is false again.
+     */
+    public static boolean reloadFlag = false;
+
     ClassLoader appClassLoader;
 
     String className;
@@ -161,7 +167,7 @@ public class BeanClassRefreshCommand extends MergeableCommand {
                 mergedCommands = popMergedCommands();
             } while (!mergedCommands.isEmpty());
        } finally {
-           BeanClassRefreshAgent.reloadFlag = false;
+           BeanClassRefreshCommand.reloadFlag = false;
        }
     }
 

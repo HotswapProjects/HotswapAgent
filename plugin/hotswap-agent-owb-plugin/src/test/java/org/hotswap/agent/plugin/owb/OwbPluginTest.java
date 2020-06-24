@@ -28,6 +28,7 @@ import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent;
+import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.owb.testBeans.DependentHello1;
 import org.hotswap.agent.plugin.owb.testBeans.HelloProducer1;
 import org.hotswap.agent.plugin.owb.testBeans.HelloService;
@@ -264,12 +265,12 @@ public class OwbPluginTest extends HAAbstractUnitTest {
     }
 
     private void swapClasses(Class original, String swap) throws Exception {
-        BeanClassRefreshAgent.reloadFlag = true;
+        BeanClassRefreshCommand.reloadFlag = true;
         HotSwapper.swapClasses(original, swap);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !BeanClassRefreshAgent.reloadFlag;
+                return !BeanClassRefreshCommand.reloadFlag;
             }
         }));
 

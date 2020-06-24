@@ -81,12 +81,6 @@ public class BeanClassRefreshAgent {
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanClassRefreshAgent.class);
 
     /**
-     * Flag for checking reload status. It is used in unit tests for waiting for reload finish.
-     * Set flag to true in the unit test class and wait until the flag is false again.
-     */
-    public static boolean reloadFlag = false;
-
-    /**
      * Reload bean in existing bean manager. Called by a reflection command from BeanRefreshCommand transformer.
      *
      * @param appClassLoader the application class loader
