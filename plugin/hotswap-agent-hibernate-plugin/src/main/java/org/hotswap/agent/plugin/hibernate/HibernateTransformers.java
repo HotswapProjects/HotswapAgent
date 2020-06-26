@@ -19,7 +19,13 @@
 package org.hotswap.agent.plugin.hibernate;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.CtNewMethod;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.hibernate.proxy.SessionFactoryProxy;
@@ -110,7 +116,7 @@ public class HibernateTransformers {
         }
     }
 
-    @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.BeanMetaDataManager")
+    @OnClassLoadEvent(classNameRegexp = "(org.hibernate.validator.internal.metadata.BeanMetaDataManager)|(org.hibernate.validator.internal.metadata.BeanMetaDataManagerImpl)")
     public static void beanMetaDataManagerRegisterVariable(CtClass ctClass) throws CannotCompileException {
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
@@ -120,10 +126,13 @@ public class HibernateTransformers {
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             constructor.insertAfter(src.toString());
         }
-
-        ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
-                "   this.beanMetaDataCache.clear(); " +
-                "}", ctClass));
+        try {
+          ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
+                  "   this.beanMetaDataCache.clear(); " +
+                  "}", ctClass));
+        } catch (org.hotswap.agent.javassist.CannotCompileException e) {
+            LOGGER.trace("Field beanMetaDataCache not found on " + ctClass.getName() + ". Is Ok for BeanMetaDataManager interface.", e);
+        }
 
         LOGGER.debug("org.hibernate.validator.internal.metadata.BeanMetaDataManager - added method __resetCache().");
     }
