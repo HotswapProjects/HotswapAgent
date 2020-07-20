@@ -16,7 +16,7 @@ Hotswap Agent
     </a>
     <a href='https://sourcespy.com/github/hotswapprojectshotswapagent/' title='SourceSpy Dashboard'>
         <img src='https://sourcespy.com/shield.svg'/>
-    </a>    
+    </a>
     <a href="https://twitter.com/intent/follow?screen_name=HSwapAgent">
         <img src="https://img.shields.io/twitter/follow/HSwapAgent.svg?style=social&logo=twitter" alt="follow on Twitter">
     </a>
@@ -272,6 +272,7 @@ Hotswap agent:
 * Lukasz Warzecha - Log4j2 plugin
 * Thomas Heigl - Wicket plugin
 * AJ Banck - FreeMarker plugin
+* Sinan Yumak - Mojarra, MyFaces plugins
 
 DCEVM:
 
