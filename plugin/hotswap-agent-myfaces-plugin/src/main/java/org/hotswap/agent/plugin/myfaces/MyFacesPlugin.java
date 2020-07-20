@@ -18,9 +18,14 @@
  */
 package org.hotswap.agent.plugin.myfaces;
 
+import static org.hotswap.agent.plugin.myfaces.MyFacesConstants.MANAGED_BEAN_ANNOTATION;
+
 import java.lang.reflect.Method;
 
+import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassFileEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
@@ -32,13 +37,21 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.myfaces.command.ReloadManagedBeanCommand;
+import org.hotswap.agent.plugin.myfaces.transformer.LifecycleImplTransformer;
+import org.hotswap.agent.plugin.myfaces.transformer.ManagedBeanResolverTransformer;
+import org.hotswap.agent.plugin.myfaces.transformer.MyFacesTransformer;
+import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 @Plugin(name = "MyFaces",
         description = "JSF/MyFaces. Clear resource bundle cache when *.properties files are changed.",
         testedVersions = {"2.2.10"},
         expectedVersions = {"2.2"},
-        supportClass = { MyFacesTransformer.class }
+        supportClass = { MyFacesTransformer.class, 
+        		ManagedBeanResolverTransformer.class, 
+        		LifecycleImplTransformer.class 
+        		}
         )
 public class MyFacesPlugin {
 
@@ -68,6 +81,26 @@ public class MyFacesPlugin {
     @OnResourceFileEvent(path = "/", filter = ".*.properties")
     public void refreshJsfResourceBundles() {
         scheduler.scheduleCommand(refreshResourceBundles);
+    }
+
+    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
+    public void reloadManagedBean(Class<?> beanClass) {
+        if (!AnnotationHelper.hasAnnotation(beanClass, MANAGED_BEAN_ANNOTATION)) {
+            return;
+        }
+
+        ReloadManagedBeanCommand command = new ReloadManagedBeanCommand(beanClass, appClassLoader);
+        scheduler.scheduleCommand(command);
+    }
+
+    @OnClassFileEvent(classNameRegexp = ".*", events = FileEvent.CREATE)
+    public void registerManagedBean(CtClass beanCtClass) throws Exception {
+        if (!AnnotationHelper.hasAnnotation(beanCtClass, MANAGED_BEAN_ANNOTATION)) {
+            return;
+        }
+
+        ReloadManagedBeanCommand command = new ReloadManagedBeanCommand(beanCtClass, appClassLoader);
+        scheduler.scheduleCommand(command);
     }
 
     private Command refreshResourceBundles = new Command() {
