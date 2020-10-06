@@ -18,7 +18,6 @@
  */
 package org.hotswap.agent.plugin.mybatis.proxy;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -27,12 +26,9 @@ import java.util.Map;
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
 import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
-import org.hotswap.agent.javassist.util.proxy.Proxy;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
 import org.hotswap.agent.util.ReflectionHelper;
-
-import sun.reflect.ReflectionFactory;
 
 /**
  * The Class ConfigurationProxy.
@@ -86,9 +82,7 @@ public class ConfigurationProxy {
             };
 
             try {
-                Constructor constructor = ReflectionFactory.getReflectionFactory().newConstructorForSerialization(factory.createClass(), Object.class.getDeclaredConstructor(new Class[0]));
-                proxyInstance = (Configuration) constructor.newInstance();
-                ((Proxy) proxyInstance).setHandler(handler);
+                proxyInstance = (Configuration) factory.create(new Class[0], null, handler);
             } catch (Exception e) {
                 throw new Error("Unable instantiate Configuration proxy", e);
             }
