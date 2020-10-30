@@ -133,7 +133,7 @@
                     <!--
                     <useSystemClassLoader>true</useSystemClassLoader>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>-XX:+DisableHotswapAgent -javaagent:${org.hotswapagent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswapagent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
+                    <argLine>-javaagent:${org.hotswapagent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswapagent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
                      -->
                     <argLine>${dcevm.test.arguments} -javaagent:${org.hotswapagent:hotswap-agent-core:jar}</argLine>
                     <jvm>${java.home}/bin/java</jvm>
@@ -272,7 +272,7 @@
 
     <properties>
         <dcevm>dcevm</dcevm>
-        <dcevm.test.arguments>-XX:+DisableHotswapAgent</dcevm.test.arguments>
+        <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition</dcevm.test.arguments>
         <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
