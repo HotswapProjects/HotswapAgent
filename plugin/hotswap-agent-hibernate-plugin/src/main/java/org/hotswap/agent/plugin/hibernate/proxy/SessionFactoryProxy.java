@@ -86,7 +86,12 @@ public class SessionFactoryProxy {
             @Override
             public Object invoke(Object self, Method overridden, Method forwarder,
                                  Object[] args) throws Throwable {
-                return overridden.invoke(currentInstance, args);
+                try {
+                    return overridden.invoke(currentInstance, args);
+                } catch(InvocationTargetException e) {
+                    //rethrow original exception to prevent proxying from changing external behaviour of SessionFactory
+                    throw e.getTargetException();
+                }
             }
         };
 
