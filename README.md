@@ -147,7 +147,7 @@ How does it work?
 ### DCEVM
 Hotswap agent does the work of reloading resources and framework configuration (Spring, Hibernate, ...),
 but it depends on standard Java hotswap mechanism to actually reload classes. Standard Java hotswap allows
-only method body change , which makes it practically unusable. DCEVM is a JRE patch witch allows almost any
+only method body change , which makes it practically unusable. DCEVM is a JRE patch which allows almost any
 structural class change on hotswap (with an exception of a hierarchy change). Although hotswap agent works
 even with standard java, we recommend to use DCEVM (and all tutorials use DCEVM as target JVM).
 
