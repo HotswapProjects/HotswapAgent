@@ -20,6 +20,7 @@ package org.hotswap.agent.plugin.hibernate;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -27,12 +28,12 @@ import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.Manifest;
+import org.hotswap.agent.annotation.Maven;
+import org.hotswap.agent.annotation.Name;
 import org.hotswap.agent.annotation.OnClassFileEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.annotation.Versions;
-import org.hotswap.agent.annotation.Maven;
-import org.hotswap.agent.annotation.Name;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
@@ -85,7 +86,7 @@ public class HibernatePlugin {
 
     Set<Object> regAnnotatedMetaDataProviders = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
 
-    Set<Object> regBeanMetaDataManagers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Map<Object, String> regBeanMetaDataManagersMap = new WeakHashMap<Object, String>();
 
     // refresh commands
     Command reloadEntityManagerFactoryCommand =
@@ -104,10 +105,10 @@ public class HibernatePlugin {
                     LOGGER.debug("Invoking org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider.__resetCache on {}", regAnnotatedDataManager);
                     resetCacheMethod1.invoke(regAnnotatedDataManager);
                 }
-                Method resetCacheMethod2 = resolveClass("org.hibernate.validator.internal.metadata.BeanMetaDataManager").getDeclaredMethod("__resetCache");
-                for (Object regBeanMetaDataManager : regBeanMetaDataManagers) {
-                    LOGGER.debug("Invoking org.hibernate.validator.internal.metadata.BeanMetaDataManager.__resetCache on {}", regBeanMetaDataManager);
-                    resetCacheMethod2.invoke(regBeanMetaDataManager);
+                for (Map.Entry<Object, String> entry : regBeanMetaDataManagersMap.entrySet()) {
+                    LOGGER.debug("Invoking " + entry.getValue() + " .__resetCache on {}", entry.getKey());
+                    Method resetCacheMethod2 = resolveClass(entry.getValue()).getDeclaredMethod("__resetCache");
+                    resetCacheMethod2.invoke(entry.getKey());
                 }
             } catch (Exception e) {
                 LOGGER.error("Error refreshing BeanMetaDataManagerCache/AnnotatedMetaDataProvider cache.", e);
@@ -156,7 +157,7 @@ public class HibernatePlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidateClassCache() throws Exception {
-        if (!regBeanMetaDataManagers.isEmpty() || !regAnnotatedMetaDataProviders.isEmpty()) {
+        if (!regBeanMetaDataManagersMap.isEmpty() || !regAnnotatedMetaDataProviders.isEmpty()) {
             scheduler.scheduleCommand(invalidateHibernateValidatorCaches);
         }
     }
@@ -176,8 +177,8 @@ public class HibernatePlugin {
     }
 
 
-    public void registerBeanMetaDataManager(Object beanMetaDataManager) {
-        regBeanMetaDataManagers.add(beanMetaDataManager);
+    public void registerBeanMetaDataManager(Object beanMetaDataManager, String beanMetaDataManagerClassName) {
+        regBeanMetaDataManagersMap.put(beanMetaDataManager, beanMetaDataManagerClassName);
     }
 
     private Class<?> resolveClass(String name) throws ClassNotFoundException {

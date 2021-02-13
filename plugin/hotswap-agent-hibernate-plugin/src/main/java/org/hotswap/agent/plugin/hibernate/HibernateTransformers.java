@@ -121,7 +121,7 @@ public class HibernateTransformers {
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(HibernatePlugin.class, "registerBeanMetaDataManager",
-                "this", "java.lang.Object"));
+                "this", "java.lang.Object", "this.getClass().getName()", "java.lang.String"));
         src.append("}");
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             constructor.insertAfter(src.toString());
