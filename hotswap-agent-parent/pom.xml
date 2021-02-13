@@ -272,7 +272,7 @@
 
     <properties>
         <dcevm>dcevm</dcevm>
-        <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition</dcevm.test.arguments>
+        <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external</dcevm.test.arguments>
         <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
