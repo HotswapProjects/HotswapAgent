@@ -51,25 +51,25 @@ public class HibernateTransformers {
         LOGGER.debug("Override org.hibernate.ejb.HibernatePersistence#createContainerEntityManagerFactory and createEntityManagerFactory to create a EntityManagerFactoryProxy proxy.");
 
         CtMethod oldMethod = clazz.getDeclaredMethod("createContainerEntityManagerFactory");
-        oldMethod.setName("_createContainerEntityManagerFactory" + clazz.getSimpleName());
+        oldMethod.setName("$$ha$createContainerEntityManagerFactory" + clazz.getSimpleName());
         CtMethod newMethod = CtNewMethod.make(
                 "public javax.persistence.EntityManagerFactory createContainerEntityManagerFactory(" +
                         "           javax.persistence.spi.PersistenceUnitInfo info, java.util.Map properties) {" +
                         "  properties.put(\"PERSISTENCE_CLASS_NAME\", \"" + clazz.getName() + "\");" +
                         "  return " + HibernatePersistenceHelper.class.getName() + ".createContainerEntityManagerFactoryProxy(" +
-                        "      this, info, properties, _createContainerEntityManagerFactory" + clazz.getSimpleName() + "(info, properties)); " +
+                        "      this, info, properties, $$ha$createContainerEntityManagerFactory" + clazz.getSimpleName() + "(info, properties)); " +
                         "}", clazz);
         clazz.addMethod(newMethod);
 
         try {
             oldMethod = clazz.getDeclaredMethod("createEntityManagerFactory");
-            oldMethod.setName("_createEntityManagerFactory" + clazz.getSimpleName());
+            oldMethod.setName("$$ha$createEntityManagerFactory" + clazz.getSimpleName());
 
             newMethod = CtNewMethod.make(
                     "public javax.persistence.EntityManagerFactory createEntityManagerFactory(" +
                             "           String persistenceUnitName, java.util.Map properties) {" +
                             "  return " + HibernatePersistenceHelper.class.getName() + ".createEntityManagerFactoryProxy(" +
-                            "      this, persistenceUnitName, properties, _createEntityManagerFactory" + clazz.getSimpleName() + "(persistenceUnitName, properties)); " +
+                            "      this, persistenceUnitName, properties, $$ha$createEntityManagerFactory" + clazz.getSimpleName() + "(persistenceUnitName, properties)); " +
                             "}", clazz);
             clazz.addMethod(newMethod);
         } catch (NotFoundException e) {
@@ -96,12 +96,12 @@ public class HibernateTransformers {
 
         CtClass serviceRegistryClass = classPool.makeClass("org.hibernate.service.ServiceRegistry");
         CtMethod oldMethod = clazz.getDeclaredMethod("buildSessionFactory", new CtClass[]{serviceRegistryClass});
-        oldMethod.setName("_buildSessionFactory");
+        oldMethod.setName("$$ha$buildSessionFactory");
 
         CtMethod newMethod = CtNewMethod.make(
                 "public org.hibernate.SessionFactory buildSessionFactory(org.hibernate.service.ServiceRegistry serviceRegistry) throws org.hibernate.HibernateException {" +
                         "  return " + SessionFactoryProxy.class.getName() + ".getWrapper(this)" +
-                        "       .proxy(_buildSessionFactory(serviceRegistry), serviceRegistry); " +
+                        "       .proxy($$ha$buildSessionFactory(serviceRegistry), serviceRegistry); " +
                         "}", clazz);
         clazz.addMethod(newMethod);
     }
