@@ -100,14 +100,14 @@ public class HibernatePlugin {
             LOGGER.debug("Refreshing BeanMetaDataManagerCache/AnnotatedMetaDataProvider cache.");
 
             try {
-                Method resetCacheMethod1 = resolveClass("org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider").getDeclaredMethod("__resetCache");
+                Method resetCacheMethod1 = resolveClass("org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider").getDeclaredMethod("$$ha$resetCache");
                 for (Object regAnnotatedDataManager : regAnnotatedMetaDataProviders) {
-                    LOGGER.debug("Invoking org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider.__resetCache on {}", regAnnotatedDataManager);
+                    LOGGER.debug("Invoking org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider.$$ha$resetCache on {}", regAnnotatedDataManager);
                     resetCacheMethod1.invoke(regAnnotatedDataManager);
                 }
                 for (Map.Entry<Object, String> entry : regBeanMetaDataManagersMap.entrySet()) {
-                    LOGGER.debug("Invoking " + entry.getValue() + " .__resetCache on {}", entry.getKey());
-                    Method resetCacheMethod2 = resolveClass(entry.getValue()).getDeclaredMethod("__resetCache");
+                    LOGGER.debug("Invoking " + entry.getValue() + " .$$ha$resetCache on {}", entry.getKey());
+                    Method resetCacheMethod2 = resolveClass(entry.getValue()).getDeclaredMethod("$$ha$resetCache");
                     resetCacheMethod2.invoke(entry.getKey());
                 }
             } catch (Exception e) {

@@ -127,14 +127,14 @@ public class HibernateTransformers {
             constructor.insertAfter(src.toString());
         }
         try {
-          ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
+          ctClass.addMethod(CtNewMethod.make("public void $$ha$resetCache() {" +
                   "   this.beanMetaDataCache.clear(); " +
                   "}", ctClass));
         } catch (org.hotswap.agent.javassist.CannotCompileException e) {
             LOGGER.trace("Field beanMetaDataCache not found on " + ctClass.getName() + ". Is Ok for BeanMetaDataManager interface.", e);
         }
 
-        LOGGER.debug("org.hibernate.validator.internal.metadata.BeanMetaDataManager - added method __resetCache().");
+        LOGGER.debug("org.hibernate.validator.internal.metadata.BeanMetaDataManager - added method $$ha$resetCache().");
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider")
@@ -150,17 +150,17 @@ public class HibernateTransformers {
         try {
             ctClass.getDeclaredField("configuredBeans");
             ctClass.addMethod(CtNewMethod.make(
-                    "public void __resetCache() {"
+                    "public void $$ha$resetCache() {"
                   + "   this.configuredBeans.clear(); " + "}",
                     ctClass));
         } catch (org.hotswap.agent.javassist.NotFoundException e) {
             // Ignore, newer Hibernate versions have no cache
             ctClass.addMethod(CtNewMethod.make(
-                    "public void __resetCache() {"
+                    "public void $$ha$resetCache() {"
                   + "}",
                     ctClass));
         }
-        LOGGER.debug("org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider - added method __resetCache().");
+        LOGGER.debug("org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider - added method $$ha$resetCache().");
     }
 
 
