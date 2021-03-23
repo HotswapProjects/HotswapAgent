@@ -85,7 +85,7 @@ public class RepositoryRefreshAgent {
             LOGGER.info("Deltaspike repository {} refreshed.", repoClassName);
             RepositoryRefreshAgent.reloadFlag = true;
         } catch (ClassNotFoundException e) {
-            LOGGER.error("Repository class '{}' not found.", e, repoClassName);
+            LOGGER.error("Repository class '{}' not found.", repoClassName, e);
         } finally {
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
         }

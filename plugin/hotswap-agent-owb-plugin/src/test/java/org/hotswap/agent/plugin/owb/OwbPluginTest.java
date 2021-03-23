@@ -27,7 +27,6 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.owb.command.BeanClassRefreshAgent;
 import org.hotswap.agent.plugin.owb.command.BeanClassRefreshCommand;
 import org.hotswap.agent.plugin.owb.testBeans.DependentHello1;
 import org.hotswap.agent.plugin.owb.testBeans.HelloProducer1;

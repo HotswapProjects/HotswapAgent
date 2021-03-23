@@ -19,6 +19,7 @@
 package org.hotswap.agent.annotation.handler;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -212,9 +213,12 @@ public class WatchEventCommand<T extends Annotation> extends MergeableCommand {
      * @throws org.hotswap.agent.javassist.NotFoundException
      */
     private CtClass createCtClass(URI uri, ClassLoader classLoader) throws NotFoundException, IOException {
-        ClassPool cp = new ClassPool();
-        cp.appendClassPath(new LoaderClassPath(classLoader));
-
-        return cp.makeClass(new ByteArrayInputStream(IOUtils.toByteArray(uri)));
+        File file = new File(uri);
+        if (file.exists()) {
+          ClassPool cp = new ClassPool();
+          cp.appendClassPath(new LoaderClassPath(classLoader));
+          return cp.makeClass(new ByteArrayInputStream(IOUtils.toByteArray(uri)));
+        }
+        return null;
     }
 }
