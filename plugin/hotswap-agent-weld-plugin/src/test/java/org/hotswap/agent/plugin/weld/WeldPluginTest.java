@@ -36,13 +36,17 @@ import org.hotswap.agent.plugin.weld.testBeans.HelloProducer1;
 import org.hotswap.agent.plugin.weld.testBeans.HelloService;
 import org.hotswap.agent.plugin.weld.testBeans.HelloServiceDependant;
 import org.hotswap.agent.plugin.weld.testBeans.HelloServiceImpl1;
+import org.hotswap.agent.plugin.weld.testBeans.InterceptedBean;
 import org.hotswap.agent.plugin.weld.testBeans.ProxyHello1;
 import org.hotswap.agent.plugin.weld.testBeans.ProxyHosting;
+import org.hotswap.agent.plugin.weld.testBeans.SessionBean1;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.DependentHello2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloProducer2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloProducer3;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloServiceImpl2;
+import org.hotswap.agent.plugin.weld.testBeansHotswap.InterceptedBean2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.ProxyHello2;
+import org.hotswap.agent.plugin.weld.testBeansHotswap.SessionBean2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Test;
@@ -63,6 +67,15 @@ public class WeldPluginTest {
         Bean<T> bean = (Bean<T>) beanManager.resolve(beanManager.getBeans(beanClass));
         T result = beanManager.getContext(bean.getScope()).get(bean, beanManager.createCreationalContext(bean));
         return result;
+    }
+
+    public static <T> T getReference(Class<T> beanClass) {
+        BeanManager beanManager = CDI.current().getBeanManager();
+        Bean<T> bean = (Bean<T>) beanManager.resolve(beanManager.getBeans(beanClass));
+        if (bean != null) {
+            return (T) beanManager.getReference(bean, beanClass, beanManager.createCreationalContext(bean));
+        }
+        return null;
     }
 
     /**
@@ -99,8 +112,7 @@ public class WeldPluginTest {
     }
 
     /**
-     * Add new method - invoke via reflection (not available at compilation
-     * time).
+     * Add new method - invoke via reflection (not available at compilation time).
      */
     @Test
     public void hotswapSeviceAddMethodTest() throws Exception {
@@ -123,8 +135,10 @@ public class WeldPluginTest {
     public void hotswapRepositoryTest() throws Exception {
         HelloServiceDependant bean = getBeanInstance(HelloServiceDependant.class);
         assertEquals("HelloServiceDependant.hello():HelloProducer1.hello()", bean.hello());
+
         swapClasses(HelloProducer1.class, HelloProducer2.class.getName());
         assertEquals("HelloServiceDependant.hello():HelloProducer2.hello()", bean.hello());
+
         swapClasses(HelloProducer1.class, HelloProducer3.class.getName());
         try{
             assertEquals("HelloProducer3.hello():HelloProducer2.hello()", bean.hello());
@@ -173,9 +187,7 @@ public class WeldPluginTest {
         assertEquals("DependentHello1.hello():HelloServiceImpl1.hello():HelloProducer1.hello()", getBeanInstance(DependentHello1.class).hello());
     }
 
-    /**
-     * Plugin is currently unable to reload prototype bean instance.
-     */
+
     @Test
     public void hotswapPrototypeTestNotFailWhenHoldingInstanceBecauseSingletonInjectionPointWasReinitialize() throws Exception {
         DependentHello1 dependentBeanInstance = getBeanInstance(DependentHello1.class);
@@ -192,6 +204,8 @@ public class WeldPluginTest {
         assertEquals("DependentHello1.hello():HelloServiceImpl1.hello():HelloProducer1.hello()", getBeanInstance(DependentHello1.class).hello());
     }
 
+
+    // Create new class and class file. rerun test only after clean
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
         try {
@@ -216,8 +230,8 @@ public class WeldPluginTest {
         ProxyHosting proxyHosting = getBeanInstance(ProxyHosting.class);
         assertEquals("ProxyHello1.hello()", proxyHosting.hello());
         swapClasses(ProxyHello1.class, ProxyHello2.class.getName());
-
         assertEquals("ProxyHello2.hello()", proxyHosting.hello());
+
         Object proxy = proxyHosting.proxy;
         String hello2 = (String) ReflectionHelper.invoke(proxy, ProxyHello1.class, "hello2", new Class[]{}, null);
         assertEquals("ProxyHello2.hello2()", hello2);
@@ -225,6 +239,34 @@ public class WeldPluginTest {
         // return configuration
         swapClasses(ProxyHello1.class, ProxyHello1.class.getName());
         assertEquals("ProxyHello1.hello()", proxyHosting.hello());
+    }
+
+    // @Test
+    public void sessionBeanTest() throws Exception {
+        SessionBean1 sessionBean = getBeanInstance(SessionBean1.class);
+        assertEquals("SessionBean1.hello():ProxyHello1.hello()", sessionBean.hello());
+        swapClasses(SessionBean1.class, SessionBean2.class.getName());
+
+        assertEquals("SessionBean2.hello():ProxyHello2.hello():ProxyHello1.hello()", sessionBean.hello());
+
+        // return configuration
+        swapClasses(SessionBean1.class, SessionBean1.class.getName());
+        assertEquals("SessionBean1.hello():ProxyHello1.hello()", sessionBean.hello());
+    }
+
+    // @Test
+    public void interceptedBeanTest() throws Exception {
+        InterceptedBean interceptedBean = getReference(InterceptedBean.class);
+        assertEquals("TestInterceptor:InterceptedBean.hello()", interceptedBean.hello());
+        swapClasses(InterceptedBean.class, InterceptedBean2.class.getName());
+
+        assertEquals("InterceptedBean2.hello():TestInterceptor:InterceptedBean2.hello2()", interceptedBean.hello());
+
+        // return configuration
+        swapClasses(InterceptedBean.class, InterceptedBean.class.getName());
+        String s = interceptedBean.hello();
+        System.out.println(s);
+        assertEquals("TestInterceptor:InterceptedBean.hello()", s);
     }
 
     private void swapClasses(Class original, String swap) throws Exception {

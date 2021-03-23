@@ -77,3 +77,7 @@ testWeld3 3.1.0.Final 3.1.SP1
 testWeld3 3.1.1.Final 3.1.SP1
 testWeld3 3.1.2.Final 3.1.SP1
 testWeld3 3.1.3.Final 3.1.SP1
+testWeld3 3.1.4.Final 3.1.SP1
+testWeld3 3.1.5.Final 3.1.SP1
+testWeld3 3.1.6.Final 3.1.SP1
+testWeld3 3.1.7.Final 3.1.SP1

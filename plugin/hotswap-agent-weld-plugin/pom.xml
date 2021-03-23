@@ -57,7 +57,7 @@
             </activation>
 
             <properties>
-                <org.jboss.weld.version>3.1.3.Final</org.jboss.weld.version>
+                <org.jboss.weld.version>3.1.7.Final</org.jboss.weld.version>
                 <org.jboss.weld-spi.version>3.1.SP1</org.jboss.weld-spi.version>
             </properties>
 

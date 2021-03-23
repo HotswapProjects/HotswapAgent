@@ -24,8 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.jboss.classfilewriter.ClassFile;
-import org.jboss.weld.util.bytecode.ClassFileUtils;
+import org.jboss.weld.serialization.spi.ProxyServices;
 
 /**
  * The Weld proxyFactory has its class loading tasks delegated to this class, which can then have some magic applied
@@ -58,7 +60,7 @@ public class ProxyClassLoadingDelegate {
         return classLoader.loadClass(className);
     }
 
-    public static Class<?> toClass(ClassFile ct, ClassLoader loader, ProtectionDomain domain) {
+    public static Class<?> toClassWeld2(ClassFile ct, ClassLoader loader, ProtectionDomain domain) throws ClassNotFoundException {
         if (MAGIC_IN_PROGRESS.get()) {
             try {
                 final Class<?> originalProxyClass = loader.loadClass(ct.getName());
@@ -72,11 +74,35 @@ public class ProxyClassLoadingDelegate {
                     throw new RuntimeException(e);
                 }
             } catch (ClassNotFoundException e) {
-                //it has not actually been loaded yet
-                return ClassFileUtils.toClass(ct, loader, domain);
             }
         }
-        return ClassFileUtils.toClass(ct, loader, domain);
+        Class<?> classFileUtilsClass = Class.forName("org.jboss.weld.util.bytecode.ClassFileUtils", true, loader);
+        return (Class<?>) ReflectionHelper.invoke(null, classFileUtilsClass, "toClass",
+                new Class[] { ClassFile.class, ClassLoader.class, ProtectionDomain.class }, ct, loader, domain);
+    }
+
+    public static Class<?> toClassWeld3(Object proxyFactory, ClassFile ct, Class<?> originalClass, ProxyServices proxyServices, ProtectionDomain domain) {
+        if (MAGIC_IN_PROGRESS.get()) {
+            try {
+                ClassLoader loader = originalClass.getClassLoader();
+                if (loader == null) {
+                    loader = Thread.currentThread().getContextClassLoader();
+                }
+                final Class<?> originalProxyClass = loader.loadClass(ct.getName());
+                try {
+                    Map<Class<?>, byte[]> reloadMap = new HashMap<>();
+                    reloadMap.put(originalProxyClass, ct.toBytecode());
+                    // TODO : is this standard way how to reload class?
+                    PluginManager.getInstance().hotswap(reloadMap);
+                    return originalProxyClass;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            } catch (ClassNotFoundException e) {
+            }
+        }
+        return (Class<?>) ReflectionHelper.invoke(proxyFactory, proxyFactory.getClass(), "$$ha$toClass",
+                new Class[] { ClassFile.class, Class.class, ProxyServices.class, ProtectionDomain.class }, ct, originalClass, proxyServices, domain);
     }
 
 }
