@@ -206,6 +206,12 @@
             <artifactId>hotswap-agent-mybatis-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-ibatis-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>        
 
     </dependencies>
 </project>

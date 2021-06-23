@@ -46,6 +46,7 @@
         <module>plugin/hotswap-agent-freemarker-plugin</module>
         <module>plugin/hotswap-agent-undertow-plugin</module>
         <module>plugin/hotswap-agent-mybatis-plugin</module>
+        <module>plugin/hotswap-agent-ibatis-plugin</module>
         <module>plugin/hotswap-agent-plugins</module>
         <module>hotswap-agent</module>
     </modules>
