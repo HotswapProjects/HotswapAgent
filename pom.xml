@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <name>Hotswap Agent Aggregator</name>
-    <description>Agregator for Hotswap Agent projects</description>
+    <description>Aggregator for Hotswap Agent projects</description>
     <url>https://github.com/HotswapProjects/HotswapAgent</url>
 
     <modules>
