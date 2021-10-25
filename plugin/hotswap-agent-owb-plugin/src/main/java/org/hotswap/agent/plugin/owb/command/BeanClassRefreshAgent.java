@@ -224,6 +224,10 @@ public class BeanClassRefreshAgent {
 
         WebBeansContext wbc = beanManager.getWebBeansContext();
 
+        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
+        // Clear AnnotatedElementFactory caches
+        annotatedElementFactory.clear();
+
         Object forwardingMethIterceptors = null;
 
         if (bean.getProducer() instanceof AbstractProducer) {
@@ -235,10 +239,6 @@ public class BeanClassRefreshAgent {
                 LOGGER.warning("Field AbstractProducer.methodInterceptors is not accessible", e);
             }
         }
-
-        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
-        // Clear AnnotatedElementFactory caches
-        annotatedElementFactory.clear();
 
         AnnotatedType annotatedType = annotatedElementFactory.newAnnotatedType(bean.getBeanClass());
 
@@ -360,6 +360,15 @@ public class BeanClassRefreshAgent {
     @SuppressWarnings("rawtypes")
     private static void doDefineNewBean(BeanManagerImpl beanManager, Class<?> beanClass, URL beanArchiveUrl) {
 
+        WebBeansContext wbc = beanManager.getWebBeansContext();
+
+        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
+        // Clear AnnotatedElementFactory caches (is it necessary for definition ?)
+        annotatedElementFactory.clear();
+
+        // Injection resolver cache must be cleared before / after definition
+        beanManager.getInjectionResolver().clearCaches();
+
         BeanArchiveInformation beanArchiveInfo =
                 beanManager.getWebBeansContext().getBeanArchiveService().getBeanArchiveInformation(beanArchiveUrl);
 
@@ -374,15 +383,6 @@ public class BeanClassRefreshAgent {
                 return;
             }
         }
-
-        WebBeansContext wbc = beanManager.getWebBeansContext();
-
-        AnnotatedElementFactory annotatedElementFactory = wbc.getAnnotatedElementFactory();
-        // Clear AnnotatedElementFactory caches (is it necessary for definition ?)
-        annotatedElementFactory.clear();
-
-        // Injection resolver cache must be cleared before / after definition
-        beanManager.getInjectionResolver().clearCaches();
 
         AnnotatedType<?> annotatedType = annotatedElementFactory.newAnnotatedType(beanClass);
         BeanAttributesImpl<?> attributes = BeanAttributesBuilder.forContext(wbc).newBeanAttibutes(annotatedType).build();
