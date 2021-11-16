@@ -171,6 +171,7 @@ public class SpringPluginTest {
 
     @Test
     public void pojoTest() throws Exception {
+        Pojo pojo = new Pojo();
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
         swapClasses(Pojo.class, Pojo2.class);
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);

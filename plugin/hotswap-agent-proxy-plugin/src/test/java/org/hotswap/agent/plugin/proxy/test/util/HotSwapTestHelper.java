@@ -69,7 +69,7 @@ public class HotSwapTestHelper {
         MultistepProxyTransformer.addThirdStep = false;
     }
 
-    public static void __toVersion__Delayed_JavaProxy(int versionNumber, Class<?>... extra) {
+    public static boolean __toVersion__Delayed_JavaProxy(int versionNumber, Class<?>... extra) {
         ProxyPlugin.reloadFlag = true;
         HotSwapTool.toVersion(determineOuter(0), versionNumber, extra);
         // allow time for multiple redefinitions
@@ -79,7 +79,9 @@ public class HotSwapTestHelper {
                 return !ProxyPlugin.reloadFlag;
             }
         });
+        boolean result = ProxyPlugin.reloadFlag;
         ProxyPlugin.reloadFlag = false;
+        return result;
     }
 
     /**
