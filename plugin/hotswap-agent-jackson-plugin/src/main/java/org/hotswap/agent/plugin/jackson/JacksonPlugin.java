@@ -135,9 +135,6 @@ public class JacksonPlugin {
     private static void invokeClearCacheMethod(Object obj) {
         try {
             LOGGER.debug("Reload {}", obj);
-            Method declaredMethod = obj.getClass().getDeclaredMethod(CLEAR_CACHE_METHOD);
-            declaredMethod.setAccessible(true);
-            declaredMethod.invoke(obj);
             ReflectionHelper.invoke(obj, CLEAR_CACHE_METHOD);
         } catch (Exception e) {
             LOGGER.error("Reload failed {}", obj.getClass(), e);
