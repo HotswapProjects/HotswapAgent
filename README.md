@@ -174,6 +174,8 @@ uses agent services to:
 * [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * [FreeMarker](plugin/hotswap-agent-freemarker-plugin/README.md) - clear the Apache Freemarker beans class-introspection cache on class definition change.
 * [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3x,4x,5x) - Reload Hibernate configuration after entity create/change.
+* [iBatis](plugin/hotswap-agent-ibatis-plugin/README.md) - iBatis configuration reload.
+* [Jackson](plugin/hotswap-agent-jackson-plugin/README.md) - clears jackson internal caches when class redefined..
 * [Jersey1](plugin/hotswap-agent-jersey1-plugin/README.md) - reload Jersey1 container after root resource or provider class definition or redefinition.
 * [Jersey2](plugin/hotswap-agent-jersey2-plugin/README.md) - reload Jersey2 container after root resource or provider class definition or redefinition.
 * [Logback](plugin/hotswap-agent-logback-plugin/README.md) - Logback configuration reload.
@@ -269,7 +271,9 @@ Hotswap agent:
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
+* @liuzhengyang - jackson plugin
 * Lukasz Warzecha - Log4j2 plugin
+* @muwaiwai - iBatis plugin
 * Thomas Heigl - Wicket plugin
 * AJ Banck - FreeMarker plugin
 * Sinan Yumak - Mojarra, MyFaces plugins
