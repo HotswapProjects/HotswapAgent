@@ -62,9 +62,7 @@ public class JdkPlugin {
             Class<?> threadGroupCtxClass = classLoader.loadClass("java.beans.ThreadGroupContext");
             Class<?> introspectorClass = classLoader.loadClass("java.beans.Introspector");
 
-            Object declaredMethodCache = ReflectionHelper.get(null, introspectorClass, "declaredMethodCache");
-
-            synchronized (declaredMethodCache) {
+            synchronized (classLoader) {
                 Object contexts = ReflectionHelper.get(null, threadGroupCtxClass, "contexts");
                 Object table[] = (Object[]) ReflectionHelper.get(contexts, "table");
 
@@ -81,9 +79,15 @@ public class JdkPlugin {
                     }
                 }
 
-                LOGGER.trace("Removing class from declaredMethodCache.");
-                ReflectionHelper.invoke(declaredMethodCache, declaredMethodCache.getClass(), "put",
-                        new Class[] { Object.class, Object.class }, clazz, null);
+                // java.beans.Introspector#declaredMethodCache was removed in j13
+                // https://github.com/openjdk/jdk13u/commit/921b46738e0c3aaa2bf8c62e0accb0a5056190d3
+                Object declaredMethodCache = ReflectionHelper.getNoException(null, introspectorClass, "declaredMethodCache");
+
+                if (declaredMethodCache != null) {
+                    LOGGER.info("Removing class from declaredMethodCache.");
+                    ReflectionHelper.invoke(declaredMethodCache, declaredMethodCache.getClass(), "put",
+                            new Class[] { Object.class, Object.class }, clazz, null);
+                }
             }
         } catch (Exception e) {
             LOGGER.error("classReload() exception {}.", e.getMessage());
