@@ -18,7 +18,9 @@
  */
 package org.hotswap.agent.plugin.mybatis;
 
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,9 +42,9 @@ import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
  */
 @Plugin(name = "MyBatis",
         description = "Reload MyBatis configuration after configuration create/change.",
-        testedVersions = {"All between 5.3.2"},
-        expectedVersions = {"5.3.2" },
-        supportClass = { MyBatisTransformers.class })
+        testedVersions = {"All between 3.5.9"},
+        expectedVersions = {"3.5.9"},
+        supportClass = {MyBatisTransformers.class})
 public class MyBatisPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisPlugin.class);
 
@@ -69,9 +71,9 @@ public class MyBatisPlugin {
         }
     }
 
-    @OnResourceFileEvent(path="/", filter = ".*.xml", events = {FileEvent.MODIFY})
-    public void registerResourceListeners(URL url) {
-        if (configurationMap.containsKey(url.getPath())) {
+    @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
+    public void registerResourceListeners(URL url) throws URISyntaxException {
+        if (configurationMap.containsKey(Paths.get(url.toURI()).toFile().getAbsolutePath())) {
             refresh(500);
         }
     }
