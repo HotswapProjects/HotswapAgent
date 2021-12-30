@@ -48,6 +48,7 @@
         <module>plugin/hotswap-agent-mybatis-plugin</module>
         <module>plugin/hotswap-agent-ibatis-plugin</module>
         <module>plugin/hotswap-agent-jackson-plugin</module>
+        <module>plugin/hotswap-agent-idea-plugin</module>
         <module>plugin/hotswap-agent-plugins</module>
         <module>hotswap-agent</module>
     </modules>
