@@ -9,7 +9,7 @@ set -e
 function testCDI1 {
     echo "Running with OWB $1"
     mvn -PCDI1 -Dowb.version=$1 clean compile
-    JAVA_HOME=/usr/lib/jvm/java-8-openjdk mvn -Ddcevm.test.arguments=-XXaltjvm=dcevm -Dowb.version=$1 -PCDI1 test
+    JAVA_HOME=/usr/lib/jvm/java-8-hotswap mvn -Dowb.version=$1 -PCDI1 test
 }
 
 function testCDI2 {
@@ -18,8 +18,8 @@ function testCDI2 {
 }
 
 ### Run tests CDI1 on j8
-testCDI1 1.7.0
-testCDI1 1.7.5
+# testCDI1 1.7.0
+# testCDI1 1.7.5
 
 ### Run tests CDI2 on j11
 testCDI2 2.0.7
@@ -33,3 +33,11 @@ testCDI2 2.0.14
 testCDI2 2.0.15
 testCDI2 2.0.16
 testCDI2 2.0.17
+testCDI2 2.0.18
+testCDI2 2.0.19
+testCDI2 2.0.20
+testCDI2 2.0.21
+testCDI2 2.0.22
+testCDI2 2.0.23
+testCDI2 2.0.24
+testCDI2 2.0.25

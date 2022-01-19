@@ -68,7 +68,7 @@ public class ProxyClassLoadingDelegate {
 
     public static Class<?> defineAndLoadClass(AbstractProxyFactory proxyFactory, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
         if (MAGIC_IN_PROGRESS.get()) {
-            Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes);
+            Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes, null);
             if (reloaded != null) {
                 return reloaded;
             }
@@ -85,7 +85,7 @@ public class ProxyClassLoadingDelegate {
 
     public static Class<?> defineAndLoadClassWithUnsafe(Object unsafe, ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
         if (MAGIC_IN_PROGRESS.get()) {
-            Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes);
+            Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes, null);
             if (reloaded != null) {
                 return reloaded;
             }
@@ -100,7 +100,24 @@ public class ProxyClassLoadingDelegate {
         return null;
     }
 
-    private static Class<?> reloadProxyByteCode(ClassLoader classLoader, String proxyName, byte[] proxyBytes) {
+    public static Class<?> defineAndLoadClassWithUnsafe(Object unsafe, ClassLoader classLoader, String proxyName, byte[] proxyBytes, Class<?> classToProxy) {
+        if (MAGIC_IN_PROGRESS.get()) {
+            Class<?> reloaded = reloadProxyByteCode(classLoader, proxyName, proxyBytes, classToProxy);
+            if (reloaded != null) {
+                return reloaded;
+            }
+        }
+        try {
+            return (Class<?>) ReflectionHelper.invoke(unsafe, unsafe.getClass(), "defineAndLoadClass",
+                    new Class[]{ClassLoader.class, String.class, byte[].class, Class.class},
+                    classLoader, proxyName, proxyBytes, classToProxy);
+        } catch (Exception e) {
+            LOGGER.error("defineAndLoadClass() exception {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private static Class<?> reloadProxyByteCode(ClassLoader classLoader, String proxyName, byte[] proxyBytes, Class<?> classToProxy) {
         try {
             final Class<?> originalProxyClass = classLoader.loadClass(proxyName);
             try {
