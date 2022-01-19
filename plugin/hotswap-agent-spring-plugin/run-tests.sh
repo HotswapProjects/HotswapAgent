@@ -15,20 +15,23 @@ function test {
 
 # test following Spring versions
 
-test 4.3.0.RELEASE
-test 4.3.1.RELEASE
-test 4.3.2.RELEASE
-test 4.3.3.RELEASE
-test 4.3.4.RELEASE
-test 4.3.5.RELEASE
-test 4.3.6.RELEASE
-test 4.3.7.RELEASE
-test 4.3.8.RELEASE
-test 4.3.9.RELEASE
-test 4.3.10.RELEASE
-test 4.3.11.RELEASE
-test 4.3.12.RELEASE
-test 4.3.13.RELEASE
+# test 4.3.0.RELEASE
+# test 4.3.1.RELEASE
+# test 4.3.2.RELEASE
+# test 4.3.3.RELEASE
+# test 4.3.4.RELEASE
+# test 4.3.5.RELEASE
+# test 4.3.6.RELEASE
+# test 4.3.7.RELEASE
+# test 4.3.8.RELEASE
+# test 4.3.9.RELEASE
+# test 4.3.10.RELEASE
+# test 4.3.11.RELEASE
+# test 4.3.12.RELEASE
+# test 4.3.13.RELEASE
+
+# 4.3.20 is lowest not vulnerable version(2022.01.19) look at CVE-2018-15756
+test 4.3.20.RELEASE
 
 test 5.0.0.RELEASE
 test 5.0.1.RELEASE

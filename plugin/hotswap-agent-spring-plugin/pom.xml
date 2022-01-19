@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
-        <org.springframework.version>4.3.2.RELEASE</org.springframework.version>
+        <org.springframework.version>4.3.20.RELEASE</org.springframework.version>
     </properties>
 
 
