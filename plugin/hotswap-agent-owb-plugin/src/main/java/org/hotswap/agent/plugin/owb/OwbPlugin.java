@@ -266,7 +266,7 @@ public class OwbPlugin {
     // Owb proxies contains $$
     // DeltaSpike's proxies contains "$$"
     private boolean isSyntheticCdiClass(String className) {
-        return className.contains("$$");
+        return className.contains("$$") || className.contains("$HibernateProxy$");
     }
 
     // Non static inner class is not allowed to be bean class

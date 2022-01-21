@@ -74,6 +74,7 @@ public class SpringChangesAnalyzer {
                 || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
                 || classBeingRedefined.getSimpleName().contains("$$Enhancer")
                 || classBeingRedefined.getSimpleName().contains("$$_jvst") // javassist proxy
+                || classBeingRedefined.getSimpleName().contains("$HibernateProxy$")
                 ;
     }
 
