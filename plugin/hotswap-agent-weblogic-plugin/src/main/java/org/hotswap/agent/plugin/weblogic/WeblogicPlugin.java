@@ -15,8 +15,8 @@ import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
 
 @Plugin(name = "Weblogic",
         description = "Weblogic plugin for dcevm",
-        testedVersions = {},
-        expectedVersions = {}
+        testedVersions = {"12.2.1.4"},
+        expectedVersions = {"12c"}
 )
 public final class WeblogicPlugin {
 
