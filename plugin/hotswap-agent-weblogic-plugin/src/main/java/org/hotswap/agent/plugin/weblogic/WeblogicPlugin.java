@@ -69,7 +69,7 @@ public final class WeblogicPlugin {
         //@formatter:off
         ctClass.addMethod(CtNewMethod.make(
                 "public void $$ha$setExtraClassPath(java.net.URL[] extraClassPath) {" + 
-                        WeblogicPlugin.class.getName() + ".logMessage(\"okokok -> \" + extraClassPath[0].toString());" +
+                        WeblogicPlugin.class.getName() + ".logMessage(\"setExtraClassPath in=\" + extraClassPath[0].toString());" +
                         "try {" +
                             "weblogic.utils.classloaders.MultiClassFinder multiClassFinder = new weblogic.utils.classloaders.MultiClassFinder();" +
                             "for (int i=0; i<extraClassPath.length; i++) {" +
@@ -83,7 +83,7 @@ public final class WeblogicPlugin {
                                 "}" +
                             "}" +
                             "this.addClassFinderFirst(multiClassFinder);" +
-                            WeblogicPlugin.class.getName() + ".logMessage(\"classpathzlol -> \" + this.getClassPath());" +
+                            WeblogicPlugin.class.getName() + ".logMessage(\"setExtraClassPath result=\" + this.getClassPath());" +
                         "} catch (java.lang.Exception e) {" +
                             WeblogicPlugin.class.getName() + ".logException(e);" +
                         "}" +
