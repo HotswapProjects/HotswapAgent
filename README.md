@@ -32,17 +32,30 @@ Java unlimited runtime class and resource redefinition.
 Originally, the main purpose of this project was to avoid the infamous **change code**->**restart and wait...**->**check development** lifecycle. Lately, this schema evolved into a new paradigm in the Java world, based on the development of software in running application, that approach can be used even in a closed environment like Docker.
 
 ### Easy to start
-Download and install:
+1.Download and install:
 
-* For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases) 
-* For Java11:  [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
-* For Java17: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not contain embedded HotswapAgent, copy `hotswap-agent.jar` to `lib/hotswap` forlder. The latest HotswapAgent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases)
+* For Java17: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not include a built-in Hotswap Agent, copy `hotswap-agent.jar` to the `lib/hotswap` folder. The latest Hotswap Agent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases)
+* For Java11: [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
+* For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases)
 
-Launching:
+2.Launching:
 
-* Java8: launch your application with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
-* Java11: launch your application with options `-XX:HotswapAgent=fatjar` to use Hotswap Agent fatjar release.
-* Java17: launch your application with options `-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=fatjar` to turn on advanced hotswap (dcevm) and to use Hotswap Agent fatjar release.
+* Java17: launch your application with the options `-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=fatjar` to turn on advanced hotswap (dcevm) and use Hotswap Agent fatjar release.
+* Java11: launch your application with the options `-XX:HotswapAgent=fatjar` to use Hotswap Agent fatjar release.
+* Java8: launch your application with the options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
+
+3. Run your application:
+
+Start the application in debug mode, check that the agent and plugins are initialized correctly:
+
+        HOTSWAP AGENT: 9:49:29.548 INFO (org.hotswap.agent.HotswapAgent) - Loading Hotswap agent - unlimited runtime class redefinition.
+        HOTSWAP AGENT: 9:49:29.725 INFO (org.hotswap.agent.config.PluginRegistry) - Discovered plugins: [org.hotswap.agent.plugin.hotswapper.HotswapperPlugin, org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin, org.hotswap.agent.plugin.hibernate.HibernatePlugin, org.hotswap.agent.plugin.spring.SpringPlugin, org.hotswap.agent.plugin.jetty.JettyPlugin, org.hotswap.agent.plugin.tomcat.TomcatPlugin, org.hotswap.agent.plugin.zk.ZkPlugin, org.hotswap.agent.plugin.logback.LogbackPlugin]
+        ...
+        HOTSWAP AGENT: 9:49:38.700 INFO (org.hotswap.agent.plugin.spring.SpringPlugin) - Spring plugin initialized - Spring core version '3.2.3.RELEASE'
+
+4. Check redefinition
+
+Save a changed resource and/or use the HotSwap feature of your IDE to reload changes
 
 ### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs a special reloading mechanism to keep
@@ -55,35 +68,6 @@ This project is very complex due to a lot of supported frameworks and various ve
 is mandatory to keep it alive. You can start by creating a plugin inside your application or by writing an
 example/integration test. There is always a need for documentation improvement :-). Thank you for any help!
 
-The [sourcespy dashboard](https://sourcespy.com/github/hotswapprojectshotswapagent/) provides a high-level overview of the repository including [module dependencies](https://sourcespy.com/github/hotswapprojectshotswapagent/xx-omodulesc-.html), [module hierarchy](https://sourcespy.com/github/hotswapprojectshotswapagent/xx-omodules-.html), [external libraries](https://sourcespy.com/github/hotswapprojectshotswapagent/xx-ojavalibs-.html), and other components of the system.
-
-### Issue triage [![Open Source Helpers](https://www.codetriage.com/hotswapprojects/hotswapagent/badges/users.svg)](https://www.codetriage.com/hotswapprojects/hotswapagent)
-
-You can contribute by triaging issues which may include reproducing bug reports or asking for vital information, such as version numbers or reproduction instructions. If you would like to start triaging issues, one easy way to get started is to [subscribe to hotswapagent on CodeTriage](https://www.codetriage.com/hotswapprojects/hotswapagent).
-
-Quick start:
-===========
-### Install
-1. download [latest release of DCEVM Java patch](https://github.com/dcevm/dcevm/releases) and launch the installer
-(e.g. `java -jar installer-light.jar`). Currently, you need to select the correct installer for Java major version (7/8).
-1. select java installation directory on your disc and press "Install DCEVM as altjvm" button. Java 1.7+ versions are supported.
-1. download [latest release of Hotswap agent jar](https://github.com/HotswapProjects/HotswapAgent/releases),
-unpack `hotswap-agent.jar` and put it anywhere on your disc. For example: `C:\java\hotswap-agent.jar`
-
-### Run your application
-1. add following command line java attributes: `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar` (you
-need to replace PATH_TO_AGENT with an actual) directory. For example `java -XXaltjvm=dcevm -javaagent:c:\java\hotswap-agent.jar YourApp`.
-  See [IntelliJ IDEA](https://groups.google.com/forum/#!topic/hotswapagent/BxAK_Clniss)
-  and [Netbeans](https://groups.google.com/forum/#!topic/hotswapagent/ydW5bQMwQqU) forum threads for IDE specific setup guides. If your application is already running, you still can attach the agent jar using the example [code snippet](https://gist.github.com/xnike/a268fc209df52bf1bf09a268e97cef53).
-1. (optional) create a file named "hotswap-agent.properties" inside your resources directory, see available properties and
-  default values: <https://github.com/HotswapProjects/HotswapAgent/blob/master/hotswap-agent-core/src/main/resources/hotswap-agent.properties>
-1. start the application in debug mode, check that the agent and plugins are initialized correctly:
-
-        HOTSWAP AGENT: 9:49:29.548 INFO (org.hotswap.agent.HotswapAgent) - Loading Hotswap agent - unlimited runtime class redefinition.
-        HOTSWAP AGENT: 9:49:29.725 INFO (org.hotswap.agent.config.PluginRegistry) - Discovered plugins: [org.hotswap.agent.plugin.hotswapper.HotswapperPlugin, org.hotswap.agent.plugin.jvm.AnonymousClassPatchPlugin, org.hotswap.agent.plugin.hibernate.HibernatePlugin, org.hotswap.agent.plugin.spring.SpringPlugin, org.hotswap.agent.plugin.jetty.JettyPlugin, org.hotswap.agent.plugin.tomcat.TomcatPlugin, org.hotswap.agent.plugin.zk.ZkPlugin, org.hotswap.agent.plugin.logback.LogbackPlugin]
-        ...
-        HOTSWAP AGENT: 9:49:38.700 INFO (org.hotswap.agent.plugin.spring.SpringPlugin) - Spring plugin initialized - Spring core version '3.2.3.RELEASE'
-1. save a changed resource and/or use the HotSwap feature of your IDE to reload changes
 
 ### What is available?
 * Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
@@ -157,19 +141,19 @@ How does it work?
 ### DCEVM
 Hotswap agent does the work of reloading resources and framework configuration (Spring, Hibernate, ...),
 but it depends on the standard Java hotswap mechanism to reload classes. Standard Java hotswap allows
-only method body change, which makes it practically unusable. DCEVM is a JRE patch that allows almost any
+only method body change, which makes it practically unusable. DCEVM is a JVM (Hotspot) patch that allows almost any
 structural class change on hotswap (with an exception of a hierarchy change). Although hotswap agent works
 even with standard java, we recommend using DCEVM (and all tutorials use DCEVM as target JVM).
 
-### Hotswap agent
+### Hotswap Agent
 Hotswap agent is a plugin container with plugin manager, plugin registry, and several agent services
 (e.g. to watch for class/resource change). It helps with common tasks and classloading issues. It scans the classpath
 for class annotated with @Plugin annotation, injects agent services, and registers reloading hooks. Runtime bytecode
 modification is provided by javaasist library.
 
 ### Plugins
-Plugins administered by Hotswap agent are usually targeted towards a specific framework. For example Spring plugin
-uses agent services to:
+Plugins administered by Hotswap Agent are usually focused on a specific framework. For example Spring plugin
+uses HA services to:
 
 * Modify root Spring classes to get Spring contexts and registered scan path
 * Watch for any resource change on a scan path
@@ -212,6 +196,7 @@ uses agent services to:
 * [Jetty](plugin/hotswap-agent-jetty-plugin/README.md) - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
 * [Tomcat](plugin/hotswap-agent-tomcat-plugin/README.md) (7.x, 8.x) configure Apache Tomcat with extraClasspath and webApp property. Supports also GlassFish, Payara and Tomee7.
 * [Undertow](plugin/hotswap-agent-undertow-plugin/README.md) - add extra classpath, watchResources and webappDir to the undertow's resource manager.
+* [Weblogic](plugin/hotswap-agent-weblogic-plugin/README.md) - add extra classpath to the app classloader.
 
 #### JVM plugins - hotswapping enhancements:
 
@@ -248,7 +233,7 @@ as a javaagent. Maven dependency:
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
-(Note that the JAR is not yet in central maven repository - you need to build it from source first).
+
 
 See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgentExamples/blob/master/custom-plugin/src/main/java/org/hotswap/agent/example/plugin/ExamplePlugin.java)
 (part of TestApplication) to go through a commented simple plugin. Read [agent readme](https://github.com/HotswapProjects/HotswapAgent/blob/master/README.md)
@@ -258,18 +243,13 @@ See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgentExamples/blob
 Creating Release
 ================
 Launch `run-tests.sh` script in the main directory. Currently, you have to setup JAVA_HOME location directory manually.
-At least Java 7 and Java 8 with DCEVM should be checked before a release. All automatic tests are set to fail
-the whole script in case of any single test failure.
+At least Java 11 with DCEVM should be checked before a release. All automatic tests are set to fail the whole script in case of any single test failure.
 
 Go to the directory representing repository root. In case DCEVM is named `dcevm`
 
     mvn release:prepare
     mvn release:perform
 
-In case your DCEVM is named differently i.e. `server`
-
-    mvn release:prepare -Darguments="-Ddcevm=server"
-    mvn release:perform -Darguments="-Ddcevm=server"
 
 Credits
 =======
