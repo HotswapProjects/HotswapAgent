@@ -41,8 +41,8 @@ Download and install:
 Launching:
 
 * Java8: launch your application with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
-* Java11: launch your application with options `-XX:HotswapAgent=fatjar` to use Hotswap Agent.
-* Java17: launch your application with options `-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=fatjar` to turn on advanced hotswap (dcevm) and 
+* Java11: launch your application with options `-XX:HotswapAgent=fatjar` to use Hotswap Agent fatjar release.
+* Java17: launch your application with options `-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=fatjar` to turn on advanced hotswap (dcevm) and to use Hotswap Agent fatjar release.
 
 ### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs a special reloading mechanism to keep
