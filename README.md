@@ -33,10 +33,16 @@ Originally, the main purpose of this project was to avoid the infamous **change 
 
 ### Easy to start
 Download and install:
+
 * For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases) 
 * For Java11:  [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
 * For Java17: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not contain embedded HotswapAgent, copy `hotswap-agent.jar` to `lib/hotswap` forlder. The latest HotswapAgent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases)
-In the case of dcevm8, launch your application with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
+
+Launching:
+
+* Java8: launch your application with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
+* Java11: launch your application with options `-XX:HotswapAgent=fatjar` to use Hotswap Agent.
+* Java17: launch your application with options `-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=fatjar` to turn on advanced hotswap (dcevm) and 
 
 ### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs a special reloading mechanism to keep
