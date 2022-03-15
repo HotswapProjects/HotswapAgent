@@ -32,10 +32,10 @@ Java unlimited runtime class and resource redefinition.
 Originally, the main purpose of this project was to avoid the infamous **change code**->**restart and wait...**->**check development** lifecycle. Lately, this schema evolved into a new paradigm in the Java world, based on the development of software in running application, that approach can be used even in a closed environment like Docker.
 
 ### Easy to start
-Download and install latest 
-* [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases) 
-* or download [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
-* of donwload and install [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not contain embedded HotswapAgent, copy `hotswap-agent.jar` to `lib/hotswap` forlder. The latest HotswapAgent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases)
+Download and install:
+* For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases) 
+* For Java11:  [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
+* For Java17: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not contain embedded HotswapAgent, copy `hotswap-agent.jar` to `lib/hotswap` forlder. The latest HotswapAgent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases)
 In the case of dcevm8, launch your application with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
 
 ### Plugins
