@@ -32,7 +32,11 @@ Java unlimited runtime class and resource redefinition.
 Originally, the main purpose of this project was to avoid the infamous **change code**->**restart and wait...**->**check development** lifecycle. Lately, this schema evolved into a new paradigm in the Java world, based on the development of software in running application, that approach can be used even in a closed environment like Docker.
 
 ### Easy to start
-Download and install latest [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases) or download [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. In the case of dcevm8, launch your application with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
+Download and install latest 
+* [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases) 
+* or download [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
+* of donwload and install [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not contain embedded HotswapAgent, copy `hotswap-agent.jar` to `lib/hotswap` forlder. The latest HotswapAgent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases)
+In the case of dcevm8, launch your application with options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
 
 ### Plugins
 Each application framework (Spring, Hibernate, Logback, ...) needs a special reloading mechanism to keep
@@ -94,7 +98,7 @@ Should you have any problems or questions, ask at [HotswapAgent forum](https://g
 
 This project is similar to [JRebel](http://zeroturnaround.com/software/jrebel/). The main differences are:
 
-* HotswapAgent (DCEVM) supports Java8!
+* HotswapAgent (DCEVM) supports Java8, Java11 and Java17!
 * HotswapAgent does not need any additional configuration for basic project setup.
 * JRebel is currently more mature and contains more plugins.
 * JRebel is neither open source nor free.
