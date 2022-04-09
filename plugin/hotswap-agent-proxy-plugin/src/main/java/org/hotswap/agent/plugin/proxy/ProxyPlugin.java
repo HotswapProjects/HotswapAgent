@@ -58,7 +58,7 @@ public class ProxyPlugin {
 
     private static Set<String> proxyRedefiningMap = new HashSet<>();
 
-    @OnClassLoadEvent(classNameRegexp = "(jdk.proxy2.\\$Proxy.*)|(com.sun.proxy.\\$Proxy.*)", events = LoadEvent.REDEFINE, skipSynthetic = false)
+    @OnClassLoadEvent(classNameRegexp = "(jdk.proxy\\d+.\\$Proxy.*)|(com.sun.proxy.\\$Proxy.*)", events = LoadEvent.REDEFINE, skipSynthetic = false)
     public static void transformJavaProxy(final Class<?> classBeingRedefined, final ClassLoader classLoader) {
 
     /*
