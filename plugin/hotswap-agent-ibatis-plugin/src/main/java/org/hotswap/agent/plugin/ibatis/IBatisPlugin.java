@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013-2022 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.ibatis;
 
 import java.net.URL;
@@ -17,7 +35,7 @@ import org.hotswap.agent.plugin.ibatis.IBatisConfigurationHandler;
 
 /**
  * Reload IBatis configuration after entity change.
- * 
+ *
  * @author muwaiwai
  * @date 2021-6-18
  */
@@ -36,7 +54,7 @@ public class IBatisPlugin {
     private ClassLoader appClassLoader;
 
     private Set<String> configFileSet = new HashSet<>();
-    
+
     private Command reloadIbatisConfigurationCommand =
             new ReflectionCommand(this, IBatisConfigurationHandler.class.getName(), "refresh");
 
@@ -46,18 +64,18 @@ public class IBatisPlugin {
     }
 
     public void registConfigFile(String configFiles){
-    	String[]paths=configFiles.split("\n");
-    	for(String ph:paths) {
-    		configFileSet.add(ph);
-    		LOGGER.debug("IBatis config file registered : {}", ph);
-    	}
+        String[]paths=configFiles.split("\n");
+        for(String ph:paths) {
+            configFileSet.add(ph);
+            LOGGER.debug("IBatis config file registered : {}", ph);
+        }
     }
 
     @OnResourceFileEvent(path="/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListenersModify(URL url) {
-    	if(configFileSet.contains(url.getPath())) {
-    		LOGGER.info("IBatis config file changed : {}", url.getPath());
-    		scheduler.scheduleCommand(reloadIbatisConfigurationCommand, 500);
-    	}
+        if(configFileSet.contains(url.getPath())) {
+            LOGGER.info("IBatis config file changed : {}", url.getPath());
+            scheduler.scheduleCommand(reloadIbatisConfigurationCommand, 500);
+        }
     }
 }
