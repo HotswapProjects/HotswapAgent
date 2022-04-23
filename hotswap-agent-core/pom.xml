@@ -64,7 +64,7 @@
                       <configuration>
                           <!--This is to override argLine from surefire config in parent pom-->
                           <!-- HotswapAgent=external serves to open modules -->
-                          <argLine>-XX:HotswapAgent=external -Dblank -XX:+TraceRedefineClasses</argLine>
+                          <argLine>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external -Xlog:redefine+class*=info -Dblank</argLine>
                       </configuration>
                   </plugin>
                 </plugins>
