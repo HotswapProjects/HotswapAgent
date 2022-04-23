@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-mybatis-plugin</artifactId>
 
     <properties>
-        <org.mybatis.version>3.5.3</org.mybatis.version>
+        <org.mybatis.version>3.5.9</org.mybatis.version>
         <jaxb.version>2.3.0</jaxb.version>
     </properties>
 
