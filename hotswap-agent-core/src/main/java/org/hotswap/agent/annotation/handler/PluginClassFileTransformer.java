@@ -141,7 +141,9 @@ public class PluginClassFileTransformer implements HaClassFileTransformer {
     protected static boolean isSyntheticClass(String className) {
         return className.contains("$$_javassist")
                 || className.contains("$$_jvst")
-                || className.startsWith("com/sun/proxy");
+                || className.startsWith("com/sun/proxy")
+                || (className.startsWith("jdk/proxy") && className.contains("$Proxy"))
+                ;
     }
 
     /**
