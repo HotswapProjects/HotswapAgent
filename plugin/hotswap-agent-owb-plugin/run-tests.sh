@@ -41,3 +41,4 @@ testCDI2 2.0.22
 testCDI2 2.0.23
 testCDI2 2.0.24
 testCDI2 2.0.25
+testCDI2 2.0.26
