@@ -107,4 +107,41 @@ public class ProxyClassLoadingDelegate {
         }
         return null;
     }
+
+    // for DS >= 1.9.6
+    public static Class<?> defineClass(ClassLoader loader, String className, byte[] bytes, Class<?> originalClass, ProtectionDomain protectionDomain) {
+        if (MAGIC_IN_PROGRESS.get()) {
+            try {
+                final Class<?> originalProxyClass = loader.loadClass(className);
+                try {
+                    Map<Class<?>, byte[]> reloadMap = new HashMap<>();
+                    reloadMap.put(originalProxyClass, bytes);
+                    PluginManager.getInstance().hotswap(reloadMap);
+                    return originalProxyClass;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            } catch (ClassNotFoundException e) {
+                //it has not actually been loaded yet
+            }
+        }
+        try {
+            Class<?> classDefiner = null;
+            try {
+                // ClassDefiner introduced in ds 1.9.6
+                classDefiner = loader.loadClass("org.apache.deltaspike.proxy.impl.ClassDefiner");
+            } catch (ClassNotFoundException e1) {
+                LOGGER.error("ClassDefiner class not found!");
+            }
+            if (classDefiner != null) {
+                return (Class<?>) ReflectionHelper.invoke(null, classDefiner, "defineClass",
+                        new Class[]{ClassLoader.class, String.class, byte[].class, Class.class, ProtectionDomain.class},
+                        loader, className, bytes, originalClass, protectionDomain);
+            }
+        } catch (Exception e) {
+            LOGGER.error("loadClass() exception {}", e.getMessage());
+        }
+        return null;
+    }
+
 }

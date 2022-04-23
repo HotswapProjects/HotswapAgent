@@ -95,8 +95,11 @@ public class DeltaSpikeProxyTransformer {
         generateProxyClassMethod.instrument(
                 new ExprEditor() {
                     public void edit(MethodCall m) throws CannotCompileException {
-                        if (m.getClassName().equals("org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator") && m.getMethodName().equals("loadClass"))
+                        if (m.getClassName().equals("org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator") && m.getMethodName().equals("loadClass")) {
                             m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate.loadClass($$); }");
+                        } else if (m.getClassName().equals("org.apache.deltaspike.proxy.impl.ClassDefiner") && m.getMethodName().equals("defineClass")) {
+                            m.replace("{ $_ = org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate.defineClass($$); }");
+                        }
                     }
                 });
         LOGGER.debug("org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator patched.");
