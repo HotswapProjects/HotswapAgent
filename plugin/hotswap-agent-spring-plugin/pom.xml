@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
-        <org.springframework.version>5.2.21.RELEASE</org.springframework.version>
+        <org.springframework.version>5.3.18</org.springframework.version>
     </properties>
 
 
@@ -95,7 +95,7 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
