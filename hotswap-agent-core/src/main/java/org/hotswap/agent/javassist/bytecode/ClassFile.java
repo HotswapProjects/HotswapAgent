@@ -202,7 +202,7 @@ public final class ClassFile {
      * It is 61 (JDK 17)
      * if the JVM supports <code>java.util.random.RandomGenerator</code>.
      */
-    public static final int MAJOR_VERSION;
+    public static int MAJOR_VERSION;
 
     static {
         int ver = JAVA_3;
@@ -758,12 +758,12 @@ public final class ClassFile {
         if (desc.equals(newDesc)) {
             if (notBridgeMethod(minfo))
                 return true;
-            	// if the bridge method with the same signature
-            	// already exists, replace it.
+                // if the bridge method with the same signature
+                // already exists, replace it.
             it.remove();
             return false;
         }
-        	return false;
+            return false;
            // return notBridgeMethod(minfo) && notBridgeMethod(newMethod);
     }
 
