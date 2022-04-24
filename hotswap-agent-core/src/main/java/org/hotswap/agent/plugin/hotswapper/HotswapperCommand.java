@@ -35,7 +35,7 @@ public class HotswapperCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(HotswapperCommand.class);
 
     // HotSwapperJpda will connect to JPDA on first hotswap command and remain connected.
-    // The HotSwapperJpda class from javaassist is copied to the plugin, becuse it needs to reside
+    // The HotSwapperJpda class from javaassist is copied to the plugin, because it needs to reside
     // in the application classloader to avoid NoClassDefFound error on tools.jar classes.
     private static HotSwapperJpda hotSwapper = null;
 
