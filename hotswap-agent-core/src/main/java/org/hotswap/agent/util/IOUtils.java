@@ -29,10 +29,13 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URI;
 import java.net.URL;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.logging.AgentLogger;
 import org.xml.sax.InputSource;
+import sun.nio.ch.ChannelInputStream;
 
 /**
  * IO utils (similar to apache commons).
@@ -170,6 +173,10 @@ public class IOUtils {
      */
     public static String extractFileNameFromInputStream(InputStream is) {
         try {
+            if (is instanceof ChannelInputStream) {
+                ReadableByteChannel ch = (ReadableByteChannel) ReflectionHelper.get(is, "ch");
+                return ch instanceof FileChannel ? (String) ReflectionHelper.get(ch, "path") : null;
+            }
             while (true) {
                 if (is instanceof FileInputStream) {
                     return (String) ReflectionHelper.get(is, "path");
