@@ -48,6 +48,7 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
         this.signatureMapOrig = signatureMapOrig;
     }
 
+    @Override
     public void executeCommand() {
         try {
             executeSingleCommand();
@@ -64,16 +65,42 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
         try {
             Class<?> clazz = classLoader.loadClass(className);
             Map<String, String> signatureMap = ProxyClassSignatureHelper.getNonSyntheticSignatureMap(clazz);
-            if (!signatureMap.equals(signatureMapOrig)) {
+            LOGGER.debug("executeSingleCommand class:{}, signature equals:{}", className, signatureMap.equals(signatureMapOrig));
+            if (!signatureMap.equals(signatureMapOrig) || !isImplementInterface(signatureMap, clazz)) {
                 byte[] generateProxyClass = ProxyGenerator.generateProxyClass(className, clazz.getInterfaces());
                 Map<Class<?>, byte[]> reloadMap = new HashMap<>();
                 reloadMap.put(clazz, generateProxyClass);
                 PluginManager.getInstance().hotswap(reloadMap);
                 LOGGER.reload("Class '{}' has been reloaded.", className);
             }
+            ProxyPlugin.removeProxyDefiningClassName(className);
         } catch (ClassNotFoundException e) {
             LOGGER.error("Error redefining java proxy {}", e, className);
         }
+    }
+
+    // Whether all methods of the interface are implemented
+    private boolean isImplementInterface(Map<String, String> signatureMap, Class<?> clazz) {
+        String clazzSignature = "";
+        try {
+            clazzSignature = ProxyClassSignatureHelper.getJavaClassSignature(clazz).replaceAll("final ", "");
+            LOGGER.debug("clazzSignature: {}", clazzSignature);
+        } catch (Exception e) {
+            LOGGER.error("Error getJavaClassSignature {}", clazz, e);
+            return true;
+        }
+        for (Map.Entry<String, String> entry : signatureMap.entrySet()) {
+            if(clazzSignature.contains(entry.getKey()) && entry.getValue().contains("public abstract")) {
+                LOGGER.debug("{} Signature: {}", entry.getKey(), entry.getValue());
+                String[] methodSigatures = entry.getValue().replaceAll("abstract ", "").split(";");
+                for (String methodSigature : methodSigatures) {
+                    if(!clazzSignature.contains(methodSigature)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     public boolean shiftScheduleTime() {

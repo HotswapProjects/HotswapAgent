@@ -21,6 +21,7 @@ package org.hotswap.agent.plugin.proxy;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -56,7 +57,7 @@ public class ProxyPlugin {
      */
     public static boolean reloadFlag = false;
 
-    private static Set<String> proxyRedefiningMap = new HashSet<>();
+    private static Set<String> proxyRedefiningMap = ConcurrentHashMap.newKeySet();
 
     @OnClassLoadEvent(classNameRegexp = "(jdk.proxy\\d+.\\$Proxy.*)|(com.sun.proxy.\\$Proxy.*)", events = LoadEvent.REDEFINE, skipSynthetic = false)
     public static void transformJavaProxy(final Class<?> classBeingRedefined, final ClassLoader classLoader) {
@@ -96,6 +97,10 @@ public class ProxyPlugin {
 
         // TODO: can be single command if scheduler guarantees the keeping execution order in the order of redefinition
         PluginManager.getInstance().getScheduler().scheduleCommand(new ReloadJavaProxyCommand(classLoader, className, signatureMapOrig), 50);
+    }
+
+    public static void removeProxyDefiningClassName(String className) {
+        proxyRedefiningMap.remove(className);
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
