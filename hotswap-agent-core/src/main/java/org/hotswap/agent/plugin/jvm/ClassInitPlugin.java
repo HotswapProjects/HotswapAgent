@@ -94,8 +94,8 @@ public class ClassInitPlugin {
                                     reinitializeStatics[0] = true;
                                 }
                                 if (originalField != null) {
-                                    // ENUM$VALUES is last in enumeration
-                                    if (originalClass.isEnum() && "ENUM$VALUES".equals(f.getFieldName())) {
+                                    // $VALUES is last in enumeration
+                                    if (originalClass.isEnum() && "$VALUES".equals(f.getFieldName())) {
                                         if (reinitializeStatics[0]) {
                                             LOGGER.debug("New field will be initialized {}", f.getFieldName());
                                         } else {
@@ -149,7 +149,7 @@ public class ClassInitPlugin {
                 try {
                     CtField existing = ctClass.getDeclaredField(en.toString());
                 } catch (NotFoundException e) {
-                    LOGGER.debug("Enum field deleted. ENUM$VALUES will be reinitialized {}", en.toString());
+                    LOGGER.debug("Enum field deleted. $VALUES will be reinitialized {}", en.toString());
                     return true;
                 }
             }
