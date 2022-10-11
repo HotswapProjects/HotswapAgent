@@ -94,8 +94,11 @@ public class ClassInitPlugin {
                                     reinitializeStatics[0] = true;
                                 }
                                 if (originalField != null) {
-                                    // $VALUES is last in enumeration
-                                    if (originalClass.isEnum() && "$VALUES".equals(f.getFieldName())) {
+                                    // Enum class contains an array field, in javac it's name starts with $VALUES,
+                                    // in eclipse compiler starts with ENUM$VALUES
+                                    if (originalClass.isEnum() && f.getSignature().startsWith("[L")
+                                            && (f.getFieldName().startsWith("$VALUES")
+                                                || f.getFieldName().startsWith("ENUM$VALUES"))) {
                                         if (reinitializeStatics[0]) {
                                             LOGGER.debug("New field will be initialized {}", f.getFieldName());
                                         } else {
