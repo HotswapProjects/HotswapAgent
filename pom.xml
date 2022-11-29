@@ -15,7 +15,7 @@
     <modules>
         <module>hotswap-agent-parent</module>
         <module>hotswap-agent-core</module>
-        <module>plugin/hotswap-agent-hibernate-jakarta-plugin</module>
+        <module>plugin/hotswap-agent-hibernate6-plugin</module>
         <module>plugin/hotswap-agent-hibernate-plugin</module>
         <module>plugin/hotswap-agent-hibernate3-plugin</module>
         <module>plugin/hotswap-agent-spring-plugin</module>

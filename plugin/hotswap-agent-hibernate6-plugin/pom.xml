@@ -10,7 +10,7 @@
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>hotswap-agent-hibernate-jakarta-plugin</artifactId>
+    <artifactId>hotswap-agent-hibernate6-plugin</artifactId>
 
     <properties>
         <org.hibernateframework.version>6.1.5.Final</org.hibernateframework.version>
