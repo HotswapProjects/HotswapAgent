@@ -17,18 +17,46 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hotswapagent</groupId>
-            <artifactId>hotswap-agent-plugins</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-        </dependency>
-
-        <dependency>
             <groupId>org.pegdown</groupId>
             <artifactId>pegdown</artifactId>
             <version>1.4.1</version>
         </dependency>
     </dependencies>
+    
+    <profiles>
+
+        <profile>
+            <id>javax</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.hotswapagent</groupId>
+                    <artifactId>hotswap-agent-plugins</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                </dependency>
+
+            </dependencies>
+        </profile>
+        
+        <profile>
+            <id>jakarta</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.hotswapagent</groupId>
+                    <artifactId>hotswap-agent-jakarta-plugins</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                </dependency>
+
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
