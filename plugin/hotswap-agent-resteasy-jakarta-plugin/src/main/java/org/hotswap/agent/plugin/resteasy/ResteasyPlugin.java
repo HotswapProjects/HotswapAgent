@@ -48,7 +48,7 @@ import org.hotswap.agent.util.ReflectionHelper;
  *  @author Vladimir Dvorak - HotswapAgent implementation,
  *  @author Stuart Douglas - original concept in FakeReplace
  */
-@Plugin(name = "Resteasy",
+@Plugin(name = "JakartaResteasy",
         description = "Jboss RESTeasy framework (http://resteasy.jboss.org/). Reload FilterDispatcher / HttpServletDispatcher configurations "
                 + "if @Path annotated class is changed.",
         testedVersions = {"6.2.1.Final"},

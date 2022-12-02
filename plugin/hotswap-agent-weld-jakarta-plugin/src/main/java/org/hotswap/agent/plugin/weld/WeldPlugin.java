@@ -58,7 +58,7 @@ import org.hotswap.agent.watch.Watcher;
  *
  * @author Vladimir Dvorak
  */
-@Plugin(name = "Weld",
+@Plugin(name = "JakartaWeld",
         description = "Weld framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"5.1.0.Final"},
         expectedVersions = {"5.1.0"},

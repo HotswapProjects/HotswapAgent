@@ -46,7 +46,7 @@ import org.hotswap.agent.util.ReflectionHelper;
  * @author alpapad@gmail.com
  *
  */
-@Plugin(name = "ResteasyRegistry", //
+@Plugin(name = "JakartaResteasyRegistry", //
         description = "Jboss RESTeasy Reload ResourceMethodRegistry if @Path annotated class is changed.", //
         testedVersions = { "6.2.1.Final" }, //
         expectedVersions = { "6.2.1" })

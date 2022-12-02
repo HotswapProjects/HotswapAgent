@@ -46,7 +46,7 @@ import org.hotswap.agent.util.AnnotationHelper;
  *
  * @author Jiri Bubnik
  */
-@Plugin(name = "Hibernate",
+@Plugin(name = "Hibernate6",
         group = "groupHibernate",
         fallback = true,
         description = "Reload Hibernate configuration after entity create/change.",
