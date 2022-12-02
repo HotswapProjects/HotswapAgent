@@ -31,7 +31,7 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.weld.WeldPlugin;
+import org.hotswap.agent.plugin.weld.JakartaWeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
@@ -76,8 +76,8 @@ public class ProxyFactoryTransformer {
             "if (loader==null) {"+
                 "loader = Thread.currentThread().getContextClassLoader();" +
             "}" +
-            "if (" + PluginManager.class.getName() + ".getInstance().isPluginInitialized(\"" + WeldPlugin.class.getName() + "\", loader)) {" +
-                PluginManagerInvoker.buildCallPluginMethod("loader", WeldPlugin.class, "registerProxyFactory",
+            "if (" + PluginManager.class.getName() + ".getInstance().isPluginInitialized(\"" + JakartaWeldPlugin.class.getName() + "\", loader)) {" +
+                PluginManagerInvoker.buildCallPluginMethod("loader", JakartaWeldPlugin.class, "registerProxyFactory",
                         "this", "java.lang.Object",
                         "bean", "java.lang.Object",
                         "loader", "java.lang.ClassLoader",

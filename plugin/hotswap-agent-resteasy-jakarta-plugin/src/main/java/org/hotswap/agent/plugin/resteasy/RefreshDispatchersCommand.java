@@ -69,8 +69,8 @@ public class RefreshDispatchersCommand extends MergeableCommand {
 
     private void reinitializeFilterDispatcher(FilterDispatcher filter) {
         try {
-            final FilterConfig config = (FilterConfig) ReflectionHelper.get(filter, ResteasyPlugin.FIELD_NAME);
-            final Set<String> doNoyClear = (Set<String>) ReflectionHelper.get(filter, ResteasyPlugin.PARAMETER_FIELD_NAME);
+            final FilterConfig config = (FilterConfig) ReflectionHelper.get(filter, JakartaResteasyPlugin.FIELD_NAME);
+            final Set<String> doNoyClear = (Set<String>) ReflectionHelper.get(filter, JakartaResteasyPlugin.PARAMETER_FIELD_NAME);
             clearContext(config.getServletContext(), doNoyClear);
             filter.destroy();
             filter.init(config);
@@ -81,8 +81,8 @@ public class RefreshDispatchersCommand extends MergeableCommand {
 
     private void reinitializeServletDispatcher(HttpServletDispatcher servlet) {
         try {
-            final ServletConfig config = (ServletConfig) ReflectionHelper.get(servlet, ResteasyPlugin.FIELD_NAME);
-            final Set<String> doNoyClear = (Set<String>) ReflectionHelper.get(servlet, ResteasyPlugin.PARAMETER_FIELD_NAME);
+            final ServletConfig config = (ServletConfig) ReflectionHelper.get(servlet, JakartaResteasyPlugin.FIELD_NAME);
+            final Set<String> doNoyClear = (Set<String>) ReflectionHelper.get(servlet, JakartaResteasyPlugin.PARAMETER_FIELD_NAME);
             clearContext(config.getServletContext(), doNoyClear);
             servlet.destroy();
             servlet.init(config);

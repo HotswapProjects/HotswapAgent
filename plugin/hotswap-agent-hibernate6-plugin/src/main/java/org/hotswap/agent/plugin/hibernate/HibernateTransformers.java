@@ -119,8 +119,8 @@ public class HibernateTransformers {
     @OnClassLoadEvent(classNameRegexp = "(org.hibernate.validator.internal.metadata.BeanMetaDataManager)|(org.hibernate.validator.internal.metadata.BeanMetaDataManagerImpl)")
     public static void beanMetaDataManagerRegisterVariable(CtClass ctClass) throws CannotCompileException {
         StringBuilder src = new StringBuilder("{");
-        src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
-        src.append(PluginManagerInvoker.buildCallPluginMethod(HibernatePlugin.class, "registerBeanMetaDataManager",
+        src.append(PluginManagerInvoker.buildInitializePlugin(Hibernate6Plugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(Hibernate6Plugin.class, "registerBeanMetaDataManager",
                 "this", "java.lang.Object", "this.getClass().getName()", "java.lang.String"));
         src.append("}");
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
@@ -140,8 +140,8 @@ public class HibernateTransformers {
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider")
     public static void annotationMetaDataProviderRegisterVariable(CtClass ctClass) throws CannotCompileException {
         StringBuilder src = new StringBuilder("{");
-        src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
-        src.append(PluginManagerInvoker.buildCallPluginMethod(HibernatePlugin.class, "registerAnnotationMetaDataProvider",
+        src.append(PluginManagerInvoker.buildInitializePlugin(Hibernate6Plugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(Hibernate6Plugin.class, "registerAnnotationMetaDataProvider",
                 "this", "java.lang.Object"));
         src.append("}");
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {

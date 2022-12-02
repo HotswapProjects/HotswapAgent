@@ -209,7 +209,7 @@ public class WeldPluginTest {
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
         try {
-            WeldPlugin.isTestEnvironment = true;
+            JakartaWeldPlugin.isTestEnvironment = true;
             Collection<BeanClassRefreshAgent> instances = BeanClassRefreshAgent.getInstances();
             for (BeanClassRefreshAgent instance : instances) {
                 //create new class and class file. rerun test only after clean
@@ -221,7 +221,7 @@ public class WeldPluginTest {
                 break;
             }
         } finally {
-            WeldPlugin.isTestEnvironment = false;
+            JakartaWeldPlugin.isTestEnvironment = false;
         }
     }
 

@@ -94,8 +94,8 @@ public class HibernatePersistenceHelper {
 
         String version = Version.getVersionString();
 
-        PluginManagerInvoker.callInitializePlugin(HibernatePlugin.class, appClassLoader);
-        PluginManagerInvoker.callPluginMethod(HibernatePlugin.class, appClassLoader,
+        PluginManagerInvoker.callInitializePlugin(Hibernate6Plugin.class, appClassLoader);
+        PluginManagerInvoker.callPluginMethod(Hibernate6Plugin.class, appClassLoader,
                 "init",
                 new Class[]{String.class, Boolean.class},
                 new Object[]{version, true});

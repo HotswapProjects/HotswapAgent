@@ -31,7 +31,7 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.weld.WeldClassSignatureHelper;
-import org.hotswap.agent.plugin.weld.WeldPlugin;
+import org.hotswap.agent.plugin.weld.JakartaWeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.jboss.weld.bean.builtin.BeanManagerProxy;
@@ -117,7 +117,7 @@ public class BeanClassRefreshAgent {
     private void register() {
         if (!registered) {
             registered = true;
-            PluginManagerInvoker.callPluginMethod(WeldPlugin.class, getClass().getClassLoader(),
+            PluginManagerInvoker.callPluginMethod(JakartaWeldPlugin.class, getClass().getClassLoader(),
                     "registerBeanDeplArchivePath", new Class[] { String.class }, new Object[] { archivePath });
         }
     }

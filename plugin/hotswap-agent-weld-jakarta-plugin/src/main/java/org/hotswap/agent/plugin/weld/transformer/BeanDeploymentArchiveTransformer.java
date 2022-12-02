@@ -25,11 +25,11 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.weld.WeldPlugin;
+import org.hotswap.agent.plugin.weld.JakartaWeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
- * Hook into WeldBeanDeploymentArchive or BeanDeploymentArchiveImpl(WildFly) constructors to initialize WeldPlugin
+ * Hook into WeldBeanDeploymentArchive or BeanDeploymentArchiveImpl(WildFly) constructors to initialize JakartaWeldPlugin
  *
  * @author Vladimir Dvorak
  */
@@ -49,8 +49,8 @@ public class BeanDeploymentArchiveTransformer {
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
         StringBuilder src = new StringBuilder("{");
-        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
-        src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
+        src.append(PluginManagerInvoker.buildInitializePlugin(JakartaWeldPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(JakartaWeldPlugin.class, "init"));
         src.append("org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent.registerArchive(getClass().getClassLoader(), this, null);");
         src.append("}");
 
@@ -73,8 +73,8 @@ public class BeanDeploymentArchiveTransformer {
     public static void transformJbossBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
         src.append("if (beansXml!=null && beanArchiveType!=null && (\"EXPLICIT\".equals(beanArchiveType.toString()) || \"IMPLICIT\".equals(beanArchiveType.toString()))){");
-        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
-        src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldPlugin.class, "initInJBossAS"));
+        src.append(PluginManagerInvoker.buildInitializePlugin(JakartaWeldPlugin.class, "module.getClassLoader()"));
+        src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", JakartaWeldPlugin.class, "initInJBossAS"));
         src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent\", true, module.getClassLoader());");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
         src.append("    agM.invoke(null, new Object[] { module.getClassLoader(),this, beanArchiveType.toString()});");
@@ -98,8 +98,8 @@ public class BeanDeploymentArchiveTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.glassfish.weld.BeanDeploymentArchiveImpl")
     public static void transformGlassFishBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
-        src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "this.moduleClassLoaderForBDA"));
-        src.append(PluginManagerInvoker.buildCallPluginMethod("this.moduleClassLoaderForBDA", WeldPlugin.class, "initInGlassFish"));
+        src.append(PluginManagerInvoker.buildInitializePlugin(JakartaWeldPlugin.class, "this.moduleClassLoaderForBDA"));
+        src.append(PluginManagerInvoker.buildCallPluginMethod("this.moduleClassLoaderForBDA", JakartaWeldPlugin.class, "initInGlassFish"));
         src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent\", true, this.moduleClassLoaderForBDA);");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
         src.append("    agM.invoke(null, new Object[] { this.moduleClassLoaderForBDA, this, null});");

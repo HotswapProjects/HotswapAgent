@@ -50,9 +50,9 @@ import org.hotswap.agent.util.ReflectionHelper;
         description = "Jboss RESTeasy Reload ResourceMethodRegistry if @Path annotated class is changed.", //
         testedVersions = { "6.2.1.Final" }, //
         expectedVersions = { "6.2.1" })
-public class ResteasyRegistryPlugin {
+public class JakartaResteasyRegistryPlugin {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ResteasyRegistryPlugin.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(JakartaResteasyRegistryPlugin.class);
 
     private static final String PATH_ANNOTATION = "jakarta.ws.rs.Path";
 
@@ -95,10 +95,10 @@ public class ResteasyRegistryPlugin {
             init.insertAfter(""//
                     +"java.lang.ClassLoader $$cl = Thread.currentThread().getContextClassLoader();" //
                     +"java.lang.Object $$servletContext = servletConfig.getServletContext();"//
-                    + PluginManagerInvoker.buildInitializePlugin(ResteasyRegistryPlugin.class, "$$cl")//
-                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", ResteasyRegistryPlugin.class,
+                    + PluginManagerInvoker.buildInitializePlugin(JakartaResteasyRegistryPlugin.class, "$$cl")//
+                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", JakartaResteasyRegistryPlugin.class,
                             "registerContext", "$$servletContext", "java.lang.Object")//
-                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", ResteasyRegistryPlugin.class,
+                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", JakartaResteasyRegistryPlugin.class,
                             "registerServletContainerDispatcher", "servletContainerDispatcher", "java.lang.Object")//
             );
         } catch(NotFoundException | CannotCompileException e){
@@ -114,10 +114,10 @@ public class ResteasyRegistryPlugin {
             init.insertAfter(""//
                     + "java.lang.Object $$servletContext = servletConfig.getServletContext();" //
                     + "java.lang.ClassLoader $$cl = Thread.currentThread().getContextClassLoader();"//
-                    + PluginManagerInvoker.buildInitializePlugin(ResteasyRegistryPlugin.class, "$$cl") //
-                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", ResteasyRegistryPlugin.class,
+                    + PluginManagerInvoker.buildInitializePlugin(JakartaResteasyRegistryPlugin.class, "$$cl") //
+                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", JakartaResteasyRegistryPlugin.class,
                             "registerContext", "$$servletContext", "java.lang.Object") //
-                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", ResteasyRegistryPlugin.class,
+                    + PluginManagerInvoker.buildCallPluginMethod("$$cl", JakartaResteasyRegistryPlugin.class,
                             "registerServletContainerDispatcher", "servletContainerDispatcher", "java.lang.Object")//
             );
         } catch(NotFoundException | CannotCompileException e){

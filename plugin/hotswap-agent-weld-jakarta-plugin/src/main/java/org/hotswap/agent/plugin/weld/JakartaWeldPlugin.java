@@ -54,7 +54,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
 /**
- * WeldPlugin
+ * JakartaWeldPlugin
  *
  * @author Vladimir Dvorak
  */
@@ -63,9 +63,9 @@ import org.hotswap.agent.watch.Watcher;
         testedVersions = {"5.1.0.Final"},
         expectedVersions = {"5.1.0"},
         supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class, AbstractClassBeanTransformer.class, CdiContextsTransformer.class})
-public class WeldPlugin {
+public class JakartaWeldPlugin {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(WeldPlugin.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(JakartaWeldPlugin.class);
 
     private static final String VETOED_ANNOTATION = "jakarta.enterprise.inject.Vetoed";
     private static final String DS_EXCLUDED_ANNOTATION = "org.apache.deltaspike.core.api.exclude.Exclude";

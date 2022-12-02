@@ -54,9 +54,9 @@ import org.hotswap.agent.util.ReflectionHelper;
         testedVersions = {"6.2.1.Final"},
         expectedVersions = {"6.2.1"}
         )
-public class ResteasyPlugin {
+public class JakartaResteasyPlugin {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ResteasyPlugin.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(JakartaResteasyPlugin.class);
 
     private static final String PATH_ANNOTATION = "jakarta.ws.rs.Path";
 
@@ -88,11 +88,10 @@ public class ResteasyPlugin {
         ctClass.addField(paramsField);
 
         CtMethod methInit = ctClass.getDeclaredMethod("init");
-        methInit.insertBefore(
-                "{" +
+        methInit.insertBefore("{" +
                 "   if(this." + PARAMETER_FIELD_NAME + " == null) {" +
-                        PluginManagerInvoker.buildInitializePlugin(ResteasyPlugin.class) +
-                        PluginManagerInvoker.buildCallPluginMethod(ResteasyPlugin.class, "registerDispatcher", "this", "java.lang.Object") +
+                        PluginManagerInvoker.buildInitializePlugin(JakartaResteasyPlugin.class) +
+                        PluginManagerInvoker.buildCallPluginMethod(JakartaResteasyPlugin.class, "registerDispatcher", "this", "java.lang.Object") +
                 "   }" +
                 "   this." + FIELD_NAME + " = $1;" +
                 "   this." + PARAMETER_FIELD_NAME + " = " +
@@ -114,11 +113,10 @@ public class ResteasyPlugin {
         ctClass.addField(paramsField);
 
         CtMethod methInit = ctClass.getDeclaredMethod("init");
-        methInit.insertBefore(
-                "{" +
+        methInit.insertBefore("{" +
                 "   if(this." + PARAMETER_FIELD_NAME + " == null) {" +
-                        PluginManagerInvoker.buildInitializePlugin(ResteasyPlugin.class) +
-                        PluginManagerInvoker.buildCallPluginMethod(ResteasyPlugin.class, "registerDispatcher", "this", "java.lang.Object") +
+                        PluginManagerInvoker.buildInitializePlugin(JakartaResteasyPlugin.class) +
+                        PluginManagerInvoker.buildCallPluginMethod(JakartaResteasyPlugin.class, "registerDispatcher", "this", "java.lang.Object") +
                 "   }" +
                 "   this." + FIELD_NAME + " = $1;" +
                 "   this." + PARAMETER_FIELD_NAME + " = " +
