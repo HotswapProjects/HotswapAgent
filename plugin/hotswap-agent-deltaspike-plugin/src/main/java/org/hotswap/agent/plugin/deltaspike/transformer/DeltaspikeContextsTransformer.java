@@ -35,6 +35,9 @@ public class DeltaspikeContextsTransformer {
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.core.util.context.AbstractContext")
     public static void patchWindowContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         HaCdiCommons.transformContext(classPool, ctClass);
     }
 }

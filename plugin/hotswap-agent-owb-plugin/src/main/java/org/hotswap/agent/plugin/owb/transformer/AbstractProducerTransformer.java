@@ -26,6 +26,7 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.FieldAccess;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 
 /**
  * Hook into AbstractProducerTransformer defineInterceptorStack to keep methodInterceptors instance
@@ -34,7 +35,9 @@ public class AbstractProducerTransformer {
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.portable.AbstractProducer")
     public static void patchProxyFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtMethod getProxyClassMethod = ctClass.getDeclaredMethod("defineInterceptorStack");
         getProxyClassMethod.instrument(
             new ExprEditor() {
