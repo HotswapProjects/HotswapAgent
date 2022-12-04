@@ -59,7 +59,7 @@ import org.hotswap.agent.watch.Watcher;
  *
  * @author Vladimir Dvorak
  */
-@Plugin(name = "Owb",
+@Plugin(name = "OwbJakarta",
         description = "OpenWebBeans Jakarta framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
         testedVersions = {"2.0.27"},
         expectedVersions = {"All between 2.0.27"},

@@ -36,6 +36,7 @@
         <module>plugin/hotswap-agent-proxy-plugin</module>
         <module>plugin/hotswap-agent-webobjects-plugin</module>
         <module>plugin/hotswap-agent-weld-plugin</module>
+        <module>plugin/hotswap-agent-weld-jakarta-plugin</module>
         <module>plugin/hotswap-agent-jbossmodules-plugin</module>
         <module>plugin/hotswap-agent-resteasy-registry-plugin</module>
         <module>plugin/hotswap-agent-deltaspike-plugin</module>
