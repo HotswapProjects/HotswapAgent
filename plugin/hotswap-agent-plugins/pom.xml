@@ -132,6 +132,12 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-owb-jakarta-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-proxy-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -145,6 +151,12 @@
         <dependency>
             <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-weld-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-weld-jakarta-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 

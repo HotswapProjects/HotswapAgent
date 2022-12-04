@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.weld;
+package org.hotswap.agent.plugin.weld_jakarta;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -25,28 +25,30 @@ import static org.junit.Assert.assertTrue;
 import java.net.URL;
 import java.util.Collection;
 
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent;
-import org.hotswap.agent.plugin.weld.testBeans.DependentHello1;
-import org.hotswap.agent.plugin.weld.testBeans.HelloProducer1;
-import org.hotswap.agent.plugin.weld.testBeans.HelloService;
-import org.hotswap.agent.plugin.weld.testBeans.HelloServiceDependant;
-import org.hotswap.agent.plugin.weld.testBeans.HelloServiceImpl1;
-import org.hotswap.agent.plugin.weld.testBeans.InterceptedBean;
-import org.hotswap.agent.plugin.weld.testBeans.ProxyHello1;
-import org.hotswap.agent.plugin.weld.testBeans.ProxyHosting;
-import org.hotswap.agent.plugin.weld.testBeans.SessionBean1;
-import org.hotswap.agent.plugin.weld.testBeansHotswap.DependentHello2;
-import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloProducer2;
-import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloProducer3;
-import org.hotswap.agent.plugin.weld.testBeansHotswap.HelloServiceImpl2;
-import org.hotswap.agent.plugin.weld.testBeansHotswap.InterceptedBean2;
-import org.hotswap.agent.plugin.weld.testBeansHotswap.ProxyHello2;
-import org.hotswap.agent.plugin.weld.testBeansHotswap.SessionBean2;
+import org.hotswap.agent.plugin.weld_jakarta.command.BeanClassRefreshAgent;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.DependentHello1;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.HelloProducer1;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.HelloService;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.HelloServiceDependant;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.HelloServiceImpl1;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.InterceptedBean;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.ProxyHello1;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.ProxyHosting;
+import org.hotswap.agent.plugin.weld_jakarta.testBeans.SessionBean1;
+import org.hotswap.agent.plugin.weld_jakarta.testBeansHotswap.DependentHello2;
+import org.hotswap.agent.plugin.weld_jakarta.testBeansHotswap.HelloProducer2;
+import org.hotswap.agent.plugin.weld_jakarta.testBeansHotswap.HelloProducer3;
+import org.hotswap.agent.plugin.weld_jakarta.testBeansHotswap.HelloServiceImpl2;
+import org.hotswap.agent.plugin.weld_jakarta.testBeansHotswap.InterceptedBean2;
+import org.hotswap.agent.plugin.weld_jakarta.testBeansHotswap.ProxyHello2;
+import org.hotswap.agent.plugin.weld_jakarta.testBeansHotswap.SessionBean2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Ignore;
@@ -60,9 +62,9 @@ import org.junit.runner.RunWith;
  *
  * @author Vladimir Dvorak
  */
+@ApplicationScoped
 @RunWith(WeldJUnit4Runner.class)
-@Ignore
-public class WeldPluginTest {
+public class WeldJakartaPluginTest {
 
     public <T> T getBeanInstance(Class<T> beanClass) {
         BeanManager beanManager = CDI.current().getBeanManager();
@@ -93,6 +95,7 @@ public class WeldPluginTest {
      * Switch method implementation (using bean definition or interface).
      */
     @Test
+    @Ignore
     public void hotswapServiceTest() throws Exception {
 
         HelloServiceImpl1 bean = getBeanInstance(HelloServiceImpl1.class);
@@ -117,6 +120,7 @@ public class WeldPluginTest {
      * Add new method - invoke via reflection (not available at compilation time).
      */
     @Test
+    @Ignore
     public void hotswapSeviceAddMethodTest() throws Exception {
         swapClasses(HelloServiceImpl1.class, HelloServiceImpl2.class.getName());
 
@@ -134,6 +138,7 @@ public class WeldPluginTest {
     }
 
     @Test
+    @Ignore
     public void hotswapRepositoryTest() throws Exception {
         HelloServiceDependant bean = getBeanInstance(HelloServiceDependant.class);
         assertEquals("HelloServiceDependant.hello():HelloProducer1.hello()", bean.hello());
@@ -156,6 +161,7 @@ public class WeldPluginTest {
     }
 
     @Test
+    @Ignore
     public void hotswapRepositoryNewMethodTest() throws Exception {
         assertEquals("HelloServiceImpl1.hello():HelloProducer1.hello()", getBeanInstance(HelloServiceImpl1.class).hello());
         swapClasses(HelloProducer1.class, HelloProducer3.class.getName());
@@ -169,6 +175,7 @@ public class WeldPluginTest {
     }
 
     @Test
+    @Ignore
     public void hotswapPrototypeTest() throws Exception {
         assertEquals("DependentHello1.hello():HelloServiceImpl1.hello():HelloProducer1.hello()", getBeanInstance(DependentHello1.class).hello());
 
@@ -191,6 +198,7 @@ public class WeldPluginTest {
 
 
     @Test
+    @Ignore
     public void hotswapPrototypeTestNotFailWhenHoldingInstanceBecauseSingletonInjectionPointWasReinitialize() throws Exception {
         DependentHello1 dependentBeanInstance = getBeanInstance(DependentHello1.class);
         assertEquals("DependentHello1.hello():HelloServiceImpl1.hello():HelloProducer1.hello()", dependentBeanInstance.hello());
@@ -209,9 +217,10 @@ public class WeldPluginTest {
 
     // Create new class and class file. rerun test only after clean
     @Test
+    @Ignore
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
         try {
-            WeldPlugin.isTestEnvironment = true;
+            WeldJakartaPlugin.isTestEnvironment = true;
             Collection<BeanClassRefreshAgent> instances = BeanClassRefreshAgent.getInstances();
             for (BeanClassRefreshAgent instance : instances) {
                 //create new class and class file. rerun test only after clean
@@ -223,11 +232,12 @@ public class WeldPluginTest {
                 break;
             }
         } finally {
-            WeldPlugin.isTestEnvironment = false;
+            WeldJakartaPlugin.isTestEnvironment = false;
         }
     }
 
     @Test
+    @Ignore
     public void proxyTest() throws Exception {
         ProxyHosting proxyHosting = getBeanInstance(ProxyHosting.class);
         assertEquals("ProxyHello1.hello()", proxyHosting.hello());
@@ -243,7 +253,8 @@ public class WeldPluginTest {
         assertEquals("ProxyHello1.hello()", proxyHosting.hello());
     }
 
-    // @Test
+    @Test
+    @Ignore
     public void sessionBeanTest() throws Exception {
         SessionBean1 sessionBean = getBeanInstance(SessionBean1.class);
         assertEquals("SessionBean1.hello():ProxyHello1.hello()", sessionBean.hello());
@@ -256,7 +267,8 @@ public class WeldPluginTest {
         assertEquals("SessionBean1.hello():ProxyHello1.hello()", sessionBean.hello());
     }
 
-    // @Test
+    @Test
+    @Ignore
     public void interceptedBeanTest() throws Exception {
         InterceptedBean interceptedBean = getReference(InterceptedBean.class);
         assertEquals("TestInterceptor:InterceptedBean.hello()", interceptedBean.hello());
