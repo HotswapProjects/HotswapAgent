@@ -20,7 +20,7 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
-            <artifactId>hotswap-agent-cdi-jakarta-plugin</artifactId>
+            <artifactId>hotswap-agent-cdi-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
