@@ -31,6 +31,7 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -46,18 +47,20 @@ public class ProxyFactoryTransformer {
 
     /**
      * Patch ProxyFactory class.
-     *   - add factory registration into constructor
-     *   - changes call classLoader.loadClass(...) in getProxyClass() to ProxyClassLoadingDelegate.loadClass(classLoader, ...)
-     *   - changes call ClassFileUtils.toClass() in createProxyClass() to ProxyClassLoadingDelegate.loadClass(...)
+     * - add factory registration into constructor
+     * - changes call classLoader.loadClass(...) in getProxyClass() to ProxyClassLoadingDelegate.loadClass(classLoader, ...)
+     * - changes call ClassFileUtils.toClass() in createProxyClass() to ProxyClassLoadingDelegate.loadClass(...)
      *
-     * @param ctClass the ProxyFactory class
      * @param classPool the class pool
-     * @throws NotFoundException the not found exception
+     * @param ctClass   the ProxyFactory class
+     * @throws NotFoundException      the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.bean.proxy.ProxyFactory")
-    public static void patchProxyFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
+    public static void patchProxyFactory(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtClass[] constructorParams = new CtClass[] {
             classPool.get("java.lang.String"),
             classPool.get("java.lang.Class"),

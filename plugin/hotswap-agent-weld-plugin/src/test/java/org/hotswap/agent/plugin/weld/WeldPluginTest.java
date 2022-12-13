@@ -49,6 +49,7 @@ import org.hotswap.agent.plugin.weld.testBeansHotswap.ProxyHello2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.SessionBean2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,6 +61,7 @@ import org.junit.runner.RunWith;
  * @author Vladimir Dvorak
  */
 @RunWith(WeldJUnit4Runner.class)
+@Ignore
 public class WeldPluginTest {
 
     public <T> T getBeanInstance(Class<T> beanClass) {

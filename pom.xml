@@ -34,10 +34,12 @@
         <module>plugin/hotswap-agent-el-resolver-plugin</module>
         <module>plugin/hotswap-agent-osgiequinox-plugin</module>
         <module>plugin/hotswap-agent-owb-plugin</module>
+        <module>plugin/hotswap-agent-owb-jakarta-plugin</module>
         <module>plugin/hotswap-agent-proxy-plugin</module>
         <module>plugin/hotswap-agent-webobjects-plugin</module>
         <module>plugin/hotswap-agent-weld-jakarta-plugin</module>
         <module>plugin/hotswap-agent-weld-plugin</module>
+        <module>plugin/hotswap-agent-weld-jakarta-plugin</module>
         <module>plugin/hotswap-agent-jbossmodules-plugin</module>
         <module>plugin/hotswap-agent-resteasy-registry-jakarta-plugin</module>
         <module>plugin/hotswap-agent-resteasy-registry-plugin</module>

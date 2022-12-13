@@ -45,9 +45,9 @@ public class CdiContextsTransformer {
     /**
      * Add context reloading functionality to base contexts classes.
      *
-     * @param ctClass the class
      * @param classPool the class pool
-     * @throws NotFoundException the not found exception
+     * @param ctClass   the class
+     * @throws NotFoundException      the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "(org.jboss.weld.context.AbstractManagedContext)|" +
@@ -57,8 +57,10 @@ public class CdiContextsTransformer {
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
                                         "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)"
                                         )
-    public static void transformReloadingWeldContexts(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
+    public static void transformReloadingWeldContexts(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         LOGGER.debug("Adding interface {} to {}.", WeldHotswapContext.class.getName(), ctClass.getName());
         ctClass.addInterface(classPool.get(WeldHotswapContext.class.getName()));
 
@@ -102,12 +104,16 @@ public class CdiContextsTransformer {
     /**
      * Add custom tracker field to session context
      *
-     * @param ctClass the class
-     * @throws NotFoundException the not found exception
+     * @param classPool the class pool
+     * @param ctClass   the class
+     * @throws NotFoundException      the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.context.AbstractContext")
     public static void transformHttpSessionContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         HaCdiCommons.transformContext(classPool, ctClass);
     }
 }

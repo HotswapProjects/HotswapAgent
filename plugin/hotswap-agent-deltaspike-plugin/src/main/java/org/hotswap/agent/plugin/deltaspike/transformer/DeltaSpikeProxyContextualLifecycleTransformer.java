@@ -19,11 +19,9 @@
 package org.hotswap.agent.plugin.deltaspike.transformer;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.deltaspike.DeltaSpikePlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -39,12 +37,16 @@ public class DeltaSpikeProxyContextualLifecycleTransformer {
     /**
      * Register DeltaspikePlugin and add hook to create method to DeltaSpikeProxyContextualLifecycle.
      *
-     * @param ctClass the ctclass
+     * @param classPool the class pool
+     * @param ctClass   the ctclass
      * @throws CannotCompileException the cannot compile exception
-     * @throws NotFoundException the not found exception
+     * @throws NotFoundException      the not found exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.api.DeltaSpikeProxyContextualLifecycle")
-    public static void patchDeltaSpikeProxyContextualLifecycle(CtClass ctClass) throws CannotCompileException, NotFoundException {
+    public static void patchDeltaSpikeProxyContextualLifecycle(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtMethod methodCreate = ctClass.getDeclaredMethod("create");
         methodCreate.insertAfter(
                 "{" +

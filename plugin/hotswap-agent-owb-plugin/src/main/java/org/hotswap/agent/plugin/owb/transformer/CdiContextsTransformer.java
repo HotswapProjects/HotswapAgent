@@ -44,7 +44,9 @@ public class CdiContextsTransformer {
                                         "(org.apache.myfaces.flow.cdi.FlowScopedContextImpl)|" +
                                         "(org.apache.myfaces.cdi.view.ViewScopeContextImpl)")
     public static void transformOwbContexts(CtClass clazz, ClassPool classPool, ClassLoader cl) throws NotFoundException, CannotCompileException {
-
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtClass superClass = clazz.getSuperclass();
         while (superClass != null) {
             if ("org.apache.webbeans.context.AbstractContext".equals(superClass.getName())) {
@@ -118,6 +120,9 @@ public class CdiContextsTransformer {
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.AbstractContext")
     public static void transformAbstractContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         HaCdiCommons.transformContext(classPool, ctClass);
     }
 

@@ -1,4 +1,4 @@
-[Weld/CDI](http://weld.cdi-spec.org/)
+[Weld Jakarta/CDI](http://weld.cdi-spec.org/)
 =====================================
 Reinject injection points after bean redefinition. Define and register a new bean in BeanManager on new bean definition.
 Redefine proxy class if proxied class is redefined. Appropriate redefinition can be specified in `hotswap-agent.properties` file.
