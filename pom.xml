@@ -27,7 +27,6 @@
         <module>plugin/hotswap-agent-logback-plugin</module>
         <module>plugin/hotswap-agent-log4j2-plugin</module>
         <module>plugin/hotswap-agent-cdi-plugin</module>
-        <module>plugin/hotswap-agent-cdi-jakarta-plugin</module>
         <module>plugin/hotswap-agent-myfaces-plugin</module>
         <module>plugin/hotswap-agent-mojarra-plugin</module>
         <module>plugin/hotswap-agent-omnifaces-plugin</module>

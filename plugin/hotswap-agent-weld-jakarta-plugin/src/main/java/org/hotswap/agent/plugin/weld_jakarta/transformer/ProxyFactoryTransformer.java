@@ -97,7 +97,7 @@ public class ProxyFactoryTransformer {
             CtMethod newMethod = CtNewMethod.make(
                     "protected java.lang.Class toClass(org.jboss.classfilewriter.ClassFile ct, java.lang.Class originalClass, " +
                                 "org.jboss.weld.serialization.spi.ProxyServices proxyServices, java.security.ProtectionDomain domain) {" +
-                        "return  org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.toClassWeld3(this, ct, originalClass, proxyServices, domain);" +
+                        "return  org.hotswap.agent.plugin.weld_jakarta.command.ProxyClassLoadingDelegate.toClassWeld3(this, ct, originalClass, proxyServices, domain);" +
                      "}", ctClass);
             ctClass.addMethod(newMethod);
         } catch (NotFoundException e) {
@@ -107,7 +107,7 @@ public class ProxyFactoryTransformer {
                     new ExprEditor() {
                         public void edit(MethodCall m) throws CannotCompileException {
                             if (m.getClassName().equals(ClassLoader.class.getName()) && m.getMethodName().equals("loadClass"))
-                                m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.loadClass(this.classLoader,$1); }");
+                                m.replace("{ $_ = org.hotswap.agent.plugin.weld_jakarta.command.ProxyClassLoadingDelegate.loadClass(this.classLoader,$1); }");
                         }
                     });
 
@@ -119,7 +119,7 @@ public class ProxyFactoryTransformer {
                             if (m.getClassName().equals("org.jboss.weld.util.bytecode.ClassFileUtils") && m.getMethodName().equals("toClass"))
                                 try {
                                     if (m.getMethod().getParameterTypes().length == 3) {
-                                        m.replace("{ $_ = org.hotswap.agent.plugin.weld.command.ProxyClassLoadingDelegate.toClassWeld2($$); }");
+                                        m.replace("{ $_ = org.hotswap.agent.plugin.weld_jakarta.command.ProxyClassLoadingDelegate.toClassWeld2($$); }");
                                     } else if (m.getMethod().getParameterTypes().length == 4) {
                                         LOGGER.debug("Proxy factory patch for delegating method skipped.", m.getClassName(), m.getMethodName());
                                     } else {
