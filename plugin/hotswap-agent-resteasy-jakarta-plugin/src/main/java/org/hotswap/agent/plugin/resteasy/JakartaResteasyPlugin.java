@@ -39,8 +39,11 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AnnotationHelper;
+import org.hotswap.agent.util.ClassName;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.classloader.ClassLoaderHelper;
+import org.hotswap.agent.util.classpool.ClassPoolHelper;
 
 /**
  * Resteasy
@@ -78,6 +81,9 @@ public class JakartaResteasyPlugin {
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.resteasy.plugins.server.servlet.FilterDispatcher")
     public static void patchFilterDispatcher(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        if (!ClassPoolHelper.hasBeenRead(classPool, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
 
         CtClass fltCfgClass = classPool.get("jakarta.servlet.FilterConfig");
         CtField configField = new CtField(fltCfgClass, FIELD_NAME, ctClass);
@@ -103,6 +109,9 @@ public class JakartaResteasyPlugin {
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher")
     public static void patchServletDispatcher(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        if (!ClassPoolHelper.hasBeenRead(classPool, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
 
         CtClass fltCfgClass = classPool.get("jakarta.servlet.ServletConfig");
         CtField configField = new CtField(fltCfgClass, FIELD_NAME, ctClass);
@@ -133,6 +142,9 @@ public class JakartaResteasyPlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void entityReload(ClassLoader classLoader, CtClass clazz, Class original) {
+        if (!ClassLoaderHelper.isClassLoaded(classLoader, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
         if (AnnotationHelper.hasAnnotation(original, PATH_ANNOTATION)
                 || AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)
                 ) {
@@ -143,6 +155,9 @@ public class JakartaResteasyPlugin {
 
     @OnClassFileEvent(classNameRegexp = ".*", events = {FileEvent.CREATE})
     public void newEntity(ClassLoader classLoader, CtClass clazz) throws Exception {
+        if (!ClassLoaderHelper.isClassLoaded(classLoader, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
         if (AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)) {
             refresh(classLoader, 500);
         }

@@ -21,6 +21,7 @@ package org.hotswap.agent.util.classloader;
 import java.lang.reflect.Method;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.ClassName;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**
@@ -56,6 +57,10 @@ public class ClassLoaderHelper {
             LOGGER.error("Unable to invoke findLoadedClass on classLoader {}, className {}", e, classLoader, className);
             return false;
         }
+    }
+    
+    public static boolean isClassLoaded(ClassLoader classLoader, ClassName className) {
+        return isClassLoaded(classLoader, className.toString());
     }
 
     /**

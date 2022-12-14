@@ -36,8 +36,11 @@ import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.logging.AgentLogger.Level;
 import org.hotswap.agent.util.AnnotationHelper;
+import org.hotswap.agent.util.ClassName;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.classloader.ClassLoaderHelper;
+import org.hotswap.agent.util.classpool.ClassPoolHelper;
 
 
 /**
@@ -74,6 +77,9 @@ public class ResteasyRegistryPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.resteasy.core.ResourceMethodRegistry")
     public static void patchResourceMethodRegistry(CtClass ctClass, ClassPool classPool) {
+        if (ClassPoolHelper.hasBeenRead(classPool, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
         try {
             // Make ResourceMethodRegistry root nodes readable
             ctClass.getField("rootNode").setModifiers(AccessFlag.PUBLIC);
@@ -90,6 +96,9 @@ public class ResteasyRegistryPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.resteasy.plugins.server.servlet.FilterDispatcher")
     public static void patchFilterDispatcher(CtClass ctClass, ClassPool classPool) {
+        if (ClassPoolHelper.hasBeenRead(classPool, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
         try{
             CtMethod init = ctClass.getDeclaredMethod("init");
             init.insertAfter(""//
@@ -108,6 +117,9 @@ public class ResteasyRegistryPlugin {
 
     @OnClassLoadEvent(classNameRegexp = "org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher")
     public static void patchServletDispatcher(CtClass ctClass, ClassPool classPool){
+        if (ClassPoolHelper.hasBeenRead(classPool, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
         try{
             CtMethod init = ctClass.getDeclaredMethod("init");
 
@@ -138,6 +150,9 @@ public class ResteasyRegistryPlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void entityReload(ClassLoader classLoader, CtClass clazz, Class<?> original) {
+        if (ClassLoaderHelper.isClassLoaded(classLoader, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
         if (AnnotationHelper.hasAnnotation(original, PATH_ANNOTATION)
                 || AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)) {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
@@ -149,6 +164,9 @@ public class ResteasyRegistryPlugin {
 
     @OnClassFileEvent(classNameRegexp = ".*", events = { FileEvent.CREATE })
     public void newEntity(ClassLoader classLoader, CtClass clazz) throws Exception {
+        if (ClassLoaderHelper.isClassLoaded(classLoader, ClassName.JAKARTA_SERVLET)) {
+            return;
+        }
         if (AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)) {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
                 LOGGER.trace("Load @Path annotated class {}", clazz.getName());

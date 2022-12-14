@@ -33,6 +33,8 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.ClassName;
+import org.hotswap.agent.util.classpool.ClassPoolHelper;
 
 /**
  * Helper class for common names definition for CDI plugins
@@ -45,18 +47,8 @@ public class HaCdiCommons {
     private static final Map<Class<? extends Annotation>, Class<?>> scopeToContextMap = new HashMap<>();
     private static final Map<HaCdiExtraContext, Boolean> extraContexts = new HashMap<>();
 
-    private static Boolean isJakarta;
-
     public static boolean isJakarta(ClassPool classPool) {
-        if (isJakarta == null) {
-            try {
-                classPool.get("jakarta.enterprise.context.spi.Contextual");
-                isJakarta = true;
-            } catch (NotFoundException e) {
-                isJakarta = false;
-            }
-        }
-        return isJakarta;
+        return ClassPoolHelper.hasBeenRead(classPool, ClassName.JAKARTA_CDI);
     }
 
     public static Class<?> getBeanClass(Object bean) {
