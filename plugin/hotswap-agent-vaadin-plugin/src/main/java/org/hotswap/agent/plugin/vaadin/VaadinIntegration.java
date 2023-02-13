@@ -23,15 +23,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import org.hotswap.agent.logging.AgentLogger;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.internal.BrowserLiveReload;
+import com.vaadin.flow.internal.BrowserLiveReloadAccessor;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteConfiguration;
-import com.vaadin.flow.router.internal.RouteUtil;
 import com.vaadin.flow.server.RouteRegistry;
 import com.vaadin.flow.server.VaadinContext;
 import com.vaadin.flow.server.VaadinService;
@@ -110,22 +112,10 @@ public class VaadinIntegration {
      */
     public void reload() {
         VaadinService vaadinService = vaadinServlet.getService();
-        try {
-            // TODO: Remove reflection when public flow release with
-            // com.vaadin.flow.internal.BrowserLiveReload* is published
-            Class<?> browserLiveReloadAccessClass = Class.forName("com.vaadin.flow.internal.BrowserLiveReloadAccess");
-            Method getLiveReloadMethod = browserLiveReloadAccessClass.getMethod("getLiveReload", VaadinService.class);
-            Class<?> browserLiveReloadClass = Class.forName("com.vaadin.flow.internal.BrowserLiveReload");
-            Method reloadMethod = browserLiveReloadClass.getMethod("reload");
-            Object browserLiveReloadAccess = vaadinService.getInstantiator()
-                    .getOrCreate(browserLiveReloadAccessClass);
-            Object browserLiveReload = getLiveReloadMethod.invoke(browserLiveReloadAccess, vaadinService);
-            reloadMethod.invoke(browserLiveReload);
+        Optional<BrowserLiveReload> liveReload = BrowserLiveReloadAccessor.getLiveReloadFromService(vaadinService);
+        if (liveReload.isPresent()) {
+            liveReload.get().reload();
             LOGGER.info("Live reload triggered");
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
-            LOGGER.info("No live reload connection established");
-            LOGGER.debug("Encountered the following exception invoking BrowserLiveReload::reload",
-                    ex);
         }
     }
 
@@ -168,11 +158,6 @@ public class VaadinIntegration {
                     .filter(clazz -> clazz.isAnnotationPresent(Route.class))
                     .forEach(clazz -> {
                         Class<? extends Component> componentClass = (Class<? extends Component>) clazz;
-
-                        final Route route = componentClass.getAnnotation(Route.class);
-                        LOGGER.info(
-                                "Updating route '{}' to {}", RouteUtil.resolve(componentClass, route),
-                                clazz);
                         routeConf.removeRoute(componentClass);
                         routeConf.setAnnotatedRoute(componentClass);
                     });

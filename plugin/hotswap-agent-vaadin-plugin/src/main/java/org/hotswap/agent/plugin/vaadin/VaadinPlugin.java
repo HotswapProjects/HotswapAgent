@@ -48,9 +48,9 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * @author Johannes Eriksson
  */
 @Plugin(name = "Vaadin",
-        description = "Vaadin Platform support",
-        testedVersions = {"14.1.20", "14.2.0.alpha7", "14.3.0.beta2", "15.0.2"},
-        expectedVersions = {"14 - 16"})
+        description = "Vaadin support",
+        testedVersions = {"23.0.0", "24.0.0.beta1"},
+        expectedVersions = {"23 - 24"})
 public class VaadinPlugin {
 
     @Init
