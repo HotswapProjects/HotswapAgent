@@ -14,9 +14,6 @@ Hotswap Agent
     <a href="https://gitter.im/HotswapProjects/user">
         <img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter">
     </a>
-    <a href='https://sourcespy.com/github/hotswapprojectshotswapagent/' title='SourceSpy Dashboard'>
-        <img src='https://sourcespy.com/shield.svg'/>
-    </a>
     <a href="https://twitter.com/intent/follow?screen_name=HSwapAgent">
         <img src="https://img.shields.io/twitter/follow/HSwapAgent.svg?style=social&logo=twitter" alt="follow on Twitter">
     </a>
