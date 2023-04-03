@@ -37,6 +37,20 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 public class HibernateTransformers {
     private static AgentLogger LOGGER = AgentLogger.getLogger(HibernateTransformers.class);
 
+    private static Boolean isJavax;
+
+    private static boolean isJavax(ClassPool classPool) {
+        if (isJavax == null) {
+            try {
+                classPool.get("javax.persistence.EntityManager");
+                isJavax = true;
+            } catch (NotFoundException e) {
+                isJavax = false;
+            }
+        }
+        return isJavax;
+    }
+
     /**
      * Override HibernatePersistence.createContainerEntityManagerFactory() to return EntityManagerFactory proxy object.
      * {@link org.hotswap.agent.plugin.hibernate.proxy.EntityManagerFactoryProxy} holds reference to all proxied factories
@@ -47,7 +61,11 @@ public class HibernateTransformers {
      * After the entity manager factory and it's proxy are instantiated, plugin init method is invoked.
      */
     @OnClassLoadEvent(classNameRegexp = "(org.hibernate.ejb.HibernatePersistence)|(org.hibernate.jpa.HibernatePersistenceProvider)|(org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider)|(org.springframework.orm.jpa.vendor.SpringHibernateEjbPersistenceProvider)")
-    public static void proxyHibernatePersistence(CtClass clazz) throws Exception {
+    public static void proxyHibernatePersistence(ClassPool classPool, CtClass clazz) throws Exception {
+        if (!isJavax(classPool)) {
+            return;
+        }
+
         LOGGER.debug("Override org.hibernate.ejb.HibernatePersistence#createContainerEntityManagerFactory and createEntityManagerFactory to create a EntityManagerFactoryProxy proxy.");
 
         CtMethod oldMethod = clazz.getDeclaredMethod("createContainerEntityManagerFactory");
@@ -82,12 +100,19 @@ public class HibernateTransformers {
      * use SessionFactory interface, because hibernate makes type cast to impl.
      */
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.internal.SessionFactoryImpl")
-    public static void removeSessionFactoryImplFinalFlag(CtClass clazz) throws Exception {
+    public static void removeSessionFactoryImplFinalFlag(ClassPool classPool, CtClass clazz) throws Exception {
+        if (!isJavax(classPool)) {
+            return;
+        }
         clazz.getClassFile().setAccessFlags(AccessFlag.PUBLIC);
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.cfg.Configuration")
     public static void proxySessionFactory(ClassLoader classLoader, ClassPool classPool, CtClass clazz) throws Exception {
+        if (!isJavax(classPool)) {
+            return;
+        }
+
         // proceed only if EJB not available by the classloader
         if (checkHibernateEjb(classLoader))
             return;
@@ -117,7 +142,10 @@ public class HibernateTransformers {
     }
 
     @OnClassLoadEvent(classNameRegexp = "(org.hibernate.validator.internal.metadata.BeanMetaDataManager)|(org.hibernate.validator.internal.metadata.BeanMetaDataManagerImpl)")
-    public static void beanMetaDataManagerRegisterVariable(CtClass ctClass) throws CannotCompileException {
+    public static void beanMetaDataManagerRegisterVariable(ClassPool classPool, CtClass ctClass) throws CannotCompileException {
+        if (!isJavax(classPool)) {
+            return;
+        }
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(HibernatePlugin.class, "registerBeanMetaDataManager",
@@ -138,7 +166,10 @@ public class HibernateTransformers {
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider")
-    public static void annotationMetaDataProviderRegisterVariable(CtClass ctClass) throws CannotCompileException {
+    public static void annotationMetaDataProviderRegisterVariable(ClassPool classPool, CtClass ctClass) throws CannotCompileException {
+        if (!isJavax(classPool)) {
+            return;
+        }
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(HibernatePlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(HibernatePlugin.class, "registerAnnotationMetaDataProvider",
@@ -162,6 +193,5 @@ public class HibernateTransformers {
         }
         LOGGER.debug("org.hibernate.validator.internal.metadata.provider.AnnotationMetaDataProvider - added method $$ha$resetCache().");
     }
-
 
 }
