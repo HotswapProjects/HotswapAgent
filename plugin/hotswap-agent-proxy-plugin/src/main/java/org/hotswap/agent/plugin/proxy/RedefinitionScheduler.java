@@ -22,6 +22,7 @@ import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.plugin.proxy.api.MultistepProxyTransformer;
 
 /**
  * Schedules a new redefiniton event for MultistepProxyTransformer

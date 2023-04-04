@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.proxy;
+package org.hotswap.agent.plugin.proxy.api;
 
 import java.io.ByteArrayInputStream;
 import java.util.UUID;
@@ -33,7 +33,8 @@ import org.hotswap.agent.javassist.Modifier;
  * @author Erki Ehtla
  *
  */
-public abstract class AbstractProxyBytecodeTransformer implements ProxyBytecodeTransformer {
+public abstract class AbstractProxyBytecodeTransformer implements ProxyBytecodeTransformer
+{
     private ClassPool classPool;
 
     /**

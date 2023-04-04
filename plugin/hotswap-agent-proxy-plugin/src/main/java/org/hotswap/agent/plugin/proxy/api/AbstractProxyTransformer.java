@@ -16,9 +16,10 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.proxy;
+package org.hotswap.agent.plugin.proxy.api;
 
 import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.plugin.proxy.ProxyClassSignatureHelper;
 
 /**
  * Redefines a proxy
@@ -26,7 +27,8 @@ import org.hotswap.agent.javassist.ClassPool;
  * @author Erki Ehtla
  *
  */
-public abstract class AbstractProxyTransformer implements ProxyTransformer {
+public abstract class AbstractProxyTransformer implements ProxyTransformer
+{
     public AbstractProxyTransformer(Class<?> classBeingRedefined, ClassPool classPool) {
         super();
         this.classBeingRedefined = classBeingRedefined;

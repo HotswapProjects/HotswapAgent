@@ -23,8 +23,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.hotswap.agent.plugin.proxy.ParentLastClassLoader;
-import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
+import org.hotswap.agent.plugin.proxy.api.ProxyBytecodeGenerator;
 import org.hotswap.agent.util.ReflectionHelper;
 
 /**

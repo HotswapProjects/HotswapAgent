@@ -16,10 +16,11 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.proxy;
+package org.hotswap.agent.plugin.proxy.hscglib;
 
 import java.io.IOException;
 import java.io.InputStream;
+import org.hotswap.agent.plugin.proxy.ProxyTransformationUtils;
 
 /**
  *

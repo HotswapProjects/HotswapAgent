@@ -117,9 +117,7 @@ public class ProxyPlugin {
             return classfileBuffer;
         }
 
-        // flush standard java beans caches
         loader.loadClass("java.beans.Introspector").getMethod("flushCaches").invoke(null);
-
         if (generatorParams.getParam().getClass().getName().endsWith(".Enhancer")) {
             try {
                 return CglibEnhancerProxyTransformer.transform(classBeingRedefined, cp, classfileBuffer, loader, generatorParams);
@@ -129,12 +127,14 @@ public class ProxyPlugin {
         }
 
         // Multistep transformation crashed jvm in java8 u05
-        if (!isJava8OrNewer)
+        if (!isJava8OrNewer) {
             try {
                 return CglibProxyTransformer.transform(classBeingRedefined, cp, classfileBuffer, generatorParams);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 LOGGER.error("Error redifining Cglib proxy {}", e, classBeingRedefined.getName());
             }
+        }
 
         return classfileBuffer;
     }

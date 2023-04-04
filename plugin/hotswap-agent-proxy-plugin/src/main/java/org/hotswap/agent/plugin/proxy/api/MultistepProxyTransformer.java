@@ -16,12 +16,13 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.proxy;
+package org.hotswap.agent.plugin.proxy.api;
 
 import java.util.Map;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.proxy.RedefinitionScheduler;
 
 /**
  * Multistep proxy redefinition strategy. Uses Instrumentation to schedule and run next steps.
@@ -29,7 +30,8 @@ import org.hotswap.agent.logging.AgentLogger;
  * @author Erki Ehtla
  *
  */
-public abstract class MultistepProxyTransformer extends AbstractProxyTransformer {
+public abstract class MultistepProxyTransformer extends AbstractProxyTransformer
+{
     private static final AgentLogger LOGGER = AgentLogger.getLogger(MultistepProxyTransformer.class);
     public static boolean addThirdStep = false;
 
@@ -120,7 +122,7 @@ public abstract class MultistepProxyTransformer extends AbstractProxyTransformer
      *
      * @return
      */
-    protected TransformationState removeClassState() {
+    public TransformationState removeClassState() {
         return transformationStates.remove(classBeingRedefined);
     }
 

@@ -21,7 +21,7 @@ package org.hotswap.agent.plugin.proxy.hscglib;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.plugin.proxy.AbstractProxyBytecodeTransformer;
+import org.hotswap.agent.plugin.proxy.api.AbstractProxyBytecodeTransformer;
 
 /**
  * Transforms the bytecode of a new Cglib proxy definition so it is initialized

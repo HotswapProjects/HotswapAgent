@@ -21,9 +21,9 @@ package org.hotswap.agent.plugin.proxy.hscglib;
 import java.lang.instrument.IllegalClassFormatException;
 
 import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
-import org.hotswap.agent.plugin.proxy.ProxyBytecodeTransformer;
-import org.hotswap.agent.plugin.proxy.SinglestepProxyTransformer;
+import org.hotswap.agent.plugin.proxy.api.ProxyBytecodeGenerator;
+import org.hotswap.agent.plugin.proxy.api.ProxyBytecodeTransformer;
+import org.hotswap.agent.plugin.proxy.api.SinglestepProxyTransformer;
 
 /**
  * Redefines Cglib Enhancer proxy classes. Uses

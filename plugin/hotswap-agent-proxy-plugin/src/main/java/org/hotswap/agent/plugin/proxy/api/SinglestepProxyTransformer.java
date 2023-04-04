@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.proxy;
+package org.hotswap.agent.plugin.proxy.api;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.logging.AgentLogger;
@@ -27,7 +27,8 @@ import org.hotswap.agent.logging.AgentLogger;
  * @author Erki Ehtla
  *
  */
-public abstract class SinglestepProxyTransformer extends AbstractProxyTransformer {
+public abstract class SinglestepProxyTransformer extends AbstractProxyTransformer
+{
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SinglestepProxyTransformer.class);
 
     protected byte[] classfileBuffer;

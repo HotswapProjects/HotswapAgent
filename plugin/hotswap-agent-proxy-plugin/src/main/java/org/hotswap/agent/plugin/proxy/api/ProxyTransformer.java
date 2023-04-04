@@ -16,17 +16,16 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.proxy;
+package org.hotswap.agent.plugin.proxy.api;
 
 /**
- * Transforms the bytecode of a new proxy definition so it can be used after redefinition
+ * Redefines a proxy
  *
  * @author Erki Ehtla
  *
  */
-public interface ProxyBytecodeTransformer {
-    public static final String INIT_FIELD_PREFIX = "initCalled";
+public interface ProxyTransformer {
 
-    public byte[] transform(byte[] classfileBuffer) throws Exception;
+    public byte[] transformRedefine() throws Exception;
 
 }
