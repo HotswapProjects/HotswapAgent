@@ -79,41 +79,11 @@ public class JdkPlugin {
                     }
                 }
 
-                // java.beans.Introspector#declaredMethodCache was removed in j13
-                // https://github.com/openjdk/jdk13u/commit/921b46738e0c3aaa2bf8c62e0accb0a5056190d3
-                Object declaredMethodCache = ReflectionHelper.getNoException(null, introspectorClass, "declaredMethodCache");
-
-                if (declaredMethodCache != null) {
-                    LOGGER.info("Removing class from declaredMethodCache.");
-                    ReflectionHelper.invoke(declaredMethodCache, declaredMethodCache.getClass(), "put",
-                            new Class[] { Object.class, Object.class }, clazz, null);
-                }
+                ReflectionHelper.invoke(null, introspectorClass, "flushFromCaches",
+                    new Class[] { Class.class }, clazz);
             }
         } catch (Exception e) {
             LOGGER.error("flushBeanIntrospectorCaches() exception {}.", e.getMessage());
-        } finally {
-            reloadFlag = false;
-        }
-    }
-
-    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
-    public static void flushIntrospectClassInfoCache(ClassLoader classLoader, CtClass ctClass) {
-        // com.sun.beans.introspect.ClassInfo was intruduced in j9
-        if (ClassFile.MAJOR_VERSION < ClassFile.JAVA_9) {
-            return;
-        }
-        try {
-            LOGGER.debug("Flushing {} from com.sun.beans.introspect.ClassInfo cache", ctClass.getName());
-
-            Class<?> clazz = classLoader.loadClass(ctClass.getName());
-            Class<?> classInfo = classLoader.loadClass("com.sun.beans.introspect.ClassInfo");
-
-            Object cache = ReflectionHelper.get(null, classInfo, "CACHE");
-            if (cache != null) {
-                ReflectionHelper.invoke(cache, cache.getClass(), "clear", new Class[] { }, null);
-            }
-        } catch (Exception e) {
-            LOGGER.error("flushClassInfoCache() exception {}.", e.getMessage());
         } finally {
             reloadFlag = false;
         }
