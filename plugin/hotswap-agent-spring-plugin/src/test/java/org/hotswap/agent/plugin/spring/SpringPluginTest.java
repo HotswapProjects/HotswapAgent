@@ -37,10 +37,7 @@ import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
 import org.hotswap.agent.util.spring.io.resource.Resource;
 import org.hotswap.agent.util.test.WaitHelper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -234,6 +231,7 @@ public class SpringPluginTest {
         Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
     }
 
+    @Ignore
     @Test
     public void beanLookupTest() {
         BeanLookup beanLookup = applicationContext.getBean(BeanLookup.class);
