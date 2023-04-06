@@ -84,6 +84,9 @@ public class ClassPathBeanDefinitionScannerAgent {
     // bean name generator obtained from the scanner
     BeanNameGenerator beanNameGenerator;
 
+    // start-up classLoader
+    ClassLoader classLoader;
+
     /**
      * Return an agent instance for a scanner. If the instance does not exists yet, it is created.
      *
@@ -120,6 +123,7 @@ public class ClassPathBeanDefinitionScannerAgent {
         this.registry = scanner.getRegistry();
         this.scopeMetadataResolver = (ScopeMetadataResolver) ReflectionHelper.get(scanner, "scopeMetadataResolver");
         this.beanNameGenerator = (BeanNameGenerator) ReflectionHelper.get(scanner, "beanNameGenerator");
+        this.classLoader = scanner.getResourceLoader().getClassLoader();
     }
 
     /**
@@ -251,7 +255,8 @@ public class ClassPathBeanDefinitionScannerAgent {
     public BeanDefinition resolveBeanDefinition(byte[] bytes) throws IOException {
         Resource resource = new ByteArrayResource(bytes);
         resetCachingMetadataReaderFactoryCache();
-        MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+        // getMetadataReader with start-up classloaer
+        MetadataReader metadataReader = getMetadataReader(resource);
 
         if (isCandidateComponent(metadataReader)) {
             ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
@@ -267,6 +272,16 @@ public class ClassPathBeanDefinitionScannerAgent {
         } else {
             LOGGER.trace("Ignored because not matching any filter '{}' ", metadataReader.getClassMetadata().getClassName());
             return null;
+        }
+    }
+
+    private MetadataReader getMetadataReader(Resource resource) throws IOException {
+        ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(this.classLoader);
+            return getMetadataReaderFactory().getMetadataReader(resource);
+        } finally {
+            Thread.currentThread().setContextClassLoader(oldClassLoader);
         }
     }
 
