@@ -84,9 +84,6 @@ public class ClassPathBeanDefinitionScannerAgent {
     // bean name generator obtained from the scanner
     BeanNameGenerator beanNameGenerator;
 
-    // start-up classLoader
-    ClassLoader classLoader;
-
     /**
      * Return an agent instance for a scanner. If the instance does not exists yet, it is created.
      *
@@ -123,7 +120,6 @@ public class ClassPathBeanDefinitionScannerAgent {
         this.registry = scanner.getRegistry();
         this.scopeMetadataResolver = (ScopeMetadataResolver) ReflectionHelper.get(scanner, "scopeMetadataResolver");
         this.beanNameGenerator = (BeanNameGenerator) ReflectionHelper.get(scanner, "beanNameGenerator");
-        this.classLoader = scanner.getResourceLoader().getClassLoader();
     }
 
     /**
@@ -141,11 +137,12 @@ public class ClassPathBeanDefinitionScannerAgent {
     /**
      * Called by a reflection command from SpringPlugin transformer.
      *
+     * @param appClassLoader the class loader - container or application class loader.
      * @param basePackage     base package on witch the transformer was registered, used to obtain associated scanner.
      * @param classDefinition new class definition
      * @throws IOException error working with classDefinition
      */
-    public static void refreshClass(String basePackage, byte[] classDefinition) throws IOException {
+    public static void refreshClass(ClassLoader appClassLoader, String basePackage, byte[] classDefinition) throws IOException {
         ResetSpringStaticCaches.reset();
 
         ClassPathBeanDefinitionScannerAgent scannerAgent = getInstance(basePackage);
@@ -154,7 +151,7 @@ public class ClassPathBeanDefinitionScannerAgent {
             return;
         }
 
-        BeanDefinition beanDefinition = scannerAgent.resolveBeanDefinition(classDefinition);
+        BeanDefinition beanDefinition = scannerAgent.resolveBeanDefinition(appClassLoader, classDefinition);
         if (beanDefinition != null) {
             scannerAgent.defineBean(beanDefinition);
         }
@@ -248,15 +245,15 @@ public class ClassPathBeanDefinitionScannerAgent {
     /**
      * Resolve bean definition from class definition if applicable.
      *
+     * @param appClassLoader the class loader - container or application class loader.
      * @param bytes class definition.
      * @return the definition or null if not a spring bean
      * @throws IOException
      */
-    public BeanDefinition resolveBeanDefinition(byte[] bytes) throws IOException {
+    public BeanDefinition resolveBeanDefinition(ClassLoader appClassLoader, byte[] bytes) throws IOException {
         Resource resource = new ByteArrayResource(bytes);
         resetCachingMetadataReaderFactoryCache();
-        // getMetadataReader with start-up classloaer
-        MetadataReader metadataReader = getMetadataReader(resource);
+        MetadataReader metadataReader = getMetadataReader(appClassLoader, resource);
 
         if (isCandidateComponent(metadataReader)) {
             ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
@@ -275,10 +272,10 @@ public class ClassPathBeanDefinitionScannerAgent {
         }
     }
 
-    private MetadataReader getMetadataReader(Resource resource) throws IOException {
+    private MetadataReader getMetadataReader(ClassLoader appClassLoader, Resource resource) throws IOException {
         ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
         try {
-            Thread.currentThread().setContextClassLoader(this.classLoader);
+            Thread.currentThread().setContextClassLoader(appClassLoader);
             return getMetadataReaderFactory().getMetadataReader(resource);
         } finally {
             Thread.currentThread().setContextClassLoader(oldClassLoader);
