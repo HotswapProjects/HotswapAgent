@@ -28,11 +28,7 @@ import java.nio.file.StandardCopyOption;
 import javax.inject.Inject;
 
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
-import org.hotswap.agent.plugin.spring.testBeans.BeanPrototype;
-import org.hotswap.agent.plugin.spring.testBeans.BeanRepository;
-import org.hotswap.agent.plugin.spring.testBeans.BeanService;
-import org.hotswap.agent.plugin.spring.testBeans.BeanServiceImpl;
-import org.hotswap.agent.plugin.spring.testBeans.Pojo;
+import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
@@ -236,5 +232,12 @@ public class SpringPluginTest {
             }
         }, 5000));
         Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
+    }
+
+    @Test
+    public void beanLookupTest() {
+        BeanLookup beanLookup = applicationContext.getBean(BeanLookup.class);
+        String hello = beanLookup.getBeanPrototype().hello();
+        Assert.assertEquals(hello, "Hello from Repository ServiceWithAspect Prototype");
     }
 }
