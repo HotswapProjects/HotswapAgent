@@ -87,8 +87,8 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
 
             Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent", true, appClassLoader);
             Method method  = clazz.getDeclaredMethod(
-                    "refreshClass", new Class[] {String.class, byte[].class});
-            method.invoke(null, basePackage, classDefinition);
+                    "refreshClass", new Class[] {ClassLoader.class, String.class, byte[].class});
+            method.invoke(null, appClassLoader , basePackage, classDefinition);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
