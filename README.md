@@ -31,7 +31,7 @@ Originally, the main purpose of this project was to avoid the infamous **change 
 ### Easy to start
 1.Download and install:
 
-* For Java17: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not include a built-in Hotswap Agent, copy `hotswap-agent.jar` to the `lib/hotswap` folder. The latest Hotswap Agent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases)
+* For Java17: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not include a built-in Hotswap Agent, copy `hotswap-agent.jar` to the `lib/hotswap` folder. The latest Hotswap Agent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases).  When using the agent, it's important to note that the file name in `lib/hotswap` folder should not contain the version name, and should instead use the plain `hotswap-agent.jar` filename.
 * For Java11: [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
 * For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases)
 
