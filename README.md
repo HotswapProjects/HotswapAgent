@@ -255,7 +255,7 @@ Hotswap agent:
 * Jiri Bubnik - project coordinator, initial implementation
 * Alexandros Papadakis - Maven Versioning, Weld, JSF, Hibernate3, RestEasy, WildFly plugins
 * Erki Ehtla - Spring plugin, Proxy plugin
-* Vladimir Dvorak - ELResolver, OsgiEquinox, Weld, Owb, Deltaspike, Jvm, Jdk, JBossModules, ClassInit, JSF
+* Vladimir Dvorak - ELResolver, OsgiEquinox, Weld, Owb, Deltaspike, Jvm, Jdk, JBossModules, ClassInit, JSF, Mybatis
 * Sergey Lysenko - Weld plugin
 * Samuel Pelletier - WebObjects plugin
 * Jan Tecl - web design
@@ -265,6 +265,7 @@ Hotswap agent:
 * Thomas Heigl - Wicket plugin
 * AJ Banck - FreeMarker plugin
 * Sinan Yumak - Mojarra, MyFaces plugins
+* smallfour - Mybatis plugin
 
 DCEVM:
 
