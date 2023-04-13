@@ -31,6 +31,7 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
@@ -45,6 +46,11 @@ public class MyBatisTransformers {
     public static final String SRC_FILE_NAME_FIELD = "$$ha$srcFileName";
     public static final String REFRESH_DOCUMENT_METHOD = "$$ha$refreshDocument";
     public static final String REFRESH_METHOD = "$$ha$refresh";
+
+    private static final String INITIALIZED_FIELD = "$$ha$initialized";
+    private static final String FACTORYBEAN_FIELD = "$$ha$factoryBean";
+    public static final String FACTORYBEAN_SET_METHOD = "$$ha$setFactoryBean";
+    public static final String CONFIGURATION_PROXY_METHOD = "$$ha$proxySqlSessionFactoryConfiguration";
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.parsing.XPathParser")
     public static void patchXPathParser(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
@@ -122,5 +128,59 @@ public class MyBatisTransformers {
         CtConstructor constructor = ctClass.getDeclaredConstructor(constructorParams);
         constructor.insertAfter(src.toString());
         LOGGER.debug("org.apache.ibatis.builder.xml.XMLMapperBuilder patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.session.SqlSessionFactoryBuilder")
+    public static void patchSqlSessionFactoryBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // add $$ha$factoryBean field
+        CtClass objClass = classPool.get("java.lang.Object");
+        CtField factoryBeanField = new CtField(objClass, FACTORYBEAN_FIELD, ctClass);
+        ctClass.addField(factoryBeanField);
+
+        CtMethod setMethod = CtNewMethod.make(
+                "public void " + FACTORYBEAN_SET_METHOD + "(Object factoryBean) {" +
+                        "this." + FACTORYBEAN_FIELD + " = factoryBean;" +
+                        "}", ctClass);
+        ctClass.addMethod(setMethod);
+
+        CtMethod buildMethod = ctClass.getDeclaredMethod("build",
+                new CtClass[] {classPool.get("org.apache.ibatis.session.Configuration")});
+        buildMethod.insertBefore("{" +
+                "if (this." + FACTORYBEAN_FIELD + " != null) {" +
+                "config = " + SqlSessionFactoryBeanCaller.class.getName() + ".proxyConfiguration(this." + FACTORYBEAN_FIELD + ", config);" +
+                "}" +
+                "}"
+        );
+        LOGGER.debug("org.apache.ibatis.session.SqlSessionFactoryBuilder patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.SqlSessionFactoryBean")
+    public static void patchSqlSessionFactoryBean(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // add $$ha$initialized field
+        CtClass booleanClass = classPool.get(boolean.class.getName());
+        CtField sourceFileField = new CtField(booleanClass, INITIALIZED_FIELD, ctClass);
+        ctClass.addField(sourceFileField);
+
+        CtMethod method = ctClass.getDeclaredMethod("afterPropertiesSet");
+        method.insertAfter("{" +
+                "this." + INITIALIZED_FIELD + " = true;" +
+                "}"
+        );
+
+        CtConstructor constructor = ctClass.getDeclaredConstructor(new CtClass[] {});
+        constructor.insertAfter("{" +
+                SqlSessionFactoryBeanCaller.class.getName() + ".setFactoryBean(this.sqlSessionFactoryBuilder, this);" +
+                "}");
+
+        CtMethod proxyMethod = CtNewMethod.make(
+                "public org.apache.ibatis.session.Configuration " + CONFIGURATION_PROXY_METHOD + "(org.apache.ibatis.session.Configuration configuration) {" +
+                        "if(this." + INITIALIZED_FIELD + ") {" +
+                        "return configuration;" +
+                        "} else {" +
+                        "return " + SpringMybatisConfigurationProxy.class.getName() + ".getWrapper(this).proxy(configuration);" +
+                        "}" +
+                        "}", ctClass);
+        ctClass.addMethod(proxyMethod);
+        LOGGER.debug("org.mybatis.spring.SqlSessionFactoryBean patched.");
     }
 }
