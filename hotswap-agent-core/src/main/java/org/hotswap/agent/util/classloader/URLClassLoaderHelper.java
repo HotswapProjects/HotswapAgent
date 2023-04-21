@@ -184,34 +184,36 @@ public class URLClassLoaderHelper {
         // code here with the implementation of MyCustomInterface
         // handling the entity and your customField
         public Object invoke(Object self, Method method, Method proceed, Object[] args) throws Throwable {
-              String methodName = method.getName();
-              Class<?>[] parameterTypes = method.getParameterTypes();
+            String methodName = method.getName();
+            Class<?>[] parameterTypes = method.getParameterTypes();
 
-              if ("findResource".equals(methodName) && parameterTypes.length == 2 &&
-                   parameterTypes[0] == String.class && parameterTypes[1] == Boolean.class) {
-                  if (watchResourceLoader != null) {
-                      URL resource = watchResourceLoader.getResource((String) args[0]);
-                      if (resource != null) {
-                          return resource;
-                      }
-                  }
-              } else if ("findResources".equals(methodName) && parameterTypes.length == 2 &&
-                      parameterTypes[0] == String.class && parameterTypes[1] == Boolean.class) {
-                  if (watchResourceLoader != null) {
-                      try {
-                          Enumeration<URL> resources = watchResourceLoader.getResources((String) args[0]);
-                          if (resources != null && resources.hasMoreElements()) {
-                              return resources;
-                          }
-                      } catch (IOException e) {
-                          LOGGER.debug("Unable to load resource {}", e, (String) args[0]);
-                      }
-                  }
-              }
+            if ("findResource".equals(methodName) && parameterTypes.length == 2 &&
+                    parameterTypes[0] == String.class &&
+                    (parameterTypes[1] == Boolean.TYPE || parameterTypes[1] == Boolean.class)) {
+                if (watchResourceLoader != null) {
+                    URL resource = watchResourceLoader.getResource((String) args[0]);
+                    if (resource != null) {
+                        return resource;
+                    }
+                }
+            } else if ("findResources".equals(methodName) && parameterTypes.length == 2 &&
+                    parameterTypes[0] == String.class &&
+                    (parameterTypes[1] == Boolean.TYPE || parameterTypes[1] == Boolean.class)) {
+                if (watchResourceLoader != null) {
+                    try {
+                        Enumeration<URL> resources = watchResourceLoader.getResources((String) args[0]);
+                        if (resources != null && resources.hasMoreElements()) {
+                            return resources;
+                        }
+                    } catch (IOException e) {
+                        LOGGER.debug("Unable to load resource {}", e, (String) args[0]);
+                    }
+                }
+            }
 
-              return proceed.invoke(self, args);
-          }
+            return proceed.invoke(self, args);
+        }
 
-      }
+    }
 
 }
