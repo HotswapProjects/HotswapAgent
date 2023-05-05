@@ -18,6 +18,13 @@
  */
 package org.hotswap.agent.util.classloader;
 
+import org.hotswap.agent.javassist.util.proxy.MethodFilter;
+import org.hotswap.agent.javassist.util.proxy.MethodHandler;
+import org.hotswap.agent.javassist.util.proxy.Proxy;
+import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
+import org.hotswap.agent.javassist.util.proxy.ProxyObject;
+import org.hotswap.agent.logging.AgentLogger;
+
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -27,25 +34,19 @@ import java.net.URLClassLoader;
 import java.security.AccessControlContext;
 import java.util.Arrays;
 import java.util.Enumeration;
-
-import org.hotswap.agent.javassist.util.proxy.MethodFilter;
-import org.hotswap.agent.javassist.util.proxy.MethodHandler;
-import org.hotswap.agent.javassist.util.proxy.Proxy;
-import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
-import org.hotswap.agent.javassist.util.proxy.ProxyObject;
-import org.hotswap.agent.logging.AgentLogger;
+import java.util.List;
 
 /**
  * Helper methods to enhance URL ClassLoader.
  */
-public class URLClassLoaderHelper {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(URLClassLoaderHelper.class);
+public class URLClassPathHelper {
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(URLClassPathHelper.class);
 
     private static Class<?> urlClassPathProxyClass = null;
 
     static {
         Class<?> urlClassPathClass = null;
-        ClassLoader classLoader = URLClassLoaderHelper.class.getClassLoader();
+        ClassLoader classLoader = URLClassPathHelper.class.getClassLoader();
         try {
             urlClassPathClass = classLoader.loadClass("sun.misc.URLClassPath");
         } catch (ClassNotFoundException e) {
@@ -73,16 +74,19 @@ public class URLClassLoaderHelper {
      * This implementation will replace ucp field (URLClassPath) with new definition. Any existing Loader
      * is discarded and recreated.
      *
-     * @param classLoader    URL classloader
+     * @param classLoader    classloader
      * @param extraClassPath path to prepend
      */
-    public static void prependClassPath(URLClassLoader classLoader, URL[] extraClassPath) {
-
+    public static void prependClassPath(ClassLoader classLoader, URL[] extraClassPath) {
         synchronized (classLoader) {
-
             // set new URLClassPath to the classloader via reflection
             try {
-                Field ucpField = URLClassLoader.class.getDeclaredField("ucp");
+                Field ucpField = getUcpField(classLoader);
+                if (ucpField == null) {
+                    LOGGER.debug("Unable to find ucp field in classLoader {}", classLoader);
+                    return;
+                }
+
                 ucpField.setAccessible(true);
 
                 URL[] origClassPath = getOrigClassPath(classLoader, ucpField);
@@ -94,7 +98,7 @@ public class URLClassLoaderHelper {
                 Object urlClassPath = createClassPathInstance(modifiedClassPath);
 
                 ExtraURLClassPathMethodHandler methodHandler = new ExtraURLClassPathMethodHandler(modifiedClassPath);
-                ((Proxy)urlClassPath).setHandler(methodHandler);
+                ((Proxy) urlClassPath).setHandler(methodHandler);
 
                 ucpField.set(classLoader, urlClassPath);
 
@@ -105,20 +109,23 @@ public class URLClassLoaderHelper {
         }
     }
 
-    public static void setWatchResourceLoader(URLClassLoader classLoader, final ClassLoader watchResourceLoader) {
-
+    public static void setWatchResourceLoader(ClassLoader classLoader, final ClassLoader watchResourceLoader) {
         synchronized (classLoader) {
-
             // set new URLClassPath to the classloader via reflection
             try {
-                Field ucpField = URLClassLoader.class.getDeclaredField("ucp");
+                Field ucpField = getUcpField(classLoader);
+                if (ucpField == null) {
+                    LOGGER.debug("Unable to find ucp field in classLoader {}", classLoader);
+                    return;
+                }
+
                 ucpField.setAccessible(true);
 
                 URL[] origClassPath = getOrigClassPath(classLoader, ucpField);
                 Object urlClassPath = createClassPathInstance(origClassPath);
 
                 ExtraURLClassPathMethodHandler methodHandler = new ExtraURLClassPathMethodHandler(origClassPath, watchResourceLoader);
-                ((Proxy)urlClassPath).setHandler(methodHandler);
+                ((Proxy) urlClassPath).setHandler(methodHandler);
 
                 ucpField.set(classLoader, urlClassPath);
 
@@ -132,16 +139,18 @@ public class URLClassLoaderHelper {
     private static Object createClassPathInstance(URL[] urls) throws Exception {
         try {
             // java8
-            Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class });
-            return constr.newInstance(new Object[] { urls });
+            Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[]{URL[].class});
+            return constr.newInstance(new Object[]{urls});
         } catch (NoSuchMethodException e) {
             // java9
-            Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[] { URL[].class, AccessControlContext.class });
-            return constr.newInstance(new Object[] { urls, null });
+            Constructor<?> constr = urlClassPathProxyClass.getConstructor(new Class[]{URL[].class, AccessControlContext.class});
+            return constr.newInstance(new Object[]{urls, null});
         }
     }
 
-    private static URL[] getOrigClassPath(URLClassLoader classLoader, Field ucpField) throws IllegalAccessException {
+    @SuppressWarnings("unchecked")
+    private static URL[] getOrigClassPath(ClassLoader classLoader, Field ucpField) throws IllegalAccessException,
+            NoSuchFieldException {
         URL[] origClassPath = null;
         Object urlClassPath = ucpField.get(classLoader);
 
@@ -150,13 +159,56 @@ public class URLClassLoaderHelper {
             MethodHandler handler = p.getHandler();
 
             if (handler instanceof ExtraURLClassPathMethodHandler) {
-              origClassPath = ((ExtraURLClassPathMethodHandler)handler).getOrigClassPath();
+                origClassPath = ((ExtraURLClassPathMethodHandler) handler).getOrigClassPath();
             }
-
         } else {
-            origClassPath = classLoader.getURLs();
+            if (classLoader instanceof URLClassLoader) {
+                origClassPath = ((URLClassLoader) classLoader).getURLs();
+            } else {
+                Field pathField = ucpField.getType().getDeclaredField("path");
+                pathField.setAccessible(true);
+                List<URL> urls = (List<URL>) pathField.get(urlClassPath);
+                origClassPath = urls.toArray(new URL[0]);
+            }
         }
         return origClassPath;
+    }
+
+    /**
+     * This method works for the following classloaders:
+     * <li>
+     *     <ul>JDK 8: sun.misc.Launcher$AppClassLoaders</ul>
+     *     <ul>JDK 9 and above: jdk.internal.loader.ClassLoaders$AppClassLoader</ul>
+     * </li>
+     * In order to make it work on JDK 9 and above, the following JVM argument must be used:
+     * <pre>
+     *     --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+     * </pre>
+     */
+    private static Field getUcpField(ClassLoader classLoader) throws NoSuchFieldException {
+        if (classLoader instanceof URLClassLoader) {
+            return URLClassLoader.class.getDeclaredField("ucp");
+        }
+
+        Class<?> ucpOwner = classLoader.getClass();
+        if (ucpOwner.getName().startsWith("jdk.internal.loader.ClassLoaders$")) {
+            return ucpOwner.getSuperclass().getDeclaredField("ucp");
+        }
+
+        return null;
+    }
+
+    public static boolean isApplicable(ClassLoader classLoader) {
+        if (classLoader == null) {
+            return false;
+        }
+
+        if (classLoader instanceof URLClassLoader) {
+            return true;
+        }
+
+        Class<?> ucpOwner = classLoader.getClass();
+        return ucpOwner.getName().startsWith("jdk.internal.loader.ClassLoaders$");
     }
 
     public static class ExtraURLClassPathMethodHandler implements MethodHandler {
