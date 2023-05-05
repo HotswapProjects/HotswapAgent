@@ -18,18 +18,17 @@
  */
 package org.hotswap.agent.plugin.watchResources;
 
-import java.net.URL;
-import java.net.URLClassLoader;
-
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
-import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
+import org.hotswap.agent.util.classloader.URLClassPathHelper;
 import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
 import org.hotswap.agent.watch.Watcher;
+
+import java.net.URL;
 
 /**
  * Support for watchResources configuration property.
@@ -80,10 +79,11 @@ public class WatchResourcesPlugin {
             return;
         }
 
-        if (!(appClassLoader instanceof URLClassLoader) && !(appClassLoader instanceof HotswapAgentClassLoaderExt)) {
+        if (!URLClassPathHelper.isApplicable(appClassLoader) &&
+                !(appClassLoader instanceof HotswapAgentClassLoaderExt)) {
             LOGGER.warning("Unable to modify application classloader. Classloader '{}' is of type '{}'," +
-                    "unknown classloader type.\n" +
-                    "*** watchResources configuration property will not be handled on JVM level ***",
+                            "unknown classloader type.\n" +
+                            "*** watchResources configuration property will not be handled on JVM level ***",
                     appClassLoader, appClassLoader.getClass());
             return;
         }
@@ -105,11 +105,11 @@ public class WatchResourcesPlugin {
         // configure the classloader to return only changed resources on watchResources path
         watchResourcesClassLoader.initWatchResources(watchResources, watcher);
 
-        if (appClassLoader instanceof URLClassLoader) {
+        if (appClassLoader instanceof HotswapAgentClassLoaderExt) {
+            ((HotswapAgentClassLoaderExt) appClassLoader).$$ha$setWatchResourceLoader(watchResourcesClassLoader);
+        } else if (URLClassPathHelper.isApplicable(appClassLoader)) {
             // modify the application classloader to look for resources first in watchResourcesClassLoader
-            URLClassLoaderHelper.setWatchResourceLoader((URLClassLoader)appClassLoader, watchResourcesClassLoader);
-        } else if (appClassLoader instanceof HotswapAgentClassLoaderExt) {
-            ((HotswapAgentClassLoaderExt)appClassLoader).$$ha$setWatchResourceLoader(watchResourcesClassLoader);
+            URLClassPathHelper.setWatchResourceLoader(appClassLoader, watchResourcesClassLoader);
         }
     }
 }

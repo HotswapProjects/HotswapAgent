@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -36,7 +35,7 @@ import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapProperties;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
-import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
+import org.hotswap.agent.util.classloader.URLClassPathHelper;
 
 /**
  * Plugin configuration.
@@ -59,7 +58,7 @@ public class PluginConfiguration {
     PluginConfiguration parent;
 
     // this configuration adheres to this classloader
-    ClassLoader classLoader;
+    final ClassLoader classLoader;
 
     // the hotswap-agent.properties file (or null if not defined for this classloader)
     URL configurationURL;
@@ -196,14 +195,14 @@ public class PluginConfiguration {
     private void initExtraClassPath() {
         URL[] extraClassPath = getExtraClasspath();
         if (extraClassPath.length > 0) {
-            if (classLoader instanceof URLClassLoader) {
-                URLClassLoaderHelper.prependClassPath((URLClassLoader) classLoader, extraClassPath);
-            } else if (classLoader instanceof HotswapAgentClassLoaderExt) {
+            if (classLoader instanceof HotswapAgentClassLoaderExt) {
                 ((HotswapAgentClassLoaderExt) classLoader).$$ha$setExtraClassPath(extraClassPath);
+            } else if (URLClassPathHelper.isApplicable(classLoader)) {
+                URLClassPathHelper.prependClassPath(classLoader, extraClassPath);
             } else {
-                LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. " +
-                        "Only URLClassLoader is supported.\n" +
-                        "*** extraClasspath configuration property will not be handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
+                LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. Only classLoader with 'ucp' " +
+                                "field present is supported.\n*** extraClasspath configuration property will not be " +
+                                "handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
             }
         }
     }
