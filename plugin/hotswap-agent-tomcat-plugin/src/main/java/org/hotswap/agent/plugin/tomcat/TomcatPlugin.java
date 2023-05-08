@@ -101,19 +101,20 @@ public class TomcatPlugin {
 
             URL[] extraClasspath = pluginConfiguration.getExtraClasspath();
             if (extraClasspath.length > 0) {
-                if (majorVersion >= 7)
+                if (majorVersion > 7) {
                     watchResourcesClassLoader.initExtraPath(extraClasspath);
-                else
+                } else {
                     addRepositoriesAtStart(appClassLoader, extraClasspath, false);
-
+                }
             }
 
             URL[] watchResources = pluginConfiguration.getWatchResources();
             if (watchResources.length > 0) {
-                if (majorVersion >= 7)
+                if (majorVersion > 7) {
                     watchResourcesClassLoader.initWatchResources(watchResources, PluginManager.getInstance().getWatcher());
-                else
+                } else {
                     addRepositoriesAtStart(appClassLoader, watchResources, true);
+                }
             }
 
             // register special repo
