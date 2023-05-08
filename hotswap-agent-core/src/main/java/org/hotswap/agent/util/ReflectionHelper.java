@@ -214,4 +214,26 @@ public class ReflectionHelper {
             throw new IllegalArgumentException(String.format("Illegal access field %s.%s on %s", clazz.getName(), fieldName, target), e);
         }
     }
+
+    public static void set(Object target, String fieldName, Object value) {
+        Class<?> clazz = target.getClass();
+        while (clazz != null) {
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                break;
+            } catch (NoSuchFieldException e) {
+                // ignore
+            } catch (IllegalAccessException e) {
+                throw new IllegalArgumentException(String.format("Illegal access field %s.%s on %s", clazz.getName(),
+                        fieldName, target), e);
+            }
+            clazz = clazz.getSuperclass();
+        }
+
+        if (clazz == null) {
+            throw new IllegalArgumentException(String.format("No such field %s.%s on %s", target.getClass(), fieldName, target));
+        }
+    }
 }
