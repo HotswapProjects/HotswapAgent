@@ -88,15 +88,23 @@ public class TomcatPlugin {
      * @param resource tomcat resource associated to the classloader.
      */
     public static void init(ClassLoader appClassLoader, Object resource) {
-
         String version = resolveTomcatVersion(appClassLoader);
         int majorVersion = resolveTomcatMajorVersion(version);
+
+        Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
+        if (plugin != null) {
+            ReflectionHelper.invoke(plugin, plugin.getClass(), "init", new Class[]{String.class, ClassLoader.class},
+                    version, appClassLoader);
+        } else {
+            LOGGER.debug("TomcatPlugin is disabled in {}", appClassLoader);
+            return;
+        }
 
         if (supportedClassLoaders.contains(appClassLoader.getClass().getName())) {
             registeredResourcesMap.put(resource, appClassLoader);
 
-            // create plugin configuration in advance to get extraClasspath and watchResources properties
-            PluginConfiguration pluginConfiguration = new PluginConfiguration(appClassLoader);
+            // find plugin configuration in advance to get extraClasspath and watchResources properties
+            PluginConfiguration pluginConfiguration = PluginManager.getInstance().getPluginConfiguration(appClassLoader);
 
             WatchResourcesClassLoader watchResourcesClassLoader = new WatchResourcesClassLoader(false);
 
@@ -131,13 +139,6 @@ public class TomcatPlugin {
 
                 getExtraRepositories(appClassLoader).put("/", webappDirClassLoader);
             }
-        }
-
-        Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
-        if (plugin != null) {
-            ReflectionHelper.invoke(plugin, plugin.getClass(), "init", new Class[]{String.class, ClassLoader.class}, version, appClassLoader);
-        } else {
-            LOGGER.debug("TomcatPlugin is disabled in {}", appClassLoader);
         }
     }
 
