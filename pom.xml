@@ -53,6 +53,7 @@
         <module>plugin/hotswap-agent-idea-plugin</module>
         <module>plugin/hotswap-agent-weblogic-plugin</module>
         <module>plugin/hotswap-agent-thymeleaf-plugin</module>
+        <module>plugin/hotswap-agent-velocity-plugin</module>
         <module>plugin/hotswap-agent-plugins</module>
         <module>plugin/hotswap-agent-hibernate-jakarta-plugin</module>
         <module>hotswap-agent</module>
