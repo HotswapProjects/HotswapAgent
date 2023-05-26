@@ -100,7 +100,7 @@ public class URLClassPathHelper {
                 ExtraURLClassPathMethodHandler methodHandler = new ExtraURLClassPathMethodHandler(modifiedClassPath);
                 ((Proxy) urlClassPath).setHandler(methodHandler);
 
-                ucpField.set(classLoader, urlClassPath);
+                setUcpFieldOfAllClassLoader(classLoader, ucpField, urlClassPath);
 
                 LOGGER.debug("Added extraClassPath URLs {} to classLoader {}", Arrays.toString(extraClassPath), classLoader);
             } catch (Exception e) {
@@ -127,7 +127,7 @@ public class URLClassPathHelper {
                 ExtraURLClassPathMethodHandler methodHandler = new ExtraURLClassPathMethodHandler(origClassPath, watchResourceLoader);
                 ((Proxy) urlClassPath).setHandler(methodHandler);
 
-                ucpField.set(classLoader, urlClassPath);
+                setUcpFieldOfAllClassLoader(classLoader, ucpField, urlClassPath);
 
                 LOGGER.debug("WatchResourceLoader registered to classLoader {}", classLoader);
             } catch (Exception e) {
@@ -192,10 +192,35 @@ public class URLClassPathHelper {
 
         Class<?> ucpOwner = classLoader.getClass();
         if (ucpOwner.getName().startsWith("jdk.internal.loader.ClassLoaders$")) {
-            return ucpOwner.getSuperclass().getDeclaredField("ucp");
+            return ucpOwner.getDeclaredField("ucp");
         }
 
         return null;
+    }
+
+    /**
+     * jdk.internal.loader.ClassLoaders.AppClassLoader and its super class 'jdk.internal.loader.BuiltinClassLoader' have a field named "ucp".
+     * This field is final and private, if it needs to be modified, it needs to be modified in all super classes and the current class.
+     *
+     * @param classLoader
+     * @param ucpField
+     * @param urlClassPath
+     * @throws IllegalAccessException
+     */
+    private static void setUcpFieldOfAllClassLoader(ClassLoader classLoader, Field ucpField, Object urlClassPath) throws IllegalAccessException {
+        // 1. set the field of current class
+        ucpField.set(classLoader, urlClassPath);
+        // 2. set the field of all super classes
+        Class<?> currentClass = classLoader.getClass();
+        while ((currentClass = currentClass.getSuperclass()) != null) {
+            try {
+                Field field = currentClass.getDeclaredField("ucp");
+                field.setAccessible(true);
+                field.set(classLoader, urlClassPath);
+            } catch (NoSuchFieldException e) {
+                break;
+            }
+        }
     }
 
     public static boolean isApplicable(ClassLoader classLoader) {
