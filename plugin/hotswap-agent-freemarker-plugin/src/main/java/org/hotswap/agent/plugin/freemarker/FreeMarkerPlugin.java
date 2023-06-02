@@ -34,9 +34,10 @@ import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 
 @Plugin(name = "FreeMarker",
-        description = "Clear FreeMarker bean class introspection cache when class files are redefined.",
-        testedVersions = { "2.3.28" },
-        expectedVersions = { "2.3.20+"}
+        description = "Clear FreeMarker bean class introspection cache when class files are redefined. And enhance " +
+                "FreeMarkerConfigurationFactory to support hotswap without rebuilding project",
+        testedVersions = {"FreeMarker: 2.3.28; spring 4.3.12"},
+        expectedVersions = {"FreeMarker: 2.3.20+; spring 4.3.12"}
 )
 public class FreeMarkerPlugin {
 
@@ -51,10 +52,10 @@ public class FreeMarkerPlugin {
             LOGGER.debug("Clearing FreeMarker BeanWrapper class introspection class.");
             try {
                 Object config = ReflectionHelper.get(freeMarkerServlet, "config");
-                Object  objectWrapper = ReflectionHelper.get(config, "objectWrapper");
-                ReflectionHelper.invoke(objectWrapper, objectWrapper.getClass(), "clearClassIntrospecitonCache",new Class[] {});
+                Object objectWrapper = ReflectionHelper.get(config, "objectWrapper");
+                ReflectionHelper.invoke(objectWrapper, objectWrapper.getClass(), "clearClassIntrospecitonCache", new Class[]{});
                 LOGGER.info("Cleared FreeMarker introspection cache");
-            } catch(Exception e) {
+            } catch (Exception e) {
                 LOGGER.error("Error clearing FreeMarker introspection cache", e);
             }
         }
@@ -79,8 +80,33 @@ public class FreeMarkerPlugin {
         LOGGER.info("Plugin {} initialized for servlet {}", getClass(), this.freeMarkerServlet);
     }
 
-    @OnClassLoadEvent(classNameRegexp = ".*", events = { LoadEvent.REDEFINE })
+    @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void cacheReloader(CtClass ctClass) {
         scheduler.scheduleCommand(clearIntrospectionCache, 500);
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.ui.freemarker.FreeMarkerConfigurationFactory")
+    public static void patchCreateConfiguration(ClassPool classPool, final CtClass ctClass) {
+        try {
+            CtMethod method = ctClass.getDeclaredMethod("createConfiguration", new CtClass[]{});
+            method.insertBefore("this.preferFileSystemAccess = false;");
+            method.insertBefore("String[] $ha$newArray = new String[this.templateLoaderPaths.length + 1]; " +
+                    "$ha$newArray[0] = \"classpath:/$ha$freemarker\";" +
+                    "for (int i = 0; i < this.templateLoaderPaths.length; i++) {" +
+                    "    $ha$newArray[i + 1] = this.templateLoaderPaths[i];" +
+                    "}" + "this.templateLoaderPaths = $ha$newArray;");
+        } catch (NotFoundException | CannotCompileException e) {
+            LOGGER.debug("Cannot patch patchCreateConfiguration method for {}", ctClass.getName(), e);
+        }
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "freemarker.template.Configuration")
+    public static void patchCreateTemplateCache(ClassPool classPool, final CtClass ctClass) {
+        try {
+            CtMethod method = ctClass.getDeclaredMethod("createTemplateCache", new CtClass[]{});
+            method.insertAfter("cache.setDelay(0L);");
+        } catch (NotFoundException | CannotCompileException e) {
+            LOGGER.debug("Cannot patch patchCreateTemplateCache method for {}", ctClass.getName(), e);
+        }
     }
 }
