@@ -32,15 +32,15 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingAnnotationAdapter;
-import org.objectweb.asm.commons.RemappingClassAdapter;
 import org.objectweb.asm.commons.RemappingMethodAdapter;
 
 /**
  * @author Ivan Dubrov
  */
-public class TestClassAdapter extends RemappingClassAdapter {
+public class TestClassAdapter extends ClassRemapper {
     /**
      * This suffix is automatically removed from the method.
      */
