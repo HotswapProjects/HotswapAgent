@@ -24,7 +24,7 @@ import org.hotswap.agent.logging.AgentLogger;
 
 /**
  * Hook into classpath scanner process to register basicPackage of scanned classes.
- *
+ * <p>
  * Catch changes on component-scan configuration such as (see tests):
  * <pre>&lt;context:component-scan base-package="org.hotswap.agent.plugin.spring.testBeans"/&gt;</pre>
  */
@@ -42,10 +42,10 @@ public class XmlBeanDefinitionScannerTransformer {
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.xml.XmlBeanDefinitionReader")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
 
-        CtMethod method = clazz.getDeclaredMethod("loadBeanDefinitions", new CtClass[]{classPool.get("org.springframework.core.io.support.EncodedResource")});
-        method.insertAfter("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent." +
-                "registerXmlBeanDefinitionScannerAgent(this, $1.getResource());");
-
+        CtMethod method = clazz.getDeclaredMethod("registerBeanDefinitions", new CtClass[]{
+                classPool.get("org.w3c.dom.Document"),
+                classPool.get("org.springframework.core.io.Resource")});
+        method.insertBefore("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent.registerXmlBeanDefinitionScannerAgent(this, $2);");
         LOGGER.debug("Class 'org.springframework.beans.factory.xml.XmlBeanDefinitionReader' patched with xmlReader registration.");
     }
 }

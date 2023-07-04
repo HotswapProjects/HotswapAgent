@@ -41,10 +41,7 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.*;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -114,6 +111,11 @@ public class SpringPlugin {
     @OnResourceFileEvent(path="/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
         scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, url));
+    }
+
+    @OnResourceFileEvent(path="/", filter = ".*.properties", events = {FileEvent.MODIFY})
+    public void registerPropertiesListeners(URL url) {
+        scheduler.scheduleCommand(new PropertiesRefreshCommand(appClassLoader, url));
     }
 
     /**
@@ -265,6 +267,13 @@ public class SpringPlugin {
         method.insertBefore(
                 "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
                 "setAllowRawInjectionDespiteWrapping(true); ");
+
+        // Patch registerBeanDefinition so that XmlBeanDefinitionScannerAgent has chance to keep track of all beans
+        // defined from the XML configuration.
+        CtMethod registerBeanDefinitionMethod = clazz.getDeclaredMethod("registerBeanDefinition");
+        registerBeanDefinitionMethod.insertBefore(
+                "org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent.registerBean($1, $2);"
+        );
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")
