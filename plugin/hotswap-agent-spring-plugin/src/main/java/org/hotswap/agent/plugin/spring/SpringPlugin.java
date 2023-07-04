@@ -18,15 +18,6 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import java.io.IOException;
-import java.lang.instrument.IllegalClassFormatException;
-import java.net.URL;
-import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -41,15 +32,28 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.*;
+import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.PropertiesRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
+import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
+
+import java.io.IOException;
+import java.lang.instrument.IllegalClassFormatException;
+import java.net.URL;
+import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 
 /**
  * Spring plugin.
