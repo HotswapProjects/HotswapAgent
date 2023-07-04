@@ -188,8 +188,9 @@ public class PluginManager {
             }
 
             // create new configuration for the classloader
-            PluginConfiguration configuration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader);
-            classLoaderConfigurations.put(classLoader, configuration);
+            PluginConfiguration pluginConfiguration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader, false);
+            classLoaderConfigurations.put(classLoader, pluginConfiguration);
+            pluginConfiguration.init();
         }
 
         // call listeners

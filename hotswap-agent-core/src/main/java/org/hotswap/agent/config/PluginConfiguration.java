@@ -72,11 +72,17 @@ public class PluginConfiguration {
     }
 
     public PluginConfiguration(PluginConfiguration parent, ClassLoader classLoader) {
+        this(parent, classLoader, true);
+    }
+
+    public PluginConfiguration(PluginConfiguration parent, ClassLoader classLoader, boolean init) {
         this.parent = parent;
         this.classLoader = classLoader;
 
         loadConfigurationFile();
-        init();
+        if (init) {
+            init();
+        }
     }
 
     private void loadConfigurationFile() {
@@ -177,8 +183,8 @@ public class PluginConfiguration {
         LogConfigurationHelper.configureLog(properties);
         initPluginPackage();
 
-        initExtraClassPath();
         initExcludedClassLoaderPatterns();
+        initExtraClassPath();
     }
 
     private void initPluginPackage() {
@@ -194,7 +200,7 @@ public class PluginConfiguration {
 
     private void initExtraClassPath() {
         URL[] extraClassPath = getExtraClasspath();
-        if (extraClassPath.length > 0) {
+        if (extraClassPath.length > 0 && !checkExcludedClassLoaderPatterns()) {
             if (classLoader instanceof HotswapAgentClassLoaderExt) {
                 ((HotswapAgentClassLoaderExt) classLoader).$$ha$setExtraClassPath(extraClassPath);
             } else if (URLClassPathHelper.isApplicable(classLoader)) {
@@ -217,6 +223,17 @@ public class PluginConfiguration {
             PluginManager.getInstance().getHotswapTransformer()
                     .setExcludedClassLoaderPatterns(excludedClassLoaderPatterns);
         }
+    }
+
+    private boolean checkExcludedClassLoaderPatterns() {
+        if (PluginManager.getInstance().getHotswapTransformer().getExcludedClassLoaderPatterns() != null) {
+            for (Pattern pattern : PluginManager.getInstance().getHotswapTransformer().getExcludedClassLoaderPatterns()) {
+                if (pattern.matcher(classLoader.getClass().getName()).matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
