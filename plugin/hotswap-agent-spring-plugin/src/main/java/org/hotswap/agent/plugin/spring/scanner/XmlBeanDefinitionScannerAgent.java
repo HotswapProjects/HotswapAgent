@@ -19,7 +19,9 @@
 package org.hotswap.agent.plugin.spring.scanner;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.ResetBeanFactoryCaches;
 import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
+import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.springframework.beans.PropertyValue;
@@ -233,6 +235,14 @@ public class XmlBeanDefinitionScannerAgent {
             return;
         }
 
+        ResetSpringStaticCaches.reset();
+        ResetBeanPostProcessorCaches.reset(factory);
+        ResetBeanFactoryCaches.reset(factory);
+        // spring won't rebuild dependency map if injectionMetadataCache is not cleared
+        // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
+        ResetBeanPostProcessorCaches.reset(factory);
+        ProxyReplacer.clearAllProxies();
+
         LOGGER.debug("Remove all beans defined in the XML file {} before reloading it", url.getPath());
         for (String beanName : beansRegistered) {
             factory.removeBeanDefinition(beanName);
@@ -251,11 +261,6 @@ public class XmlBeanDefinitionScannerAgent {
         } catch (Exception e) {
             // ignore
         }
-
-        // spring won't rebuild dependency map if injectionMetadataCache is not cleared
-        // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
-        ResetBeanPostProcessorCaches.reset(factory);
-        ProxyReplacer.clearAllProxies();
 
         reloadFlag = false;
     }
