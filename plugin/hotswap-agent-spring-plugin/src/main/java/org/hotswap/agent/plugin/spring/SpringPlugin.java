@@ -18,15 +18,6 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import java.io.IOException;
-import java.lang.instrument.IllegalClassFormatException;
-import java.net.URL;
-import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -43,16 +34,26 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.PropertiesRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
+import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
+
+import java.io.IOException;
+import java.lang.instrument.IllegalClassFormatException;
+import java.net.URL;
+import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 
 /**
  * Spring plugin.
@@ -114,6 +115,11 @@ public class SpringPlugin {
     @OnResourceFileEvent(path="/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
         scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, url));
+    }
+
+    @OnResourceFileEvent(path="/", filter = ".*.properties", events = {FileEvent.MODIFY})
+    public void registerPropertiesListeners(URL url) {
+        scheduler.scheduleCommand(new PropertiesRefreshCommand(appClassLoader, url));
     }
 
     /**
@@ -265,6 +271,13 @@ public class SpringPlugin {
         method.insertBefore(
                 "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
                 "setAllowRawInjectionDespiteWrapping(true); ");
+
+        // Patch registerBeanDefinition so that XmlBeanDefinitionScannerAgent has chance to keep track of all beans
+        // defined from the XML configuration.
+        CtMethod registerBeanDefinitionMethod = clazz.getDeclaredMethod("registerBeanDefinition");
+        registerBeanDefinitionMethod.insertBefore(
+                "org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent.registerBean($1, $2);"
+        );
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")

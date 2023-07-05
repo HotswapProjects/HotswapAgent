@@ -15,6 +15,8 @@ function test {
 
 # test following Spring versions
 
+# test 6.0.10
+
 # test 5.3.0
 # test 5.3.1
 # test 5.3.2
@@ -34,8 +36,8 @@ function test {
 # test 5.3.16
 # test 5.3.17
 
-# 5.3.18 is lowest not vulnerable version(2022.04.23)
-test 5.3.18
+# 5.3.28 is lowest not vulnerable version(2023.7.05)
+test 5.3.28
 
 # test 5.2.0.RELEASE
 # test 5.2.1.RELEASE
