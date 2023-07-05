@@ -88,6 +88,10 @@ public class HotswapTransformer implements ClassFileTransformer {
         this.excludedClassLoaderPatterns = excludedClassLoaderPatterns;
     }
 
+    public List<Pattern> getExcludedClassLoaderPatterns() {
+        return excludedClassLoaderPatterns;
+    }
+
     /**
      * Register a transformer for a regexp matching class names.
      * Used by {@link org.hotswap.agent.annotation.OnClassLoadEvent} annotation respective
