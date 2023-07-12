@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.plugin.spring.xml.placeholder;
 
+import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Assert;
@@ -33,6 +34,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:placeholderContext.xml"})
 public class PlaceholderTest {
@@ -44,8 +49,8 @@ public class PlaceholderTest {
 
     @Test
     public void swapPropertyTest() throws Exception {
-        Assert.assertEquals("item-name", applicationContext.getBean("item1", Item1.class).getName());
-        Assert.assertEquals("item-name", applicationContext.getBean("item2", Item2.class).getName());
+        assertEquals("item-name", applicationContext.getBean("item1", Item1.class).getName());
+        assertEquals("item-name", applicationContext.getBean("item2", Item2.class).getName());
 
         XmlBeanDefinitionScannerAgent.reloadFlag = true;
         modifyPropertyFile();
@@ -57,10 +62,25 @@ public class PlaceholderTest {
             }
         }, 5000));
 
-        Assert.assertEquals("ITEM-NAME", applicationContext.getBean("item1", Item1.class).getName());
-        Assert.assertEquals("ITEM-NAME", applicationContext.getBean("item2", Item2.class).getName());
+        assertEquals("ITEM-NAME", applicationContext.getBean("item1", Item1.class).getName());
+        assertEquals("ITEM-NAME", applicationContext.getBean("item2", Item2.class).getName());
     }
 
+    @Test
+    public void swapSingleClassTest() throws Exception {
+        assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
+
+        HotSwapper.swapClasses(Item2.class, Item2WithoutValue.class.getName());
+        XmlBeanDefinitionScannerAgent.reloadFlag = true;
+        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return !XmlBeanDefinitionScannerAgent.reloadFlag;
+            }
+        }, 5000));
+
+        assertNull(applicationContext.getBean("item2", Item2.class).getName());
+    }
 
     private void modifyPropertyFile() throws Exception {
         Files.copy(changedPropertyFile.getFile().toPath(), propertyFile.getFile().toPath(),

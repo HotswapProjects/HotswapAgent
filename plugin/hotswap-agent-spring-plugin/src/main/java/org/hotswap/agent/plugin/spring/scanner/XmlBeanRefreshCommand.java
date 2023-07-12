@@ -18,59 +18,42 @@
  */
 package org.hotswap.agent.plugin.spring.scanner;
 
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 
+import java.lang.reflect.Method;
+import java.util.Objects;
+
 /**
- * Do refresh Spring class (scanned by xml) based on xml files.
- *
- * This commands merges events of watcher.event(CREATE) and transformer hotswap reload to a single refresh command.
+ * Refresh spring bean defined in XML file when individual class is changed.
  */
 public class XmlBeanRefreshCommand extends MergeableCommand {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanRefreshCommand.class);
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanRefreshCommand.class);
 
-    /**
-     * path to spring xml
-     */
-    URL url;
+    private final ClassLoader appClassLoader;
+    private final String className;
 
-    ClassLoader appClassLoader;
-
-    public XmlBeanRefreshCommand(ClassLoader appClassLoader, URL url) {
+    public XmlBeanRefreshCommand(ClassLoader appClassLoader, String className) {
         this.appClassLoader = appClassLoader;
-        this.url = url;
+        this.className = className;
     }
 
+    /**
+     * Pass changed class to XmlBeanDefinitionScannerAgent, the agent will decide whether to reload the bean definition.
+     *
+     * @see XmlBeanDefinitionScannerAgent#reloadClass(String)
+     */
     @Override
     public void executeCommand() {
-        if (!new File(url.getPath()).exists()) {
-            LOGGER.trace("Skip Spring reload for delete event on file '{}'", url);
-            return;
-        }
-
-        LOGGER.info("Executing XmlBeanDefinitionScannerAgent.reloadXml('{}')", url);
+        LOGGER.info("Executing XmlBeanDefinitionScannerAgent.reloadClass('{}')", className);
 
         try {
-            // not using Class.getName() to get class name
-            // because it will cause common classloader to load XmlBeanDefinitionScannerAgent
-            // which may cause problem in multi-app scenario.
-            Class clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent", true, appClassLoader);
-            Method method  = clazz.getDeclaredMethod(
-                    "reloadXml", new Class[] {URL.class});
-            method.invoke(null, this.url);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Plugin error, maybe failed to hook spring method to init plugin with right classLoader", e);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalStateException("Plugin error, method not found", e);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
-        } catch (InvocationTargetException e) {
-            LOGGER.error("Error refreshing xml {} in classLoader {}", e, this.url, appClassLoader);
+            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent",
+                    true, appClassLoader);
+            Method method = clazz.getDeclaredMethod("reloadClass", String.class);
+            method.invoke(null, this.className);
+        } catch (Throwable t) {
+            LOGGER.error("Error reloading Spring bean {} in classLoader {}", t, this.className, appClassLoader);
         }
     }
 
@@ -78,21 +61,20 @@ public class XmlBeanRefreshCommand extends MergeableCommand {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         XmlBeanRefreshCommand that = (XmlBeanRefreshCommand) o;
-
-        return this.url.equals(that.url);
+        return Objects.equals(appClassLoader, that.appClassLoader) && Objects.equals(className, that.className);
     }
 
     @Override
     public int hashCode() {
-        return this.url.hashCode();
+        return Objects.hash(appClassLoader, className);
     }
 
     @Override
     public String toString() {
         return "XmlBeanRefreshCommand{" +
-                "url='" + url + '\'' +
+                "appClassLoader=" + appClassLoader +
+                ", className='" + className + '\'' +
                 '}';
     }
 }

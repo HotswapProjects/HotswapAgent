@@ -20,6 +20,7 @@ package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
@@ -36,6 +37,7 @@ import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTra
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.PropertiesRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.scanner.XmlFileRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
 import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.HotswapTransformer;
@@ -93,6 +95,7 @@ public class SpringPlugin {
         this.registerBasePackageFromConfiguration();
         this.initBasePackagePrefixes();
     }
+
     public void init(String version) {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
         this.registerBasePackageFromConfiguration();
@@ -112,14 +115,19 @@ public class SpringPlugin {
         }
     }
 
-    @OnResourceFileEvent(path="/", filter = ".*.xml", events = {FileEvent.MODIFY})
+    @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
-        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, url));
+        scheduler.scheduleCommand(new XmlFileRefreshCommand(appClassLoader, url));
     }
 
-    @OnResourceFileEvent(path="/", filter = ".*.properties", events = {FileEvent.MODIFY})
+    @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
         scheduler.scheduleCommand(new PropertiesRefreshCommand(appClassLoader, url));
+    }
+
+    @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
+    public void registerClassListeners(Class<?> clazz) {
+        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, clazz.getName()));
     }
 
     /**
