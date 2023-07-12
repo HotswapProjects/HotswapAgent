@@ -65,8 +65,8 @@ public class XmlBeanDefinitionScannerAgent {
     // XML's URL the current XmlBeanDefinitionScannerAgent is responsible for
     private URL url;
 
-    // Beans defined in the XML file
-    private Set<String> beansRegistered = new HashSet<>();
+    // Beans defined in the XML file (beanName -> beanClassName)
+    private Map<String, String> beansRegistered = new HashMap<>();
 
     // PropertyResourceConfigurer's locations defined in the XML file
     private Set<String> propertyLocations = new HashSet<>();
@@ -85,7 +85,7 @@ public class XmlBeanDefinitionScannerAgent {
             return;
         }
 
-        registerBeanName(agent, beanName);
+        registerBeanName(agent, beanName, beanDefinition.getBeanClassName());
         registerPropertyLocations(agent, beanDefinition);
     }
 
@@ -113,6 +113,21 @@ public class XmlBeanDefinitionScannerAgent {
             // ignore
         }
         instances.put(path, new XmlBeanDefinitionScannerAgent(reader, resourceUrl));
+    }
+
+    public static void reloadClass(String className) {
+        for (XmlBeanDefinitionScannerAgent agent : instances.values()) {
+            if (!agent.beansRegistered.containsValue(className)) {
+                continue;
+            }
+
+            try {
+                LOGGER.debug("Reloading XML {} since class {} changed", agent.url, className);
+                agent.reloadBeanFromXml();
+            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
+                LOGGER.error("Reloading XML failed: {}", e.getMessage());
+            }
+        }
     }
 
     public static void reloadXml(URL url) {
@@ -170,8 +185,8 @@ public class XmlBeanDefinitionScannerAgent {
         }
     }
 
-    private static void registerBeanName(XmlBeanDefinitionScannerAgent agent, String beanName) {
-        agent.beansRegistered.add(beanName);
+    private static void registerBeanName(XmlBeanDefinitionScannerAgent agent, String beanName, String beanClassName) {
+        agent.beansRegistered.put(beanName, beanClassName == null ? "" : beanClassName);
     }
 
     private static void registerPropertyLocations(XmlBeanDefinitionScannerAgent agent, BeanDefinition beanDefinition) {
@@ -244,7 +259,7 @@ public class XmlBeanDefinitionScannerAgent {
         ProxyReplacer.clearAllProxies();
 
         LOGGER.debug("Remove all beans defined in the XML file {} before reloading it", url.getPath());
-        for (String beanName : beansRegistered) {
+        for (String beanName : beansRegistered.keySet()) {
             factory.removeBeanDefinition(beanName);
         }
 

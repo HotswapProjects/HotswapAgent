@@ -21,38 +21,55 @@ package org.hotswap.agent.plugin.spring.scanner;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Objects;
 
 /**
- * Refresh spring bean when the relevant property file is changed.
+ * Refresh all Spring beans (scanned by XML) based on XML files when XML file is changed.
+ * <p>
+ * This commands merges events of watcher.event(CREATE) and transformer hotswap reload to a single refresh command.
  */
-public class PropertiesRefreshCommand extends MergeableCommand {
-    private static final AgentLogger LOGGER = AgentLogger.getLogger(PropertiesRefreshCommand.class);
+public class XmlFileRefreshCommand extends MergeableCommand {
+    private final static AgentLogger LOGGER = AgentLogger.getLogger(XmlFileRefreshCommand.class);
 
+    /**
+     * path to spring xml
+     */
     private final URL url;
+
     private final ClassLoader appClassLoader;
 
-    public PropertiesRefreshCommand(ClassLoader classLoader, URL url) {
+    public XmlFileRefreshCommand(ClassLoader appClassLoader, URL url) {
+        this.appClassLoader = appClassLoader;
         this.url = url;
-        this.appClassLoader = classLoader;
     }
 
     /**
-     * Pass changed property file to XmlBeanDefinitionScannerAgent, the agent will decide whether to reload because the
-     * corresponding placeholder property files are changed.
+     * Reloads Spring XML file.
      *
-     * @see XmlBeanDefinitionScannerAgent#reloadProperty(URL)
+     * @see XmlBeanDefinitionScannerAgent#reloadXml(URL)
      */
     @Override
     public void executeCommand() {
+        if (!new File(url.getPath()).exists()) {
+            LOGGER.trace("Skip Spring reload for delete event on file '{}'", url);
+            return;
+        }
+
+        LOGGER.info("Executing XmlBeanDefinitionScannerAgent.reloadXml('{}')", url);
+
         try {
-            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent", true, appClassLoader);
-            Method method = clazz.getDeclaredMethod("reloadProperty", URL.class);
-            method.invoke(null, url);
+            // not using Class.getName() to get class name
+            // because it will cause common classloader to load XmlBeanDefinitionScannerAgent
+            // which may cause problem in multi-app scenario.
+            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent",
+                    true, appClassLoader);
+            Method method = clazz.getDeclaredMethod("reloadXml", URL.class);
+            method.invoke(null, this.url);
         } catch (Throwable t) {
-            LOGGER.error("Error refreshing property file {} in classLoader {}", t, this.url, appClassLoader);
+            LOGGER.error("Error refreshing Spring XML {} in classLoader {}", t, this.url, appClassLoader);
         }
     }
 
@@ -60,7 +77,7 @@ public class PropertiesRefreshCommand extends MergeableCommand {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PropertiesRefreshCommand that = (PropertiesRefreshCommand) o;
+        XmlFileRefreshCommand that = (XmlFileRefreshCommand) o;
         return Objects.equals(url, that.url) && Objects.equals(appClassLoader, that.appClassLoader);
     }
 
@@ -71,7 +88,7 @@ public class PropertiesRefreshCommand extends MergeableCommand {
 
     @Override
     public String toString() {
-        return "PropertiesRefreshCommand{" +
+        return "XmlFileRefreshCommand{" +
                 "url=" + url +
                 ", appClassLoader=" + appClassLoader +
                 '}';
