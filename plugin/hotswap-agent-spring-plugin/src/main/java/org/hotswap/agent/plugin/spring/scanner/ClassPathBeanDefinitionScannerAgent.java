@@ -25,10 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
-import org.hotswap.agent.plugin.spring.ResetRequestMappingCaches;
-import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
-import org.hotswap.agent.plugin.spring.SpringPlugin;
+import org.hotswap.agent.plugin.spring.*;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -194,6 +191,9 @@ public class ClassPathBeanDefinitionScannerAgent {
                 DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
                 if (bf != null)
                     ResetRequestMappingCaches.reset(bf);
+                //todo go on
+                if (bf != null)
+                    ResetTransactionAttributeCaches.reset(bf);
 
                 ProxyReplacer.clearAllProxies();
                 freezeConfiguration();
