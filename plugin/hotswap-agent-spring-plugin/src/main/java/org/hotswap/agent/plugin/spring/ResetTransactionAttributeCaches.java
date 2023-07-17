@@ -19,34 +19,37 @@ package org.hotswap.agent.plugin.spring;
  */
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.AbstractFallbackTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionAttribute;
-import org.springframework.util.StringValueResolver;
 
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Map;
 
 public class ResetTransactionAttributeCaches {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(ResetTransactionAttributeCaches.class);
 
-
     private static Map<Object, TransactionAttribute> attributeCache;
+    private static boolean tried = false;
 
     public static void reset(DefaultListableBeanFactory beanFactory) {
-        if (attributeCache == null) {
-            final AbstractFallbackTransactionAttributeSource transactionAttributeSource = beanFactory.getBean("transactionAttributeSource", AbstractFallbackTransactionAttributeSource.class);
-            try {
+        if (!beanFactory.containsBean("transactionAttributeSource")) {
+            return;
+        }
+        try {
+            if (attributeCache == null && !tried) {
+                //only try once
+                tried = true;
+                final AbstractFallbackTransactionAttributeSource transactionAttributeSource = beanFactory.getBean("transactionAttributeSource", AbstractFallbackTransactionAttributeSource.class);
                 Field attributeCacheField = AbstractFallbackTransactionAttributeSource.class.getDeclaredField("attributeCache");
                 attributeCacheField.setAccessible(true);
                 attributeCache = (Map<Object, TransactionAttribute>) attributeCacheField.get(transactionAttributeSource);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException(e);
             }
+            if (attributeCache != null) {
+                attributeCache.clear();
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to reset @Transactional cache", e);
         }
-        attributeCache.clear();
     }
 }

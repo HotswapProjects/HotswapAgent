@@ -189,11 +189,10 @@ public class ClassPathBeanDefinitionScannerAgent {
                 registerBeanDefinition(definitionHolder, registry);
 
                 DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
-                if (bf != null)
+                if (bf != null) {
                     ResetRequestMappingCaches.reset(bf);
-                //todo go on
-                if (bf != null)
                     ResetTransactionAttributeCaches.reset(bf);
+                }
 
                 ProxyReplacer.clearAllProxies();
                 freezeConfiguration();
