@@ -20,6 +20,7 @@ package org.hotswap.agent.plugin.spring.scanner;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.ResetBeanFactoryCaches;
+import org.hotswap.agent.plugin.spring.ResetBeanFactoryPostProcessorCaches;
 import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
 import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
@@ -27,13 +28,17 @@ import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.PropertyResourceConfigurer;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionReader;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.ManagedList;
+import org.springframework.beans.factory.support.MergedBeanDefinitionPostProcessor;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
@@ -42,9 +47,13 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -112,7 +121,10 @@ public class XmlBeanDefinitionScannerAgent {
         } catch (IOException e) {
             // ignore
         }
-        instances.put(path, new XmlBeanDefinitionScannerAgent(reader, resourceUrl));
+
+        if (!instances.containsKey(path)) {
+            instances.put(path, new XmlBeanDefinitionScannerAgent(reader, resourceUrl));
+        }
     }
 
     public static void reloadClass(String className) {
@@ -251,11 +263,11 @@ public class XmlBeanDefinitionScannerAgent {
         }
 
         ResetSpringStaticCaches.reset();
-        ResetBeanPostProcessorCaches.reset(factory);
-        ResetBeanFactoryCaches.reset(factory);
         // spring won't rebuild dependency map if injectionMetadataCache is not cleared
         // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
         ResetBeanPostProcessorCaches.reset(factory);
+        ResetBeanFactoryPostProcessorCaches.reset(factory);
+        ResetBeanFactoryCaches.reset(factory);
         ProxyReplacer.clearAllProxies();
 
         LOGGER.debug("Remove all beans defined in the XML file {} before reloading it", url.getPath());
@@ -263,21 +275,53 @@ public class XmlBeanDefinitionScannerAgent {
             factory.removeBeanDefinition(beanName);
         }
 
+        removeBeanFactoryPostProcessors(factory);
+        removeBeanPostProcessors(factory);
+
+        beansRegistered.clear();
+
         LOGGER.info("Reloading XML file: " + url);
         // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
         // maybe should use watchResourceClassLoader.getResource?
         this.reader.loadBeanDefinitions(new FileSystemResource(url.getPath()));
 
-        try {
-            Map<String, PropertyResourceConfigurer> configurers = factory.getBeansOfType(PropertyResourceConfigurer.class);
-            for (PropertyResourceConfigurer configurer : configurers.values()) {
-                configurer.postProcessBeanFactory(factory);
-            }
-        } catch (Exception e) {
-            // ignore
-        }
+        invokeBeanFactoryPostProcessors(factory);
+        addBeanPostProcessors(factory);
 
         reloadFlag = false;
+    }
+
+    private static void addBeanPostProcessors(DefaultListableBeanFactory factory) {
+        String[] names = factory.getBeanNamesForType(MergedBeanDefinitionPostProcessor.class, true, false);
+        LOGGER.debug("Add all BeanPostProcessor {}", Arrays.toString(names));
+        for (String name : names) {
+            BeanPostProcessor pp = factory.getBean(name, MergedBeanDefinitionPostProcessor.class);
+            factory.addBeanPostProcessor(pp);
+        }
+    }
+
+    private static void removeBeanPostProcessors(DefaultListableBeanFactory factory) {
+        String[] names = factory.getBeanNamesForType(MergedBeanDefinitionPostProcessor.class, true, false);
+        LOGGER.debug("Remove all BeanPostProcessor {}", Arrays.toString(names));
+        for (String name : names) {
+            try {
+                factory.removeBeanDefinition(name);
+            } catch (Throwable t) {
+                LOGGER.debug("Fail to remove BeanPostProcessor {}", name);
+            }
+        }
+    }
+
+    private static void removeBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
+        String[] names = factory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
+        LOGGER.debug("Remove all BeanFactoryPostProcessor {}", Arrays.toString(names));
+        for (String name : names) {
+            try {
+                factory.removeBeanDefinition(name);
+            } catch (Throwable t) {
+                LOGGER.debug("Fail to remove BeanFactoryPostProcessor {}", name);
+            }
+        }
     }
 
     /**
@@ -324,5 +368,46 @@ public class XmlBeanDefinitionScannerAgent {
             return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
         }
         return null;
+    }
+
+    private static void invokeBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
+        try {
+            invokePostProcessorRegistrationDelegate(factory);
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less", t);
+            invokeBeanFactoryPostProcessors0(factory);
+        }
+    }
+
+    private static void invokeBeanFactoryPostProcessors0(DefaultListableBeanFactory factory) {
+        String[] bdrppNames = factory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+        for (String name : bdrppNames) {
+            BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
+            pp.postProcessBeanDefinitionRegistry(factory);
+        }
+
+        for (String name : bdrppNames) {
+            BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
+            pp.postProcessBeanFactory(factory);
+        }
+
+        String[] bfppNames = factory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
+        for (String name : bfppNames) {
+            if (Arrays.asList(bdrppNames).contains(name)) {
+                continue;
+            }
+
+            BeanFactoryPostProcessor pp = factory.getBean(name, BeanFactoryPostProcessor.class);
+            pp.postProcessBeanFactory(factory);
+        }
+    }
+
+    private static void invokePostProcessorRegistrationDelegate(DefaultListableBeanFactory factory) throws Throwable {
+        Class<?> clazz = Class.forName("org.springframework.context.support.PostProcessorRegistrationDelegate",
+                true, factory.getClass().getClassLoader());
+        Method method = clazz.getDeclaredMethod("invokeBeanFactoryPostProcessors",
+                ConfigurableListableBeanFactory.class, List.class);
+        method.setAccessible(true);
+        method.invoke(null, factory, Collections.emptyList());
     }
 }
