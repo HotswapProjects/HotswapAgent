@@ -25,7 +25,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.*;
+import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
+import org.hotswap.agent.plugin.spring.ResetRequestMappingCaches;
+import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
+import org.hotswap.agent.plugin.spring.ResetTransactionAttributeCaches;
+import org.hotswap.agent.plugin.spring.SpringPlugin;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
