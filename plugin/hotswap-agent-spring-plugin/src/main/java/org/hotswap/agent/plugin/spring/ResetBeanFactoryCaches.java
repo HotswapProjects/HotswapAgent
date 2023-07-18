@@ -1,4 +1,3 @@
-package org.hotswap.agent.plugin.spring;
 /*
  * Copyright 2013-2023 the HotswapAgent authors.
  *
@@ -17,20 +16,28 @@ package org.hotswap.agent.plugin.spring;
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
+package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.util.StringValueResolver;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ResetBeanFactoryCaches {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(ResetBeanFactoryCaches.class);
 
     public static void reset(DefaultListableBeanFactory beanFactory) {
         resetEmbeddedValueResolvers(beanFactory);
+        resetBeanPostProcessors(beanFactory);
+        resetBeanFactoryPostProcessors(beanFactory);
     }
 
     private static void resetEmbeddedValueResolvers(DefaultListableBeanFactory beanFactory) {
@@ -45,5 +52,62 @@ public class ResetBeanFactoryCaches {
             LOGGER.error("Error resetting embeddedValueResolvers for bean factory {}", e, beanFactory);
         }
 
+    }
+
+    private static void resetBeanPostProcessors(DefaultListableBeanFactory beanFactory) {
+        resetBeanPostProcessorList(beanFactory);
+        resetBeanPostProcessorCache(beanFactory);
+    }
+
+    private static void resetBeanPostProcessorCache(DefaultListableBeanFactory beanFactory) {
+        try {
+            Field field = AbstractBeanFactory.class.getDeclaredField("beanPostProcessorCache");
+            field.setAccessible(true);
+            field.set(beanFactory, null);
+        } catch (Throwable t) {
+            LOGGER.error("Error resetting beanPostProcessors for bean factory {}", t, beanFactory);
+        }
+    }
+
+    private static void resetBeanPostProcessorList(DefaultListableBeanFactory beanFactory) {
+        String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
+        Set<String> postProcessorClasses = new HashSet<>();
+        for (String postProcessorName : postProcessorNames) {
+            try {
+                BeanPostProcessor postProcessor = beanFactory.getBean(postProcessorName, BeanPostProcessor.class);
+                postProcessorClasses.add(postProcessor.getClass().getName());
+                beanFactory.removeBeanDefinition(postProcessorName);
+                LOGGER.debug("Removed bean definition for beanPostProcessor {}", postProcessorName);
+            } catch (Throwable t) {
+                LOGGER.debug("Error remove beanPostProcessor {}", t, postProcessorName);
+            }
+        }
+
+        try {
+            Field field = AbstractBeanFactory.class.getDeclaredField("beanPostProcessors");
+            field.setAccessible(true);
+            List<BeanPostProcessor> list = (List<BeanPostProcessor>) field.get(beanFactory);
+            for (BeanPostProcessor beanPostProcessor : list) {
+                String className = beanPostProcessor.getClass().getName();
+                if (postProcessorClasses.contains(className)) {
+                    list.remove(beanPostProcessor);
+                    LOGGER.debug("Removed beanPostProcessor {}", className);
+                }
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Error resetting beanPostProcessors", t);
+        }
+    }
+
+    private static void resetBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
+        String[] names = factory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
+        LOGGER.debug("Remove all BeanFactoryPostProcessor {}", Arrays.toString(names));
+        for (String name : names) {
+            try {
+                factory.removeBeanDefinition(name);
+            } catch (Throwable t) {
+                LOGGER.debug("Fail to remove BeanFactoryPostProcessor {}", name);
+            }
+        }
     }
 }
