@@ -267,14 +267,7 @@ public class XmlBeanDefinitionScannerAgent {
         ResetBeanPostProcessorCaches.reset(factory);
         ResetBeanFactoryPostProcessorCaches.reset(factory);
         ProxyReplacer.clearAllProxies();
-
-        LOGGER.debug("Remove all beans defined in the XML file {} before reloading it", url.getPath());
-        for (String beanName : beansRegistered.keySet()) {
-            factory.removeBeanDefinition(beanName);
-        }
-
-        beansRegistered.clear();
-
+        removeRegisteredBeanDefinitions(factory);
         ResetBeanFactoryCaches.reset(factory);
 
         LOGGER.info("Reloading XML file: " + url);
@@ -288,6 +281,15 @@ public class XmlBeanDefinitionScannerAgent {
         reloadFlag = false;
     }
 
+    private void removeRegisteredBeanDefinitions(DefaultListableBeanFactory factory) {
+        LOGGER.debug("Remove all beans defined in the XML file {} before reloading it", url.getPath());
+        for (String beanName : beansRegistered.keySet()) {
+            factory.removeBeanDefinition(beanName);
+        }
+
+        beansRegistered.clear();
+    }
+
     private static void addBeanPostProcessors(DefaultListableBeanFactory factory) {
         String[] names = factory.getBeanNamesForType(BeanPostProcessor.class, true, false);
         for (String name : names) {
@@ -296,8 +298,6 @@ public class XmlBeanDefinitionScannerAgent {
             LOGGER.debug("Add BeanPostProcessor {}", name);
         }
     }
-
-
 
     /**
      * convert src/main/resources/xxx.xml and classes/xxx.xml to xxx.xml

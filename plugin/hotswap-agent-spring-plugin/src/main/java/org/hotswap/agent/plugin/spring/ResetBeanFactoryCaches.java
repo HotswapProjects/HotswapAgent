@@ -55,6 +55,21 @@ public class ResetBeanFactoryCaches {
     }
 
     private static void resetBeanPostProcessors(DefaultListableBeanFactory beanFactory) {
+        resetBeanPostProcessorList(beanFactory);
+        resetBeanPostProcessorCache(beanFactory);
+    }
+
+    private static void resetBeanPostProcessorCache(DefaultListableBeanFactory beanFactory) {
+        try {
+            Field field = AbstractBeanFactory.class.getDeclaredField("beanPostProcessorCache");
+            field.setAccessible(true);
+            field.set(beanFactory, null);
+        } catch (Throwable t) {
+            LOGGER.error("Error resetting beanPostProcessors for bean factory {}", t, beanFactory);
+        }
+    }
+
+    private static void resetBeanPostProcessorList(DefaultListableBeanFactory beanFactory) {
         String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
         Set<String> postProcessorClasses = new HashSet<>();
         for (String postProcessorName : postProcessorNames) {
@@ -68,19 +83,6 @@ public class ResetBeanFactoryCaches {
             }
         }
 
-
-        removePostProcessor(beanFactory, postProcessorClasses);
-
-        try {
-            Field field = AbstractBeanFactory.class.getDeclaredField("beanPostProcessorCache");
-            field.setAccessible(true);
-            field.set(beanFactory, null);
-        } catch (Throwable t) {
-            LOGGER.error("Error resetting beanPostProcessors for bean factory {}", t, beanFactory);
-        }
-    }
-
-    private static void removePostProcessor(DefaultListableBeanFactory beanFactory, Set<String> postProcessorClasses) {
         try {
             Field field = AbstractBeanFactory.class.getDeclaredField("beanPostProcessors");
             field.setAccessible(true);
