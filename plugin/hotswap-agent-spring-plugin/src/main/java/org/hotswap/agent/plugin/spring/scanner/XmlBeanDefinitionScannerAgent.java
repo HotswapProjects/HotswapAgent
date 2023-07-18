@@ -38,7 +38,6 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.ManagedList;
-import org.springframework.beans.factory.support.MergedBeanDefinitionPostProcessor;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
@@ -90,7 +89,7 @@ public class XmlBeanDefinitionScannerAgent {
     public static void registerBean(String beanName, BeanDefinition beanDefinition) {
         XmlBeanDefinitionScannerAgent agent = findAgent(beanDefinition);
         if (agent == null) {
-            LOGGER.warning("cannot find registered XmlBeanDefinitionScannerAgent for bean {}", beanName);
+            LOGGER.debug("cannot find registered XmlBeanDefinitionScannerAgent for bean {}", beanName);
             return;
         }
 
@@ -267,7 +266,6 @@ public class XmlBeanDefinitionScannerAgent {
         // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
         ResetBeanPostProcessorCaches.reset(factory);
         ResetBeanFactoryPostProcessorCaches.reset(factory);
-        ResetBeanFactoryCaches.reset(factory);
         ProxyReplacer.clearAllProxies();
 
         LOGGER.debug("Remove all beans defined in the XML file {} before reloading it", url.getPath());
@@ -275,10 +273,9 @@ public class XmlBeanDefinitionScannerAgent {
             factory.removeBeanDefinition(beanName);
         }
 
-        removeBeanFactoryPostProcessors(factory);
-        removeBeanPostProcessors(factory);
-
         beansRegistered.clear();
+
+        ResetBeanFactoryCaches.reset(factory);
 
         LOGGER.info("Reloading XML file: " + url);
         // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
@@ -292,37 +289,15 @@ public class XmlBeanDefinitionScannerAgent {
     }
 
     private static void addBeanPostProcessors(DefaultListableBeanFactory factory) {
-        String[] names = factory.getBeanNamesForType(MergedBeanDefinitionPostProcessor.class, true, false);
-        LOGGER.debug("Add all BeanPostProcessor {}", Arrays.toString(names));
+        String[] names = factory.getBeanNamesForType(BeanPostProcessor.class, true, false);
         for (String name : names) {
-            BeanPostProcessor pp = factory.getBean(name, MergedBeanDefinitionPostProcessor.class);
+            BeanPostProcessor pp = factory.getBean(name, BeanPostProcessor.class);
             factory.addBeanPostProcessor(pp);
+            LOGGER.debug("Add BeanPostProcessor {}", name);
         }
     }
 
-    private static void removeBeanPostProcessors(DefaultListableBeanFactory factory) {
-        String[] names = factory.getBeanNamesForType(MergedBeanDefinitionPostProcessor.class, true, false);
-        LOGGER.debug("Remove all BeanPostProcessor {}", Arrays.toString(names));
-        for (String name : names) {
-            try {
-                factory.removeBeanDefinition(name);
-            } catch (Throwable t) {
-                LOGGER.debug("Fail to remove BeanPostProcessor {}", name);
-            }
-        }
-    }
 
-    private static void removeBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
-        String[] names = factory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
-        LOGGER.debug("Remove all BeanFactoryPostProcessor {}", Arrays.toString(names));
-        for (String name : names) {
-            try {
-                factory.removeBeanDefinition(name);
-            } catch (Throwable t) {
-                LOGGER.debug("Fail to remove BeanFactoryPostProcessor {}", name);
-            }
-        }
-    }
 
     /**
      * convert src/main/resources/xxx.xml and classes/xxx.xml to xxx.xml
