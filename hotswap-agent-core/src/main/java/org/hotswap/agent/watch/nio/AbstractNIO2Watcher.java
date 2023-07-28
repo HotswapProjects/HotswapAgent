@@ -123,7 +123,10 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             list = new ArrayList<WatchEventListener>();
             listeners.put(Paths.get(pathPrefix), list);
         }
-        list.add(listener);
+
+        if (!list.contains(listener)) {
+            list.add(listener);
+        }
 
         if (classLoader != null) {
             classLoaderListeners.put(listener, classLoader);

@@ -18,12 +18,6 @@
  */
 package org.hotswap.agent.plugin.spring.scanner;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
 import org.hotswap.agent.plugin.spring.ResetRequestMappingCaches;
@@ -31,6 +25,7 @@ import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
 import org.hotswap.agent.plugin.spring.ResetTransactionAttributeCaches;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
+import org.hotswap.agent.plugin.spring.processor.ConfigurationClassPostProcessorAgent;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
@@ -52,6 +47,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static org.hotswap.agent.plugin.spring.utils.RegistryUtils.maybeRegistryToBeanFactory;
+
 
 /**
  * Registers
@@ -138,7 +142,7 @@ public class ClassPathBeanDefinitionScannerAgent {
     /**
      * Called by a reflection command from SpringPlugin transformer.
      *
-     * @param appClassLoader the class loader - container or application class loader.
+     * @param appClassLoader  the class loader - container or application class loader.
      * @param basePackage     base package on witch the transformer was registered, used to obtain associated scanner.
      * @param classDefinition new class definition
      * @throws IOException error working with classDefinition
@@ -182,7 +186,17 @@ public class ClassPathBeanDefinitionScannerAgent {
                 processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
             }
 
-            removeIfExists(beanName);
+            DefaultListableBeanFactory bf = maybeRegistryToBeanFactory(registry);
+            if (bf != null) {
+                ResetRequestMappingCaches.reset(bf);
+                ResetBeanPostProcessorCaches.reset(bf);
+                ResetTransactionAttributeCaches.reset(bf);
+            }
+
+            ResetSpringStaticCaches.reset();
+
+            removeBean(beanName);
+
             if (checkCandidate(beanName, candidate)) {
 
                 BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
@@ -192,10 +206,11 @@ public class ClassPathBeanDefinitionScannerAgent {
                 LOGGER.debug("Bean definition '{}'", beanName, candidate);
                 registerBeanDefinition(definitionHolder, registry);
 
-                DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
-                if (bf != null) {
-                    ResetRequestMappingCaches.reset(bf);
-                    ResetTransactionAttributeCaches.reset(bf);
+                boolean isConfigurationClass = isConfigurationClassCandidate(candidate);
+                if (isConfigurationClass) {
+                    LOGGER.debug("Bean definition '{}' is a configuration class", beanName);
+                    removeBeansFromFactoryBean(beanName);
+                    ConfigurationClassPostProcessorAgent.getInstance().postProcess(registry, beanName);
                 }
 
                 ProxyReplacer.clearAllProxies();
@@ -211,29 +226,20 @@ public class ClassPathBeanDefinitionScannerAgent {
      *
      * @param beanName name of the bean
      */
-    private void removeIfExists(String beanName) {
+    private void removeBean(String beanName) {
         if (registry.containsBeanDefinition(beanName)) {
             LOGGER.debug("Removing bean definition '{}'", beanName);
-            DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
-            if (bf != null) {
-                ResetRequestMappingCaches.reset(bf);
-            }
             registry.removeBeanDefinition(beanName);
-
-            ResetSpringStaticCaches.reset();
-            if (bf != null) {
-                ResetBeanPostProcessorCaches.reset(bf);
-            }
         }
     }
 
-    private DefaultListableBeanFactory maybeRegistryToBeanFactory() {
-        if (registry instanceof DefaultListableBeanFactory) {
-            return (DefaultListableBeanFactory) registry;
-        } else if (registry instanceof GenericApplicationContext) {
-            return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
+    private void removeBeansFromFactoryBean(String factoryBean) {
+        for (String name : registry.getBeanDefinitionNames()) {
+            if (factoryBean.equals(registry.getBeanDefinition(name).getFactoryBeanName())) {
+                registry.removeBeanDefinition(name);
+                LOGGER.debug("Removing bean definition '{}' since it's created from factory bean '{}'", name, factoryBean);
+            }
         }
-        return null;
     }
 
     // rerun freez configuration - this method is enhanced with cache reset
@@ -249,19 +255,20 @@ public class ClassPathBeanDefinitionScannerAgent {
      * Resolve bean definition from class definition if applicable.
      *
      * @param appClassLoader the class loader - container or application class loader.
-     * @param bytes class definition.
+     * @param bytes          class definition.
      * @return the definition or null if not a spring bean
      * @throws IOException
      */
     public BeanDefinition resolveBeanDefinition(ClassLoader appClassLoader, byte[] bytes) throws IOException {
-        Resource resource = new ByteArrayResource(bytes);
         resetCachingMetadataReaderFactoryCache();
+
+        Resource resource = new ByteArrayResource(bytes);
         MetadataReader metadataReader = getMetadataReader(appClassLoader, resource);
+        ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
+        sbd.setResource(resource);
+        sbd.setSource(resource);
 
         if (isCandidateComponent(metadataReader)) {
-            ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
-            sbd.setResource(resource);
-            sbd.setSource(resource);
             if (isCandidateComponent(sbd)) {
                 LOGGER.debug("Identified candidate component class '{}'", metadataReader.getClassMetadata().getClassName());
                 return sbd;
@@ -269,6 +276,8 @@ public class ClassPathBeanDefinitionScannerAgent {
                 LOGGER.debug("Ignored because not a concrete top-level class '{}'", metadataReader.getClassMetadata().getClassName());
                 return null;
             }
+        } else if (isConfigurationClassCandidate(sbd)) {
+            return sbd;
         } else {
             LOGGER.trace("Ignored because not matching any filter '{}' ", metadataReader.getClassMetadata().getClassName());
             return null;
@@ -314,6 +323,17 @@ public class ClassPathBeanDefinitionScannerAgent {
     ////////////////////////////////////////////////////////////////////////////////////////////
     // Access private / protected members
     ////////////////////////////////////////////////////////////////////////////////////////////
+
+    private boolean isConfigurationClassCandidate(BeanDefinition beanDef) {
+        MetadataReaderFactory metadataReaderFactory = getMetadataReaderFactory();
+        Object o = ReflectionHelper.invokeNoException(null,
+                "org.springframework.context.annotation.ConfigurationClassUtils",
+                scanner.getClass().getClassLoader(),
+                "checkConfigurationClassCandidate",
+                new Class[]{BeanDefinition.class, MetadataReaderFactory.class},
+                beanDef, metadataReaderFactory);
+        return o != null && (Boolean) o;
+    }
 
     private BeanDefinitionHolder applyScopedProxyMode(
             ScopeMetadata metadata, BeanDefinitionHolder definition, BeanDefinitionRegistry registry) {

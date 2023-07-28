@@ -116,7 +116,10 @@ public class HotswapTransformer implements ClassFileTransformer {
             transformerRecord.pattern = Pattern.compile(normalizeRegexp);
             transformersMap.put(normalizeRegexp, transformerRecord);
         }
-        transformerRecord.transformerList.add(transformer);
+
+        if (!transformerRecord.transformerList.contains(transformer)) {
+            transformerRecord.transformerList.add(transformer);
+        }
 
         // register classloader association to allow classloader unregistration
         if (classLoader != null) {
