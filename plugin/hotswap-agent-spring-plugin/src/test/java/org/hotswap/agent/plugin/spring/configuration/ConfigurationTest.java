@@ -7,6 +7,7 @@ import org.hotswap.agent.plugin.spring.configuration.beans.Config;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config1;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config2;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config3;
+import org.hotswap.agent.plugin.spring.reader.AnnotatedBeanDefinitionReaderAgent;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Ignore;
@@ -66,13 +67,13 @@ public class ConfigurationTest {
         classPool.appendClassPath(new LoaderClassPath(Config.class.getClassLoader()));
         CtClass ctClass = classPool.getAndRename(swap.getName(), Config.class.getName());
 
-        ClassPathBeanDefinitionScannerAgent.reloadFlag = true;
+        AnnotatedBeanDefinitionReaderAgent.reloadFlag = true;
         Files.copy(new ByteArrayInputStream(ctClass.toBytecode()), config.getFile().toPath(),
                 StandardCopyOption.REPLACE_EXISTING);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !ClassPathBeanDefinitionScannerAgent.reloadFlag;
+                return !AnnotatedBeanDefinitionReaderAgent.reloadFlag;
             }
         }, 3000));
 
