@@ -48,9 +48,9 @@ public class PropertiesRefreshCommand extends MergeableCommand {
     @Override
     public void executeCommand() {
         try {
-            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent", true, appClassLoader);
-            Method method = clazz.getDeclaredMethod("reloadProperty", URL.class);
-            method.invoke(null, url);
+//            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent", true, appClassLoader);
+//            Method method = clazz.getDeclaredMethod("reloadProperty", URL.class);
+//            method.invoke(null, url);
         } catch (Throwable t) {
             LOGGER.error("Error refreshing property file {} in classLoader {}", t, this.url, appClassLoader);
         }

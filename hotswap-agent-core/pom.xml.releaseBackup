@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.hotswapagent</groupId>
+        <artifactId>hotswap-agent-parent</artifactId>
+        <version>1.4.2-SNAPSHOT</version>
+        <relativePath>../hotswap-agent-parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>hotswap-agent-core</artifactId>
+
+    <profiles>
+        <profile>
+            <id>default-tools</id>
+            <activation>
+                <os>
+                    <family>!mac</family>
+                </os>
+                <jdk>(,1.11)</jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <version>${java.version}</version>
+                    <scope>system</scope>
+                    <optional>true</optional>
+                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>mac-tools</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+                <jdk>(,1.11)</jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <version>${java.version}</version>
+                    <scope>system</scope>
+                    <optional>true</optional>
+                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>surefire-java11</id>
+            <activation>
+                <jdk>(,17)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-surefire-plugin</artifactId>
+                      <configuration>
+                          <!--This is to override argLine from surefire config in parent pom-->
+                          <!-- HotswapAgent=external serves to open modules -->
+                          <argLine>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external -Xlog:redefine+class*=info -Dblank</argLine>
+                      </configuration>
+                  </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <activation>
+                <jdk>17</jdk>
+            </activation>
+            <build>
+                <plugins>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-surefire-plugin</artifactId>
+                      <configuration>
+                          <!--This is to override argLine from surefire config in parent pom-->
+                          <!-- HotswapAgent=external serves to open modules -->
+                          <argLine>-XX:HotswapAgent=external -Dblank -Xlog:redefine+class*=info</argLine>
+                      </configuration>
+                  </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <!--README.md are processed by automatic plugin documentation generator-->
+                    <include>**/*.md</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Agent-Class>org.hotswap.agent.HotswapAgent</Agent-Class>
+                            <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
+                            <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                            <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jmock</groupId>
+            <artifactId>jmock-junit4</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jmock</groupId>
+            <artifactId>jmock-legacy</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.hotswapagent</groupId>
+        <artifactId>hotswap-agent-parent</artifactId>
+        <version>1.4.2-SNAPSHOT</version>
+        <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>hotswap-agent-tomcat-plugin</artifactId>
+    
+    <properties>
+        <tomcat.version>8.5.24</tomcat.version>
+        <!--<tomcat.artifact>catalina</tomcat.artifact> &lt;!&ndash; catalina if 6.x &ndash;&gt;-->
+        <!--tomcat-catalina if 7.x+ -->
+         <tomcat.artifact>tomcat-catalina</tomcat.artifact>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!--Just to get Tomcat sources into IDE-->
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>${tomcat.artifact}</artifactId>
+            <version>${tomcat.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jasper</artifactId>
+            <version>${tomcat.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+</project>

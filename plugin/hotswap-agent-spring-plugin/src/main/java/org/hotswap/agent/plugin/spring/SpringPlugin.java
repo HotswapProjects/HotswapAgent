@@ -18,32 +18,22 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import org.hotswap.agent.annotation.FileEvent;
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.LoadEvent;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.annotation.OnResourceFileEvent;
-import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
 import org.hotswap.agent.plugin.spring.processor.ConfigurationClassPostProcessorTransformer;
 import org.hotswap.agent.plugin.spring.reader.AnnotatedBeanDefinitionReaderTransformer;
 import org.hotswap.agent.plugin.spring.reader.ComponentClassTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
-import org.hotswap.agent.plugin.spring.scanner.PropertiesRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanTransformer;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
-import org.hotswap.agent.plugin.spring.scanner.XmlFileRefreshCommand;
+import org.hotswap.agent.plugin.spring.transformers.ClassPathBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.transformers.PlaceholderConfigurerSupportTransformer;
+import org.hotswap.agent.plugin.spring.transformers.ResourcePropertySourceTransformer;
+import org.hotswap.agent.plugin.spring.transformers.XmlBeanDefinitionScannerTransformer;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -68,7 +58,10 @@ import java.util.List;
                 AnnotatedBeanDefinitionReaderTransformer.class,
                 ProxyReplacerTransformer.class,
                 ConfigurationClassPostProcessorTransformer.class,
+                ResourcePropertySourceTransformer.class,
+                PlaceholderConfigurerSupportTransformer.class,
                 XmlBeanDefinitionScannerTransformer.class})
+
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
@@ -88,6 +81,7 @@ public class SpringPlugin {
 
     public void init() {
         LOGGER.info("Spring plugin initialized");
+        SpringChangedHub.setClassLoader(appClassLoader);
         this.registerBasePackageFromConfiguration();
         this.initBasePackagePrefixes();
     }
@@ -113,17 +107,20 @@ public class SpringPlugin {
 
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
-        scheduler.scheduleCommand(new XmlFileRefreshCommand(appClassLoader, url));
+//        scheduler.scheduleCommand(new XmlFileRefreshCommand(appClassLoader, url));
+        SpringChangedHub.addChangedXml(url);
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
-        scheduler.scheduleCommand(new PropertiesRefreshCommand(appClassLoader, url));
+        SpringChangedHub.addChangedProperty(url);
+//        scheduler.scheduleCommand(new PropertiesRefreshCommand(appClassLoader, url));
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
-        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, clazz.getName()));
+        SpringChangedHub.addChangedClass(clazz);
+//        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, clazz.getName()));
     }
 
     /**
@@ -219,12 +216,12 @@ public class SpringPlugin {
 
     /**
      * Plugin initialization is after Spring has finished its startup and freezeConfiguration is called.
-     *
+     * <p>
      * This will override freeze method to init plugin - plugin will be initialized and the configuration
      * remains unfrozen, so bean (re)definition may be done by the plugin.
      */
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
-    public static void register(CtClass clazz) throws NotFoundException, CannotCompileException {
+    public static void register(ClassLoader appClassLoader, CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
         src.append("setCacheBeanMetadata(false);");
         // init a spring plugin with every appclassloader
@@ -235,6 +232,7 @@ public class SpringPlugin {
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
             constructor.insertBeforeBody(src.toString());
+            constructor.insertAfter("org.hotswap.agent.plugin.spring.SpringChangedHub.getInstance(this);");
         }
 
         // freezeConfiguration cannot be disabled because of performance degradation
@@ -251,7 +249,7 @@ public class SpringPlugin {
         CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
         method.insertBefore(
                 "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
-                "setAllowRawInjectionDespiteWrapping(true); ");
+                        "setAllowRawInjectionDespiteWrapping(true); ");
 
         // Patch registerBeanDefinition so that XmlBeanDefinitionScannerAgent has chance to keep track of all beans
         // defined from the XML configuration.
@@ -259,6 +257,22 @@ public class SpringPlugin {
         registerBeanDefinitionMethod.insertBefore(
                 "org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent.registerBean($1, $2);"
         );
+
+//        // collect @Value
+//        CtMethod resolveValueMethod = clazz.getDeclaredMethod("doResolveDependency", new CtClass[]{
+//                classPool.get("org.springframework.beans.factory.config.DependencyDescriptor"), classPool.get("java.lang.String"),
+//                classPool.get("java.util.Set"), classPool.get("org.springframework.beans.TypeConverter")});
+//
+//        resolveValueMethod.
+//        resolveValueMethod.instrument(new ExprEditor() {
+//            @Override
+//            public void edit(MethodCall m) throws CannotCompileException {
+//                if (m.getMethodName().equals("resolveEmbeddedValue")) {
+//                    m.replace("SpringChangedHub.getInstance().springGlobalCaches.valueAnnotatedBeans.add();" +
+//                            "                    $_ = $proceed($$);");
+//                }
+//            }
+//        });
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")

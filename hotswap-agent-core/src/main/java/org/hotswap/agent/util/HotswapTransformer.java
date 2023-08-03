@@ -211,7 +211,7 @@ public class HotswapTransformer implements ClassFileTransformer {
                     }
                 }
             }
-            // 2. call transform method of redefining ttansformars
+            // 2. call transform method of redefining transformers
             if (redefiningClass != null && className != null) {
                 for (RegisteredTransformersRecord transformerRecord : new ArrayList<RegisteredTransformersRecord>(redefinitionTransformers.values())) {
                     if (transformerRecord.pattern.matcher(className).matches()) {

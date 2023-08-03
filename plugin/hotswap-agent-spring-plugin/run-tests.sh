@@ -10,7 +10,7 @@ function test {
     echo "################################################################"
     echo "########             Running with Spring $1          ###########"
     echo "################################################################"
-    mvn -Dorg.springframework.version=$1 clean package
+    mvnDebug -Dorg.springframework.version=$1 clean package
 }
 
 # test following Spring versions

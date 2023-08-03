@@ -34,9 +34,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:placeholderContext.xml"})
@@ -49,37 +47,75 @@ public class PlaceholderTest {
 
     @Test
     public void swapPropertyTest() throws Exception {
-        assertEquals("item-name", applicationContext.getBean("item1", Item1.class).getName());
-        assertEquals("item-name", applicationContext.getBean("item2", Item2.class).getName());
+
+        Item1 item1 = applicationContext.getBean("item1", Item1.class);
+        Item1 item11 = applicationContext.getBean("item11", Item1.class);
+        Item2 item2 = applicationContext.getBean("item2", Item2.class);
+        Item2 item22 = applicationContext.getBean("item22", Item2.class);
+        Item3 item3 = applicationContext.getBean("item3", Item3.class);
+        Item4 item4 = applicationContext.getBean("item4", Item4.class);
+        Item5 item5 = applicationContext.getBean("item5", Item5.class);
+        assertEquals("item-name", item1.getName());
+        assertEquals("item-name", item2.getName());
+        assertEquals("item-name", item11.getName());
+        assertEquals("item-name", item22.getName());
+        assertEquals("item-name", item3.getName());
+        assertEquals("item4-name", item4.getName());
+        assertEquals("item-name", item5.getName());
+        assertEquals("item5-name", item5.getName2());
+
 
         XmlBeanDefinitionScannerAgent.reloadFlag = true;
-        modifyPropertyFile();
+        byte[] content = Files.readAllBytes(propertyFile.getFile().toPath());
+        try {
+            modifyPropertyFile();
+            Thread.sleep(8000);
 
-        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !XmlBeanDefinitionScannerAgent.reloadFlag;
-            }
-        }, 5000));
+            Item1 itemChange1 = applicationContext.getBean("item1", Item1.class);
+            Item1 itemChange11 = applicationContext.getBean("item11", Item1.class);
+            Item2 itemChange2 = applicationContext.getBean("item2", Item2.class);
+            Item2 itemChange22 = applicationContext.getBean("item22", Item2.class);
+            Item3 itemChange3 = applicationContext.getBean("item3", Item3.class);
+            Item4 itemChange4 = applicationContext.getBean("item4", Item4.class);
+            Item5 itemChange5 = applicationContext.getBean("item5", Item5.class);
 
-        assertEquals("ITEM-NAME", applicationContext.getBean("item1", Item1.class).getName());
-        assertEquals("ITEM-NAME", applicationContext.getBean("item2", Item2.class).getName());
+            assertEquals("ITEM-NAME", itemChange1.getName());
+            assertEquals("ITEM-NAME", itemChange2.getName());
+            assertEquals("ITEM-NAME", itemChange11.getName());
+            assertEquals("ITEM-NAME", itemChange22.getName());
+            assertEquals("ITEM-NAME", itemChange3.getName());
+            assertEquals("ITEM4-NAME", itemChange4.getName());
+            assertEquals("ITEM-NAME", itemChange5.getName());
+            assertEquals("ITEM5-NAME", itemChange5.getName2());
+            assertNotEquals(item1, itemChange1);
+            assertNotEquals(item11, itemChange11);
+            assertNotEquals(item4, itemChange4);
+            assertNotEquals(item5, itemChange5);
+            assertNotEquals(item2, itemChange2);
+            assertNotEquals(item22, itemChange22);
+            assertEquals(item3, itemChange3);
+        } finally {
+            Files.write(propertyFile.getFile().toPath(), content);
+        }
     }
 
     @Test
     public void swapSingleClassTest() throws Exception {
         assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
+        assertNull(applicationContext.getBean("item2", Item2.class).getName2());
 
         HotSwapper.swapClasses(Item2.class, Item2WithoutValue.class.getName());
-        XmlBeanDefinitionScannerAgent.reloadFlag = true;
-        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !XmlBeanDefinitionScannerAgent.reloadFlag;
-            }
-        }, 5000));
+//        XmlBeanDefinitionScannerAgent.reloadFlag = true;
+//        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+//            @Override
+//            public boolean result() throws Exception {
+//                return !XmlBeanDefinitionScannerAgent.reloadFlag;
+//            }
+//        }, 5000));
+        Thread.sleep(5000);
 
         assertNull(applicationContext.getBean("item2", Item2.class).getName());
+        assertNotNull(applicationContext.getBean("item2", Item2.class).getName2());
     }
 
     private void modifyPropertyFile() throws Exception {

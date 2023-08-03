@@ -19,8 +19,12 @@
 package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
+import org.hotswap.agent.plugin.spring.transformers.api.IPlaceholderConfigurerSupport;
+import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.util.StringValueResolver;
@@ -35,12 +39,14 @@ public class ResetBeanFactoryCaches {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(ResetBeanFactoryCaches.class);
 
     public static void reset(DefaultListableBeanFactory beanFactory) {
-        resetEmbeddedValueResolvers(beanFactory);
-        resetBeanPostProcessors(beanFactory);
-        resetBeanFactoryPostProcessors(beanFactory);
+        // fixme 为什么要清空EmbeddedValueResolvers
+//        resetEmbeddedValueResolvers(beanFactory);
+        // fixme 为什么要清空BeanPostProcessors
+//        resetBeanPostProcessors(beanFactory);
+//        resetBeanFactoryPostProcessors(beanFactory);
     }
 
-    private static void resetEmbeddedValueResolvers(DefaultListableBeanFactory beanFactory) {
+    public static void resetEmbeddedValueResolvers(DefaultListableBeanFactory beanFactory) {
         try {
             Field field = AbstractBeanFactory.class.getDeclaredField("embeddedValueResolvers");
             field.setAccessible(true);
@@ -51,7 +57,6 @@ public class ResetBeanFactoryCaches {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             LOGGER.error("Error resetting embeddedValueResolvers for bean factory {}", e, beanFactory);
         }
-
     }
 
     private static void resetBeanPostProcessors(DefaultListableBeanFactory beanFactory) {
@@ -76,7 +81,7 @@ public class ResetBeanFactoryCaches {
             try {
                 BeanPostProcessor postProcessor = beanFactory.getBean(postProcessorName, BeanPostProcessor.class);
                 postProcessorClasses.add(postProcessor.getClass().getName());
-                beanFactory.removeBeanDefinition(postProcessorName);
+                BeanFactoryProcessor.removeBeanDefinition(beanFactory, postProcessorName);
                 LOGGER.debug("Removed bean definition for beanPostProcessor {}", postProcessorName);
             } catch (Throwable t) {
                 LOGGER.debug("Error remove beanPostProcessor {}", t, postProcessorName);
@@ -104,7 +109,7 @@ public class ResetBeanFactoryCaches {
         LOGGER.debug("Remove all BeanFactoryPostProcessor {}", Arrays.toString(names));
         for (String name : names) {
             try {
-                factory.removeBeanDefinition(name);
+                BeanFactoryProcessor.removeBeanDefinition(factory, name);
             } catch (Throwable t) {
                 LOGGER.debug("Fail to remove BeanFactoryPostProcessor {}", name);
             }

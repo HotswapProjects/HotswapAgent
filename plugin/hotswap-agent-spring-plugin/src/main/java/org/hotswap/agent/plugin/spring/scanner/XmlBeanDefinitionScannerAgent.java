@@ -24,8 +24,11 @@ import org.hotswap.agent.plugin.spring.ResetBeanFactoryPostProcessorCaches;
 import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
 import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
+import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
+import org.hotswap.agent.plugin.spring.util.ResourceUtils;
 import org.springframework.beans.PropertyValue;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -48,13 +51,9 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static org.hotswap.agent.plugin.spring.util.ResourceUtils.convertToClasspathURL;
 
 /**
  * IMPORTANT: DON'T REFER TO THIS CLASS IN OTHER CLASS!!
@@ -102,16 +101,9 @@ public class XmlBeanDefinitionScannerAgent {
      * so this class is will be loaded by appClassLoader
      */
     public static void registerXmlBeanDefinitionScannerAgent(XmlBeanDefinitionReader reader, Resource resource) {
-        String path;
-        if (resource instanceof ClassPathResource) {
-            path = ((ClassPathResource) resource).getPath();
-        } else {
-            try {
-                path = convertToClasspathURL(resource.getURL().getPath());
-            } catch (IOException e) {
-                LOGGER.error("Cannot get url from resource: {}", e, resource);
-                return;
-            }
+        String path = ResourceUtils.getPath(resource);
+        if (path == null) {
+            return;
         }
 
         URL resourceUrl = null;
@@ -154,8 +146,80 @@ public class XmlBeanDefinitionScannerAgent {
         }
     }
 
+    public static List<String> reloadXmls(List<URL> urls) {
+        List<XmlBeanDefinitionScannerAgent> agents = new ArrayList<>(urls.size());
+        for (URL url : urls) {
+            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = instances.get(url.getPath());
+            if (xmlBeanDefinitionScannerAgent == null) {
+                LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
+                continue;
+            }
+            try {
+                agents.add(xmlBeanDefinitionScannerAgent);
+                xmlBeanDefinitionScannerAgent.clearCache();
+            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
+                LOGGER.error("Reloading XML failed: {}", e.getMessage());
+            }
+        }
+        List<String> beanNames = new ArrayList<>();
+        for (XmlBeanDefinitionScannerAgent agent : agents) {
+            try {
+                agent.reloadDefinition();
+                beanNames.addAll(agent.beansRegistered.keySet());
+            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
+                LOGGER.error("Reloading XML failed: {}", e.getMessage());
+            }
+        }
+        return beanNames;
+    }
+
+    public static Set<String> reloadXmls(Set<URL> urls, Set<String> resourcePaths) {
+        Set<XmlBeanDefinitionScannerAgent> agents = new HashSet<>(resourcePaths.size() + urls.size());
+        for (String resourcePath : resourcePaths) {
+            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = instances.get(resourcePath);
+            if (xmlBeanDefinitionScannerAgent == null) {
+                LOGGER.warning("url " + resourcePath + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
+                continue;
+            }
+            try {
+                if (agents.add(xmlBeanDefinitionScannerAgent)){
+                    xmlBeanDefinitionScannerAgent.clearCache();
+                }
+            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
+                LOGGER.error("Reloading XML failed: {}", e.getMessage());
+            }
+        }
+        for (URL url : urls) {
+            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = instances.get(url.getPath());
+            if (xmlBeanDefinitionScannerAgent == null) {
+                LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
+                continue;
+            }
+            try {
+                if (agents.add(xmlBeanDefinitionScannerAgent)) {
+                    xmlBeanDefinitionScannerAgent.clearCache();
+                }
+            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
+                LOGGER.error("Reloading XML failed: {}", e.getMessage());
+            }
+        }
+        Set<String> beanNames = new HashSet<>();
+        for (XmlBeanDefinitionScannerAgent agent : agents) {
+            try {
+                agent.reloadDefinition();
+                beanNames.addAll(agent.beansRegistered.keySet());
+            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
+                LOGGER.error("Reloading XML failed: {}", e.getMessage());
+            }
+        }
+        return beanNames;
+    }
+
     public static void reloadProperty(URL url) {
         String path = convertToClasspathURL(url.getPath());
+        if (path == null) {
+            return;
+        }
         for (XmlBeanDefinitionScannerAgent agent : instances.values()) {
             if (!agent.propertyLocations.contains(path)) {
                 continue;
@@ -169,6 +233,7 @@ public class XmlBeanDefinitionScannerAgent {
             }
         }
     }
+
 
     private static XmlBeanDefinitionScannerAgent findAgent(BeanDefinition beanDefinition) {
         if (!(beanDefinition instanceof AbstractBeanDefinition)) {
@@ -254,6 +319,11 @@ public class XmlBeanDefinitionScannerAgent {
      * reload bean from xml definition
      */
     public void reloadBeanFromXml() {
+        clearCache();
+        reloadDefinition();
+    }
+
+    void clearCache() {
 
         DefaultListableBeanFactory factory = maybeRegistryToBeanFactory();
         if (factory == null) {
@@ -261,26 +331,15 @@ public class XmlBeanDefinitionScannerAgent {
             return;
         }
 
-        ResetSpringStaticCaches.reset();
-        // spring won't rebuild dependency map if injectionMetadataCache is not cleared
-        // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
-        ResetBeanPostProcessorCaches.reset(factory);
-        ResetBeanFactoryPostProcessorCaches.reset(factory);
-        ProxyReplacer.clearAllProxies();
         removeRegisteredBeanDefinitions(factory);
-        ResetBeanFactoryCaches.reset(factory);
+    }
+
+    void reloadDefinition() {
 
         LOGGER.info("Reloading XML file: " + url);
         // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
         // maybe should use watchResourceClassLoader.getResource?
         this.reader.loadBeanDefinitions(new FileSystemResource(url.getPath()));
-
-        invokeBeanFactoryPostProcessors(factory);
-        addBeanPostProcessors(factory);
-
-        // It's necessary to call preInstantiateSingletons to create singleton beans eagerly since user's code may not
-        // call getBean to trigger the creation of singleton beans.
-        factory.preInstantiateSingletons();
 
         reloadFlag = false;
     }
@@ -288,55 +347,14 @@ public class XmlBeanDefinitionScannerAgent {
     private void removeRegisteredBeanDefinitions(DefaultListableBeanFactory factory) {
         LOGGER.debug("Remove all beans defined in the XML file {} before reloading it", url.getPath());
         for (String beanName : beansRegistered.keySet()) {
-            factory.removeBeanDefinition(beanName);
+            try {
+                BeanFactoryProcessor.removeBeanDefinition(factory, beanName);
+            } catch (NoSuchBeanDefinitionException e) {
+                LOGGER.debug("Bean {} not found in factory, ignore", beanName);
+            }
         }
 
         beansRegistered.clear();
-    }
-
-    private static void addBeanPostProcessors(DefaultListableBeanFactory factory) {
-        String[] names = factory.getBeanNamesForType(BeanPostProcessor.class, true, false);
-        for (String name : names) {
-            BeanPostProcessor pp = factory.getBean(name, BeanPostProcessor.class);
-            factory.addBeanPostProcessor(pp);
-            LOGGER.debug("Add BeanPostProcessor {}", name);
-        }
-    }
-
-    /**
-     * convert src/main/resources/xxx.xml and classes/xxx.xml to xxx.xml
-     *
-     * @param filePath the file path to convert
-     * @return if convert succeed, return classpath path, or else return file path
-     */
-    private static String convertToClasspathURL(String filePath) {
-        String[] paths = filePath.split("src/main/resources/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        paths = filePath.split("WEB-INF/classes/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        paths = filePath.split("WEB-INF/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        paths = filePath.split("target/classes/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        paths = filePath.split("target/test-classes/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        LOGGER.error("failed to convert filePath {} to classPath path", filePath);
-        return filePath;
     }
 
     private DefaultListableBeanFactory maybeRegistryToBeanFactory() {
@@ -347,46 +365,5 @@ public class XmlBeanDefinitionScannerAgent {
             return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
         }
         return null;
-    }
-
-    private static void invokeBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
-        try {
-            invokePostProcessorRegistrationDelegate(factory);
-        } catch (Throwable t) {
-            LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less", t);
-            invokeBeanFactoryPostProcessors0(factory);
-        }
-    }
-
-    private static void invokeBeanFactoryPostProcessors0(DefaultListableBeanFactory factory) {
-        String[] bdrppNames = factory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
-        for (String name : bdrppNames) {
-            BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
-            pp.postProcessBeanDefinitionRegistry(factory);
-        }
-
-        for (String name : bdrppNames) {
-            BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
-            pp.postProcessBeanFactory(factory);
-        }
-
-        String[] bfppNames = factory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
-        for (String name : bfppNames) {
-            if (Arrays.asList(bdrppNames).contains(name)) {
-                continue;
-            }
-
-            BeanFactoryPostProcessor pp = factory.getBean(name, BeanFactoryPostProcessor.class);
-            pp.postProcessBeanFactory(factory);
-        }
-    }
-
-    private static void invokePostProcessorRegistrationDelegate(DefaultListableBeanFactory factory) throws Throwable {
-        Class<?> clazz = Class.forName("org.springframework.context.support.PostProcessorRegistrationDelegate",
-                true, factory.getClass().getClassLoader());
-        Method method = clazz.getDeclaredMethod("invokeBeanFactoryPostProcessors",
-                ConfigurableListableBeanFactory.class, List.class);
-        method.setAccessible(true);
-        method.invoke(null, factory, Collections.emptyList());
     }
 }

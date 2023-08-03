@@ -6,13 +6,21 @@
         http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
     <context:annotation-config/>
 
-    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
-        <property name="location" value="classpath:item.properties"/>
-    </bean>
+    <import resource="placeholderContext-item.xml" />
+    
+    <context:component-scan base-package="org.hotswap.agent.plugin.spring.xml.placeholder" />
 
     <bean id="item1" class="org.hotswap.agent.plugin.spring.xml.placeholder.Item1">
         <property name="name" value="${item.name}"/>
     </bean>
 
     <bean id="item2" class="org.hotswap.agent.plugin.spring.xml.placeholder.Item2"/>
+    <bean id="item4" class="org.hotswap.agent.plugin.spring.xml.placeholder.Item4">
+        <constructor-arg index="0" value="${item4.name}"/>
+    </bean>
+    <bean id="item5" class="org.hotswap.agent.plugin.spring.xml.placeholder.Item5">
+        <constructor-arg name="name2" value="${item5.name}"/>
+        <constructor-arg name="name" value="${item.name}"/>
+    </bean>
+
 </beans>

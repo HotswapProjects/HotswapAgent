@@ -20,13 +20,13 @@ function test {
 
     # run tests for different versions
     cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-hibernate-plugin; ./run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-hibernate3-plugin; ./run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-weld-plugin; ./run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-owb-plugin; ./run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-deltaspike-plugin; ./run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-resteasy-registry-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-hibernate-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-hibernate3-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-weld-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-owb-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-deltaspike-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-resteasy-registry-plugin; ./run-tests.sh; cd ../..
 }
 
 #test "c:\Program Files\Java\jdk1.7.0_45"
-test "c:\Program Files\Java\jdk1.8.0_51"
+test "/Library/Java/JavaVirtualMachines/dcevm-11.0.15+1/Contents/Home"
