@@ -89,7 +89,7 @@ public class XmlBeanDefinitionScannerAgent {
     public static void registerBean(String beanName, BeanDefinition beanDefinition) {
         XmlBeanDefinitionScannerAgent agent = findAgent(beanDefinition);
         if (agent == null) {
-            LOGGER.debug("cannot find registered XmlBeanDefinitionScannerAgent for bean {}", beanName);
+            LOGGER.trace("cannot find registered XmlBeanDefinitionScannerAgent for bean {}", beanName);
             return;
         }
 

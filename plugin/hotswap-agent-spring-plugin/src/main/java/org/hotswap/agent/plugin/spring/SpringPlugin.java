@@ -33,25 +33,25 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
+import org.hotswap.agent.plugin.spring.processor.ConfigurationClassPostProcessorTransformer;
+import org.hotswap.agent.plugin.spring.reader.AnnotatedBeanDefinitionReaderTransformer;
+import org.hotswap.agent.plugin.spring.reader.ComponentClassTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.PropertiesRefreshCommand;
+import org.hotswap.agent.plugin.spring.scanner.SpringBeanTransformer;
+import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.XmlFileRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
-import org.hotswap.agent.util.HaClassFileTransformer;
+import org.hotswap.agent.plugin.spring.scanner.XmlFileRefreshCommand;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.util.classloader.ClassLoaderHelper;
-import org.hotswap.agent.watch.WatchEventListener;
-import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
+import org.springframework.context.annotation.AnnotatedBeanDefinitionReader;
 
 import java.io.IOException;
-import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
-import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -64,17 +64,13 @@ import java.util.List;
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
         testedVersions = {"All between 3.0.1 - 5.2.2"}, expectedVersions = {"3x", "4x", "5x"},
-        supportClass = {ClassPathBeanDefinitionScannerTransformer.class, ProxyReplacerTransformer.class, XmlBeanDefinitionScannerTransformer.class})
+        supportClass = {ClassPathBeanDefinitionScannerTransformer.class,
+                AnnotatedBeanDefinitionReaderTransformer.class,
+                ProxyReplacerTransformer.class,
+                ConfigurationClassPostProcessorTransformer.class,
+                XmlBeanDefinitionScannerTransformer.class})
 public class SpringPlugin {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
-
-    /**
-     * If a class is modified in IDE, sequence of multiple events is generated -
-     * class file DELETE, CREATE, MODIFY, than Hotswap transformer is invoked.
-     * ClassPathBeanRefreshCommand tries to merge these events into single command.
-     * Wait this this timeout after class file event.
-     */
-    private static final int WAIT_ON_CREATE = 600;
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
     public static String[] basePackagePrefixes;
 
@@ -142,27 +138,11 @@ public class SpringPlugin {
     }
 
     private void registerBasePackage(final String basePackage) {
-        final SpringChangesAnalyzer analyzer = new SpringChangesAnalyzer(appClassLoader);
         // v.d.: Force load/Initialize ClassPathBeanRefreshCommand classe in JVM. This is hack, in whatever reason sometimes new ClassPathBeanRefreshCommand()
         //       stays locked inside agent's transform() call. It looks like some bug in JVMTI or JVMTI-debugger() locks handling.
         ClassPathBeanRefreshCommand fooCmd = new ClassPathBeanRefreshCommand();
-        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage), new HaClassFileTransformer() {
-            @Override
-            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-                if (classBeingRedefined != null) {
-                    if (analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer)) {
-                        scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
-                                basePackage, className, classfileBuffer));
-                    }
-                }
-                return classfileBuffer;
-            }
-
-            @Override
-            public boolean isForRedefinitionOnly() {
-                return true;
-            }
-        });
+        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage),
+                new SpringBeanTransformer(appClassLoader, scheduler, basePackage));
     }
 
     /**
@@ -193,30 +173,23 @@ public class SpringPlugin {
             if (!IOUtils.isFileURL(basePackageURL)) {
                 LOGGER.debug("Spring basePackage '{}' - unable to watch files on URL '{}' for changes (JAR file?), limited hotswap reload support. " +
                         "Use extraClassPath configuration to locate class file on filesystem.", basePackage, basePackageURL);
-                continue;
             } else {
-                watcher.addEventListener(appClassLoader, basePackageURL, new WatchEventListener() {
-                    @Override
-                    public void onEvent(WatchFileEvent event) {
-                        if (event.isFile() && event.getURI().toString().endsWith(".class")) {
-                            // check that the class is not loaded by the classloader yet (avoid duplicate reload)
-                            String className;
-                            try {
-                                className = IOUtils.urlToClassName(event.getURI());
-                            } catch (IOException e) {
-                                LOGGER.trace("Watch event on resource '{}' skipped, probably Ok because of delete/create event sequence (compilation not finished yet).", e, event.getURI());
-                                return;
-                            }
-                            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
-                                // refresh spring only for new classes
-                                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                                        basePackage, className, event), WAIT_ON_CREATE);
-                            }
-                        }
-                    }
-                });
+                watcher.addEventListener(appClassLoader, basePackageURL,
+                        new SpringBeanWatchEventListener(scheduler, appClassLoader, basePackage));
             }
         }
+    }
+
+    /**
+     * Register a hotswap transformer for individual component class registration.
+     *
+     * @param clazz component class
+     * @see AnnotatedBeanDefinitionReader#register(Class[])
+     */
+    public void registerComponentClass(String clazz) {
+        LOGGER.info("Registering component class {}", clazz);
+        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(clazz),
+                new ComponentClassTransformer(appClassLoader, scheduler, clazz));
     }
 
     private String getClassNameRegExp(String basePackage) {
