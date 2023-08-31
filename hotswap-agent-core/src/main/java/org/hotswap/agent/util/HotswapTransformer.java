@@ -35,7 +35,6 @@ import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 
 import org.hotswap.agent.annotation.handler.PluginClassFileTransformer;
-import org.hotswap.agent.command.Command;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -316,18 +315,7 @@ public class HotswapTransformer implements ClassFileTransformer {
             } else {
                 // ensure the classloader should not be excluded
                 if (shouldScheduleClassLoader(classLoader)) {
-                    // schedule the excecution
-                    PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
-                        @Override
-                        public void executeCommand() {
-                            PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
-                        }
-
-                        @Override
-                        public String toString() {
-                            return "executeCommand: initClassLoader(" + classLoader + ")";
-                        }
-                    }, 1000);
+                    PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
                 }
             }
         }
