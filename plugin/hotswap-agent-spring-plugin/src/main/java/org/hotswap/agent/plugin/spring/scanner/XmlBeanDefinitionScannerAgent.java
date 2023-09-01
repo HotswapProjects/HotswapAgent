@@ -278,6 +278,10 @@ public class XmlBeanDefinitionScannerAgent {
         invokeBeanFactoryPostProcessors(factory);
         addBeanPostProcessors(factory);
 
+        // It's necessary to call preInstantiateSingletons to create singleton beans eagerly since user's code may not
+        // call getBean to trigger the creation of singleton beans.
+        factory.preInstantiateSingletons();
+
         reloadFlag = false;
     }
 
