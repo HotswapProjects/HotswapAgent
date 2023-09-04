@@ -2,14 +2,15 @@ package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.transformers.api.IPlaceholderConfigurerSupport;
+import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
-import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.beans.factory.support.*;
 import org.springframework.context.annotation.ScannedGenericBeanDefinition;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.util.StringValueResolver;
 
 import java.lang.reflect.Constructor;
@@ -52,12 +53,12 @@ public class BeanFactoryProcessor {
         return false;
     }
 
-    public static boolean checkNeedReload(DefaultListableBeanFactory beanFactory, GenericBeanDefinition currentBeanDefinition,
+    public static boolean checkNeedReload(DefaultListableBeanFactory beanFactory, AbstractBeanDefinition currentBeanDefinition,
                                           String beanName, Predicate<Constructor<?>[]> predicate) {
         Method resolveBeanClassMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "resolveBeanClass", RootBeanDefinition.class, String.class, Class[].class);
         if (currentBeanDefinition instanceof AnnotatedBeanDefinition) {
             AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) currentBeanDefinition;
-            if (annotatedBeanDefinition.getFactoryMethodMetadata() != null) {
+            if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(annotatedBeanDefinition) != null) {
                 return false;
             }
         }
@@ -107,4 +108,24 @@ public class BeanFactoryProcessor {
             }
         }
     }
+
+    public static boolean isAllowBeanDefinitionOverriding(DefaultListableBeanFactory beanFactory) {
+        Object target = ReflectionHelper.getNoException(beanFactory, beanFactory.getClass(), "allowBeanDefinitionOverriding");
+        if (target == null) {
+            return false;
+        }
+        return (boolean) target;
+    }
+
+    public static void setAllowBeanDefinitionOverriding(DefaultListableBeanFactory beanFactory, boolean allowEagerClassLoading) {
+        beanFactory.setAllowBeanDefinitionOverriding(allowEagerClassLoading);
+    }
+
+    public static BeanDefinition getBeanDefinition(DefaultListableBeanFactory beanFactory, String beanName) {
+        if (beanName.startsWith("&")) {
+            beanName = beanName.substring(1);
+        }
+        return beanFactory.getBeanDefinition(beanName);
+    }
+
 }

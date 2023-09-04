@@ -2,7 +2,8 @@ package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.transformers.api.IResourcePropertySource;
-import org.hotswap.agent.plugin.spring.util.ConstructorUtils;
+import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
+import org.hotswap.agent.plugin.spring.utils.ConstructorUtils;
 import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
@@ -12,12 +13,10 @@ import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.context.annotation.ScannedGenericBeanDefinition;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
-import org.springframework.core.env.PropertySources;
 import org.springframework.util.ClassUtils;
 
 import java.io.IOException;
@@ -25,7 +24,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Predicate;
 
 public class PropertyReload {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PropertyReload.class);
@@ -140,7 +138,7 @@ public class PropertyReload {
                 } else if (beanDefinition instanceof AnnotatedGenericBeanDefinition) {
                     AnnotatedGenericBeanDefinition currentBeanDefinition = (AnnotatedGenericBeanDefinition) beanDefinition;
                     Method resolveBeanClassMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "resolveBeanClass", RootBeanDefinition.class, String.class, Class[].class);
-                    if (currentBeanDefinition.getFactoryMethodMetadata() == null && resolveBeanClassMethod != null) {
+                    if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(currentBeanDefinition) == null && resolveBeanClassMethod != null) {
                         resolveBeanClassMethod.setAccessible(true);
                         Class<?> beanClass = null;
                         BeanDefinition rBeanDefinition = beanFactory.getMergedBeanDefinition(beanName);
@@ -191,10 +189,5 @@ public class PropertyReload {
         }
         return false;
     }
-
-    public static void removeEmbeddedResolveValue() {
-
-    }
-
 
 }

@@ -58,6 +58,9 @@ public class DetachableBeanHolder implements Serializable {
      * @param paramValues
      */
     public DetachableBeanHolder(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
+        if (bean == null) {
+            LOGGER.error("Bean is null. The param value: {}", Arrays.toString(paramValues));
+        }
         this.bean = bean;
         this.beanFactory = beanFactry;
         this.paramClasses = paramClasses;
@@ -140,6 +143,10 @@ public class DetachableBeanHolder implements Serializable {
 
                     bean = freshBean;
                     beanCopy = bean;
+                    if (beanCopy == null) {
+                        LOGGER.debug("Bean not loaded");
+                        break;
+                    }
                     LOGGER.info("Bean '{}' loaded", bean.getClass().getName());
                     break;
                 }

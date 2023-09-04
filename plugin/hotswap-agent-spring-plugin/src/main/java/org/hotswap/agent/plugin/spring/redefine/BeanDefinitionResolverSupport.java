@@ -19,12 +19,12 @@
 package org.hotswap.agent.plugin.spring.redefine;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.ResetBeanPostProcessorCaches;
-import org.hotswap.agent.plugin.spring.ResetRequestMappingCaches;
-import org.hotswap.agent.plugin.spring.ResetSpringStaticCaches;
-import org.hotswap.agent.plugin.spring.ResetTransactionAttributeCaches;
+import org.hotswap.agent.plugin.spring.core.ResetBeanPostProcessorCaches;
+import org.hotswap.agent.plugin.spring.core.ResetRequestMappingCaches;
+import org.hotswap.agent.plugin.spring.core.ResetSpringStaticCaches;
+import org.hotswap.agent.plugin.spring.core.ResetTransactionAttributeCaches;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
-import org.hotswap.agent.plugin.spring.processor.ConfigurationClassPostProcessorAgent;
+import org.hotswap.agent.plugin.spring.core.ConfigurationClassPostProcessorEnhance;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -122,7 +122,7 @@ public abstract class BeanDefinitionResolverSupport implements BeanDefinitionRes
                 if (isConfigurationClass) {
                     LOGGER.debug("Bean definition '{}' is a configuration class", beanName);
                     removeBeansFromFactoryBean(beanName);
-                    ConfigurationClassPostProcessorAgent.getInstance().postProcess(registry, beanName);
+                    ConfigurationClassPostProcessorEnhance.getInstance(registry).postProcess(registry, beanName);
                 }
 
                 ProxyReplacer.clearAllProxies();

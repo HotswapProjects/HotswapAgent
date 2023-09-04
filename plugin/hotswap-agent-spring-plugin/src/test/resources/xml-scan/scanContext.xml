@@ -9,5 +9,9 @@
     <context:component-scan base-package="org.hotswap.agent.plugin.spring.xml.scan" />
 
     <bean id="xmlItem" class="org.hotswap.agent.plugin.spring.xml.scan.XmlItem" />
+
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="location" value="classpath:xml-scan/scan-item.properties"/>
+    </bean>
     
 </beans>

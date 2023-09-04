@@ -1,9 +1,12 @@
 package org.hotswap.agent.plugin.spring.xml.factorymethods;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 public class FactoryMethodParentBean5 {
 
     private FactoryMethodBean5 factoryMethodBean5;
 
+    @Autowired
     public FactoryMethodParentBean5(FactoryMethodBean5 factoryMethodBean5) {
         this.factoryMethodBean5 = factoryMethodBean5;
     }

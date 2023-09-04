@@ -1,6 +1,8 @@
 package org.hotswap.agent.plugin.spring.xml.factorymethods;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorFactoryBean2;
@@ -8,13 +10,13 @@ import org.hotswap.agent.plugin.spring.xml.bak.constructor.v2.*;
 import org.hotswap.agent.plugin.spring.xml.bak.factorymethod.BakFactoryMethodBean6;
 import org.hotswap.agent.plugin.spring.xml.bak.factorymethod.BakFactoryMethodFactoryBean12;
 import org.hotswap.agent.plugin.spring.xml.bak.factorymethod.BakFactoryMethodFactoryBean34;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.hotswap.agent.util.test.WaitHelper;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.test.context.ContextConfiguration;
@@ -30,25 +32,29 @@ import java.nio.file.StandardCopyOption;
 public class FactoryMethodBeanChangeTest {
 
     @Autowired
-    private ApplicationContext applicationContext;
+    private AbstractApplicationContext applicationContext;
 
     private static final Resource propertyFile = new ClassPathResource("xml-factory-method/xml-factory-method-item.properties");
     private static final Resource changedPropertyFile = new ClassPathResource("xml-factory-method/xml-factory-method-item-change.properties");
 
     private static byte[] content;
 
-    @BeforeClass
-    public static void before() throws IOException {
+    @Before
+    public void before() throws IOException {
         content = Files.readAllBytes(propertyFile.getFile().toPath());
+        System.out.println("FactoryMethodBeanChangeTest.before. " + applicationContext.getBeanFactory());
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
-    @AfterClass
-    public static void tearDown() throws IOException {
+    @After
+    public void tearDown() throws IOException {
         Files.write(propertyFile.getFile().toPath(), content);
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
     }
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
+        System.out.println("FactoryMethodBeanChangeTest.testFactoryBeanChanged");
         FactoryMethodBean1 factoryMethodBean1 = applicationContext.getBean(FactoryMethodBean1.class);
         FactoryMethodBean2 factoryMethodBean2 = applicationContext.getBean(FactoryMethodBean2.class);
         FactoryMethodBean3 factoryMethodBean3 = applicationContext.getBean(FactoryMethodBean3.class);
@@ -82,7 +88,12 @@ public class FactoryMethodBeanChangeTest {
         Assert.assertEquals(factoryMethodBean6, factoryMethodParentBean6.getFactoryMethodBean6());
         // 1. swap properties only
         modifyPropertyFile();
-        Thread.sleep(10000);
+        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 1;
+            }
+        }, 11000));
         // check
         FactoryMethodBean1 factoryMethodBeanV2_1 = applicationContext.getBean(FactoryMethodBean1.class);
         FactoryMethodBean2 factoryMethodBeanV2_2 = applicationContext.getBean(FactoryMethodBean2.class);
@@ -134,7 +145,12 @@ public class FactoryMethodBeanChangeTest {
         HotSwapper.swapClasses(FactoryMethodBean6.class, BakFactoryMethodBean6.class.getName());
         HotSwapper.swapClasses(FactoryMethodFactoryBean12.class, BakFactoryMethodFactoryBean12.class.getName());
         HotSwapper.swapClasses(FactoryMethodFactoryBean34.class, BakFactoryMethodFactoryBean34.class.getName());
-        Thread.sleep(10000);
+        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 2;
+            }
+        }, 11000));
         // check
         FactoryMethodBean1 factoryMethodBeanV3_1 = applicationContext.getBean(FactoryMethodBean1.class);
         FactoryMethodBean2 factoryMethodBeanV3_2 = applicationContext.getBean(FactoryMethodBean2.class);
@@ -149,7 +165,7 @@ public class FactoryMethodBeanChangeTest {
         System.out.println("factoryMethod5 changed: " + factoryMethodBeanV3_5);
         System.out.println("factoryMethod6 changed: " + factoryMethodBeanV3_6);
         Assert.assertEquals("factoryMethodBean-name1", factoryMethodBeanV3_1.getName());
-        Assert.assertEquals("factoryMethodBean-name2-v2", factoryMethodBeanV3_2.getName());
+        Assert.assertEquals("hello:factoryMethodBean-name2-v2", factoryMethodBeanV3_2.getName());
         Assert.assertEquals("factoryMethodBean-name3-v2", factoryMethodBeanV3_3.getName());
         Assert.assertEquals("hello:factoryMethodBean-name4-v2", factoryMethodBeanV3_4.getName());
         Assert.assertEquals("factoryMethodBean-name5-v2", factoryMethodBeanV3_5.getName());
@@ -169,14 +185,14 @@ public class FactoryMethodBeanChangeTest {
         Assert.assertEquals(factoryMethodBeanV3_5, factoryMethodParentBeanV3_5.getFactoryMethodBean5());
         Assert.assertEquals(factoryMethodBeanV3_6, factoryMethodParentBeanV3_6.getFactoryMethodBean6());
 
-        Assert.assertEquals(factoryMethodBeanV2_1, factoryMethodBeanV3_1);
-        Assert.assertEquals(factoryMethodBeanV2_2, factoryMethodBeanV3_2);
+        Assert.assertNotEquals(factoryMethodBeanV2_1, factoryMethodBeanV3_1);
+        Assert.assertNotEquals(factoryMethodBeanV2_2, factoryMethodBeanV3_2);
         Assert.assertNotEquals(factoryMethodBeanV2_3, factoryMethodBeanV3_3);
         Assert.assertNotEquals(factoryMethodBeanV2_4, factoryMethodBeanV3_4);
         Assert.assertEquals(factoryMethodBeanV2_5, factoryMethodBeanV3_5);
         Assert.assertNotEquals(factoryMethodBeanV2_6, factoryMethodBeanV3_6);
         Assert.assertEquals(factoryMethodParentBeanV3_1, factoryMethodParentBeanV2_1);
-        Assert.assertEquals(factoryMethodParentBeanV3_2, factoryMethodParentBeanV2_2);
+        Assert.assertNotEquals(factoryMethodParentBeanV3_2, factoryMethodParentBeanV2_2);
         Assert.assertNotEquals(factoryMethodParentBeanV3_3, factoryMethodParentBeanV2_3);
         Assert.assertEquals(factoryMethodParentBeanV3_4, factoryMethodParentBeanV2_4);
         Assert.assertEquals(factoryMethodParentBeanV3_5, factoryMethodParentBeanV2_5);

@@ -4,20 +4,27 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
+import java.util.Map;
+
 public class AutowiredAnnotationProcessor {
     private static AgentLogger LOGGER = AgentLogger.getLogger(AutowiredAnnotationProcessor.class);
 
     public static void processSingletonBeanInjection(DefaultListableBeanFactory beanFactory) {
         try {
-            AutowiredAnnotationBeanPostProcessor postProcessor = beanFactory.getBean(AutowiredAnnotationBeanPostProcessor.class);
+            Map<String, AutowiredAnnotationBeanPostProcessor> postProcessors = beanFactory.getBeansOfType(AutowiredAnnotationBeanPostProcessor.class);
+            if (postProcessors == null || postProcessors.isEmpty()) {
+                LOGGER.debug("AutowiredAnnotationProcessor not exist");
+                return;
+            }
+            AutowiredAnnotationBeanPostProcessor postProcessor = postProcessors.values().iterator().next();
             for (String beanName : beanFactory.getBeanDefinitionNames()) {
                 Object object = beanFactory.getSingleton(beanName);
                 if (object != null) {
-                    postProcessor.postProcessProperties(null, object, beanName);
+                    postProcessor.postProcessPropertyValues(null, null, object, beanName);
                 }
             }
         } catch (Exception e) {
-            LOGGER.info("AutowiredAnnotationProcessor maybe not exist", e);
+            LOGGER.debug("AutowiredAnnotationProcessor maybe not exist", e);
         }
     }
 }

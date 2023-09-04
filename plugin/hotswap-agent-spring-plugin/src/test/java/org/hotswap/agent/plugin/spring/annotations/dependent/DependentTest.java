@@ -1,12 +1,19 @@
 package org.hotswap.agent.plugin.spring.annotations.dependent;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.annotations.dependentbak.*;
+import org.hotswap.agent.util.test.WaitHelper;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -14,10 +21,21 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration(classes = {DepStudentConfiguration.class, DepTeacherConfiguration.class, DepTeacherGroupConfiguration.class})
 public class DependentTest {
     @Autowired
-    private ApplicationContext applicationContext;
+    private AbstractApplicationContext applicationContext;
+
+    @Before
+    public void before() {
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+    }
+
+    @After
+    public void after() {
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+    }
 
     @Test
-    public void swapPropertyTest() throws Exception {
+    public void swapClassTest() throws Exception {
+        System.out.println("DependentTest.swapPropertyTest" + applicationContext.getBeanFactory());
         DepStudent1 depStudent1 = applicationContext.getBean(DepStudent1.class);
         DepStudent2 depStudent2 = applicationContext.getBean(DepStudent2.class);
         DepStudent3 depStudent3 = applicationContext.getBean(DepStudent3.class);
@@ -58,7 +76,12 @@ public class DependentTest {
         HotSwapper.swapClasses(DepStudent2.class, DepBakStudent2.class.getName());
         HotSwapper.swapClasses(DepStudent3.class, DepBakStudent3.class.getName());
         HotSwapper.swapClasses(DepTeacher4.class, DepBakTeacher4.class.getName());
-        Thread.sleep(8000);
+        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 1;
+            }
+        }, 11000));
 
         DepStudent1 depStudentChange1 = applicationContext.getBean(DepStudent1.class);
         DepStudent2 depStudentChange2 = applicationContext.getBean(DepStudent2.class);
@@ -116,7 +139,12 @@ public class DependentTest {
         HotSwapper.swapClasses(DepStudent2.class, DepBakStudentSec2.class.getName());
         HotSwapper.swapClasses(DepStudent3.class, DepBakStudentSec3.class.getName());
         HotSwapper.swapClasses(DepTeacher4.class, DepBakTeacherSec4.class.getName());
-        Thread.sleep(10000);
+        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 2;
+            }
+        }, 11000));
 
         DepStudent1 depStudentChangeAgain1 = applicationContext.getBean(DepStudent1.class);
         DepStudent2 depStudentChangeAgain2 = applicationContext.getBean(DepStudent2.class);

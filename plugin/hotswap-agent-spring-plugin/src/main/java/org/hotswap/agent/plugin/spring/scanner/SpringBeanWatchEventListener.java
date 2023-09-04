@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.plugin.spring.scanner;
 
+import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.IOUtils;
@@ -51,7 +52,8 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
 
     @Override
     public void onEvent(WatchFileEvent event) {
-        if (event.isFile() && event.getURI().toString().endsWith(".class")) {
+        // new File
+        if (event.getEventType() == FileEvent.CREATE && event.isFile() && event.getURI().toString().endsWith(".class")) {
             // check that the class is not loaded by the classloader yet (avoid duplicate reload)
             String className;
             try {

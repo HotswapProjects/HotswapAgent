@@ -5,7 +5,7 @@ import org.hotswap.agent.plugin.spring.xml.placeholder.Item2;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -19,20 +19,18 @@ import static org.junit.Assert.assertNull;
 @ContextConfiguration(locations = {"classpath:xml-scan/scanContext.xml"})
 public class NewClassTest {
     @Autowired
-    private ApplicationContext applicationContext;
+    private AbstractApplicationContext applicationContext;
     @Test
     public void swapSingleClassTest() throws Exception {
+        System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
+        System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
         assertNotNull(applicationContext.getBean(ScanItem.class).getName());
         assertNotNull(applicationContext.getBean(ScanItem2.class).getName());
-//        assertNotNull(applicationContext.getBean(ScanItem.class).getName());
-//        assertNull(applicationContext.getBean(ScanItem2.class).getName());
-//
+
         moveClass("org.hotswap.agent.plugin.spring.xml.scanbak.ScanBakItem1",
-                "org.hotswap.agent.plugin.spring.xml.scan.ScanBakItem1", Item2.class.getClassLoader());
+                "org.hotswap.agent.plugin.spring.xml.scan.ScanBakItem1", ScanItem.class.getClassLoader());
         moveClass("org.hotswap.agent.plugin.spring.xml.scanbak.ScanBakItem2",
-                "org.hotswap.agent.plugin.spring.xml.scan.ScanBakItem2", Item2.class.getClassLoader());
-//        moveClass(ScanBakItem1.class, "org.hotswap.agent.plugin.spring.xml.scanbak.ScanBakItem1");
-//        moveClass(ScanBakItem2.class, "org.hotswap.agent.plugin.spring.xml.scanbak.ScanBakItem2");
+                "org.hotswap.agent.plugin.spring.xml.scan.ScanBakItem2", ScanItem.class.getClassLoader());
 
         Thread.sleep(10000);
 
@@ -43,7 +41,7 @@ public class NewClassTest {
     }
 
     private void moveClass(String origClassName, String targetClassName, ClassLoader cl) throws Exception {
-        File file = new ClassPathResource("item.properties").getFile();
+        File file = new ClassPathResource("xml-scan/scan-item.properties").getFile();
         String path = file.getAbsolutePath();
         String currentPath = path;
         while(true) {

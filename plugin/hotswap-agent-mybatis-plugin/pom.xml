@@ -16,7 +16,7 @@
         <org.mybatis.version>3.5.9</org.mybatis.version>
         <jaxb.version>2.3.0</jaxb.version>
         <org.mybatis-spring.version>2.0.7</org.mybatis-spring.version>
-        <org.springframework.version>5.3.19</org.springframework.version>
+        <org.springframework.version>3.2.18.RELEASE</org.springframework.version>
     </properties>
 
 

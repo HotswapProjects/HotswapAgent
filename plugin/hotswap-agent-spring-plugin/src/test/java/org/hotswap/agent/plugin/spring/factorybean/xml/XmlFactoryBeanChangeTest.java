@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.factorybean.xml;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v11.BakXmlFactBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v11.BakXmlFactBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v11.BakXmlFactFactoryBean1;
@@ -9,11 +10,15 @@ import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean1;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean2;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -23,10 +28,21 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class XmlFactoryBeanChangeTest {
 
     @Autowired
-    private ApplicationContext applicationContext;
+    private AbstractApplicationContext applicationContext;
+
+    @Before
+    public void before() {
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+    }
+
+    @After
+    public void after() {
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+    }
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
+        System.out.println("XmlFactoryBeanChangeTest.testFactoryBeanChanged." + applicationContext.getBeanFactory());
         XmlFactBean1 xmlFactBean1 = applicationContext.getBean(XmlFactBean1.class);
         XmlFactBean2 xmlFactBean2 = applicationContext.getBean(XmlFactBean2.class);
         XmlFactBean3 xmlFactBean3 = applicationContext.getBean(XmlFactBean3.class);
@@ -59,7 +75,7 @@ public class XmlFactoryBeanChangeTest {
         HotSwapper.swapClasses(XmlFactBean4.class, BakXmlFactBean4.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean1.class, BakXmlFactFactoryBean1.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean2.class, BakXmlFactFactoryBean2.class.getName());
-        Thread.sleep(10000);
+        Thread.sleep(8000);
         // check
         XmlFactBean1 xmlFactBeanNew1 = applicationContext.getBean(XmlFactBean1.class);
         XmlFactBean2 xmlFactBeanNew2 = applicationContext.getBean(XmlFactBean2.class);

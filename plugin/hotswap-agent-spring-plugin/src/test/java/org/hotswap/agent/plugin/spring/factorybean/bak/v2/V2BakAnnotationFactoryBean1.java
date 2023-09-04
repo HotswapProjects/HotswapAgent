@@ -13,4 +13,9 @@ public class V2BakAnnotationFactoryBean1 implements FactoryBean {
     public Class<?> getObjectType() {
         return AnnotationBean1.class;
     }
+
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
 }

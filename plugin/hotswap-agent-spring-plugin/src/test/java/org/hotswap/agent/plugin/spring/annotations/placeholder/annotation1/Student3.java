@@ -1,9 +1,10 @@
 package org.hotswap.agent.plugin.spring.annotations.placeholder.annotation1;
 
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.beans.factory.annotation.Value;
 
 public class Student3 {
-    @Value("${student3.name}")
+    @Value("${student3.name:s3-default}")
     private String name;
 
     public String getName() {

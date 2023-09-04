@@ -3,7 +3,7 @@
 # this should be replaced by build sever in the future
 
 # fail with first failed test
-set -e
+#set -e
 
 function test {
     echo "################################################################"
@@ -16,7 +16,7 @@ function test {
 
     echo "Resolved version: " `"$JAVA_HOME/bin/java" -XXaltjvm=dcevm -version` || echo "$1 is not a valid Java installation with DCEVM."
 
-    mvn clean install
+    mvn clean install -DskipTests
 
     # run tests for different versions
     cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..

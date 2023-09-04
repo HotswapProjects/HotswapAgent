@@ -10,6 +10,9 @@ public class AnnotationParentBean3 {
         this.annotationBean3 = annotationBean3;
     }
 
+    public AnnotationParentBean3() {
+    }
+
     public AnnotationBean3 getAnnotationBean3() {
         return annotationBean3;
     }

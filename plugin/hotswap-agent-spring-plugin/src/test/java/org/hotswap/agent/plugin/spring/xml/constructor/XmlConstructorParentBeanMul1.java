@@ -1,10 +1,12 @@
 package org.hotswap.agent.plugin.spring.xml.constructor;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class XmlConstructorParentBeanMul1 {
 
+    @Autowired
     public XmlConstructorParentBeanMul1(XmlConstructorBean3 xmlConstructorBean3) {
         this.xmlConstructorBean3 = xmlConstructorBean3;
     }

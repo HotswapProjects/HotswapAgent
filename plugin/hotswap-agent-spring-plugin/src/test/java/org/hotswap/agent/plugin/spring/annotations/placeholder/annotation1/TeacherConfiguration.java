@@ -35,7 +35,7 @@ public class TeacherConfiguration {
     }
 
     @Bean(name = "teacher22")
-    public Teacher2 teacher2(@Value("${teacher2.name}") String name) {
+    public Teacher2 teacher22(@Value("${teacher2.name}") String name) {
         return new Teacher2(name, null);
     }
 }

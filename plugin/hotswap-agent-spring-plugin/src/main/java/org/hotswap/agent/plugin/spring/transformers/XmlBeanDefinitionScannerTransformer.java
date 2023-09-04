@@ -45,7 +45,7 @@ public class XmlBeanDefinitionScannerTransformer {
         CtMethod method = clazz.getDeclaredMethod("registerBeanDefinitions", new CtClass[]{
                 classPool.get("org.w3c.dom.Document"),
                 classPool.get("org.springframework.core.io.Resource")});
-        method.insertBefore("org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent.registerXmlBeanDefinitionScannerAgent(this, $2);");
+        method.insertBefore("org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent.registerXmlBeanDefinitionScannerAgent(this, $2);");
         LOGGER.debug("Class 'org.springframework.beans.factory.xml.XmlBeanDefinitionReader' patched with xmlReader registration.");
     }
 }

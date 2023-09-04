@@ -1,19 +1,26 @@
 package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.util.ResourceUtils;
+import org.hotswap.agent.plugin.spring.listener.SpringEvent;
+import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
+import org.hotswap.agent.plugin.spring.listener.SpringListener;
+import org.hotswap.agent.plugin.spring.utils.ResourceUtils;
+import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.config.*;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.annotation.AnnotationBeanNameGenerator;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SpringChangedHub {
+public class SpringChangedHub implements SpringListener<SpringEvent> {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringChangedHub.class);
     public static final int INIT = 1;
     public static final int CHANGING = 2;
@@ -32,20 +39,27 @@ public class SpringChangedHub {
     private AtomicInteger waitTimes = new AtomicInteger(0);
 
     private DefaultListableBeanFactory defaultListableBeanFactory;
-    private static ClassLoader classLoader;
+    private static ClassLoader appClassLoader;
     private static Map<DefaultListableBeanFactory, SpringChangedHub> springChangedHubs = new ConcurrentHashMap<>(2);
     final SpringGlobalCaches springGlobalCaches;
+    final BeanFactoryAssistant beanFactoryAssistant;
+    final AtomicBoolean pause = new AtomicBoolean(false);
     private SpringReload current;
     private SpringReload next;
     private SpringReload failed;
+    private BeanNameGenerator beanNameGenerator = new AnnotationBeanNameGenerator();
 
 
     public SpringChangedHub(DefaultListableBeanFactory defaultListableBeanFactory) {
         springGlobalCaches = new SpringGlobalCaches();
-        current = new SpringReload(defaultListableBeanFactory, springGlobalCaches);
-        next = new SpringReload(defaultListableBeanFactory, springGlobalCaches);
-        failed = new SpringReload(defaultListableBeanFactory, springGlobalCaches);
+        beanFactoryAssistant = new BeanFactoryAssistant(defaultListableBeanFactory);
+        current = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+        current.setBeanNameGenerator(beanNameGenerator);
+        next = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+        next.setBeanNameGenerator(beanNameGenerator);
+        failed = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
         this.defaultListableBeanFactory = defaultListableBeanFactory;
+        SpringEventSource.INSTANCE.addListener(this);
     }
 
     void init() {
@@ -65,8 +79,9 @@ public class SpringChangedHub {
         return springChangedHubs.get(beanFactory);
     }
 
+
     public static void setClassLoader(ClassLoader classLoader) {
-        SpringChangedHub.classLoader = classLoader;
+        SpringChangedHub.appClassLoader = classLoader;
     }
 
     public static void addChangedClass(Class clazz) {
@@ -87,7 +102,13 @@ public class SpringChangedHub {
         }
     }
 
-    public void addClass(Class clazz) {
+    public static void addSpringScanNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
+        for (SpringChangedHub springChangedHub : springChangedHubs.values()) {
+            springChangedHub.addNewBean(registry, beanDefinitionHolder);
+        }
+    }
+
+    void addClass(Class clazz) {
         if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
             current.addClass(clazz);
         } else if (status.intValue() == RELOADED) {
@@ -95,7 +116,7 @@ public class SpringChangedHub {
         }
     }
 
-    public void addProperty(URL property) {
+    void addProperty(URL property) {
         if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
             current.addProperty(property);
         } else if (status.intValue() == RELOADED) {
@@ -103,7 +124,7 @@ public class SpringChangedHub {
         }
     }
 
-    public void addXml(URL xml) {
+    void addXml(URL xml) {
         if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
             current.addXml(xml);
         } else if (status.intValue() == RELOADED) {
@@ -111,16 +132,29 @@ public class SpringChangedHub {
         }
     }
 
+    void addNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
+        if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
+            current.addScanNewBean(registry, beanDefinitionHolder);
+        } else if (status.intValue() == RELOADED) {
+            next.addScanNewBean(registry, beanDefinitionHolder);
+        }
+    }
+
     private void reload() {
         // delay twice
         if (waitTimes.get() > 1) {
             waitTimes.incrementAndGet();
+            if (pause.get()) {
+                LOGGER.trace("spring reload pause: {}", ObjectUtils.identityToString(current.beanFactory));
+                return;
+            }
             if (status.compareAndSet(CHANGING, RELOADED)) {
                 // relead
                 try {
+                    current.setAppClassLoader(appClassLoader);
                     current.reload();
                 } catch (Exception e) {
-                    LOGGER.error("reload spring failed", e);
+                    LOGGER.error("reload spring failed: {}", e, ObjectUtils.identityToString(current.beanFactory));
                 }
                 finishReload();
                 waitTimes.set(0);
@@ -147,12 +181,14 @@ public class SpringChangedHub {
 
     private void doCollectPlaceHolderProperties0(String beanName, BeanDefinition beanDefinition) {
 
-        for (PropertyValue pv : beanDefinition.getPropertyValues()) {
-            if (containPlaceHolder(pv.getValue(), beanName, beanDefinition)) {
-                return;
+        if (beanDefinition.getPropertyValues() != null) {
+            for (PropertyValue pv : beanDefinition.getPropertyValues().getPropertyValues()) {
+                if (containPlaceHolder(pv.getValue(), beanName, beanDefinition)) {
+                    return;
+                }
             }
         }
-        if (!beanDefinition.hasConstructorArgumentValues()) {
+        if (beanDefinition.getConstructorArgumentValues().isEmpty()) {
             return;
         }
         for (ConstructorArgumentValues.ValueHolder valueHolder : beanDefinition.getConstructorArgumentValues().getIndexedArgumentValues().values()) {
@@ -203,9 +239,23 @@ public class SpringChangedHub {
         current = next;
         if (status.compareAndSet(RELOADED, INIT)) {
             current.appendAll(failed);
-            failed = new SpringReload(defaultListableBeanFactory, springGlobalCaches);
-            next = new SpringReload(defaultListableBeanFactory, springGlobalCaches);
+            failed = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+            next = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+            next.setBeanNameGenerator(this.beanNameGenerator);
         }
     }
 
+    @Override
+    public DefaultListableBeanFactory beanFactory() {
+        return defaultListableBeanFactory;
+    }
+
+    @Override
+    public void onEvent(SpringEvent event) {
+        status.compareAndSet(INIT, CHANGING);
+    }
+
+    public void setPause(boolean pause) {
+        this.pause.set(pause);
+    }
 }

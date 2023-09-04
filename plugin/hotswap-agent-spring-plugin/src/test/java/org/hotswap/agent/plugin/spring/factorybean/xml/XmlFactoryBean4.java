@@ -14,4 +14,9 @@ public class XmlFactoryBean4 implements FactoryBean {
     public Class<?> getObjectType() {
         return XmlFactBean4.class;
     }
+
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
 }

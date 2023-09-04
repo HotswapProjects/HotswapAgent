@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class XmlConstructorParentBeanMul2 {
 
+    @Autowired
     public XmlConstructorParentBeanMul2(XmlConstructorBean1 xmlConstructorBean1, XmlConstructorBean2 xmlConstructorBean2) {
         this.xmlConstructorBean1 = xmlConstructorBean1;
         this.xmlConstructorBean2 = xmlConstructorBean2;

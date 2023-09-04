@@ -19,13 +19,10 @@
 package org.hotswap.agent.plugin.spring.xml.placeholder;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
-import org.hotswap.agent.util.test.WaitHelper;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.test.context.ContextConfiguration;
@@ -37,17 +34,17 @@ import java.nio.file.StandardCopyOption;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath:placeholderContext.xml"})
+@ContextConfiguration(locations = {"classpath:xml-placeholder/placeholderContext.xml"})
 public class PlaceholderTest {
     @Autowired
-    private ApplicationContext applicationContext;
+    private AbstractApplicationContext applicationContext;
 
-    private static final Resource propertyFile = new ClassPathResource("item.properties");
-    private static final Resource changedPropertyFile = new ClassPathResource("itemChanged.properties");
+    private static final Resource propertyFile = new ClassPathResource("xml-placeholder/item.properties");
+    private static final Resource changedPropertyFile = new ClassPathResource("xml-placeholder/itemChanged.properties");
 
     @Test
     public void swapPropertyTest() throws Exception {
-
+        System.out.println("PlaceholderTest.swapPropertyTest" + applicationContext.getBeanFactory());
         Item1 item1 = applicationContext.getBean("item1", Item1.class);
         Item1 item11 = applicationContext.getBean("item11", Item1.class);
         Item2 item2 = applicationContext.getBean("item2", Item2.class);
@@ -64,12 +61,10 @@ public class PlaceholderTest {
         assertEquals("item-name", item5.getName());
         assertEquals("item5-name", item5.getName2());
 
-
-        XmlBeanDefinitionScannerAgent.reloadFlag = true;
         byte[] content = Files.readAllBytes(propertyFile.getFile().toPath());
         try {
             modifyPropertyFile();
-            Thread.sleep(8000);
+            Thread.sleep(10000);
 
             Item1 itemChange1 = applicationContext.getBean("item1", Item1.class);
             Item1 itemChange11 = applicationContext.getBean("item11", Item1.class);
@@ -94,28 +89,18 @@ public class PlaceholderTest {
             assertNotEquals(item2, itemChange2);
             assertNotEquals(item22, itemChange22);
             assertEquals(item3, itemChange3);
+
+            // part 2
+            assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
+            assertNull(applicationContext.getBean("item2", Item2.class).getName2());
+            HotSwapper.swapClasses(Item2.class, Item2WithoutValue.class.getName());
+            Thread.sleep(10000);
+
+            assertNull(applicationContext.getBean("item2", Item2.class).getName());
+            assertNotNull(applicationContext.getBean("item2", Item2.class).getName2());
         } finally {
             Files.write(propertyFile.getFile().toPath(), content);
         }
-    }
-
-    @Test
-    public void swapSingleClassTest() throws Exception {
-        assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
-        assertNull(applicationContext.getBean("item2", Item2.class).getName2());
-
-        HotSwapper.swapClasses(Item2.class, Item2WithoutValue.class.getName());
-//        XmlBeanDefinitionScannerAgent.reloadFlag = true;
-//        Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-//            @Override
-//            public boolean result() throws Exception {
-//                return !XmlBeanDefinitionScannerAgent.reloadFlag;
-//            }
-//        }, 5000));
-        Thread.sleep(5000);
-
-        assertNull(applicationContext.getBean("item2", Item2.class).getName());
-        assertNotNull(applicationContext.getBean("item2", Item2.class).getName2());
     }
 
     private void modifyPropertyFile() throws Exception {

@@ -19,4 +19,9 @@ public class BakXmlFactFactoryBean2 implements FactoryBean {
     public Class<?> getObjectType() {
         return XmlFactBean2.class;
     }
+
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
 }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+    <context:annotation-config/>
+
+    <import resource="annotation-config-Context-item.xml" />
+    
+    <context:component-scan base-package="org.hotswap.agent.plugin.spring.xml.annotationconfig" />
+
+    <bean id="item1" class="org.hotswap.agent.plugin.spring.xml.annotationconfig.Item1">
+        <property name="name" value="${item.name}"/>
+    </bean>
+
+    <bean id="item2" class="org.hotswap.agent.plugin.spring.xml.annotationconfig.Item2"/>
+    <bean id="item4" class="org.hotswap.agent.plugin.spring.xml.annotationconfig.Item4">
+        <constructor-arg index="0" value="${item4.name}"/>
+    </bean>
+    <bean id="item5" class="org.hotswap.agent.plugin.spring.xml.annotationconfig.Item5">
+        <constructor-arg name="name2" value="${item5.name}"/>
+        <constructor-arg name="name" value="${item.name}"/>
+    </bean>
+
+</beans>

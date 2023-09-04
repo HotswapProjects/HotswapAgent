@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
-        <org.springframework.version>5.3.19</org.springframework.version>
+        <org.springframework.version>3.2.18.RELEASE</org.springframework.version>
         <com.h2database.version>1.4.200</com.h2database.version>
         <org.mybatis.version>3.5.9</org.mybatis.version>
         <org.mybatis-spring.version>2.0.7</org.mybatis-spring.version>
@@ -140,8 +140,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
         </plugins>

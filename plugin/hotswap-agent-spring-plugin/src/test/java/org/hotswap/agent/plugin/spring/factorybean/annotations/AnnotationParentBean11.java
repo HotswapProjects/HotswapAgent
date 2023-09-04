@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AnnotationParentBean11 {
 
+    @Autowired
     public AnnotationParentBean11(AnnotationBean1 annotationBean1) {
         this.annotationBean1 = annotationBean1;
     }

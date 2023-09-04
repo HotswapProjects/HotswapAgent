@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 @Component("depTeacher3")
 public class DepTeacher3 {
 
+    @Autowired
     public DepTeacher3(DepStudent3 depStudent3) {
         this.student3 = depStudent3;
     }

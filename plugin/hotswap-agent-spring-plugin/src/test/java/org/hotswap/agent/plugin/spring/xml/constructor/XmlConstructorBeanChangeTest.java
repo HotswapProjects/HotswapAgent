@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -19,10 +20,11 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class XmlConstructorBeanChangeTest {
 
     @Autowired
-    private ApplicationContext applicationContext;
+    private AbstractApplicationContext applicationContext;
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
+        System.out.println("XmlConstructorBeanChangeTest.testFactoryBeanChanged." + applicationContext.getBeanFactory());
         XmlConstructorBean1 xmlConstructorBean1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBean2 = applicationContext.getBean(XmlConstructorBean2.class);
         XmlConstructorBean3 xmlConstructorBean3 = applicationContext.getBean(XmlConstructorBean3.class);

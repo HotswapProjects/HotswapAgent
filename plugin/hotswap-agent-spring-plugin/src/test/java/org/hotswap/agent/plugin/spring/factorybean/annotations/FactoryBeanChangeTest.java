@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.factorybean.annotations;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationFactoryBean1;
@@ -9,11 +10,15 @@ import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationFactoryBean1;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationFactoryBean2;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -22,10 +27,21 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class FactoryBeanChangeTest {
 
     @Autowired
-    private ApplicationContext applicationContext;
+    private AbstractApplicationContext applicationContext;
+
+    @Before
+    public void before() {
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+    }
+
+    @After
+    public void after() {
+        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+    }
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
+        System.out.println("FactoryBeanChangeTest.testFactoryBeanChanged" + applicationContext.getBeanFactory());
         AnnotationBean1 annotationBean1 = applicationContext.getBean(AnnotationBean1.class);
         AnnotationBean2 annotationBean2 = applicationContext.getBean(AnnotationBean2.class);
         AnnotationBean3 annotationBean3 = applicationContext.getBean(AnnotationBean3.class);

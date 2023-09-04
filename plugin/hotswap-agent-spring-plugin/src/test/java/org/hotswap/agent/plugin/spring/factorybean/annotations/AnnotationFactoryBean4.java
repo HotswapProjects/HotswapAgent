@@ -14,4 +14,9 @@ public class AnnotationFactoryBean4 implements FactoryBean {
     public Class<?> getObjectType() {
         return AnnotationBean4.class;
     }
+
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
 }

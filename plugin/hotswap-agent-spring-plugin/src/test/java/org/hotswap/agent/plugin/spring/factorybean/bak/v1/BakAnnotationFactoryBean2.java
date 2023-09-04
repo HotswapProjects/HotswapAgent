@@ -15,4 +15,9 @@ public class BakAnnotationFactoryBean2 implements FactoryBean {
     public Class<?> getObjectType() {
         return AnnotationBean2.class;
     }
+
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
 }
