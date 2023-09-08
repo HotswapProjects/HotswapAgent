@@ -1,8 +1,6 @@
-package org.hotswap.agent.plugin.spring.xml;
+package org.hotswap.agent.plugin.spring.files;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.SpringReload;
-import org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import java.net.URL;
@@ -12,9 +10,6 @@ import java.util.Set;
 
 public class XmlReload {
     private static AgentLogger LOGGER = AgentLogger.getLogger(XmlReload.class);
-    public static void setClassLoader(ClassLoader classLoader) {
-        XmlBeanDefinitionScannerAgent.setAppClassLoader(classLoader);
-    }
 
     /**
      * if no properties changed, check destroyed beans and the related xmls.

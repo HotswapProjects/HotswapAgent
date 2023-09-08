@@ -1,6 +1,5 @@
 package org.hotswap.agent.plugin.spring.xml.factorymethods;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 public class FactoryMethodBean5 {

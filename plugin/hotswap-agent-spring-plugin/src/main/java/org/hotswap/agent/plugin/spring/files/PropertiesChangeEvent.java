@@ -1,9 +1,13 @@
-package org.hotswap.agent.plugin.spring.listener;
+package org.hotswap.agent.plugin.spring.files;
 
+import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import java.util.List;
 
+/**
+ * Properties change event, it will be used to notify spring boot to reload the related Bean.
+ */
 public class PropertiesChangeEvent extends SpringEvent<List<PropertiesChangeEvent.PropertyChangeItem>> {
     /**
      * Constructs a prototypical Event.

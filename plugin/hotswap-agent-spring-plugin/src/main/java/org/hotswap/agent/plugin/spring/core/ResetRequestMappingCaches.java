@@ -75,7 +75,7 @@ public class ResetRequestMappingCaches {
                         LOGGER.trace("Probably using Spring 4.0 or below: {}", nsfe.getMessage());
                     }
                 } catch(NoSuchFieldException nsfe) {
-                    LOGGER.trace("Probably using Spring 4.2+", nsfe);
+                    LOGGER.trace("Probably using Spring 4.2+", nsfe.getMessage());
                     Method m = c.getDeclaredMethod("getHandlerMethods", new Class[0]);
                     Class<?>[] parameterTypes = new Class[1];
                     parameterTypes[0] = Object.class;

@@ -1,14 +1,13 @@
 package org.hotswap.agent.plugin.spring.utils;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 
 public class ResourceUtils {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanDefinitionScannerAgent.class);

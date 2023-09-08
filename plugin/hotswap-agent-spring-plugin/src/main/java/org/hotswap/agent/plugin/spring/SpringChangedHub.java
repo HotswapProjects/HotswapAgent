@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.scanner.BeanDefinitionChangeEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
 import org.hotswap.agent.plugin.spring.listener.SpringListener;
@@ -44,7 +45,6 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
     private DefaultListableBeanFactory defaultListableBeanFactory;
     private static ClassLoader appClassLoader;
     private static Map<DefaultListableBeanFactory, SpringChangedHub> springChangedHubs = new ConcurrentHashMap<>(2);
-    final SpringGlobalCaches springGlobalCaches;
     final BeanFactoryAssistant beanFactoryAssistant;
     final AtomicBoolean pause = new AtomicBoolean(false);
     private SpringReload current;
@@ -54,13 +54,12 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
 
 
     public SpringChangedHub(DefaultListableBeanFactory defaultListableBeanFactory) {
-        springGlobalCaches = new SpringGlobalCaches();
         beanFactoryAssistant = new BeanFactoryAssistant(defaultListableBeanFactory);
-        current = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+        current = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
         current.setBeanNameGenerator(beanNameGenerator);
-        next = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+        next = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
         next.setBeanNameGenerator(beanNameGenerator);
-        failed = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+        failed = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
         this.defaultListableBeanFactory = defaultListableBeanFactory;
         SpringEventSource.INSTANCE.addListener(this);
     }
@@ -102,12 +101,6 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
     public static void addChangedProperty(URL property) {
         for (SpringChangedHub springChangedHub : springChangedHubs.values()) {
             springChangedHub.addProperty(property);
-        }
-    }
-
-    public static void addSpringScanNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
-        for (SpringChangedHub springChangedHub : springChangedHubs.values()) {
-            springChangedHub.addNewBean(registry, beanDefinitionHolder);
         }
     }
 
@@ -154,7 +147,6 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
             if (status.compareAndSet(CHANGING, RELOADED)) {
                 // relead
                 try {
-                    current.setAppClassLoader(appClassLoader);
                     current.reload();
                 } catch (Exception e) {
                     LOGGER.error("reload spring failed: {}", e, ObjectUtils.identityToString(current.beanFactory));
@@ -219,7 +211,7 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
             if (path == null) {
                 return false;
             }
-            springGlobalCaches.placeHolderXmlRelation.put(beanName, path);
+            beanFactoryAssistant.placeHolderXmlRelation.put(beanName, path);
             return true;
         }
         return false;
@@ -246,8 +238,8 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
         current = next;
         if (status.compareAndSet(RELOADED, INIT)) {
             current.appendAll(failed);
-            failed = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
-            next = new SpringReload(defaultListableBeanFactory, springGlobalCaches, beanFactoryAssistant, appClassLoader);
+            failed = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
+            next = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
             next.setBeanNameGenerator(this.beanNameGenerator);
         }
     }
@@ -259,7 +251,10 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
 
     @Override
     public void onEvent(SpringEvent event) {
-        status.compareAndSet(INIT, CHANGING);
+        if (event instanceof BeanDefinitionChangeEvent) {
+            BeanDefinitionChangeEvent beanDefinitionChangeEvent = (BeanDefinitionChangeEvent) event;
+            addNewBean(beanDefinitionChangeEvent.getBeanFactory(), beanDefinitionChangeEvent.getSource());
+        }
     }
 
     public void setPause(boolean pause) {

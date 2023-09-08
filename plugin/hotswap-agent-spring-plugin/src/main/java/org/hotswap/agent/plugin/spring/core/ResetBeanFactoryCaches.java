@@ -31,8 +31,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * this class will be removed, now it is not used.
+ */
 public class ResetBeanFactoryCaches {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(ResetBeanFactoryCaches.class);
+
 
     public static void reset(DefaultListableBeanFactory beanFactory) {
         // fixme 为什么要清空EmbeddedValueResolvers

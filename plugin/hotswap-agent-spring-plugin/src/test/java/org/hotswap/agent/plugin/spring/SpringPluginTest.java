@@ -21,29 +21,19 @@ package org.hotswap.agent.plugin.spring;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-
 import javax.inject.Inject;
 
-import org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.Pojo2;
 import org.hotswap.agent.util.ReflectionHelper;
-import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
-import org.hotswap.agent.util.spring.io.resource.Resource;
-import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 

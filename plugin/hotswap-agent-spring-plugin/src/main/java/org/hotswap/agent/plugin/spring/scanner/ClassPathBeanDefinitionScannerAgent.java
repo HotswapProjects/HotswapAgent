@@ -19,22 +19,18 @@
 package org.hotswap.agent.plugin.spring.scanner;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.SpringChangedHub;
-import org.hotswap.agent.plugin.spring.core.*;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
-import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
-import org.hotswap.agent.plugin.spring.redefine.BeanDefinitionResolverSupport;
+import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
+import org.hotswap.agent.plugin.spring.utils.RegistryUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.*;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
@@ -42,7 +38,10 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -138,8 +137,6 @@ public class ClassPathBeanDefinitionScannerAgent {
      * @throws IOException error working with classDefinition
      */
     public static void refreshClass(ClassLoader appClassLoader, String basePackage, byte[] classDefinition) throws IOException {
-//        ResetSpringStaticCaches.reset();
-
         ClassPathBeanDefinitionScannerAgent scannerAgent = getInstance(basePackage);
         if (scannerAgent == null) {
             LOGGER.error("basePackage '{}' not associated with any scannerAgent", basePackage);
@@ -164,22 +161,14 @@ public class ClassPathBeanDefinitionScannerAgent {
             BeanDefinitionHolder beanDefinitionHolder = defineBean(beanDefinition);
             if (beanDefinitionHolder != null) {
                 LOGGER.debug("Registering Spring bean '{}'", beanName);
-                SpringChangedHub.addSpringScanNewBean(registry, beanDefinitionHolder);
+                DefaultListableBeanFactory defaultListableBeanFactory = RegistryUtils.maybeRegistryToBeanFactory(registry);
+                if (defaultListableBeanFactory != null) {
+                    BeanDefinitionChangeEvent beanDefinitionChangeEvent = new BeanDefinitionChangeEvent(beanDefinitionHolder, defaultListableBeanFactory);
+                    SpringEventSource.INSTANCE.fireEvent(beanDefinitionChangeEvent);
+                }
             }
         }
     }
-
-    List<String> doRegisterNewBeanDefinitions() {
-        List<String> beanNames = new ArrayList<>();
-        for (BeanDefinition beanDefinition : beanDefinitions) {
-            BeanDefinitionHolder beanDefinitionHolder = defineBean(beanDefinition);
-            if (beanDefinitionHolder != null) {
-                SpringChangedHub.addSpringScanNewBean(registry, beanDefinitionHolder);
-            }
-        }
-        return beanNames;
-    }
-
 
     /**
      * Resolve candidate to a bean definition and (re)load in Spring.
@@ -194,77 +183,16 @@ public class ClassPathBeanDefinitionScannerAgent {
             ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
             candidate.setScope(scopeMetadata.getScopeName());
             String beanName = this.beanNameGenerator.generateBeanName(candidate, registry);
-
-//            if (candidate instanceof AbstractBeanDefinition) {
-//                postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
-//            }
-//            if (candidate instanceof AnnotatedBeanDefinition) {
-//                processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
-//            }
-//
-//            removeIfExists(beanName);
             if (checkCandidate(beanName, candidate)) {
-
                 BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
                 definitionHolder = applyScopedProxyMode(scopeMetadata, definitionHolder, registry);
-
-//                LOGGER.reload("Registering Spring bean '{}'", beanName);
                 LOGGER.debug("Bean definition '{}'", beanName, candidate);
-//                registerBeanDefinition(definitionHolder, registry);
                 return definitionHolder;
-
-//                DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
-//                if (bf != null) {
-//                    ResetRequestMappingCaches.reset(bf);
-//                    ResetTransactionAttributeCaches.reset(bf);
-//                }
-//
-//                ProxyReplacer.clearAllProxies();
-//                freezeConfiguration();
             }
             return null;
         }
 
 
-    }
-
-    /**
-     * If registry contains the bean, remove it first (destroying existing singletons).
-     *
-     * @param beanName name of the bean
-     */
-    private void removeIfExists(String beanName) {
-        if (registry.containsBeanDefinition(beanName)) {
-            LOGGER.debug("Removing bean definition '{}'", beanName);
-            DefaultListableBeanFactory bf = maybeRegistryToBeanFactory();
-            if (bf != null) {
-                ResetRequestMappingCaches.reset(bf);
-            }
-            BeanFactoryProcessor.removeBeanDefinition(bf, beanName);
-
-            ResetSpringStaticCaches.reset();
-            if (bf != null) {
-                ResetBeanPostProcessorCaches.reset(bf);
-            }
-        }
-    }
-
-    private DefaultListableBeanFactory maybeRegistryToBeanFactory() {
-        if (registry instanceof DefaultListableBeanFactory) {
-            return (DefaultListableBeanFactory) registry;
-        } else if (registry instanceof GenericApplicationContext) {
-            return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
-        }
-        return null;
-    }
-
-    // rerun freez configuration - this method is enhanced with cache reset
-    private void freezeConfiguration() {
-        if (registry instanceof DefaultListableBeanFactory) {
-            ((DefaultListableBeanFactory) registry).freezeConfiguration();
-        } else if (registry instanceof GenericApplicationContext) {
-            (((GenericApplicationContext) registry).getDefaultListableBeanFactory()).freezeConfiguration();
-        }
     }
 
     /**
@@ -275,7 +203,7 @@ public class ClassPathBeanDefinitionScannerAgent {
      * @return the definition or null if not a spring bean
      * @throws IOException
      */
-    public BeanDefinition resolveBeanDefinition(ClassLoader appClassLoader, byte[] bytes) throws IOException {
+    private BeanDefinition resolveBeanDefinition(ClassLoader appClassLoader, byte[] bytes) throws IOException {
         Resource resource = new ByteArrayResource(bytes);
         resetCachingMetadataReaderFactoryCache();
         MetadataReader metadataReader = getMetadataReader(appClassLoader, resource);
@@ -327,8 +255,6 @@ public class ClassPathBeanDefinitionScannerAgent {
             } else {
                 LOGGER.warning("Cache NOT cleared: neither CachingMetadataReaderFactory.metadataReaderCache nor clearCache does not exist.");
             }
-
-
         }
     }
 
@@ -353,17 +279,6 @@ public class ClassPathBeanDefinitionScannerAgent {
     private boolean checkCandidate(String beanName, BeanDefinition candidate) {
         return (Boolean) ReflectionHelper.invoke(scanner, ClassPathBeanDefinitionScanner.class,
                 "checkCandidate", new Class[]{String.class, BeanDefinition.class}, beanName, candidate);
-    }
-
-    private void processCommonDefinitionAnnotations(AnnotatedBeanDefinition candidate) {
-        ReflectionHelper.invoke(null, AnnotationConfigUtils.class,
-                "processCommonDefinitionAnnotations", new Class[]{AnnotatedBeanDefinition.class}, candidate);
-    }
-
-    private void postProcessBeanDefinition(AbstractBeanDefinition candidate, String beanName) {
-        ReflectionHelper.invoke(scanner, ClassPathBeanDefinitionScanner.class,
-                "postProcessBeanDefinition", new Class[]{AbstractBeanDefinition.class, String.class},
-                candidate, beanName);
     }
 
     private boolean isCandidateComponent(AnnotatedBeanDefinition sbd) {

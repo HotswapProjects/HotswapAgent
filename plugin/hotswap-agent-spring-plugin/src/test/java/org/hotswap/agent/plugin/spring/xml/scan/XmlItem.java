@@ -1,7 +1,6 @@
 package org.hotswap.agent.plugin.spring.xml.scan;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 public class XmlItem {
     @Value("${scan.item.name}")

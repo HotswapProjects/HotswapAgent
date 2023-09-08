@@ -21,6 +21,7 @@ package org.hotswap.agent.plugin.spring.transformers;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
 
 /**
  * Hook into classpath scanner process to register basicPackage of scanned classes.
@@ -45,7 +46,7 @@ public class XmlBeanDefinitionScannerTransformer {
         CtMethod method = clazz.getDeclaredMethod("registerBeanDefinitions", new CtClass[]{
                 classPool.get("org.w3c.dom.Document"),
                 classPool.get("org.springframework.core.io.Resource")});
-        method.insertBefore("org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent.registerXmlBeanDefinitionScannerAgent(this, $2);");
+        method.insertBefore(XmlBeanDefinitionScannerAgent.class.getName() + ".registerXmlBeanDefinitionScannerAgent(this, $2);");
         LOGGER.debug("Class 'org.springframework.beans.factory.xml.XmlBeanDefinitionReader' patched with xmlReader registration.");
     }
 }

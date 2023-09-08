@@ -12,7 +12,7 @@ public class BeanDefinitionProcessor {
     public static void registerBeanDefinition(DefaultListableBeanFactory defaultListableBeanFactory, String beanName, BeanDefinition beanDefinition) {
         LOGGER.debug("register bean '{}' into '{}' with definition '{}'", beanName, ObjectUtils.identityToString(defaultListableBeanFactory),
                 beanDefinition);
-        org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent.registerBean(beanName, beanDefinition);
+        org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent.registerBean(beanName, beanDefinition);
     }
 
     public static void removeBeanDefinition(DefaultListableBeanFactory defaultListableBeanFactory, String beanName) {

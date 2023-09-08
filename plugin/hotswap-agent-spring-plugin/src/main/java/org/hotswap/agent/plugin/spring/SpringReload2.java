@@ -3,9 +3,9 @@ package org.hotswap.agent.plugin.spring;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.*;
 import org.hotswap.agent.plugin.spring.files.PropertyReload;
+import org.hotswap.agent.plugin.spring.files.XmlReload;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
-import org.hotswap.agent.plugin.spring.files.XmlReload;
 import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.spring.util.ClassUtils;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
@@ -33,8 +33,8 @@ import static org.hotswap.agent.util.ReflectionHelper.get;
 /**
  * Reload spring beans.
  */
-public class SpringReload {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringReload.class);
+public class SpringReload2 {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringReload2.class);
 
     private AtomicBoolean isReloading = new AtomicBoolean(false);
 
@@ -56,7 +56,7 @@ public class SpringReload {
     private BeanFactoryAssistant beanFactoryAssistant;
 
 
-    public SpringReload(DefaultListableBeanFactory beanFactory, BeanFactoryAssistant beanFactoryAssistant) {
+    public SpringReload2(DefaultListableBeanFactory beanFactory, BeanFactoryAssistant beanFactoryAssistant) {
         this.beanFactoryAssistant = beanFactoryAssistant;
         this.beanFactory = beanFactory;
         this.dependentBeanMap = (Map<String, Set<String>>) get(beanFactory, "dependentBeanMap");
@@ -95,7 +95,7 @@ public class SpringReload {
         xmls.add(xml);
     }
 
-    public void appendAll(SpringReload content) {
+    public void appendAll(SpringReload2 content) {
         classes.addAll(content.classes);
         properties.addAll(content.properties);
         xmls.addAll(content.xmls);

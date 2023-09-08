@@ -84,7 +84,7 @@ public class ResetSpringStaticCaches {
         resetAnnotationUtilsCache();
         resetReflectionUtilsCache();
         resetResolvableTypeCache();
-        resetPropetyCache();
+        resetPropertyCache();
         CachedIntrospectionResults.clearClassLoader(ResetSpringStaticCaches.class.getClassLoader());
     }
 
@@ -143,7 +143,7 @@ public class ResetSpringStaticCaches {
 
     }
 
-    private static void resetPropetyCache() {
+    private static void resetPropertyCache() {
         try {
             ClassLoader classLoader = ResetSpringStaticCaches.class.getClassLoader();
             Map annotationCache = (Map) ReflectionHelper.get(null,

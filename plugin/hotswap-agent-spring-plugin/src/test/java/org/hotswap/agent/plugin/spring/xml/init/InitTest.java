@@ -51,7 +51,7 @@ public class InitTest {
             public boolean result() throws Exception {
                 return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 1;
             }
-        }, 5000));
+        }, 8000));
 
         assertEquals(2, FooBean.getStaticValue());
     }

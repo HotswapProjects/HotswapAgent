@@ -8,7 +8,7 @@ import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation2.Annot
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation3.Annotation3Student1;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation4.Annotation4Component;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation4.Annotation4Student;
-import org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.After;
 import org.junit.Assert;

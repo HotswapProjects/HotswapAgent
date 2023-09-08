@@ -13,6 +13,9 @@ public class BeanFactoryAssistant {
     private long lastReloadTime;
     private AtomicBoolean isReload = new AtomicBoolean(false);
 
+    // keep the bean name and xml file relation for the beans which are defined in xml file and the bean contains placeholder
+    Map<String, String> placeHolderXmlRelation = new ConcurrentHashMap<>();
+
     private static Map<ConfigurableListableBeanFactory, BeanFactoryAssistant> beanFactoryAssistants = new ConcurrentHashMap<>(4);
 
     public BeanFactoryAssistant(ConfigurableListableBeanFactory beanFactory) {

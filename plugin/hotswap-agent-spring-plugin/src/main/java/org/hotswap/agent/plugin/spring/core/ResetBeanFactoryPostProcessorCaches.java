@@ -32,7 +32,7 @@ public class ResetBeanFactoryPostProcessorCaches {
         resetConfigurationClassPostProcessorCache(beanFactory);
     }
 
-    public static void resetConfigurationClassPostProcessorCache(DefaultListableBeanFactory beanFactory) {
+    private static void resetConfigurationClassPostProcessorCache(DefaultListableBeanFactory beanFactory) {
         try {
             int factoryId = System.identityHashCode(beanFactory);
             ConfigurationClassPostProcessor ccpp = beanFactory.getBean(ConfigurationClassPostProcessor.class);

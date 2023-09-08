@@ -16,9 +16,8 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.spring.xml;
+package org.hotswap.agent.plugin.spring.files;
 
-import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
 import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
@@ -30,11 +29,7 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.TypedStringValue;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionReader;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.support.ManagedList;
+import org.springframework.beans.factory.support.*;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
@@ -44,7 +39,10 @@ import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.hotswap.agent.plugin.spring.utils.ResourceUtils.convertToClasspathURL;
@@ -61,8 +59,6 @@ public class XmlBeanDefinitionScannerAgent {
     private static Map<DefaultListableBeanFactory, Map<String, XmlBeanDefinitionScannerAgent>> beanFactoryToAgentMap = new ConcurrentHashMap<>();
     private static Map<String, XmlBeanDefinitionScannerAgent> pathToAgent = new HashMap<>();
     private static boolean basePackageInited = false;
-
-    private static URL[] extraClassPath;
 
     // xmlReader for corresponding url
     private BeanDefinitionReader reader;
@@ -129,61 +125,6 @@ public class XmlBeanDefinitionScannerAgent {
         }
     }
 
-//    public static void reloadClass(String className) {
-//        for (XmlBeanDefinitionScannerAgent agent : instances.values()) {
-//            if (!agent.beansRegistered.containsValue(className)) {
-//                continue;
-//            }
-//
-//            try {
-//                LOGGER.debug("Reloading XML {} since class {} changed", agent.url, className);
-//                agent.reloadBeanFromXml();
-//            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
-//                LOGGER.error("Reloading XML failed: {}", e.getMessage());
-//            }
-//        }
-//    }
-
-//    public static void reloadXml(URL url) {
-//        XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = instances.get(convertToClasspathURL(url.getPath()));
-//        if (xmlBeanDefinitionScannerAgent == null) {
-//            LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
-//            return;
-//        }
-//        try {
-//            xmlBeanDefinitionScannerAgent.reloadBeanFromXml();
-//        } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
-//            LOGGER.error("Reloading XML failed: {}", e.getMessage());
-//        }
-//    }
-//
-//    public static List<String> reloadXmls(List<URL> urls) {
-//        List<XmlBeanDefinitionScannerAgent> agents = new ArrayList<>(urls.size());
-//        for (URL url : urls) {
-//            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = instances.get(url.getPath());
-//            if (xmlBeanDefinitionScannerAgent == null) {
-//                LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
-//                continue;
-//            }
-//            try {
-//                agents.add(xmlBeanDefinitionScannerAgent);
-//                xmlBeanDefinitionScannerAgent.clearCache();
-//            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
-//                LOGGER.error("Reloading XML failed: {}", e.getMessage());
-//            }
-//        }
-//        List<String> beanNames = new ArrayList<>();
-//        for (XmlBeanDefinitionScannerAgent agent : agents) {
-//            try {
-//                agent.reloadDefinition();
-//                beanNames.addAll(agent.beansRegistered.keySet());
-//            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
-//                LOGGER.error("Reloading XML failed: {}", e.getMessage());
-//            }
-//        }
-//        return beanNames;
-//    }
-
     public static Set<String> reloadXmls(DefaultListableBeanFactory beanFactory, Set<URL> urls, Set<String> resourcePaths) {
         Set<XmlBeanDefinitionScannerAgent> agents = new HashSet<>(resourcePaths.size() + urls.size());
         for (String resourcePath : resourcePaths) {
@@ -239,26 +180,6 @@ public class XmlBeanDefinitionScannerAgent {
         }
         return pathToAgent.get(path);
     }
-
-//    public static void reloadProperty(URL url) {
-//        String path = convertToClasspathURL(url.getPath());
-//        if (path == null) {
-//            return;
-//        }
-//        for (XmlBeanDefinitionScannerAgent agent : instances.values()) {
-//            if (!agent.propertyLocations.contains(path)) {
-//                continue;
-//            }
-//
-//            try {
-//                LOGGER.debug("Reloading XML {} since property file {} changed", agent.url, url);
-//                agent.reloadBeanFromXml();
-//            } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
-//                LOGGER.error("Reloading XML failed: {}", e.getMessage());
-//            }
-//        }
-//    }
-
 
     private static XmlBeanDefinitionScannerAgent findAgent(BeanDefinition beanDefinition) {
         if (!(beanDefinition instanceof AbstractBeanDefinition)) {
@@ -348,22 +269,12 @@ public class XmlBeanDefinitionScannerAgent {
         }
     }
 
-//    /**
-//     * reload bean from xml definition
-//     */
-//    public void reloadBeanFromXml() {
-//        clearCache();
-//        reloadDefinition();
-//    }
-
     void clearCache() {
-
         DefaultListableBeanFactory factory = maybeRegistryToBeanFactory();
         if (factory == null) {
             LOGGER.warning("Fail to find bean factory for url {}, cannot reload", this.url);
             return;
         }
-
         removeRegisteredBeanDefinitions(factory);
     }
 
@@ -398,10 +309,5 @@ public class XmlBeanDefinitionScannerAgent {
             return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
         }
         return null;
-    }
-
-    static void setAppClassLoader(ClassLoader classLoader) {
-        PluginConfiguration pluginConfiguration = new PluginConfiguration(classLoader);
-        extraClassPath = pluginConfiguration.getExtraClasspath();
     }
 }

@@ -2,7 +2,6 @@ package org.hotswap.agent.plugin.spring.xml.scan;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.xml.placeholder.Item2;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

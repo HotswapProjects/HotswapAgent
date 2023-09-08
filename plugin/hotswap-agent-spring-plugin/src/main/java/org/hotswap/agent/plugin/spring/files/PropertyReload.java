@@ -1,6 +1,7 @@
-package org.hotswap.agent.plugin.spring.core;
+package org.hotswap.agent.plugin.spring.files;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
 import org.hotswap.agent.plugin.spring.transformers.api.IResourcePropertySource;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.plugin.spring.utils.ConstructorUtils;
