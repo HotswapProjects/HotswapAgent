@@ -108,14 +108,14 @@ public class SpringReload {
         try {
             beanFactoryAssistant.setReload(true);
             LOGGER.info("**********************************************************************************************");
-            LOGGER.info("#####         start reloading '{}'         ############", ObjectUtils.identityToString(beanFactory));
+            LOGGER.info("##### start reloading '{}' ############", ObjectUtils.identityToString(beanFactory));
             LOGGER.trace("SpringReload:{},  beanFactory:{}", this, beanFactory);
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, true);
             return doReload();
         } finally {
             beanFactoryAssistant.increaseReloadTimes();
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, allowBeanDefinitionOverriding);
-            LOGGER.info("#####         finish reloading '{}', it cost {}ms     ############",
+            LOGGER.info("##### finish reloading '{}', it cost {}ms ############",
                     ObjectUtils.identityToString(beanFactory), System.currentTimeMillis() - now);
             LOGGER.info("**********************************************************************************************");
         }
