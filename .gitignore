@@ -5,7 +5,7 @@
 **/target
 
 #IntelliJ
-#.DS_Store
+.DS_Store
 *.idea
 *.iml
 pom.xml.releaseBackup
