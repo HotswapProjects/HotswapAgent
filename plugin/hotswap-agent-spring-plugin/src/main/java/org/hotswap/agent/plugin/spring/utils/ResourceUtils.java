@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring.utils;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.xml.XmlBeanDefinitionScannerAgent;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -17,6 +18,9 @@ public class ResourceUtils {
         String path;
         if (resource instanceof ClassPathResource) {
             path = ((ClassPathResource) resource).getPath();
+        } else if (resource instanceof ByteArrayResource) {
+            LOGGER.debug("Cannot get path from ByteArrayResource: {}", new String(((ByteArrayResource) resource).getByteArray()));
+            return null;
         } else {
             try {
                 path = convertToClasspathURL(resource.getURL().getPath());
@@ -68,7 +72,7 @@ public class ResourceUtils {
      * convert src/main/resources/xxx.xml and classes/xxx.xml to xxx.xml
      *
      * @param extraClassPaths the extra class paths
-     * @param filePath the file path to convert
+     * @param filePath        the file path to convert
      * @return if convert succeed, return classpath path, or else return file path
      */
     public static String convertToClasspathURL(URL[] extraClassPaths, String filePath) {

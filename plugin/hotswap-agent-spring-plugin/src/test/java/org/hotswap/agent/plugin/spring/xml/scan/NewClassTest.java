@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.xml.scan;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.xml.placeholder.Item2;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,6 +23,7 @@ public class NewClassTest {
     private AbstractApplicationContext applicationContext;
     @Test
     public void swapSingleClassTest() throws Exception {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
         System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
         assertNotNull(applicationContext.getBean(ScanItem.class).getName());

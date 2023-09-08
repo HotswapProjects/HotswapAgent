@@ -24,22 +24,13 @@ import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanDefinitionProcessor;
-import org.hotswap.agent.plugin.spring.transformers.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.transformers.ConfigurationClassPostProcessorTransformer;
-import org.hotswap.agent.plugin.spring.transformers.AnnotatedBeanDefinitionReaderTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
-import org.hotswap.agent.plugin.spring.transformers.ClassPathBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.transformers.PlaceholderConfigurerSupportTransformer;
-import org.hotswap.agent.plugin.spring.transformers.ResourcePropertySourceTransformer;
-import org.hotswap.agent.plugin.spring.transformers.XmlBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.transformers.*;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
-import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.hotswap.agent.watch.Watcher;
-import org.springframework.context.annotation.AnnotatedBeanDefinitionReader;
 
 import java.io.IOException;
 import java.net.URL;
@@ -56,7 +47,6 @@ import java.util.List;
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
         testedVersions = {"All between 3.0.1 - 5.2.2"}, expectedVersions = {"3x", "4x", "5x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class,
-                AnnotatedBeanDefinitionReaderTransformer.class,
                 ProxyReplacerTransformer.class,
                 ConfigurationClassPostProcessorTransformer.class,
                 ResourcePropertySourceTransformer.class,
@@ -113,22 +103,17 @@ public class SpringPlugin {
 
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
-//        scheduler.scheduleCommand(new XmlFileRefreshCommand(appClassLoader, url));
         ReflectionHelper.invoke(null, springChangeHubClass, "addChangedXml", new Class<?>[]{URL.class}, url);
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
         ReflectionHelper.invoke(null, springChangeHubClass, "addChangedProperty", new Class<?>[]{URL.class}, url);
-//        SpringChangedHub.addChangedProperty(url);
-//        scheduler.scheduleCommand(new PropertiesRefreshCommand(appClassLoader, url));
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
         ReflectionHelper.invoke(null, springChangeHubClass, "addChangedClass", new Class<?>[]{Class.class}, clazz);
-//        SpringChangedHub.addChangedClass(clazz);
-//        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, clazz.getName()));
     }
 
     /**
@@ -145,7 +130,6 @@ public class SpringPlugin {
     private void registerBasePackage(final String basePackage) {
         // v.d.: Force load/Initialize ClassPathBeanRefreshCommand classe in JVM. This is hack, in whatever reason sometimes new ClassPathBeanRefreshCommand()
         //       stays locked inside agent's transform() call. It looks like some bug in JVMTI or JVMTI-debugger() locks handling.
-        ClassPathBeanRefreshCommand fooCmd = new ClassPathBeanRefreshCommand();
         hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage),
                 new SpringBeanClassFileTransformer(appClassLoader, scheduler, basePackage));
     }
@@ -185,17 +169,6 @@ public class SpringPlugin {
         }
     }
 
-    /**
-     * Register a hotswap transformer for individual component class registration.
-     *
-     * @param clazz component class
-     * @see AnnotatedBeanDefinitionReader#register(Class[])
-     */
-//    public void registerComponentClass(String clazz) {
-//        LOGGER.info("Registering component class {}", clazz);
-//        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(clazz),
-//                new ComponentClassFileTransformer(appClassLoader, scheduler, clazz));
-//    }
     private String getClassNameRegExp(String basePackage) {
         String regexp = basePackage;
         while (regexp.contains("**")) {
@@ -265,22 +238,6 @@ public class SpringPlugin {
 
         CtMethod removeBeanDefinitionMethod = clazz.getDeclaredMethod("removeBeanDefinition");
         removeBeanDefinitionMethod.insertBefore(BeanDefinitionProcessor.class.getName() + ".removeBeanDefinition(this, $1);");
-
-//        // collect @Value
-//        CtMethod resolveValueMethod = clazz.getDeclaredMethod("doResolveDependency", new CtClass[]{
-//                classPool.get("org.springframework.beans.factory.config.DependencyDescriptor"), classPool.get("java.lang.String"),
-//                classPool.get("java.util.Set"), classPool.get("org.springframework.beans.TypeConverter")});
-//
-//        resolveValueMethod.
-//        resolveValueMethod.instrument(new ExprEditor() {
-//            @Override
-//            public void edit(MethodCall m) throws CannotCompileException {
-//                if (m.getMethodName().equals("resolveEmbeddedValue")) {
-//                    m.replace("SpringChangedHub.getInstance().springGlobalCaches.valueAnnotatedBeans.add();" +
-//                            "                    $_ = $proceed($$);");
-//                }
-//            }
-//        });
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")

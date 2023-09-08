@@ -19,6 +19,7 @@
 package org.hotswap.agent.plugin.spring.xml.placeholder;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ public class PlaceholderTest {
 
     @Test
     public void swapPropertyTest() throws Exception {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         System.out.println("PlaceholderTest.swapPropertyTest" + applicationContext.getBeanFactory());
         Item1 item1 = applicationContext.getBean("item1", Item1.class);
         Item1 item11 = applicationContext.getBean("item11", Item1.class);

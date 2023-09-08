@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-proxy-plugin</artifactId>
 
         <properties>
-                <org.springframework.version>5.3.28</org.springframework.version>
+                <org.springframework.version>5.0.11.RELEASE</org.springframework.version>
         </properties>
 
     <dependencies>

@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.annotations;
 
 import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation1.*;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation2.Annotation2Student1;
@@ -38,6 +39,7 @@ public class AnnotationConfigurationTest {
 
     @Before
     public void before() {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 

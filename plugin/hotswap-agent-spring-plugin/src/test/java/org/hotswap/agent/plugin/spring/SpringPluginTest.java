@@ -68,6 +68,7 @@ public class SpringPluginTest {
 
     @Before
     public void before() {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         System.out.println("SpringPluginTest.before." + applicationContext.getBeanFactory());
         swappingRule.setBeanFactory(applicationContext.getBeanFactory());
         reloadTimes = 1;

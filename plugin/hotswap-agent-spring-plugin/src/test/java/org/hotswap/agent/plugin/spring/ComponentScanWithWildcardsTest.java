@@ -68,6 +68,7 @@ public class ComponentScanWithWildcardsTest {
 
     @Before
     public void before() {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         System.out.println("ComponentScanWithWildcardsTest.before" + context.getBeanFactory());
         reloadTimes = 1;
         BeanFactoryAssistant.getBeanFactoryAssistant(context.getBeanFactory()).reset();

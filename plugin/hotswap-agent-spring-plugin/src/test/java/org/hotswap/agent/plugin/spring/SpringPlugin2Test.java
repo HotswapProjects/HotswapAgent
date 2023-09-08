@@ -73,6 +73,7 @@ public class SpringPlugin2Test {
      */
     @Before
     public void before() throws IOException {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         if (xmlApplicationContext == null) {
             writeRepositoryToXml();
             xmlApplicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");

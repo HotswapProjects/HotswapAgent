@@ -6,6 +6,8 @@ import java.util.EventObject;
 
 /**
  * Spring event.
+ * It is used to notify the plugin that a bean definition has changed.
+ * Spring boot and Spring should send some events each other, the event and listener are used to satisfy this requirement.
  *
  * @param <T> the event type
  */

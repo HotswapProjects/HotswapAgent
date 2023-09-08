@@ -29,6 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.hotswap.agent.plugin.spring.utils.RegistryUtils.maybeRegistryToBeanFactory;
 import static org.hotswap.agent.util.ReflectionHelper.get;
 
+/**
+ * Reload spring beans.
+ */
 public class SpringReload {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringReload.class);
 
@@ -105,20 +108,24 @@ public class SpringReload {
         classes.addAll(content.classes);
         properties.addAll(content.properties);
         xmls.addAll(content.xmls);
+        newScanBeanDefinitions.addAll(content.newScanBeanDefinitions);
     }
 
     public boolean reload() throws IOException {
         boolean allowBeanDefinitionOverriding = BeanFactoryProcessor.isAllowBeanDefinitionOverriding(beanFactory);
         long now = System.currentTimeMillis();
         try {
-            LOGGER.info("************************SpringReload of {} start reloading************************", ObjectUtils.identityToString(beanFactory));
+            beanFactoryAssistant.setReload(true);
+            LOGGER.info("start reloading '{}'", ObjectUtils.identityToString(beanFactory));
+            LOGGER.info("**********************************************************************************************");
             LOGGER.trace("SpringReload:{},  beanFactory:{}", this, beanFactory);
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, true);
             return doReload();
         } finally {
             beanFactoryAssistant.increaseReloadTimes();
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, allowBeanDefinitionOverriding);
-            LOGGER.info("************************SpringReload of {} finish reloading ({}ms)************************",
+            LOGGER.info("**********************************************************************************************");
+            LOGGER.info("finish reloading '{}', it cost {}ms",
                     ObjectUtils.identityToString(beanFactory), System.currentTimeMillis() - now);
         }
     }
@@ -139,7 +146,6 @@ public class SpringReload {
         for (String d : beanFactory.getBeanDefinitionNames()) {
             BeanDefinition bd = beanFactory.getBeanDefinition(d);
         }
-        ResetRequestMappingCaches.reset(beanFactory);
         ResetBeanPostProcessorCaches.reset(beanFactory);
         ResetTransactionAttributeCaches.reset(beanFactory);
         ResetBeanFactoryPostProcessorCaches.reset(beanFactory);
@@ -239,6 +245,8 @@ public class SpringReload {
                 }
             }
         }
+        // reset mvc
+        ResetRequestMappingCaches.reset(beanFactory);
         return true;
     }
 

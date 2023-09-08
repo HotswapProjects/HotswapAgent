@@ -38,6 +38,7 @@ import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
@@ -194,7 +195,7 @@ public class XmlBeanDefinitionScannerAgent {
             }
             try {
                 LOGGER.trace("Reloading XML {} since property file changed: {}", xmlBeanDefinitionScannerAgent.url, resourcePath);
-                if (agents.add(xmlBeanDefinitionScannerAgent)){
+                if (agents.add(xmlBeanDefinitionScannerAgent)) {
                     xmlBeanDefinitionScannerAgent.clearCache();
                 }
             } catch (org.springframework.beans.factory.parsing.BeanDefinitionParsingException e) {
@@ -277,7 +278,15 @@ public class XmlBeanDefinitionScannerAgent {
         }
 
         try {
+            if (resource instanceof ByteArrayResource) {
+                LOGGER.debug("BeanDefinition [{}] has ByteArrayResource as resource, ignore. {}", beanDefinition,
+                        new String(((ByteArrayResource) resource).getByteArray()));
+                return null;
+            }
             String path = convertToClasspathURL(resource.getURL().getPath());
+            if (path == null) {
+                return null;
+            }
             return pathToAgent.get(path);
         } catch (IOException e) {
             LOGGER.warning("Fail to fetch url from resource: {}", resource);
@@ -360,7 +369,7 @@ public class XmlBeanDefinitionScannerAgent {
 
     void reloadDefinition() {
 
-        LOGGER.info("Reloading XML file '{}' of {} " , url, ObjectUtils.identityToString(this.reader.getRegistry()));
+        LOGGER.info("Reloading XML file '{}' of {} ", url, ObjectUtils.identityToString(this.reader.getRegistry()));
         // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
         // maybe should use watchResourceClassLoader.getResource?
         this.reader.loadBeanDefinitions(new FileSystemResource(url.getPath()));

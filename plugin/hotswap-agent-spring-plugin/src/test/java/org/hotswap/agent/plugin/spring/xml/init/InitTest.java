@@ -19,6 +19,7 @@
 package org.hotswap.agent.plugin.spring.xml.init;
 
 import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Test;
 import org.springframework.context.support.AbstractApplicationContext;
@@ -39,6 +40,7 @@ public class InitTest {
 
     @Test
     public void swapXmlTest() throws Exception {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:initContext-1.xml");
         assertEquals(1, FooBean.getStaticValue());
 

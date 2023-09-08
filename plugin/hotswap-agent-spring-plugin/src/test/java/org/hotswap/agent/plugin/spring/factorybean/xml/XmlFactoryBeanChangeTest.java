@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.factorybean.xml;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v11.BakXmlFactBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v11.BakXmlFactBean4;
@@ -32,6 +33,7 @@ public class XmlFactoryBeanChangeTest {
 
     @Before
     public void before() {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 

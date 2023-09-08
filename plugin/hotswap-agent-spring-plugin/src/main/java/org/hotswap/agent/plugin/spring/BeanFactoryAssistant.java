@@ -4,12 +4,14 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BeanFactoryAssistant {
     private ConfigurableListableBeanFactory beanFactory;
     private AtomicInteger reloadTimes;
     private long lastReloadTime;
+    private AtomicBoolean isReload = new AtomicBoolean(false);
 
     private static Map<ConfigurableListableBeanFactory, BeanFactoryAssistant> beanFactoryAssistants = new ConcurrentHashMap<>(4);
 
@@ -44,5 +46,13 @@ public class BeanFactoryAssistant {
 
     public long getLastReloadTime() {
         return lastReloadTime;
+    }
+
+    public boolean isReload() {
+        return isReload.get();
+    }
+
+    public void setReload(boolean isReload) {
+        this.isReload = new AtomicBoolean(isReload);
     }
 }

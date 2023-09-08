@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.spring.signature;
+package org.hotswap.agent.plugin.spring.utils;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.util.signature.ClassSignatureElement;

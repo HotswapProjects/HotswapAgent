@@ -4,6 +4,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.SpringReload;
 import org.hotswap.agent.plugin.spring.configuration.beans.Config;
@@ -42,6 +43,7 @@ public class ConfigurationTest {
 
     @Before
     public void before() {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         SpringChangedHub.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(false);
     }
 

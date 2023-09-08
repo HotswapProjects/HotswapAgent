@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.transactional;
 
 import org.hotswap.agent.plugin.spring.ClassSwappingRule;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -31,6 +32,7 @@ public class TransactionalTest {
 
     @Before
     public void before() {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         swappingRule.setBeanFactory(beanFactory);
         SpringChangedHub.getInstance((DefaultListableBeanFactory) beanFactory).setPause(false);
     }

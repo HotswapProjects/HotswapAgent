@@ -10,12 +10,10 @@ public class PlaceholderConfigurerSupportTransformer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PlaceholderConfigurerSupportTransformer.class);
 
     /**
-     * Insert at the beginning of the method:
-     * <pre>public Set<BeanDefinition> findCandidateComponents(String basePackage)</pre>
-     * new code to initialize ClassPathBeanDefinøitionScannerAgent for a base class
-     * It would be better to override a more appropriate method
-     * org.springframework.context.annotation.ClassPathBeanDefinitionScanner.scan() directly,
-     * however there are issues with javassist and varargs parameters.
+     * @param clazz
+     * @param classPool
+     * @throws NotFoundException
+     * @throws CannotCompileException
      */
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.config.PlaceholderConfigurerSupport")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {

@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.xml.constructor;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorFactoryBean2;
@@ -24,6 +25,7 @@ public class XmlConstructorBeanChangeTest {
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         System.out.println("XmlConstructorBeanChangeTest.testFactoryBeanChanged." + applicationContext.getBeanFactory());
         XmlConstructorBean1 xmlConstructorBean1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBean2 = applicationContext.getBean(XmlConstructorBean2.class);

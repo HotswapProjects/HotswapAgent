@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring.xml.factorymethods;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
@@ -41,6 +42,7 @@ public class FactoryMethodBeanChangeTest {
 
     @Before
     public void before() throws IOException {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         content = Files.readAllBytes(propertyFile.getFile().toPath());
         System.out.println("FactoryMethodBeanChangeTest.before. " + applicationContext.getBeanFactory());
         SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);

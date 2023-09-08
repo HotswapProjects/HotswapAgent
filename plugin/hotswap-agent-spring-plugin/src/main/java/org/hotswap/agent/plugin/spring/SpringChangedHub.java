@@ -22,9 +22,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SpringChangedHub implements SpringListener<SpringEvent> {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringChangedHub.class);
+    private static final int DEFAULT_DELAY_PERIOD = 1500;
     public static final int INIT = 1;
     public static final int CHANGING = 2;
     public static final int RELOADED = 3;
+
+    static int maxWaitTimes = 5;
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, new ThreadFactory() {
 
@@ -63,7 +66,7 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
     }
 
     void init() {
-        scheduler.scheduleWithFixedDelay(this::reload, 1, 2, TimeUnit.SECONDS);
+        scheduler.scheduleWithFixedDelay(this::reload, 1, DEFAULT_DELAY_PERIOD, TimeUnit.MILLISECONDS);
     }
 
     public static SpringChangedHub getInstance(DefaultListableBeanFactory beanFactory) {
@@ -141,8 +144,8 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
     }
 
     private void reload() {
-        // delay twice
-        if (waitTimes.get() > 1) {
+        // delay three times
+        if (waitTimes.get() >= maxWaitTimes) {
             waitTimes.incrementAndGet();
             if (pause.get()) {
                 LOGGER.trace("spring reload pause: {}", ObjectUtils.identityToString(current.beanFactory));
@@ -160,6 +163,10 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
                 waitTimes.set(0);
             }
         } else if (status.get() == CHANGING) {
+            if (waitTimes.get() == 0) {
+                int restTime = maxWaitTimes * DEFAULT_DELAY_PERIOD / 1000;
+                LOGGER.info("waiting to start reload '{}', it will start after {}s", ObjectUtils.identityToString(beanFactory()), restTime);
+            }
             waitTimes.incrementAndGet();
         }
     }

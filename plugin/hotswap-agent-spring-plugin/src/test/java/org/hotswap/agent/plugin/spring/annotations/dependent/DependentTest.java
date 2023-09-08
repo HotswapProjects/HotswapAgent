@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring.annotations.dependent;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
 import org.hotswap.agent.plugin.spring.SpringChangedHub;
 import org.hotswap.agent.plugin.spring.annotations.dependentbak.*;
 import org.hotswap.agent.util.test.WaitHelper;
@@ -25,6 +26,7 @@ public class DependentTest {
 
     @Before
     public void before() {
+        ReconfigureTestParam.configMaxReloadTimes(2);
         SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
