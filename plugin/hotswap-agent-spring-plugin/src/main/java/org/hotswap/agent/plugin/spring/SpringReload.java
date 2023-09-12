@@ -21,6 +21,7 @@ import org.springframework.core.type.StandardMethodMetadata;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
@@ -107,17 +108,17 @@ public class SpringReload {
         long now = System.currentTimeMillis();
         try {
             beanFactoryAssistant.setReload(true);
-            LOGGER.info("**********************************************************************************************");
-            LOGGER.info("##### start reloading '{}' ############", ObjectUtils.identityToString(beanFactory));
+            LOGGER.info("****************************************************************************************************");
+            LOGGER.info("##### start reloading '{}'", ObjectUtils.identityToString(beanFactory));
             LOGGER.trace("SpringReload:{},  beanFactory:{}", this, beanFactory);
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, true);
             return doReload();
         } finally {
             beanFactoryAssistant.increaseReloadTimes();
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, allowBeanDefinitionOverriding);
-            LOGGER.info("##### finish reloading '{}', it cost {}ms ############",
+            LOGGER.info("##### finish reloading '{}', it cost {}ms",
                     ObjectUtils.identityToString(beanFactory), System.currentTimeMillis() - now);
-            LOGGER.info("**********************************************************************************************");
+            LOGGER.info("****************************************************************************************************");
         }
     }
 
@@ -457,13 +458,23 @@ public class SpringReload {
     private static void invokeBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
         try {
             invokePostProcessorRegistrationDelegate(factory);
-        } catch (Throwable t) {
+        } catch (ClassNotFoundException t) {
             LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
             invokeBeanFactoryPostProcessors0(factory);
+        } catch (NoSuchMethodException t) {
+            LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
+            invokeBeanFactoryPostProcessors0(factory);
+        } catch (InvocationTargetException e) {
+            LOGGER.error("Failed to invoke PostProcessorRegistrationDelegate", e);
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            LOGGER.error("Failed to invoke PostProcessorRegistrationDelegate", e);
+            throw new RuntimeException(e);
         }
     }
 
-    private static void invokePostProcessorRegistrationDelegate(DefaultListableBeanFactory factory) throws Throwable {
+    private static void invokePostProcessorRegistrationDelegate(DefaultListableBeanFactory factory) throws NoSuchMethodException,
+            ClassNotFoundException, InvocationTargetException, IllegalAccessException {
         Class<?> clazz = Class.forName("org.springframework.context.support.PostProcessorRegistrationDelegate",
                 true, factory.getClass().getClassLoader());
         Method method = clazz.getDeclaredMethod("invokeBeanFactoryPostProcessors",
