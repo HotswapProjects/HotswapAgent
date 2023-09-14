@@ -51,7 +51,7 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
     }
 
     @Override
-    protected void registerAll(final Path dir) throws IOException {
+    protected void registerAll(final Path dir, WatchEvent.Kind kind, boolean ignoreFile) throws IOException {
         // register directory and sub-directories
         LOGGER.debug("Registering directory  {}", dir);
 
@@ -59,6 +59,18 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 register(dir);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (ignoreFile) {
+                    return FileVisitResult.CONTINUE;
+                }
+                if (kind != null) {
+                    LOGGER.debug("Dispatch event '{}' on '{}'", kind, file);
+                    dispatchEvent(kind, file);
+                }
                 return FileVisitResult.CONTINUE;
             }
         });

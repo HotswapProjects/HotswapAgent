@@ -98,7 +98,7 @@ public class TreeWatcherNIO extends AbstractNIO2Watcher {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @Override
-    protected void registerAll(Path dir) throws IOException {
+    protected void registerAll(Path dir, WatchEvent.Kind kind, boolean ignoreFile) throws IOException {
         LOGGER.info("Registering directory {} ", dir);
         register(dir);
     }
