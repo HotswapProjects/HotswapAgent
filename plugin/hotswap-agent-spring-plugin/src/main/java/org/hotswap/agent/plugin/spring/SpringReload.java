@@ -264,7 +264,7 @@ public class SpringReload {
     }
 
     private void destroyBeans() {
-        for (String beanName : recreatedBeans) {
+        for (String beanName : new ArrayList<>(recreatedBeans)) {
             destroyBean(beanName);
         }
         // destroy factory bean
