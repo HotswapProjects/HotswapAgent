@@ -11,7 +11,7 @@ public class BeanFactoryAssistant {
     private ConfigurableListableBeanFactory beanFactory;
     private AtomicInteger reloadTimes;
     private long lastReloadTime;
-    private AtomicBoolean isReload = new AtomicBoolean(false);
+    private volatile boolean isReload = false;
 
     // keep the bean name and xml file relation for the beans which are defined in xml file and the bean contains placeholder
     Map<String, String> placeHolderXmlRelation = new ConcurrentHashMap<>();
@@ -52,10 +52,10 @@ public class BeanFactoryAssistant {
     }
 
     public boolean isReload() {
-        return isReload.get();
+        return isReload;
     }
 
     public void setReload(boolean isReload) {
-        this.isReload = new AtomicBoolean(isReload);
+        this.isReload = isReload;
     }
 }

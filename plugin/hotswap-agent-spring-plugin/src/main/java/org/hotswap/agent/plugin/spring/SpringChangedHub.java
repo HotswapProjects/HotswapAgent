@@ -5,6 +5,7 @@ import org.hotswap.agent.plugin.spring.scanner.BeanDefinitionChangeEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
 import org.hotswap.agent.plugin.spring.listener.SpringListener;
+import org.hotswap.agent.plugin.spring.scanner.ClassChangeEvent;
 import org.hotswap.agent.plugin.spring.utils.ResourceUtils;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.springframework.beans.PropertyValue;
@@ -254,6 +255,9 @@ public class SpringChangedHub implements SpringListener<SpringEvent> {
         if (event instanceof BeanDefinitionChangeEvent) {
             BeanDefinitionChangeEvent beanDefinitionChangeEvent = (BeanDefinitionChangeEvent) event;
             addNewBean(beanDefinitionChangeEvent.getBeanFactory(), beanDefinitionChangeEvent.getSource());
+        } else if (event instanceof ClassChangeEvent) {
+            ClassChangeEvent changeEvent = (ClassChangeEvent) event;
+            addClass(changeEvent.getSource());
         }
     }
 

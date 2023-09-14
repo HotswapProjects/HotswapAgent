@@ -64,36 +64,62 @@ public class SpringReload {
     }
 
     public void addClass(Class clazz) {
+        if (clazz == null) {
+            return;
+        }
         String simpleName = clazz.getSimpleName();
         String userClassSimpleName = ClassUtils.getUserClass(clazz).getSimpleName();
-        if (simpleName.equals(userClassSimpleName)) {
-            LOGGER.info("try to add changed class '{}' into {}", clazz.getName(), ObjectUtils.identityToString(beanFactory));
+        boolean sameClass = simpleName.equals(userClassSimpleName);
+
+        if (classes.add(clazz)) {
+            if (sameClass) {
+                LOGGER.info("try to add changed class '{}' into {}", clazz.getName(), ObjectUtils.identityToString(beanFactory));
+            } else {
+                LOGGER.info("try to add changed class '{}({})' into {}", clazz.getName(), userClassSimpleName, ObjectUtils.identityToString(beanFactory));
+            }
         } else {
-            LOGGER.info("try to add changed class '{}({})' into {}", clazz.getName(), userClassSimpleName, ObjectUtils.identityToString(beanFactory));
+            if (sameClass) {
+                LOGGER.debug("try to add changed class '{}' into {}, but it is exist", clazz.getName(), ObjectUtils.identityToString(beanFactory));
+            } else {
+                LOGGER.debug("try to add changed class '{}({})' into {}, but it is exist", clazz.getName(), userClassSimpleName, ObjectUtils.identityToString(beanFactory));
+            }
         }
-        classes.add(clazz);
     }
 
     public void addProperty(URL property) {
-        LOGGER.info("try to add changed property '{}' into {}", property, ObjectUtils.identityToString(beanFactory));
-        properties.add(property);
-    }
-
-    public void addScanNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
-        LOGGER.info("add new spring bean '{}' into {}", beanDefinitionHolder.getBeanName(), ObjectUtils.identityToString(beanFactory));
-        DefaultListableBeanFactory defaultListableBeanFactory = maybeRegistryToBeanFactory(registry);
-        if (defaultListableBeanFactory != null) {
-            if (defaultListableBeanFactory.equals(beanFactory)) {
-                newScanBeanDefinitions.add(beanDefinitionHolder);
-            }
+        if (property == null) {
+            return;
+        }
+        if (properties.add(property)) {
+            LOGGER.info("try to add changed property '{}' into {}", property, ObjectUtils.identityToString(beanFactory));
         } else {
-            LOGGER.debug("BeanDefinitionRegistry is not DefaultListableBeanFactory, ignore it");
+            LOGGER.debug("try to add changed property '{}' into {}", property, ObjectUtils.identityToString(beanFactory));
         }
     }
 
+    public void addScanNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
+        if (beanDefinitionHolder == null) {
+            return;
+        }
+        DefaultListableBeanFactory defaultListableBeanFactory = maybeRegistryToBeanFactory(registry);
+        if (defaultListableBeanFactory != null) {
+            if (defaultListableBeanFactory.equals(beanFactory) && newScanBeanDefinitions.add(beanDefinitionHolder)) {
+                LOGGER.info("add new spring bean '{}' into {}", beanDefinitionHolder.getBeanName(), ObjectUtils.identityToString(beanFactory));
+                return;
+            }
+        }
+        LOGGER.debug("'{}' is not '{}' or the newBean is exist, ignore it", registry, defaultListableBeanFactory);
+    }
+
     public void addXml(URL xml) {
-        LOGGER.info("try to add xml '{}' into {}", xml, ObjectUtils.identityToString(beanFactory));
-        xmls.add(xml);
+        if (xml == null) {
+            return;
+        }
+        if (xmls.add(xml)) {
+            LOGGER.info("try to add xml '{}' into {}", xml, ObjectUtils.identityToString(beanFactory));
+        } else {
+            LOGGER.debug("try to add xml '{}' into {}", xml, ObjectUtils.identityToString(beanFactory));
+        }
     }
 
     public void appendAll(SpringReload content) {
@@ -116,7 +142,7 @@ public class SpringReload {
         } finally {
             beanFactoryAssistant.increaseReloadTimes();
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, allowBeanDefinitionOverriding);
-            LOGGER.info("##### finish reloading '{}', it cost {}ms",
+            LOGGER.info("##### [{}th] finish reloading '{}', it cost {}ms", beanFactoryAssistant.getReloadTimes(),
                     ObjectUtils.identityToString(beanFactory), System.currentTimeMillis() - now);
             LOGGER.info("****************************************************************************************************");
         }

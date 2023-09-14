@@ -18,12 +18,16 @@
  */
 package org.hotswap.agent.plugin.spring.scanner;
 
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
 import org.hotswap.agent.plugin.spring.utils.RegistryUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
@@ -37,6 +41,7 @@ import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,16 +141,22 @@ public class ClassPathBeanDefinitionScannerAgent {
      * @param classDefinition new class definition
      * @throws IOException error working with classDefinition
      */
-    public static void refreshClass(ClassLoader appClassLoader, String basePackage, byte[] classDefinition) throws IOException {
+    public static void refreshClass(ClassLoader appClassLoader, String basePackage, String clazzName,byte[] classDefinition) throws IOException {
         ClassPathBeanDefinitionScannerAgent scannerAgent = getInstance(basePackage);
         if (scannerAgent == null) {
             LOGGER.error("basePackage '{}' not associated with any scannerAgent", basePackage);
             return;
         }
-        scannerAgent.createBeanDefinitionIfNecessary(appClassLoader, classDefinition);
+        scannerAgent.createBeanDefinitionIfNecessary(appClassLoader, clazzName, classDefinition);
     }
 
-    void createBeanDefinitionIfNecessary(ClassLoader appClassLoader, byte[] classDefinition) throws IOException {
+    void createBeanDefinitionIfNecessary(ClassLoader appClassLoader, String clazzName, byte[] classDefinition) throws IOException {
+        DefaultListableBeanFactory defaultListableBeanFactory = RegistryUtils.maybeRegistryToBeanFactory(registry);
+        if (doProcessWhenBeanExist(defaultListableBeanFactory, appClassLoader, clazzName, classDefinition)) {
+            LOGGER.debug("the class '{}' is exist at '{}', it will not create new BeanDefinition", clazzName,
+                    ObjectUtils.identityToString(defaultListableBeanFactory));
+            return;
+        }
         BeanDefinition beanDefinition = resolveBeanDefinition(appClassLoader, classDefinition);
         if (beanDefinition == null) {
             return;
@@ -161,13 +172,70 @@ public class ClassPathBeanDefinitionScannerAgent {
             BeanDefinitionHolder beanDefinitionHolder = defineBean(beanDefinition);
             if (beanDefinitionHolder != null) {
                 LOGGER.debug("Registering Spring bean '{}'", beanName);
-                DefaultListableBeanFactory defaultListableBeanFactory = RegistryUtils.maybeRegistryToBeanFactory(registry);
                 if (defaultListableBeanFactory != null) {
                     BeanDefinitionChangeEvent beanDefinitionChangeEvent = new BeanDefinitionChangeEvent(beanDefinitionHolder, defaultListableBeanFactory);
                     SpringEventSource.INSTANCE.fireEvent(beanDefinitionChangeEvent);
                 }
             }
         }
+    }
+
+    private boolean doProcessWhenBeanExist(DefaultListableBeanFactory defaultListableBeanFactory, ClassLoader appClassLoader,
+                                           String clazzName, byte[] classDefinition) {
+        try {
+            Class<?> clazz = loadClass(appClassLoader, clazzName, classDefinition);
+            if (defaultListableBeanFactory != null && clazz != null) {
+                String[] beanNames = defaultListableBeanFactory.getBeanNamesForType(clazz);
+                if (beanNames != null && beanNames.length != 0) {
+                    ClassChangeEvent classChangeEvent = new ClassChangeEvent(clazz, defaultListableBeanFactory);
+                    SpringEventSource.INSTANCE.fireEvent(classChangeEvent);
+                    return true;
+                }
+            }
+        } catch (Exception t) {
+            LOGGER.debug("make class failed", t);
+        }
+        return false;
+    }
+
+    private Class<?> loadClass(ClassLoader appClassLoader,
+                               String clazzName, byte[] classDefinition) {
+        Class<?> clazz = doLoadClass(appClassLoader, clazzName);
+        if (clazz != null) {
+            return clazz;
+        }
+        ClassPool pool = ClassPool.getDefault();
+        try {
+            CtClass ctClass = pool.makeClass(new ByteArrayInputStream(classDefinition));
+            clazz = doLoadClass(appClassLoader, ctClass.getName());
+            if (clazz != null) {
+                return clazz;
+            }
+            return ctClass.toClass(appClassLoader, registry.getClass().getProtectionDomain());
+        } catch (IOException e) {
+            LOGGER.trace("make new class failed, {}", e.getMessage());
+            return null;
+        } catch (CannotCompileException e) {
+            LOGGER.trace("make new class failed, {}", e.getMessage());
+            return null;
+        }
+
+    }
+
+    private Class<?> doLoadClass(ClassLoader appClassLoader,
+                                 String clazzName) {
+        try {
+            if (clazzName == null || clazzName.isEmpty()) {
+                return null;
+            }
+            String realClassName = clazzName.replaceAll("/", ".");
+            return appClassLoader.loadClass(realClassName);
+        } catch (ClassNotFoundException e) {
+            // ignore
+        } catch (NoClassDefFoundError e) {
+            // ignore
+        }
+        return null;
     }
 
     /**
