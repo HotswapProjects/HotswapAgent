@@ -18,11 +18,7 @@
  */
 package org.hotswap.agent.plugin.cxf.jaxrs;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
@@ -51,8 +47,8 @@ import org.hotswap.agent.util.ReflectionHelper;
 public class CxfJAXRSPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(CxfJAXRSPlugin.class);
+    private static final Set<String> PATH_ANNOTATIONS = new HashSet<>(Arrays.asList("jakarta.ws.rs.Path", "javax.ws.rs.Path"));
 
-    private static final String PATH_ANNOTATION = "javax.ws.rs.Path";
 
     private static final int WAIT_ON_REDEFINE = 300; // Should be bigger then DI plugins (CDI..)
     private static final int WAIT_ON_CREATE = 600; // Should be bigger then DI plugins (CDI..)
@@ -111,8 +107,8 @@ public class CxfJAXRSPlugin {
             LOGGER.trace("Skipping synthetic class {}.", clazz.getName());
             return;
         }
-        if (AnnotationHelper.hasAnnotation(original, PATH_ANNOTATION)
-                || AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATION)) {
+        if (AnnotationHelper.hasAnnotation(original, PATH_ANNOTATIONS)
+                || AnnotationHelper.hasAnnotation(clazz, PATH_ANNOTATIONS)) {
             if(LOGGER.isLevelEnabled(Level.TRACE)) {
                 LOGGER.trace("Reload @Path annotated class {}", clazz.getName());
             }
