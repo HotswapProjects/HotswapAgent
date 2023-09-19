@@ -46,4 +46,22 @@ public class AnnotationHelper {
         return false;
     }
 
+    public static boolean hasAnnotation(Class<?> clazz, Iterable<String> annotationClasses) {
+        for (String pathAnnotation : annotationClasses) {
+            if (AnnotationHelper.hasAnnotation(clazz, pathAnnotation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasAnnotation(CtClass clazz, Iterable<String> annotationClasses) {
+        for (String pathAnnotation : annotationClasses) {
+            if (AnnotationHelper.hasAnnotation(clazz, pathAnnotation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
