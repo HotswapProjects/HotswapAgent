@@ -1,9 +1,9 @@
 package org.hotswap.agent.plugin.spring.xml.factorymethods;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.SpringChangedHub;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.xml.bak.factorymethod.BakFactoryMethodBean6;
 import org.hotswap.agent.plugin.spring.xml.bak.factorymethod.BakFactoryMethodFactoryBean12;
 import org.hotswap.agent.plugin.spring.xml.bak.factorymethod.BakFactoryMethodFactoryBean34;
@@ -37,16 +37,16 @@ public class FactoryMethodBeanChangeTest {
 
     @Before
     public void before() throws IOException {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         content = Files.readAllBytes(propertyFile.getFile().toPath());
         System.out.println("FactoryMethodBeanChangeTest.before. " + applicationContext.getBeanFactory());
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
     @After
     public void tearDown() throws IOException {
         Files.write(propertyFile.getFile().toPath(), content);
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
     }
 
     @Test

@@ -18,6 +18,8 @@
  */
 package org.hotswap.agent.plugin.spring;
 
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
 import org.hotswap.agent.util.spring.io.resource.Resource;
@@ -64,19 +66,19 @@ public class SpringPlugin2Test {
      */
     @Before
     public void before() throws IOException {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         if (xmlApplicationContext == null) {
             writeRepositoryToXml();
             xmlApplicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");
         }
         swappingRule.setBeanFactory(xmlApplicationContext.getBeanFactory());
         System.out.println("SpringPlugin2Test.before." + xmlApplicationContext.getBeanFactory());
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory()).setPause(false);
     }
 
     @After
     public void after() throws IOException {
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory()).setPause(true);
     }
 
     private void writeRepositoryToXml() throws IOException {

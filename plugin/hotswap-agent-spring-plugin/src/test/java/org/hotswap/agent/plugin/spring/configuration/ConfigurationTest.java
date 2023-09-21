@@ -3,10 +3,9 @@ package org.hotswap.agent.plugin.spring.configuration;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
-import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.SpringChangedHub;
-import org.hotswap.agent.plugin.spring.SpringReload;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.configuration.beans.Config;
 import org.hotswap.agent.plugin.spring.configuration.beans.scan.Configurations;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config1;
@@ -19,7 +18,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -43,13 +41,13 @@ public class ConfigurationTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes(2);
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(false);
+        ReconfigureTestParam.configMaxReloadTimes();
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(false);
     }
 
     @After
     public void after() {
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(true);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(true);
     }
 
     @Test

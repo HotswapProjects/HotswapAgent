@@ -2,7 +2,7 @@ package org.hotswap.agent.plugin.spring.transactional;
 
 import org.hotswap.agent.plugin.spring.ClassSwappingRule;
 import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.SpringChangedHub;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +32,14 @@ public class TransactionalTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         swappingRule.setBeanFactory(beanFactory);
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) beanFactory).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory).setPause(false);
     }
 
     @After
     public void after() {
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) beanFactory).setPause(true);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory).setPause(true);
     }
 
     @Test

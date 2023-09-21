@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.spring.factorybean.annotations;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.SpringChangedHub;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationFactoryBean1;
@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -31,12 +30,12 @@ public class FactoryBeanChangeTest {
 
     @Before
     public void before() {
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
     @After
     public void after() {
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
     }
 
     @Test

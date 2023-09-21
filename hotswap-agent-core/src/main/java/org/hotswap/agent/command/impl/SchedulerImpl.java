@@ -18,18 +18,17 @@
  */
 package org.hotswap.agent.command.impl;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.hotswap.agent.annotation.handler.WatchEventCommand;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.command.timer.HashedWheelTimer;
+import org.hotswap.agent.command.timer.Timer;
 import org.hotswap.agent.logging.AgentLogger;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Default command scheduler implementation.
@@ -47,6 +46,14 @@ public class SchedulerImpl implements Scheduler {
     //        https://github.com/HotswapProjects/HotswapAgent/issues/39  which requires concurrent using
     final Map<Command, DuplicateScheduleConfig> scheduledCommands = new ConcurrentHashMap<>();
     final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<Command>());
+    static final Timer timer = new HashedWheelTimer(
+            r -> {
+                Thread t = new Thread(r, "HotswapAgent-Delay-Task");
+                t.setDaemon(true);
+                return t;
+            },
+            50,
+            TimeUnit.MILLISECONDS, 256);
 
     Thread runner;
     boolean stopped;
@@ -79,6 +86,16 @@ public class SchedulerImpl implements Scheduler {
             scheduledCommands.put(targetCommand, new DuplicateScheduleConfig(System.currentTimeMillis() + timeout, behaviour));
             LOGGER.trace("{} scheduled for execution in {}ms", targetCommand, timeout);
         }
+    }
+
+    @Override
+    public void scheduleDelayedCommand(Command command, long delay, TimeUnit unit) {
+        scheduleDelayedCommand(command, delay, unit, DEFAULT_SCHEDULING_TIMEOUT);
+    }
+
+    @Override
+    public void scheduleDelayedCommand(Command command, long delay, TimeUnit unit, final int timeout) {
+        timer.newTimeout(tt -> scheduleCommand(command, timeout), delay, unit);
     }
 
     /**
@@ -164,6 +181,7 @@ public class SchedulerImpl implements Scheduler {
     @Override
     public void stop() {
         stopped = true;
+        timer.stop();
     }
 
     private static class DuplicateScheduleConfig {

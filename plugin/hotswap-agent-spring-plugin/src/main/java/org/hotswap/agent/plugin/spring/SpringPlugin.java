@@ -24,6 +24,9 @@ import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanDefinitionProcessor;
+import org.hotswap.agent.plugin.spring.reload.ClassChangedCommand;
+import org.hotswap.agent.plugin.spring.reload.PropertiesChangedCommand;
+import org.hotswap.agent.plugin.spring.reload.XmlsChangedCommand;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
 import org.hotswap.agent.plugin.spring.transformers.*;
 import org.hotswap.agent.util.HotswapTransformer;
@@ -74,7 +77,7 @@ public class SpringPlugin {
 
     public void init() throws ClassNotFoundException {
         LOGGER.info("Spring plugin initialized");
-        springChangeHubClass = Class.forName("org.hotswap.agent.plugin.spring.SpringChangedHub", true, appClassLoader);
+        springChangeHubClass = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
         ReflectionHelper.set(null, springChangeHubClass, "appClassLoader", appClassLoader);
         this.registerBasePackageFromConfiguration();
         this.initBasePackagePrefixes();
@@ -82,7 +85,7 @@ public class SpringPlugin {
 
     public void init(String version) throws ClassNotFoundException {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
-        springChangeHubClass = Class.forName("org.hotswap.agent.plugin.spring.SpringChangedHub", true, appClassLoader);
+        springChangeHubClass = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
         ReflectionHelper.set(null, springChangeHubClass, "appClassLoader", appClassLoader);
         this.registerBasePackageFromConfiguration();
         this.initBasePackagePrefixes();
@@ -103,17 +106,20 @@ public class SpringPlugin {
 
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
-        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedXml", new Class<?>[]{URL.class}, url);
+        scheduler.scheduleCommand(new XmlsChangedCommand(appClassLoader, url, scheduler));
+//        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedXml", new Class<?>[]{URL.class}, url);
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
-        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedProperty", new Class<?>[]{URL.class}, url);
+        scheduler.scheduleCommand(new PropertiesChangedCommand(appClassLoader, url, scheduler));
+//        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedProperty", new Class<?>[]{URL.class}, url);
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
-        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedClass", new Class<?>[]{Class.class}, clazz);
+        scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
+//        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedClass", new Class<?>[]{Class.class}, clazz);
     }
 
     /**
@@ -212,7 +218,7 @@ public class SpringPlugin {
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
             constructor.insertBeforeBody(src.toString());
-            constructor.insertAfter("org.hotswap.agent.plugin.spring.SpringChangedHub.getInstance(this);");
+            constructor.insertAfter("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent.getInstance(this);");
         }
 
         // freezeConfiguration cannot be disabled because of performance degradation

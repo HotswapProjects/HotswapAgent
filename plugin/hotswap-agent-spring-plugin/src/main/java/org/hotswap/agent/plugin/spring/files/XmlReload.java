@@ -25,10 +25,15 @@ public class XmlReload {
                                                    Map<String, String> placeHolderXmlRelation,Set<String> recreateBean, Set<URL> xmls) {
         LOGGER.debug("reloadXmlsAndGetBean, propertiesChanged: {}, placeHolderXmlRelation: {}, recreateBean: {}, xmls: {}",
                 propertiesChanged, placeHolderXmlRelation, recreateBean, xmls);
-        Set<String> xmlResourcePaths = new HashSet<>();
-        if (propertiesChanged) {
-            xmlResourcePaths.addAll(placeHolderXmlRelation.values());
+        synchronized (xmls) {
+            Set<String> xmlResourcePaths = new HashSet<>();
+            if (propertiesChanged) {
+                xmlResourcePaths.addAll(placeHolderXmlRelation.values());
+            }
+            Set<String> result = XmlBeanDefinitionScannerAgent.reloadXmls(beanFactory, xmls, xmlResourcePaths);
+            // clear the xmls after the beanDefinition is refreshed.
+            xmls.clear();
+            return result;
         }
-        return XmlBeanDefinitionScannerAgent.reloadXmls(beanFactory, xmls, xmlResourcePaths);
     }
 }

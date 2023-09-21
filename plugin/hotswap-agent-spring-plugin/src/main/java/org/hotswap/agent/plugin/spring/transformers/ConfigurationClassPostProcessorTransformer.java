@@ -49,8 +49,8 @@ public class ConfigurationClassPostProcessorTransformer {
                             if (m.getClassName().equals("org.springframework.beans.factory.config.ConfigurableListableBeanFactory")
                                     && m.getMethodName().equals("containsSingleton")) {
                                 m.replace("{$_ = $proceed($$) && " +
-                                        "(org.hotswap.agent.plugin.spring.BeanFactoryAssistant.getBeanFactoryAssistant($0) == null || " +
-                                        "!org.hotswap.agent.plugin.spring.BeanFactoryAssistant.getBeanFactoryAssistant($0).isReload());}");
+                                        "(org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant.getBeanFactoryAssistant($0) == null || " +
+                                        "!org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant.getBeanFactoryAssistant($0).isReload());}");
                             }
                         }
                     });

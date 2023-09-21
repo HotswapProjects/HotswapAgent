@@ -22,7 +22,7 @@ public class NewClassTest {
     private AbstractApplicationContext applicationContext;
     @Test
     public void swapSingleClassTest() throws Exception {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
         System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
         assertNotNull(applicationContext.getBean(ScanItem.class).getName());

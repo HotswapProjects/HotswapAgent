@@ -18,6 +18,8 @@
  */
 package org.hotswap.agent.command;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Schedule a command to run.
  *
@@ -64,6 +66,26 @@ public interface Scheduler {
      * @param behaviour if another instance of this commands runs on schedule or within timeout, should we skip it?
      */
     void scheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour);
+
+    /**
+     * Delay scheduling new command for execution.
+     *
+     * @param command the command to execute
+     * @param delay delay after which the command is executed
+     * @param unit time unit of the delay parameter
+     */
+    void scheduleDelayedCommand(Command command, long delay, TimeUnit unit);
+
+    /**
+     * Delay scheduling new command for execution.
+     * <p/>
+     *
+     * @param command the command to execute
+     * @param delay delay after which the command is executed
+     * @param unit time unit of the delay parameter
+     * @param timeout timeout after which the command is executed
+     */
+    void scheduleDelayedCommand(Command command, long delay, TimeUnit unit, int timeout);
 
     /**
      * Run the scheduler agent thread.

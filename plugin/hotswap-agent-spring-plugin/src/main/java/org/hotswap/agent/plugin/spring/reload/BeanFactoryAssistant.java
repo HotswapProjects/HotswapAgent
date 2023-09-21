@@ -1,10 +1,9 @@
-package org.hotswap.agent.plugin.spring;
+package org.hotswap.agent.plugin.spring.reload;
 
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BeanFactoryAssistant {
@@ -14,7 +13,7 @@ public class BeanFactoryAssistant {
     private volatile boolean isReload = false;
 
     // keep the bean name and xml file relation for the beans which are defined in xml file and the bean contains placeholder
-    Map<String, String> placeHolderXmlRelation = new ConcurrentHashMap<>();
+    Map<String, String> placeHolderXmlMapping = new ConcurrentHashMap<>();
 
     private static Map<ConfigurableListableBeanFactory, BeanFactoryAssistant> beanFactoryAssistants = new ConcurrentHashMap<>(4);
 

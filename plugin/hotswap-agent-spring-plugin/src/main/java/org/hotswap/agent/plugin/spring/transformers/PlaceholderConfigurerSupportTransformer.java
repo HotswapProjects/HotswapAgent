@@ -27,7 +27,7 @@ public class PlaceholderConfigurerSupportTransformer {
         clazz.addMethod(CtMethod.make("public java.util.List valueResolvers() { return this._resolvers; }", clazz));
         CtMethod ctMethod = clazz.getDeclaredMethod("doProcessProperties", new CtClass[]{classPool.get("org.springframework.beans.factory.config.ConfigurableListableBeanFactory"),
                 classPool.get("org.springframework.util.StringValueResolver")});
-        ctMethod.insertBefore("org.hotswap.agent.plugin.spring.SpringChangedHub.collectPlaceholderProperties($1); " +
+        ctMethod.insertBefore("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent.collectPlaceholderProperties($1); " +
                 "this._resolvers.add($2);");
         LOGGER.debug("class 'org.springframework.beans.factory.config.PlaceholderConfigurerSupport' patched with placeholder keep.");
     }

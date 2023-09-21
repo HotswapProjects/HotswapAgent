@@ -1,8 +1,8 @@
 package org.hotswap.agent.plugin.spring.xml.annotationconfig;
 
-import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.SpringChangedHub;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,7 +25,7 @@ public class AnnotationConfigTest {
 
     @Test
     public void swapXmlTest() throws Exception {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:xml-annotationconfig/WithoutAnnotationConfig-context.xml");
         System.out.println("AnnotationConfigTest.swapXmlTest." + applicationContext.getBeanFactory());
         assertNull(applicationContext.getBean("item2", Item2.class).getName());
@@ -46,7 +46,7 @@ public class AnnotationConfigTest {
             assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
         } finally {
             Files.write(xmlFileWithoutAnnotationConfig.getFile().toPath(), content);
-            SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+            SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
         }
     }
 }

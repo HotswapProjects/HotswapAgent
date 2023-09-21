@@ -1,8 +1,6 @@
 package org.hotswap.agent.plugin.spring.core;
 
-import org.hotswap.agent.javassist.tools.reflect.Reflection;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.SpringReload;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 

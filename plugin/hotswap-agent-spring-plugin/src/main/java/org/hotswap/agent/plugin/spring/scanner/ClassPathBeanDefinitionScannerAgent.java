@@ -141,7 +141,7 @@ public class ClassPathBeanDefinitionScannerAgent {
      * @param classDefinition new class definition
      * @throws IOException error working with classDefinition
      */
-    public static void refreshClass(ClassLoader appClassLoader, String basePackage, String clazzName,byte[] classDefinition) throws IOException {
+    public static void refreshClass(ClassLoader appClassLoader, String basePackage, String clazzName, byte[] classDefinition) throws IOException {
         ClassPathBeanDefinitionScannerAgent scannerAgent = getInstance(basePackage);
         if (scannerAgent == null) {
             LOGGER.error("basePackage '{}' not associated with any scannerAgent", basePackage);

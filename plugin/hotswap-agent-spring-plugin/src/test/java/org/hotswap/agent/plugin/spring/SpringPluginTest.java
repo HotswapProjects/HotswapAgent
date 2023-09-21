@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import javax.inject.Inject;
 
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
@@ -58,18 +60,18 @@ public class SpringPluginTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         System.out.println("SpringPluginTest.before." + applicationContext.getBeanFactory());
         swappingRule.setBeanFactory(applicationContext.getBeanFactory());
         reloadTimes = 1;
         BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).reset();
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
     @After
     public void after() {
         System.out.println("SpringPluginTest.after." + applicationContext.getBeanFactory());
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
     }
 
     /**

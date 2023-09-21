@@ -24,7 +24,7 @@ public class XmlConstructorBeanChangeTest {
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         System.out.println("XmlConstructorBeanChangeTest.testFactoryBeanChanged." + applicationContext.getBeanFactory());
         XmlConstructorBean1 xmlConstructorBean1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBean2 = applicationContext.getBean(XmlConstructorBean2.class);

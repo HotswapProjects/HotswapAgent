@@ -45,7 +45,7 @@ public class PlaceholderTest {
 
     @Test
     public void swapPropertyTest() throws Exception {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         System.out.println("PlaceholderTest.swapPropertyTest" + applicationContext.getBeanFactory());
         Item1 item1 = applicationContext.getBean("item1", Item1.class);
         Item1 item11 = applicationContext.getBean("item11", Item1.class);

@@ -28,14 +28,13 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.hotswap.BeanServiceImpl2;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.hotswap.NewHelloServiceImpl;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.BeanService;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.BeanServiceImpl;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.NewHelloService;
 import org.hotswap.agent.util.test.WaitHelper;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,7 +67,7 @@ public class ComponentScanWithWildcardsTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes(2);
+        ReconfigureTestParam.configMaxReloadTimes();
         System.out.println("ComponentScanWithWildcardsTest.before" + context.getBeanFactory());
         reloadTimes = 1;
         BeanFactoryAssistant.getBeanFactoryAssistant(context.getBeanFactory()).reset();

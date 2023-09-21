@@ -1,8 +1,8 @@
 package org.hotswap.agent.plugin.spring.annotations;
 
-import org.hotswap.agent.plugin.spring.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.SpringChangedHub;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation1.*;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation2.Annotation2Student1;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation3.Annotation3Student1;
@@ -39,13 +39,13 @@ public class AnnotationConfigurationTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes(2);
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        ReconfigureTestParam.configMaxReloadTimes();
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
     @After
     public void after() {
-        SpringChangedHub.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
     }
 
     @Test
