@@ -18,13 +18,8 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import javax.inject.Inject;
-
+import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
@@ -34,10 +29,13 @@ import org.hotswap.agent.util.ReflectionHelper;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import javax.inject.Inject;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Hotswap class files of spring beans.
@@ -56,22 +54,22 @@ public class SpringPluginTest {
     @Rule
     public ClassSwappingRule swappingRule = new ClassSwappingRule();
 
-    int reloadTimes = 1;
+    volatile int reloadTimes = 1;
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         System.out.println("SpringPluginTest.before." + applicationContext.getBeanFactory());
         swappingRule.setBeanFactory(applicationContext.getBeanFactory());
         reloadTimes = 1;
         BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).reset();
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+//        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
     @After
     public void after() {
         System.out.println("SpringPluginTest.after." + applicationContext.getBeanFactory());
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+//        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
     }
 
     /**
@@ -161,7 +159,7 @@ public class SpringPluginTest {
 
     @Test
     public void hotswapPrototypeTestNewInstance() throws Exception {
-        BeanServiceImpl c1 = applicationContext.getBean(BeanServiceImpl.class);
+        BeanServiceImpl c1 = applicationContext.getBean("beanServiceImpl", BeanServiceImpl.class);
         BeanServiceImpl c2 = applicationContext.getBean(BeanServiceImpl.class);
         System.out.println("xxxxxxxxxx:" + c1 + ", " + c1.hello());
         System.out.println("xxxxxxxxxx:" + c2 + ", " + c2.hello());
@@ -186,18 +184,23 @@ public class SpringPluginTest {
     public void hotswapPrototypeTestExistingInstance() throws Exception {
         BeanPrototype beanPrototypeInstance = applicationContext.getBean(BeanPrototype.class);
         assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
+        System.out.println("xxxxxxxxxx###1:" + beanPrototypeInstance + ", " + beanPrototypeInstance.hello());
 
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class);
         assertEquals("Hello from ChangedRepository Service2WithAspect Prototype", beanPrototypeInstance.hello());
+        System.out.println("xxxxxxxxxx###2:" + beanPrototypeInstance + ", " + beanPrototypeInstance.hello());
         // recovery
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
+        assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
     }
 
     @Test
     public void pojoTest() throws Exception {
         Pojo pojo = new Pojo();
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
-        swapClasses(Pojo.class, Pojo2.class);
+        // no reload happens
+        HotSwapper.swapClasses(Pojo.class, Pojo2.class.getName());
+        Thread.sleep(8000);
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
     }
 

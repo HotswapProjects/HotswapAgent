@@ -36,7 +36,6 @@ public class ResourcePropertySourceTransformer {
 
         clazz.addMethod(CtMethod.make("public org.springframework.core.io.support.EncodedResource encodedResource() { return this.encodedResource; }", clazz));
         clazz.addMethod(CtMethod.make("public org.springframework.core.io.Resource resource() { return this.resource; }", clazz));
-        clazz.addMethod(CtMethod.make("public org.springframework.core.io.support.ResourcePropertySource resourcePropertySource() { return this; }", clazz));
 
         LOGGER.debug("class 'org.springframework.core.io.support.DefaultPropertySourceFactory' patched with PropertySource keep.");
     }

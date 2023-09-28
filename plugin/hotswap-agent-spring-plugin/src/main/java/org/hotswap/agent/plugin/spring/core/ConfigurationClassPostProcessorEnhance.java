@@ -37,20 +37,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConfigurationClassPostProcessorEnhance {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(ConfigurationClassPostProcessorEnhance.class);
 
-    private static final Map<BeanDefinitionRegistry,ConfigurationClassPostProcessorEnhance> INSTANCE = new ConcurrentHashMap<>(4);
+    private static final Map<BeanDefinitionRegistry,ConfigurationClassPostProcessorEnhance> INSTANCES = new ConcurrentHashMap<>(4);
 
     private static final String CONFIGURATION_CLASS_ATTRIBUTE =
             Conventions.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
 
     private volatile ConfigurationClassPostProcessor processor;
-    private volatile BeanDefinitionRegistry registry;
-
 
     public static ConfigurationClassPostProcessorEnhance getInstance(BeanDefinitionRegistry registry) {
-        ConfigurationClassPostProcessorEnhance result = INSTANCE.putIfAbsent(registry, new ConfigurationClassPostProcessorEnhance());
+        ConfigurationClassPostProcessorEnhance result = INSTANCES.putIfAbsent(registry, new ConfigurationClassPostProcessorEnhance());
         if (result == null) {
-            result = INSTANCE.get(registry);
-            result.registry = registry;
+            result = INSTANCES.get(registry);
         }
         return result;
     }

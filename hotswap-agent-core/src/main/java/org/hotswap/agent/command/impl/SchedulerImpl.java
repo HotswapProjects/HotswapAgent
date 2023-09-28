@@ -52,7 +52,7 @@ public class SchedulerImpl implements Scheduler {
                 t.setDaemon(true);
                 return t;
             },
-            50,
+            100,
             TimeUnit.MILLISECONDS, 256);
 
     Thread runner;
@@ -90,12 +90,7 @@ public class SchedulerImpl implements Scheduler {
 
     @Override
     public void scheduleDelayedCommand(Command command, long delay, TimeUnit unit) {
-        scheduleDelayedCommand(command, delay, unit, DEFAULT_SCHEDULING_TIMEOUT);
-    }
-
-    @Override
-    public void scheduleDelayedCommand(Command command, long delay, TimeUnit unit, final int timeout) {
-        timer.newTimeout(tt -> scheduleCommand(command, timeout), delay, unit);
+        timer.newTimeout(tt -> scheduleCommand(command, DEFAULT_SCHEDULING_TIMEOUT), delay, unit);
     }
 
     /**

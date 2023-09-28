@@ -47,14 +47,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 /**
  * Tests when the application context file is using component-scan with wildcards
- *
+ * <p>
  * See maven setup for javaagent and autohotswap settings.
  *
  * @author Cedric Chabanois
- *
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "classpath:wildcardsApplicationContext.xml" })
+@ContextConfiguration(locations = {"classpath:wildcardsApplicationContext.xml"})
 public class ComponentScanWithWildcardsTest {
 
     @Autowired
@@ -67,7 +66,7 @@ public class ComponentScanWithWildcardsTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         System.out.println("ComponentScanWithWildcardsTest.before" + context.getBeanFactory());
         reloadTimes = 1;
         BeanFactoryAssistant.getBeanFactoryAssistant(context.getBeanFactory()).reset();
@@ -146,11 +145,11 @@ public class ComponentScanWithWildcardsTest {
     }
 
     private void waitForReload(int timeout) throws InterruptedException {
-        int rt = reloadTimes ++;
+        int rt = reloadTimes++;
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return BeanFactoryAssistant.getBeanFactoryAssistant(context.getBeanFactory()).getReloadTimes() >= rt;
+                return BaseTestUtil.finishReloading(context.getBeanFactory(), rt);
             }
         }, timeout));
         // TODO do not know why sleep is needed, maybe a separate thread in Spring

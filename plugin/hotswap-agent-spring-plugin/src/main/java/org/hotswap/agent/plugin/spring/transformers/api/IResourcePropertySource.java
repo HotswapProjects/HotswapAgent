@@ -15,8 +15,6 @@ public interface IResourcePropertySource {
 
     Resource resource();
 
-    ResourcePropertySource resourcePropertySource();
-
     default boolean reloadPropertySource() throws IOException {
         Properties properties = null;
         if (encodedResource() != null) {
@@ -31,8 +29,9 @@ public interface IResourcePropertySource {
             return false;
         }
         if (properties != null) {
-            resourcePropertySource().getSource().clear();
-            resourcePropertySource().getSource().putAll((Map) properties);
+            ResourcePropertySource resourcePropertySource = (ResourcePropertySource) this;
+            resourcePropertySource.getSource().clear();
+            resourcePropertySource.getSource().putAll((Map) properties);
         }
         return true;
     }

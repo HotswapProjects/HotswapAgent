@@ -9,8 +9,6 @@ import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.support.*;
-import org.springframework.context.annotation.ScannedGenericBeanDefinition;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.util.StringValueResolver;
 
 import java.lang.reflect.Constructor;
@@ -53,15 +51,35 @@ public class BeanFactoryProcessor {
         return false;
     }
 
-    public static boolean checkNeedReload(DefaultListableBeanFactory beanFactory, AbstractBeanDefinition currentBeanDefinition,
-                                          String beanName, Predicate<Constructor<?>[]> predicate) {
-        Method resolveBeanClassMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "resolveBeanClass", RootBeanDefinition.class, String.class, Class[].class);
-        if (currentBeanDefinition instanceof AnnotatedBeanDefinition) {
-            AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) currentBeanDefinition;
-            if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(annotatedBeanDefinition) != null) {
-                return false;
-            }
+    public static boolean needReloadOnConstructor(DefaultListableBeanFactory beanFactory, AbstractBeanDefinition currentBeanDefinition,
+                                                  String beanName, Predicate<Constructor<?>[]> predicate) {
+        Constructor<?>[] constructors = determineConstructors(beanFactory, beanName);
+        if (constructors != null && constructors.length > 0) {
+            return predicate.test(constructors);
         }
+        return false;
+    }
+
+    private static Constructor<?>[] determineConstructors(DefaultListableBeanFactory beanFactory, String beanName) {
+        Class<?> beanClass = resolveBeanClass(beanFactory, beanName);
+        if (beanClass == null) {
+            return null;
+        }
+        Method method = ReflectionUtils.findMethod(beanFactory.getClass(), "determineConstructorsFromBeanPostProcessors", Class.class, String.class);
+        if (method == null) {
+            return null;
+        }
+        try {
+            method.setAccessible(true);
+            return (Constructor<?>[]) method.invoke(beanFactory, beanClass, beanName);
+        } catch (Exception e) {
+            LOGGER.error("determineConstructorsFromBeanPostProcessors error", e);
+        }
+        return null;
+    }
+
+    private static Class<?> resolveBeanClass(DefaultListableBeanFactory beanFactory, String beanName) {
+        Method resolveBeanClassMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "resolveBeanClass", RootBeanDefinition.class, String.class, Class[].class);
         if (resolveBeanClassMethod != null) {
             resolveBeanClassMethod.setAccessible(true);
             Class<?> beanClass = null;
@@ -70,30 +88,12 @@ public class BeanFactoryProcessor {
                 if (rBeanDefinition != null) {
                     beanClass = (Class<?>) resolveBeanClassMethod.invoke(beanFactory, rBeanDefinition, beanName, new Class[]{});
                 }
-            } catch (IllegalAccessException e) {
-                LOGGER.warning("resolveBeanClass error", e);
-                return false;
-            } catch (InvocationTargetException e) {
-                LOGGER.warning("resolveBeanClass error", e);
-                return false;
+                return beanClass;
             } catch (Exception e) {
                 LOGGER.warning("resolveBeanClass error", e);
-                return false;
-            }
-            Method method = ReflectionUtils.findMethod(beanFactory.getClass(), "determineConstructorsFromBeanPostProcessors", Class.class, String.class);
-            if (method != null) {
-                method.setAccessible(true);
-                try {
-                    Constructor<?>[] constructors = (Constructor<?>[]) method.invoke(beanFactory, beanClass, beanName);
-                    if (constructors != null && constructors.length > 0) {
-                        return predicate.test(constructors);
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("determineConstructorsFromBeanPostProcessors error", e);
-                }
             }
         }
-        return false;
+        return null;
     }
 
     private static void resetEmbeddedValueResolvers(DefaultListableBeanFactory beanFactory, String beanName) {
@@ -103,13 +103,14 @@ public class BeanFactoryProcessor {
             Field field = ReflectionUtils.findField(beanFactory.getClass(), "embeddedValueResolvers");
             if (field != null) {
                 ReflectionUtils.makeAccessible(field);
-                List<StringValueResolver> embeddedValueResolvers = (List<StringValueResolver>) ReflectionUtils.getField(field, beanFactory);
+                List<StringValueResolver> embeddedValueResolvers = ReflectionUtils.getField(field, beanFactory);
                 embeddedValueResolvers.removeAll(placeholderConfigurerSupport.valueResolvers());
             }
         }
     }
 
     public static boolean isAllowBeanDefinitionOverriding(DefaultListableBeanFactory beanFactory) {
+        // org.springframework.beans.factory.support.DefaultListableBeanFactory.isAllowBeanDefinitionOverriding is introduced in spring 4.1.2
         Object target = ReflectionHelper.getNoException(beanFactory, beanFactory.getClass(), "allowBeanDefinitionOverriding");
         if (target == null) {
             return false;

@@ -1,76 +1,62 @@
 package org.hotswap.agent.plugin.spring.reload;
 
+import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
 import org.hotswap.agent.plugin.spring.listener.SpringListener;
 import org.hotswap.agent.plugin.spring.scanner.BeanDefinitionChangeEvent;
 import org.hotswap.agent.plugin.spring.scanner.ClassChangeEvent;
-import org.hotswap.agent.plugin.spring.utils.ResourceUtils;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
-import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.config.*;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.annotation.AnnotationBeanNameGenerator;
 
 import java.net.URL;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SpringChangedAgent implements SpringListener<SpringEvent> {
+public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringChangedAgent.class);
-//    private static final int DEFAULT_DELAY_PERIOD = 1500;
-//    public static final int INIT = 1;
-//    public static final int CHANGING = 2;
-//    public static final int RELOADED = 3;
+    private static final Set<String> IGNORE_PACKAGES = new HashSet<>();
 
-
-//    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, new ThreadFactory() {
-//
-//        @Override
-//        public Thread newThread(Runnable r) {
-//            return new Thread(r, "SpringReload");
-//        }
-//    });
-
-
-    private AtomicInteger status = new AtomicInteger(1);
-    private AtomicInteger waitingReloadCount = new AtomicInteger(0);
+    private static AtomicInteger waitingReloadCount = new AtomicInteger(0);
 
     private DefaultListableBeanFactory defaultListableBeanFactory;
     private static ClassLoader appClassLoader;
-    private static Map<DefaultListableBeanFactory, SpringChangedAgent> springChangedHubs = new ConcurrentHashMap<>(2);
-    final BeanFactoryAssistant beanFactoryAssistant;
+    private static Map<DefaultListableBeanFactory, SpringChangedAgent> springChangeAgents = new ConcurrentHashMap<>(2);
+    //    final BeanFactoryAssistant beanFactoryAssistant;
     final AtomicBoolean pause = new AtomicBoolean(false);
-    private final SpringReload springReload;
-    private final BeanNameGenerator beanNameGenerator = new AnnotationBeanNameGenerator();
+    private final SpringBeanReload springReload;
     ReentrantLock reloadLock = new ReentrantLock();
 
+    static {
+        IGNORE_PACKAGES.add("org.hotswap.agent.plugin.spring.reload");
+        IGNORE_PACKAGES.add("org.hotswap.agent.plugin.spring.scanner");
+    }
 
     public SpringChangedAgent(DefaultListableBeanFactory defaultListableBeanFactory) {
-        beanFactoryAssistant = new BeanFactoryAssistant(defaultListableBeanFactory);
-        springReload = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
-        springReload.setBeanNameGenerator(beanNameGenerator);
+//        beanFactoryAssistant = new BeanFactoryAssistant(defaultListableBeanFactory);
+        springReload = new SpringBeanReload(defaultListableBeanFactory);
         this.defaultListableBeanFactory = defaultListableBeanFactory;
         SpringEventSource.INSTANCE.addListener(this);
     }
 
     public static SpringChangedAgent getInstance(DefaultListableBeanFactory beanFactory) {
-        if (springChangedHubs.get(beanFactory) == null) {
+        if (springChangeAgents.get(beanFactory) == null) {
             synchronized (SpringChangedAgent.class) {
-                if (springChangedHubs.get(beanFactory) == null) {
-                    SpringChangedAgent springChangedHub = new SpringChangedAgent(beanFactory);
-                    springChangedHubs.put(beanFactory, springChangedHub);
+                if (springChangeAgents.get(beanFactory) == null) {
+                    SpringChangedAgent springChangedAgent = new SpringChangedAgent(beanFactory);
+                    springChangeAgents.put(beanFactory, springChangedAgent);
                 }
             }
         }
-        return springChangedHubs.get(beanFactory);
+        return springChangeAgents.get(beanFactory);
     }
 
 
@@ -78,193 +64,106 @@ public class SpringChangedAgent implements SpringListener<SpringEvent> {
         SpringChangedAgent.appClassLoader = classLoader;
     }
 
-    public static void addChangedClass(Class clazz) {
-        for (SpringChangedAgent springChangedHub : springChangedHubs.values()) {
-            springChangedHub.addClass(clazz);
+    public static boolean addChangedClass(Class clazz) {
+        boolean result = false;
+        for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+            result |= springChangedAgent.addClass(clazz);
+        }
+        return result;
+    }
+
+    public static boolean addChangedXml(URL xmlUrl) {
+        for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+            springChangedAgent.addXml(xmlUrl);
+        }
+        return true;
+    }
+
+    public static boolean addChangedProperty(URL property) {
+        for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+            springChangedAgent.addProperty(property);
+        }
+        return true;
+    }
+
+    private boolean isIgnorePackage(Class<?> clazz) {
+        String className = clazz.getName();
+        for (String ignorePackage : IGNORE_PACKAGES) {
+            if (className.startsWith(ignorePackage)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void reload(long changeTimeStamps) {
+        int reloadCount = waitingReloadCount.incrementAndGet();
+        // avoid reload too much times, allow 2 tasks into waiting queue
+        if (reloadCount > 2) {
+            LOGGER.trace("Spring reload is already scheduled, skip this time:{}", changeTimeStamps);
+            waitingReloadCount.decrementAndGet();
+            return;
+        }
+        try {
+            for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+                // ensure reload only once, there is one lock.
+                springChangedAgent.reloadAll(changeTimeStamps);
+            }
+        } finally {
+            waitingReloadCount.decrementAndGet();
         }
     }
 
-    public static void addChangedXml(URL xmlUrl) {
-        for (SpringChangedAgent springChangedHub : springChangedHubs.values()) {
-            springChangedHub.addXml(xmlUrl);
+    boolean addClass(Class clazz) {
+        if (clazz == null || isIgnorePackage(clazz)) {
+            return false;
         }
-    }
-
-    public static void addChangedProperty(URL property) {
-        for (SpringChangedAgent springChangedHub : springChangedHubs.values()) {
-            springChangedHub.addProperty(property);
-        }
-    }
-
-    public static void reload() {
-        for (SpringChangedAgent springChangedHub : springChangedHubs.values()) {
-            springChangedHub.reloadAll();
-        }
-    }
-
-    void addClass(Class clazz) {
         springReload.addClass(clazz);
-//        if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
-//            current.addClass(clazz);
-//        } else if (status.intValue() == RELOADED) {
-//            next.addClass(clazz);
-//        }
+        return true;
     }
 
     void addProperty(URL property) {
         springReload.addProperty(property);
-//        if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
-//            current.addProperty(property);
-//        } else if (status.intValue() == RELOADED) {
-//            next.addProperty(property);
-//        }
     }
 
     void addXml(URL xml) {
         springReload.addXml(xml);
-//        if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
-//            current.addXml(xml);
-//        } else if (status.intValue() == RELOADED) {
-//            next.addXml(xml);
-//        }
     }
 
     void addNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
         springReload.addScanNewBean(registry, beanDefinitionHolder);
-//        if (status.compareAndSet(INIT, CHANGING) || status.intValue() == CHANGING) {
-//            current.addScanNewBean(registry, beanDefinitionHolder);
-//        } else if (status.intValue() == RELOADED) {
-//            next.addScanNewBean(registry, beanDefinitionHolder);
-//        }
     }
 
-    private void reloadAll() {
-        int reloadCount = waitingReloadCount.incrementAndGet();
-        if (reloadCount > 1) {
-            waitingReloadCount.decrementAndGet();
-            return;
-        }
-
+    private void reloadAll(long changeTimeStamps) {
         try {
-            doReload();
+            doReload(changeTimeStamps);
         } catch (InterruptedException e) {
             LOGGER.warning("reload spring failed: {}", e, ObjectUtils.identityToString(defaultListableBeanFactory));
         }
     }
 
-    private void doReload() throws InterruptedException {
-        boolean isLockAcquired = false;
-        isLockAcquired = reloadLock.tryLock(1, TimeUnit.SECONDS);
+    private void doReload(long changeTimeStamps) throws InterruptedException {
+        boolean isLockAcquired = reloadLock.tryLock(1, TimeUnit.SECONDS);
         if (isLockAcquired) {
             try {
-                waitingReloadCount.decrementAndGet();
-                springReload.reload();
+                LOGGER.trace("Spring reload: {} at timestamps '{}'", ObjectUtils.identityToString(defaultListableBeanFactory), changeTimeStamps);
+                springReload.reload(changeTimeStamps);
             } finally {
                 reloadLock.unlock();
             }
         } else {
-            Thread.sleep(500);
-            doReload();
+            Thread.sleep(100);
+            doReload(changeTimeStamps);
         }
     }
-
-//    private void reload() {
-//        // delay three times
-//        if (waitTimes.get() >= maxWaitTimes) {
-//            waitTimes.incrementAndGet();
-//            if (pause.get()) {
-//                LOGGER.trace("spring reload pause: {}", ObjectUtils.identityToString(current.beanFactory));
-//                return;
-//            }
-//            if (status.compareAndSet(CHANGING, RELOADED)) {
-//                // relead
-//                try {
-//                    current.reload();
-//                } catch (Exception e) {
-//                    LOGGER.error("reload spring failed: {}", e, ObjectUtils.identityToString(current.beanFactory));
-//                }
-//                finishReload();
-//                waitTimes.set(0);
-//            }
-//        } else if (status.get() == CHANGING) {
-//            if (waitTimes.get() == 0) {
-//                int restTime = maxWaitTimes * DEFAULT_DELAY_PERIOD / 1000;
-//                LOGGER.info("waiting to start reload '{}', it will start after {}s", ObjectUtils.identityToString(beanFactory()), restTime);
-//            }
-//            waitTimes.incrementAndGet();
-//        }
-//    }
 
     public static void collectPlaceholderProperties(ConfigurableListableBeanFactory configurableListableBeanFactory) {
         if (!(configurableListableBeanFactory instanceof DefaultListableBeanFactory)) {
             return;
         }
-        getInstance((DefaultListableBeanFactory) configurableListableBeanFactory).doCollectPlaceHolderProperties();
+        getInstance((DefaultListableBeanFactory) configurableListableBeanFactory).springReload.collectPlaceHolderProperties();
     }
 
-    private void doCollectPlaceHolderProperties() {
-        String[] beanNames = defaultListableBeanFactory.getBeanDefinitionNames();
-        for (String beanName : beanNames) {
-            BeanDefinition beanDefinition = defaultListableBeanFactory.getBeanDefinition(beanName);
-            doCollectPlaceHolderProperties0(beanName, beanDefinition);
-        }
-    }
-
-    private void doCollectPlaceHolderProperties0(String beanName, BeanDefinition beanDefinition) {
-
-        if (beanDefinition.getPropertyValues() != null) {
-            for (PropertyValue pv : beanDefinition.getPropertyValues().getPropertyValues()) {
-                if (containPlaceHolder(pv.getValue(), beanName, beanDefinition)) {
-                    return;
-                }
-            }
-        }
-        if (beanDefinition.getConstructorArgumentValues().isEmpty()) {
-            return;
-        }
-        for (ConstructorArgumentValues.ValueHolder valueHolder : beanDefinition.getConstructorArgumentValues().getIndexedArgumentValues().values()) {
-            if (containPlaceHolder(valueHolder.getValue(), beanName, beanDefinition)) {
-                return;
-            }
-        }
-        for (ConstructorArgumentValues.ValueHolder valueHolder : beanDefinition.getConstructorArgumentValues().getGenericArgumentValues()) {
-            if (containPlaceHolder(valueHolder.getValue(), beanName, beanDefinition)) {
-                return;
-            }
-        }
-    }
-
-    private boolean containPlaceHolder(Object object, String beanName, BeanDefinition beanDefinition) {
-        if (!isPlaceHolderBean(object)) {
-            return false;
-        }
-        if (beanDefinition instanceof AbstractBeanDefinition) {
-            String path = ResourceUtils.getPath(((AbstractBeanDefinition) beanDefinition).getResource());
-            if (path == null) {
-                return false;
-            }
-            beanFactoryAssistant.placeHolderXmlMapping.put(beanName, path);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isPlaceHolderBean(Object v) {
-        String value = null;
-        if (v instanceof TypedStringValue) {
-            value = ((TypedStringValue) v).getValue();
-        } else if (v instanceof String) {
-            value = (String) v;
-        }
-        if (value == null) {
-            return false;
-        }
-        if (value.startsWith(PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX) &&
-                value.endsWith(PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX)) {
-            return true;
-        }
-        return false;
-    }
 
 //    public void finishReload() {
 //        current = next;
@@ -282,7 +181,7 @@ public class SpringChangedAgent implements SpringListener<SpringEvent> {
     }
 
     @Override
-    public void onEvent(SpringEvent event) {
+    public void onEvent(SpringEvent<?> event) {
         if (event instanceof BeanDefinitionChangeEvent) {
             BeanDefinitionChangeEvent beanDefinitionChangeEvent = (BeanDefinitionChangeEvent) event;
             addNewBean(beanDefinitionChangeEvent.getBeanFactory(), beanDefinitionChangeEvent.getSource());

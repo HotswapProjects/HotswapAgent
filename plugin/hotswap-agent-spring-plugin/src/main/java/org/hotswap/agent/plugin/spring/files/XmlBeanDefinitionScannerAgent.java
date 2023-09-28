@@ -107,6 +107,22 @@ public class XmlBeanDefinitionScannerAgent {
         fillAgentInstance(reader, resource, pathToAgent);
     }
 
+    public static Set<String> reloadXmlsAndGetBean(DefaultListableBeanFactory beanFactory, boolean propertiesChanged,
+                                                   Map<String, String> placeHolderXmlRelation,Set<String> recreateBean, Set<URL> xmls) {
+        LOGGER.debug("reloadXmlsAndGetBean, propertiesChanged: {}, placeHolderXmlRelation: {}, recreateBean: {}, xmls: {}",
+                propertiesChanged, placeHolderXmlRelation, recreateBean, xmls);
+        synchronized (xmls) {
+            Set<String> xmlResourcePaths = new HashSet<>();
+            if (propertiesChanged) {
+                xmlResourcePaths.addAll(placeHolderXmlRelation.values());
+            }
+            Set<String> result = XmlBeanDefinitionScannerAgent.reloadXmls(beanFactory, xmls, xmlResourcePaths);
+            // clear the xmls after the beanDefinition is refreshed.
+            xmls.clear();
+            return result;
+        }
+    }
+
     private static void fillAgentInstance(XmlBeanDefinitionReader reader, Resource resource, Map<String, XmlBeanDefinitionScannerAgent> instances) {
         String path = ResourceUtils.getPath(resource);
         if (path == null) {

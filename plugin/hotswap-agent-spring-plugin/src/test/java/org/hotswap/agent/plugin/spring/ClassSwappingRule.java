@@ -48,9 +48,10 @@ public class ClassSwappingRule implements TestRule {
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return BeanFactoryAssistant.getBeanFactoryAssistant(beanFactory).getReloadTimes() >= reloadTimes;
+//                System.out.println("reloadTimes: " + BeanFactoryAssistant.getBeanFactoryAssistant(beanFactory).getReloadTimes() + ", " + reloadTimes);
+                return BaseTestUtil.finishReloading(beanFactory, reloadTimes);
             }
-        }, 8000));
+        }, 10000));
 
         // TODO do not know why sleep is needed, maybe a separate thread in Spring
         // refresh?

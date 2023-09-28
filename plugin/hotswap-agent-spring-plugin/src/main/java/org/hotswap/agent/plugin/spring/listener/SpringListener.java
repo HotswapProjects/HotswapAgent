@@ -9,7 +9,7 @@ import java.util.EventListener;
  *
  * @param <E> the event type
  */
-public interface SpringListener<E extends SpringEvent> extends EventListener {
+public interface SpringListener<E extends SpringEvent<?>> extends EventListener {
 
     DefaultListableBeanFactory beanFactory();
 

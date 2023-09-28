@@ -3,13 +3,12 @@ package org.hotswap.agent.plugin.spring.configuration;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
-import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
-import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.configuration.beans.Config;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config1;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config2;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config3;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +39,7 @@ public class ConfigurationXmlTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         SpringChangedAgent.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(false);
     }
 
@@ -97,7 +96,7 @@ public class ConfigurationXmlTest {
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return BeanFactoryAssistant.getBeanFactoryAssistant(context.getBeanFactory()).getReloadTimes() >= reloadTimes;
+                return BaseTestUtil.finishReloading(context.getBeanFactory(), reloadTimes);
             }
         }, 8000));
         System.out.println("Reload times: " + reloadTimes + ", " + (System.currentTimeMillis() - now) + "ms");

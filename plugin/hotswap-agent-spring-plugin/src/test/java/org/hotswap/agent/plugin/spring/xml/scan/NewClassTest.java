@@ -1,7 +1,8 @@
 package org.hotswap.agent.plugin.spring.xml.scan;
 
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,18 +14,17 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.io.File;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:xml-scan/scanContext.xml"})
 public class NewClassTest {
+    private static AgentLogger LOGGER = AgentLogger.getLogger(NewClassTest.class);
     @Autowired
     private AbstractApplicationContext applicationContext;
     @Test
     public void swapSingleClassTest() throws Exception {
-        ReconfigureTestParam.configMaxReloadTimes();
-        System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
-        System.out.println("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
+        BaseTestUtil.configMaxReloadTimes();
+        LOGGER.info("NewClassTest.swapSingleClassTest." + applicationContext.getBeanFactory());
         assertNotNull(applicationContext.getBean(ScanItem.class).getName());
         assertNotNull(applicationContext.getBean(ScanItem2.class).getName());
 
@@ -33,8 +33,8 @@ public class NewClassTest {
         moveClass("org.hotswap.agent.plugin.spring.xml.scanbak.ScanBakItem2",
                 "org.hotswap.agent.plugin.spring.xml.scan.ScanBakItem2", ScanItem.class.getClassLoader());
 
-        Thread.sleep(10000);
-
+        Thread.sleep(12000);
+        LOGGER.info("swap class finished");
         assertNotNull(applicationContext.getBean(ScanItem.class).getName());
         assertNotNull(applicationContext.getBean(ScanItem2.class).getName());
         assertNotNull(applicationContext.getBean("scanBakItem1"));

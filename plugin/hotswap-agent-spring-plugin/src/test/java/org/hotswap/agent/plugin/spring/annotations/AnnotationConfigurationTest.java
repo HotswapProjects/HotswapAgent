@@ -1,14 +1,14 @@
 package org.hotswap.agent.plugin.spring.annotations;
 
-import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
-import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation1.*;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation2.Annotation2Student1;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation3.Annotation3Student1;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation4.Annotation4Component;
 import org.hotswap.agent.plugin.spring.annotations.placeholder.annotation4.Annotation4Student;
 import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.After;
 import org.junit.Assert;
@@ -39,13 +39,15 @@ public class AnnotationConfigurationTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        BeanFactoryAssistant.getBeanFactoryAssistant((DefaultListableBeanFactory) applicationContext.getBeanFactory()).reset();
     }
 
     @After
     public void after() {
         SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        BeanFactoryAssistant.getBeanFactoryAssistant((DefaultListableBeanFactory) applicationContext.getBeanFactory()).reset();
     }
 
     @Test
@@ -72,7 +74,7 @@ public class AnnotationConfigurationTest {
             Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
                 @Override
                 public boolean result() throws Exception {
-                    return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 1;
+                    return BaseTestUtil.finishReloading(applicationContext.getBeanFactory(), 1);
                 }
             }, 11000));
 

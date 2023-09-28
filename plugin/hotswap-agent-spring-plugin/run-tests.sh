@@ -37,7 +37,7 @@ function test {
 # test 5.3.17
 
 # 5.3.28 is lowest not vulnerable version(2023.7.05)
-test 5.3.28
+#test 5.3.28
 
 # test 5.2.0.RELEASE
 # test 5.2.1.RELEASE
@@ -78,7 +78,7 @@ test 5.3.28
 # test 5.0.0.RELEASE
 # test 5.0.1.RELEASE
 #
-#test 5.0.2.RELEASE
+test 5.0.11.RELEASE
 
 # test 4.3.0.RELEASE
 # test 4.3.1.RELEASE

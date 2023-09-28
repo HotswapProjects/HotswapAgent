@@ -4,8 +4,6 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
 import org.hotswap.agent.plugin.spring.transformers.api.IResourcePropertySource;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
-import org.hotswap.agent.plugin.spring.utils.ConstructorUtils;
-import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -19,10 +17,15 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -48,22 +51,41 @@ public class PropertyReload {
         if (beanFactoryBeanNamesForTypes != null) {
             for (String beanFactoryBeanName : beanFactoryBeanNamesForTypes) {
                 PlaceholderConfigurerSupport placeholderConfigurerSupport = beanFactory.getBean(beanFactoryBeanName, PlaceholderConfigurerSupport.class);
-                try {
-                    updatePlaceholderConfigurerSupport(beanFactory, placeholderConfigurerSupport);
-                } catch (Exception e) {
-                }
+                refreshPlaceholderConfigurerSupport(beanFactory, placeholderConfigurerSupport);
             }
         }
     }
 
-
-    private static void updatePlaceholderConfigurerSupport(DefaultListableBeanFactory beanFactory, PlaceholderConfigurerSupport placeholderConfigurerSupport) {
+    /**
+     * refresh PropertySourcesPlaceholderConfigurer or PropertyPlaceholderConfigurer.
+     * The usual way is as following :
+     * 1. define PropertyPlaceholderConfigurer/PropertySourcesPlaceholderConfigurer bean
+     * @Bean
+     * public static PropertySourcesPlaceholderConfigurer properties(){
+     *     PropertySourcesPlaceholderConfigurer pspc
+     *       = new PropertySourcesPlaceholderConfigurer();
+     *     Resource[] resources = new ClassPathResource[ ]
+     *       { new ClassPathResource( "foo.properties" ) };
+     *     pspc.setLocations( resources );
+     *     pspc.setIgnoreUnresolvablePlaceholders( true );
+     *     return pspc;
+     * }
+     * 2. define PropertyPlaceholderConfigurer/PropertySourcesPlaceholderConfigurer bean in xml
+     * <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+     * 		<property name="locations" value="classpath:foo.properties" />
+     * 	</bean>
+     *
+     * @param beanFactory
+     * @param placeholderConfigurerSupport
+     */
+    private static void refreshPlaceholderConfigurerSupport(DefaultListableBeanFactory beanFactory, PlaceholderConfigurerSupport placeholderConfigurerSupport) {
         if (placeholderConfigurerSupport instanceof PropertySourcesPlaceholderConfigurer) {
             PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer = (PropertySourcesPlaceholderConfigurer) placeholderConfigurerSupport;
             Field field = null;
             try {
                 field = PropertySourcesPlaceholderConfigurer.class.getDeclaredField("propertySources");
                 field.setAccessible(true);
+                // if placeholderConfigurerSupport is PropertySourcesPlaceholderConfigurer instance, it should clear and reload propertySources
                 MutablePropertySources origPropertySources = (MutablePropertySources) field.get(propertySourcesPlaceholderConfigurer);
                 origPropertySources.forEach(propertySource -> {
                     origPropertySources.remove(propertySource.getName());
@@ -95,95 +117,55 @@ public class PropertyReload {
      * @param beanFactory
      * @return
      */
-    public static Set<String> checkAndGetReloadBeanNames(DefaultListableBeanFactory beanFactory) {
-        Set<String> recreatedBeans = new HashSet<>();
+    public static Set<String> getContainValueAnnotationBeans(DefaultListableBeanFactory beanFactory) {
+        Set<String> needRecreateBeans = new HashSet<>();
         // resolve constructor arguments
         for (String beanName : beanFactory.getBeanDefinitionNames()) {
             BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
             if (beanDefinition instanceof AnnotatedBeanDefinition) {
                 if (beanDefinition instanceof RootBeanDefinition) {
                     RootBeanDefinition currentBeanDefinition = (RootBeanDefinition) beanDefinition;
-                    if (currentBeanDefinition.getFactoryMethodName() != null && currentBeanDefinition.getFactoryBeanName() != null) {
-                        Method method = currentBeanDefinition.getResolvedFactoryMethod();
-                        if (method == null) {
-                            Object factoryBean = beanFactory.getBean(currentBeanDefinition.getFactoryBeanName());
-                            Class factoryClass = ClassUtils.getUserClass(factoryBean.getClass());
-                            Method[] methods = ConstructorUtils.getCandidateMethods(factoryClass, currentBeanDefinition);
-                            for (Method m : methods) {
-                                if (!Modifier.isStatic(m.getModifiers()) && currentBeanDefinition.isFactoryMethod(m) &&
-                                        m.getParameterCount() != 0 && containValueAnnotation(m.getParameterAnnotations())) {
-                                    recreatedBeans.add(beanName);
-                                    break;
-                                }
-                            }
-                        } else if (method.getParameterCount() != 0) {
-                            // @Bean method contains @Value parameter
-                            if (containValueAnnotation(method.getParameterAnnotations())) {
-                                recreatedBeans.add(beanName);
-                            }
-                        }
+                    if (containValueAnnotationInMethod(beanFactory, currentBeanDefinition)) {
+                        needRecreateBeans.add(beanName);
                     }
                 } else if (beanDefinition instanceof GenericBeanDefinition) {
                     GenericBeanDefinition currentBeanDefinition = (GenericBeanDefinition) beanDefinition;
-                    if (BeanFactoryProcessor.checkNeedReload(beanFactory, currentBeanDefinition, beanName, constructors -> {
-                        for (Constructor constructor : constructors) {
-                            if (constructor.getParameterCount() != 0 && containValueAnnotation(constructor.getParameterAnnotations())) {
-                                return true;
-                            }
+                    if (currentBeanDefinition instanceof AnnotatedBeanDefinition) {
+                        AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) currentBeanDefinition;
+                        if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(annotatedBeanDefinition) != null) {
+                            continue;
                         }
-                        return false;
-                    })) {
-                        recreatedBeans.add(beanName);
                     }
-                    // fixme factory method
+                    if (BeanFactoryProcessor.needReloadOnConstructor(beanFactory, currentBeanDefinition, beanName, constructors -> checkConstructorContainsValueAnnotation(constructors))) {
+                        needRecreateBeans.add(beanName);
+                    }
                 } else if (beanDefinition instanceof AnnotatedGenericBeanDefinition) {
                     AnnotatedGenericBeanDefinition currentBeanDefinition = (AnnotatedGenericBeanDefinition) beanDefinition;
-                    Method resolveBeanClassMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "resolveBeanClass", RootBeanDefinition.class, String.class, Class[].class);
-                    if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(currentBeanDefinition) == null && resolveBeanClassMethod != null) {
-                        resolveBeanClassMethod.setAccessible(true);
-                        Class<?> beanClass = null;
-                        BeanDefinition rBeanDefinition = beanFactory.getMergedBeanDefinition(beanName);
-                        try {
-                            if (rBeanDefinition != null) {
-                                beanClass = (Class<?>) resolveBeanClassMethod.invoke(beanFactory, rBeanDefinition, beanName, new Class[]{});
-                            }
-                        } catch (IllegalAccessException e) {
-                            LOGGER.warning("resolveBeanClass error", e);
-                            continue;
-                        } catch (InvocationTargetException e) {
-                            LOGGER.warning("resolveBeanClass error", e);
-                            continue;
-                        } catch (Exception e) {
-                            LOGGER.warning("resolveBeanClass error", e);
-                            continue;
-                        }
-                        Method method = ReflectionUtils.findMethod(beanFactory.getClass(), "determineConstructorsFromBeanPostProcessors", Class.class, String.class);
-                        if (method != null) {
-                            method.setAccessible(true);
-                            try {
-                                Constructor<?>[] constructors = (Constructor<?>[]) method.invoke(beanFactory, beanClass, beanName);
-                                if (constructors != null && constructors.length > 0) {
-                                    if (containValueAnnotation(constructors[0].getParameterAnnotations())) {
-                                        recreatedBeans.add(beanName);
-                                    }
-                                }
-                            } catch (Exception e) {
-                                LOGGER.error("determineConstructorsFromBeanPostProcessors error", e);
-                            }
-                        }
+                    if (BeanFactoryProcessor.needReloadOnConstructor(beanFactory, currentBeanDefinition, beanName, constructors -> checkConstructorContainsValueAnnotation(constructors))) {
+                        needRecreateBeans.add(beanName);
                     }
-                    // fixme factory method
                 }
             }
         }
-        return recreatedBeans;
+        return needRecreateBeans;
     }
 
-    private static boolean containValueAnnotation(Annotation[][] annotations) {
-        for (int i = 0; i < annotations.length; i++) {
-            Annotation[] annotationArray = annotations[i];
-            for (Annotation annotation : annotationArray) {
-                if (annotation.annotationType().getName().equals("org.springframework.beans.factory.annotation.Value")) {
+    private static boolean containValueAnnotationInMethod(DefaultListableBeanFactory beanFactory, RootBeanDefinition currentBeanDefinition) {
+        if (currentBeanDefinition.getFactoryMethodName() != null && currentBeanDefinition.getFactoryBeanName() != null) {
+            Method method = currentBeanDefinition.getResolvedFactoryMethod();
+            if (method == null) {
+                Object factoryBean = beanFactory.getBean(currentBeanDefinition.getFactoryBeanName());
+                Class factoryClass = ClassUtils.getUserClass(factoryBean.getClass());
+                Method[] methods = getCandidateMethods(factoryClass, currentBeanDefinition);
+                for (Method m : methods) {
+                    if (!Modifier.isStatic(m.getModifiers()) && currentBeanDefinition.isFactoryMethod(m) &&
+                            m.getParameterCount() != 0 && AnnotatedBeanDefinitionUtils.containValueAnnotation(m.getParameterAnnotations())) {
+                        return true;
+                    }
+                }
+            } else if (method.getParameterCount() != 0) {
+                // @Bean method contains @Value parameter
+                if (AnnotatedBeanDefinitionUtils.containValueAnnotation(method.getParameterAnnotations())) {
                     return true;
                 }
             }
@@ -191,4 +173,24 @@ public class PropertyReload {
         return false;
     }
 
+    private static Method[] getCandidateMethods(Class<?> factoryClass, RootBeanDefinition mbd) {
+        if (System.getSecurityManager() != null) {
+            return AccessController.doPrivileged((PrivilegedAction<Method[]>) () ->
+                    (mbd.isNonPublicAccessAllowed() ?
+                            ReflectionUtils.getAllDeclaredMethods(factoryClass) : factoryClass.getMethods()));
+        }
+        else {
+            return (mbd.isNonPublicAccessAllowed() ?
+                    ReflectionUtils.getAllDeclaredMethods(factoryClass) : factoryClass.getMethods());
+        }
+    }
+
+    private static boolean checkConstructorContainsValueAnnotation(Constructor<?>[] constructors) {
+        for (Constructor constructor : constructors) {
+            if (constructor.getParameterCount() != 0 && AnnotatedBeanDefinitionUtils.containValueAnnotation(constructor.getParameterAnnotations())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

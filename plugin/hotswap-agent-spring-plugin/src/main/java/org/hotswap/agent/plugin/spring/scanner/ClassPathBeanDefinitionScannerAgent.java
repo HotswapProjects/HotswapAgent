@@ -141,46 +141,58 @@ public class ClassPathBeanDefinitionScannerAgent {
      * @param classDefinition new class definition
      * @throws IOException error working with classDefinition
      */
-    public static void refreshClass(ClassLoader appClassLoader, String basePackage, String clazzName, byte[] classDefinition) throws IOException {
+    public static boolean refreshClassAndCheckReload(ClassLoader appClassLoader, String basePackage, String clazzName, byte[] classDefinition) throws IOException {
         ClassPathBeanDefinitionScannerAgent scannerAgent = getInstance(basePackage);
         if (scannerAgent == null) {
             LOGGER.error("basePackage '{}' not associated with any scannerAgent", basePackage);
-            return;
+            return false;
         }
-        scannerAgent.createBeanDefinitionIfNecessary(appClassLoader, clazzName, classDefinition);
+        return scannerAgent.createBeanDefinitionAndCheckReload(appClassLoader, clazzName, classDefinition);
     }
 
-    void createBeanDefinitionIfNecessary(ClassLoader appClassLoader, String clazzName, byte[] classDefinition) throws IOException {
+    /**
+     * create beanDefinition if it is new bean. If it is need refresh, return true;
+     *
+     * @param appClassLoader
+     * @param clazzName
+     * @param classDefinition
+     * @return
+     * @throws IOException
+     */
+    boolean createBeanDefinitionAndCheckReload(ClassLoader appClassLoader, String clazzName, byte[] classDefinition) throws IOException {
         DefaultListableBeanFactory defaultListableBeanFactory = RegistryUtils.maybeRegistryToBeanFactory(registry);
         if (doProcessWhenBeanExist(defaultListableBeanFactory, appClassLoader, clazzName, classDefinition)) {
             LOGGER.debug("the class '{}' is exist at '{}', it will not create new BeanDefinition", clazzName,
                     ObjectUtils.identityToString(defaultListableBeanFactory));
-            return;
+            return true;
         }
         BeanDefinition beanDefinition = resolveBeanDefinition(appClassLoader, classDefinition);
         if (beanDefinition == null) {
-            return;
+            return false;
         }
         String beanName = this.beanNameGenerator.generateBeanName(beanDefinition, registry);
         // check if bean is already registered
         if (registry.containsBeanDefinition(beanName)) {
             LOGGER.debug("Bean definition '{}' already exists", beanName);
-            return;
+            return false;
         }
-        if (beanDefinition != null) {
-            beanDefinitions.add(beanDefinition);
-            BeanDefinitionHolder beanDefinitionHolder = defineBean(beanDefinition);
-            if (beanDefinitionHolder != null) {
-                LOGGER.debug("Registering Spring bean '{}'", beanName);
-                if (defaultListableBeanFactory != null) {
-                    BeanDefinitionChangeEvent beanDefinitionChangeEvent = new BeanDefinitionChangeEvent(beanDefinitionHolder, defaultListableBeanFactory);
-                    SpringEventSource.INSTANCE.fireEvent(beanDefinitionChangeEvent);
-                }
+
+        beanDefinitions.add(beanDefinition);
+        BeanDefinitionHolder beanDefinitionHolder = defineBean(beanDefinition);
+        if (beanDefinitionHolder != null) {
+            LOGGER.debug("Registering Spring bean '{}'", beanName);
+            if (defaultListableBeanFactory != null) {
+                BeanDefinitionChangeEvent beanDefinitionChangeEvent = new BeanDefinitionChangeEvent(beanDefinitionHolder, defaultListableBeanFactory);
+                SpringEventSource.INSTANCE.fireEvent(beanDefinitionChangeEvent);
+                return true;
             }
         }
+
+        return false;
     }
 
-    private boolean doProcessWhenBeanExist(DefaultListableBeanFactory defaultListableBeanFactory, ClassLoader appClassLoader,
+    private boolean doProcessWhenBeanExist(DefaultListableBeanFactory defaultListableBeanFactory, ClassLoader
+            appClassLoader,
                                            String clazzName, byte[] classDefinition) {
         try {
             Class<?> clazz = loadClass(appClassLoader, clazzName, classDefinition);

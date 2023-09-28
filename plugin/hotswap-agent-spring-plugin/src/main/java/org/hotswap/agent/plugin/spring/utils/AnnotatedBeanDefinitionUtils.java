@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.core.type.MethodMetadata;
 import org.springframework.core.type.StandardMethodMetadata;
 
+import java.lang.annotation.Annotation;
+
 public class AnnotatedBeanDefinitionUtils {
 
     public static MethodMetadata getFactoryMethodMetadata(AnnotatedBeanDefinition beanDefinition) {
@@ -18,5 +20,17 @@ public class AnnotatedBeanDefinitionUtils {
             return standardMethodMetadata;
         }
         return null;
+    }
+
+    public static boolean containValueAnnotation(Annotation[][] annotations) {
+        for (int i = 0; i < annotations.length; i++) {
+            Annotation[] annotationArray = annotations[i];
+            for (Annotation annotation : annotationArray) {
+                if (annotation.annotationType().getName().equals("org.springframework.beans.factory.annotation.Value")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

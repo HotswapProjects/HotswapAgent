@@ -1,10 +1,10 @@
 package org.hotswap.agent.plugin.spring.mvc;
 
-import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.ClassSwappingRule;
-import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.mvcHotswap.SampleRestController2;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,7 +42,7 @@ public class SpringMvcTest {
 
     @Before
     public void setup() {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).build();
         swappingRule.setBeanFactory(beanFactory);
         BeanFactoryAssistant.getBeanFactoryAssistant(beanFactory).reset();

@@ -1,10 +1,9 @@
 package org.hotswap.agent.plugin.spring.annotations.dependent;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
-import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.annotations.dependentbak.*;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.After;
 import org.junit.Assert;
@@ -25,7 +24,7 @@ public class DependentTest {
 
     @Before
     public void before() {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
     }
 
@@ -80,7 +79,7 @@ public class DependentTest {
         Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 1;
+                return BaseTestUtil.finishReloading(applicationContext.getBeanFactory(), 1);
             }
         }, 11000));
 
@@ -118,7 +117,7 @@ public class DependentTest {
         Assert.assertEquals(depStudentChange2, depTeacherChange21.getStudent2());
         Assert.assertEquals(depStudentChange3, depTeacherChange3.getStudent3());
         Assert.assertEquals(depStudentChange4, depTeacherChange4.getStudent4());
-        Assert.assertEquals(depTeacher1, depTeacherChange1);
+        Assert.assertNotEquals(depTeacher1, depTeacherChange1);
         Assert.assertNotEquals(depTeacher20, depTeacherChange20);
         Assert.assertNotEquals(depTeacher21, depTeacherChange21);
         Assert.assertNotEquals(depTeacher3, depTeacherChange3);
@@ -126,14 +125,14 @@ public class DependentTest {
         Assert.assertNotEquals(depTeacherMul, depTeacherMulChange);
 
         // teacher group
-        Assert.assertEquals(depTeacher1, depTeacherGroupChange1.getDepTeacher1());
+        Assert.assertNotEquals(depTeacher1, depTeacherGroupChange1.getDepTeacher1());
         Assert.assertEquals(depTeacherChange20, depTeacherGroupChange2.getDepTeacher2());
         Assert.assertEquals(depTeacherChange3, depTeacherGroupChange3.getDepTeacher3());
         Assert.assertEquals(depTeacherChange4, depTeacherGroupChange4.getDepTeacher4());
-        Assert.assertEquals(depTeacherGroup1, depTeacherGroupChange1);
+        Assert.assertNotEquals(depTeacherGroup1, depTeacherGroupChange1);
         Assert.assertNotEquals(depTeacherGroup2, depTeacherGroupChange2);
         Assert.assertNotEquals(depTeacherGroup3, depTeacherGroupChange3);
-        Assert.assertEquals(depTeacherGroup4, depTeacherGroupChange4);
+        Assert.assertNotEquals(depTeacherGroup4, depTeacherGroupChange4);
 
 
         HotSwapper.swapClasses(DepStudent1.class, DepBakStudentSec1.class.getName());
@@ -143,7 +142,7 @@ public class DependentTest {
         Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).getReloadTimes() >= 2;
+                return BaseTestUtil.finishReloading(applicationContext.getBeanFactory(), 2);
             }
         }, 11000));
 
@@ -181,7 +180,7 @@ public class DependentTest {
         Assert.assertEquals(depStudentChangeAgain2, depTeacherChangeAgain21.getStudent2());
         Assert.assertEquals(depStudentChangeAgain3, depTeacherChangeAgain3.getStudent3());
         Assert.assertEquals(depStudentChangeAgain4, depTeacherChangeAgain4.getStudent4());
-        Assert.assertEquals(depTeacherChangeAgain1, depTeacherChange1);
+        Assert.assertNotEquals(depTeacherChangeAgain1, depTeacherChange1);
         Assert.assertNotEquals(depTeacherChangeAgain20, depTeacherChange20);
         Assert.assertNotEquals(depTeacherChangeAgain21, depTeacherChange21);
         Assert.assertNotEquals(depTeacherChangeAgain3, depTeacherChange3);
@@ -189,14 +188,14 @@ public class DependentTest {
         Assert.assertNotEquals(depTeacherMulChangeAgain, depTeacherMulChange);
 
         // teacher group
-        Assert.assertEquals(depTeacher1, depTeacherGroupChangeAgain1.getDepTeacher1());
+        Assert.assertNotEquals(depTeacher1, depTeacherGroupChangeAgain1.getDepTeacher1());
         Assert.assertEquals(depTeacherChangeAgain20, depTeacherGroupChangeAgain2.getDepTeacher2());
         Assert.assertEquals(depTeacherChangeAgain3, depTeacherGroupChangeAgain3.getDepTeacher3());
         Assert.assertEquals(depTeacherChangeAgain4, depTeacherGroupChangeAgain4.getDepTeacher4());
-        Assert.assertEquals(depTeacherGroupChange1, depTeacherGroupChangeAgain1);
+        Assert.assertNotEquals(depTeacherGroupChange1, depTeacherGroupChangeAgain1);
         Assert.assertNotEquals(depTeacherGroupChange2, depTeacherGroupChangeAgain2);
         Assert.assertNotEquals(depTeacherGroupChange3, depTeacherGroupChangeAgain3);
-        Assert.assertEquals(depTeacherGroupChange4, depTeacherGroupChangeAgain4);
+        Assert.assertNotEquals(depTeacherGroupChange4, depTeacherGroupChangeAgain4);
     }
 
 }

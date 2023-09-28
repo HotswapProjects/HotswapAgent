@@ -25,6 +25,8 @@ import org.hotswap.agent.logging.AgentLogger;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,12 +34,18 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClassChangedCommand extends MergeableCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ClassChangedCommand.class);
+    private static final Set<String> IGNORE_PACKAGES = new HashSet<>();
 
     ClassLoader appClassLoader;
 
     Class clazz;
 
     Scheduler scheduler;
+
+    static {
+        IGNORE_PACKAGES.add("org.hotswap.agent.plugin.spring.reload");
+        IGNORE_PACKAGES.add("org.hotswap.agent.plugin.spring.scanner");
+    }
 
     public ClassChangedCommand(ClassLoader appClassLoader, Class clazz, Scheduler scheduler) {
         this.appClassLoader = appClassLoader;
@@ -48,13 +56,16 @@ public class ClassChangedCommand extends MergeableCommand {
     @Override
     public void executeCommand() {
         try {
-            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
-            Method method = clazz.getDeclaredMethod(
-                    "addChangedClass", new Class[]{Class.class});
-            method.invoke(null, clazz);
-            // schedule reload after 1000 milliseconds, the timeout of execution is 30000 milliseconds
+            Class<?> targetClass = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
+            Method targetMethod = targetClass.getDeclaredMethod("addChangedClass", Class.class);
+            boolean invokeResult = (boolean) targetMethod.invoke(null, clazz);
+            if (!invokeResult) {
+                return;
+            }
+            // schedule reload after 1000 milliseconds
+            LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", clazz, appClassLoader);
             scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                    TimeUnit.MILLISECONDS, SpringReloadConfig.reloadTimeout);
+                    TimeUnit.MILLISECONDS);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {

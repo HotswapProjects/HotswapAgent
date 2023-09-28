@@ -45,7 +45,7 @@ public class SpringBeanClassFileTransformer implements HaClassFileTransformer {
         if (classBeingRedefined != null) {
             if (analyzer.isReloadNeeded(classBeingRedefined, classfileBuffer)) {
                 scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(classBeingRedefined.getClassLoader(),
-                        basePackage, className, classfileBuffer));
+                        basePackage, className, classfileBuffer, scheduler));
             }
         }
         return classfileBuffer;

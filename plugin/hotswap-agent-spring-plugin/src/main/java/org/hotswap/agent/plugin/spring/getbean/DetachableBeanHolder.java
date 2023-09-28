@@ -140,11 +140,10 @@ public class DetachableBeanHolder implements Serializable {
                     if (freshBean instanceof SpringHotswapAgentProxy) {
                         freshBean = ((SpringHotswapAgentProxy) freshBean).$$ha$getTarget();
                     }
-
                     bean = freshBean;
                     beanCopy = bean;
                     if (beanCopy == null) {
-                        LOGGER.debug("Bean not loaded");
+                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
                         break;
                     }
                     LOGGER.info("Bean '{}' loaded", bean.getClass().getName());

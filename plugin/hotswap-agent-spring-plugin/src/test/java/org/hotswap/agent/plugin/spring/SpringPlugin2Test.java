@@ -18,7 +18,6 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
@@ -66,7 +65,7 @@ public class SpringPlugin2Test {
      */
     @Before
     public void before() throws IOException {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         if (xmlApplicationContext == null) {
             writeRepositoryToXml();
             xmlApplicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");
@@ -103,7 +102,7 @@ public class SpringPlugin2Test {
             assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
                 @Override
                 public boolean result() throws Exception {
-                    return BeanFactoryAssistant.getBeanFactoryAssistant(xmlApplicationContext.getBeanFactory()).getReloadTimes() >= 1;
+                    return BaseTestUtil.finishReloading(xmlApplicationContext.getBeanFactory(), 1);
                 }
             }, 10000));
 
@@ -113,7 +112,7 @@ public class SpringPlugin2Test {
             assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
                 @Override
                 public boolean result() throws Exception {
-                    return BeanFactoryAssistant.getBeanFactoryAssistant(xmlApplicationContext.getBeanFactory()).getReloadTimes() >= 2;
+                    return BaseTestUtil.finishReloading(xmlApplicationContext.getBeanFactory(), 2);
                 }
             }, 10000));
             Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");

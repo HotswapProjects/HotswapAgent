@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.spring.xml.constructor;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.ReconfigureTestParam;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorFactoryBean2;
@@ -24,7 +24,7 @@ public class XmlConstructorBeanChangeTest {
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
-        ReconfigureTestParam.configMaxReloadTimes();
+        BaseTestUtil.configMaxReloadTimes();
         System.out.println("XmlConstructorBeanChangeTest.testFactoryBeanChanged." + applicationContext.getBeanFactory());
         XmlConstructorBean1 xmlConstructorBean1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBean2 = applicationContext.getBean(XmlConstructorBean2.class);
@@ -112,7 +112,7 @@ public class XmlConstructorBeanChangeTest {
         Assert.assertEquals(xmlConstructorParentBean1, xmlConstructorParentBeanNew1);
         Assert.assertNotEquals(xmlConstructorParentBean2, xmlConstructorParentBeanNew2);
         Assert.assertNotEquals(xmlConstructorParentBean3, xmlConstructorParentBeanNew3);
-        Assert.assertEquals(xmlConstructorParentBean4, xmlConstructorParentBeanNew4);
+        Assert.assertNotEquals(xmlConstructorParentBean4, xmlConstructorParentBeanNew4);
         Assert.assertEquals(xmlConstructorParentBean5, xmlConstructorParentBeanNew5);
         Assert.assertNotEquals(xmlConstructorParentBeanMul1, xmlConstructorParentBeanMulNew1);
         Assert.assertNotEquals(xmlConstructorParentBeanMul2, xmlConstructorParentBeanMulNew2);
@@ -180,7 +180,7 @@ public class XmlConstructorBeanChangeTest {
         Assert.assertEquals(xmlConstructorParentBeanV2_1, xmlConstructorParentBeanNew1);
         Assert.assertNotEquals(xmlConstructorParentBeanV2_2, xmlConstructorParentBeanNew2);
         Assert.assertNotEquals(xmlConstructorParentBeanV2_3, xmlConstructorParentBeanNew3);
-        Assert.assertEquals(xmlConstructorParentBeanV2_4, xmlConstructorParentBeanNew4);
+        Assert.assertNotEquals(xmlConstructorParentBeanV2_4, xmlConstructorParentBeanNew4);
         Assert.assertEquals(xmlConstructorParentBeanV2_5, xmlConstructorParentBeanNew5);
         Assert.assertNotEquals(xmlConstructorParentBeanMulV2_1, xmlConstructorParentBeanMulNew1);
         Assert.assertNotEquals(xmlConstructorParentBeanMulV2_2, xmlConstructorParentBeanMulNew2);

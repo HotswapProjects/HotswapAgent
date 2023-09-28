@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring.utils;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
+import org.hotswap.agent.util.spring.util.StringUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -75,35 +76,14 @@ public class ResourceUtils {
      * @return if convert succeed, return classpath path, or else return file path
      */
     public static String convertToClasspathURL(URL[] extraClassPaths, String filePath) {
-        String[] paths = filePath.split("src/main/resources/");
-        if (paths.length == 2) {
-            return paths[1];
+        String path = convertToClasspathURL(filePath);
+        if (!StringUtils.isEmpty(path)) {
+            return path;
         }
-
-        paths = filePath.split("WEB-INF/classes/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        paths = filePath.split("WEB-INF/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        paths = filePath.split("target/classes/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
-        paths = filePath.split("target/test-classes/");
-        if (paths.length == 2) {
-            return paths[1];
-        }
-
         if (extraClassPaths != null && extraClassPaths.length != 0) {
             for (URL extraClassPath : extraClassPaths) {
                 String extraClassPathStr = extraClassPath.getPath();
-                paths = filePath.split(extraClassPathStr);
+                String[] paths = filePath.split(extraClassPathStr);
                 if (paths.length == 2) {
                     return paths[1];
                 }
