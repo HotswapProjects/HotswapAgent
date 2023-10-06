@@ -26,25 +26,22 @@ public class SpringChangedReloadCommand extends MergeableCommand {
     @Override
     public void executeCommand() {
         // async call to avoid reload too much times
-        // FIXME use threadpool ?
-        new Thread(() -> {
-            try {
-                Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
-                Method method = clazz.getDeclaredMethod(
-                        "reload", long.class);
-                method.invoke(null, timestamps);
-            } catch (NoSuchMethodException e) {
-                throw new IllegalStateException("Plugin error, method not found", e);
-            } catch (InvocationTargetException e) {
-                LOGGER.error("Error invoking method", e);
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Plugin error, illegal access", e);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
-            } finally {
-                waitingTaskCount.decrementAndGet();
-            }
-        }).start();
+        try {
+            Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
+            Method method = clazz.getDeclaredMethod(
+                    "reload", long.class);
+            method.invoke(null, timestamps);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException("Plugin error, method not found", e);
+        } catch (InvocationTargetException e) {
+            LOGGER.error("Error invoking method", e);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Plugin error, illegal access", e);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
+        } finally {
+            waitingTaskCount.decrementAndGet();
+        }
     }
 
     // this is used by tests

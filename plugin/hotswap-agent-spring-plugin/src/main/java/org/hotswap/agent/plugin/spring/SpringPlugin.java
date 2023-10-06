@@ -24,9 +24,7 @@ import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanDefinitionProcessor;
-import org.hotswap.agent.plugin.spring.reload.ClassChangedCommand;
-import org.hotswap.agent.plugin.spring.reload.PropertiesChangedCommand;
-import org.hotswap.agent.plugin.spring.reload.XmlsChangedCommand;
+import org.hotswap.agent.plugin.spring.reload.*;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
 import org.hotswap.agent.plugin.spring.transformers.*;
 import org.hotswap.agent.util.HotswapTransformer;
@@ -41,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Spring plugin.
@@ -107,19 +106,28 @@ public class SpringPlugin {
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
         scheduler.scheduleCommand(new XmlsChangedCommand(appClassLoader, url, scheduler));
-//        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedXml", new Class<?>[]{URL.class}, url);
+        // schedule reload after 1000 milliseconds
+        LOGGER.trace("Scheduling Spring reload for XML '{}'", url);
+        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
+                TimeUnit.MILLISECONDS);
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
         scheduler.scheduleCommand(new PropertiesChangedCommand(appClassLoader, url, scheduler));
-//        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedProperty", new Class<?>[]{URL.class}, url);
+        // schedule reload after 1000 milliseconds
+        LOGGER.trace("Scheduling Spring reload for properties '{}'", url);
+        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
+                TimeUnit.MILLISECONDS);
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
         scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
-//        ReflectionHelper.invoke(null, springChangeHubClass, "addChangedClass", new Class<?>[]{Class.class}, clazz);
+        // schedule reload after 1000 milliseconds
+        LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", clazz, appClassLoader);
+        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
+                TimeUnit.MILLISECONDS);
     }
 
     /**

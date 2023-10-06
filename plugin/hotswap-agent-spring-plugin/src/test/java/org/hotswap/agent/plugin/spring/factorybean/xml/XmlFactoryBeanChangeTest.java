@@ -33,12 +33,12 @@ public class XmlFactoryBeanChangeTest {
     @Before
     public void before() {
         BaseTestUtil.configMaxReloadTimes();
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @After
     public void after() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @Test

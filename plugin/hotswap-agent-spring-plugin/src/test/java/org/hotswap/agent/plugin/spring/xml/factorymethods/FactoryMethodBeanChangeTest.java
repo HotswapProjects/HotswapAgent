@@ -42,7 +42,7 @@ public class FactoryMethodBeanChangeTest {
         BaseTestUtil.configMaxReloadTimes();
         content = Files.readAllBytes(propertyFile.getFile().toPath());
         System.out.println("FactoryMethodBeanChangeTest.before. " + applicationContext.getBeanFactory());
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @After
@@ -54,7 +54,7 @@ public class FactoryMethodBeanChangeTest {
                 return BaseTestUtil.finishReloading(applicationContext.getBeanFactory(), 3);
             }
         }, 11000));
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @Test

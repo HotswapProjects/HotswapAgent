@@ -4,6 +4,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
 import org.hotswap.agent.plugin.spring.transformers.api.IResourcePropertySource;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -60,53 +61,49 @@ public class PropertyReload {
      * refresh PropertySourcesPlaceholderConfigurer or PropertyPlaceholderConfigurer.
      * The usual way is as following :
      * 1. define PropertyPlaceholderConfigurer/PropertySourcesPlaceholderConfigurer bean
-     * @Bean
-     * public static PropertySourcesPlaceholderConfigurer properties(){
-     *     PropertySourcesPlaceholderConfigurer pspc
-     *       = new PropertySourcesPlaceholderConfigurer();
-     *     Resource[] resources = new ClassPathResource[ ]
-     *       { new ClassPathResource( "foo.properties" ) };
-     *     pspc.setLocations( resources );
-     *     pspc.setIgnoreUnresolvablePlaceholders( true );
-     *     return pspc;
-     * }
-     * 2. define PropertyPlaceholderConfigurer/PropertySourcesPlaceholderConfigurer bean in xml
-     * <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-     * 		<property name="locations" value="classpath:foo.properties" />
-     * 	</bean>
      *
      * @param beanFactory
      * @param placeholderConfigurerSupport
+     * @Bean public static PropertySourcesPlaceholderConfigurer properties(){
+     * PropertySourcesPlaceholderConfigurer pspc
+     * = new PropertySourcesPlaceholderConfigurer();
+     * Resource[] resources = new ClassPathResource[ ]
+     * { new ClassPathResource( "foo.properties" ) };
+     * pspc.setLocations( resources );
+     * pspc.setIgnoreUnresolvablePlaceholders( true );
+     * return pspc;
+     * }
+     * 2. define PropertyPlaceholderConfigurer/PropertySourcesPlaceholderConfigurer bean in xml
+     * <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+     * <property name="locations" value="classpath:foo.properties" />
+     * </bean>
      */
     private static void refreshPlaceholderConfigurerSupport(DefaultListableBeanFactory beanFactory, PlaceholderConfigurerSupport placeholderConfigurerSupport) {
         if (placeholderConfigurerSupport instanceof PropertySourcesPlaceholderConfigurer) {
             PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer = (PropertySourcesPlaceholderConfigurer) placeholderConfigurerSupport;
-            Field field = null;
-            try {
-                field = PropertySourcesPlaceholderConfigurer.class.getDeclaredField("propertySources");
-                field.setAccessible(true);
-                // if placeholderConfigurerSupport is PropertySourcesPlaceholderConfigurer instance, it should clear and reload propertySources
-                MutablePropertySources origPropertySources = (MutablePropertySources) field.get(propertySourcesPlaceholderConfigurer);
-                origPropertySources.forEach(propertySource -> {
-                    origPropertySources.remove(propertySource.getName());
-                });
-                field.set(propertySourcesPlaceholderConfigurer, null);
-                propertySourcesPlaceholderConfigurer.postProcessBeanFactory(beanFactory);
-
-                MutablePropertySources curPropertySources = (MutablePropertySources) field.get(propertySourcesPlaceholderConfigurer);
-                curPropertySources.forEach(propertySource -> {
-                    origPropertySources.addLast(propertySource);
-                });
-                field.set(propertySourcesPlaceholderConfigurer, origPropertySources);
-            } catch (NoSuchFieldException e) {
-                LOGGER.debug("Failed to reload PropertySourcesPlaceholderConfigurer, possibly Spring version is 3.x or less", e);
-            } catch (IllegalAccessException e) {
-                LOGGER.debug("Failed to reload PropertySourcesPlaceholderConfigurer, possibly Spring version is 3.x or less", e);
-            }
+            // if placeholderConfigurerSupport is PropertySourcesPlaceholderConfigurer instance, it should clear and reload propertySources
+            // 1. get orig propertySources
+            MutablePropertySources origPropertySources = getPropertySources(propertySourcesPlaceholderConfigurer);
+            // 2. clear propertySources, so it can be reinitialized
+            origPropertySources.forEach(propertySource -> origPropertySources.remove(propertySource.getName()));
+            ReflectionHelper.set(propertySourcesPlaceholderConfigurer, "propertySources", null);
+            // 3. reinitialize propertySources. It will generate new propertySources
+            propertySourcesPlaceholderConfigurer.postProcessBeanFactory(beanFactory);
+            // 4. get new propertySources
+            MutablePropertySources curPropertySources = getPropertySources(propertySourcesPlaceholderConfigurer);
+            // 5. add new propertySources elements to orig propertySources
+            curPropertySources.forEach(propertySource -> origPropertySources.addLast(propertySource));
+            // 6 set orig propertySources to placeholderConfigurerSupport.
+            // we should keep origPropertySources, because it is used other objects, such as StringValueResolver.
+            ReflectionHelper.set(propertySourcesPlaceholderConfigurer, "propertySources", origPropertySources);
         } else if (placeholderConfigurerSupport instanceof PropertyPlaceholderConfigurer) {
             PropertyPlaceholderConfigurer propertyPlaceholderConfigurer = (PropertyPlaceholderConfigurer) placeholderConfigurerSupport;
             propertyPlaceholderConfigurer.postProcessBeanFactory(beanFactory);
         }
+    }
+
+    private static MutablePropertySources getPropertySources(PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer) {
+        return (MutablePropertySources) ReflectionHelper.getNoException(propertySourcesPlaceholderConfigurer, propertySourcesPlaceholderConfigurer.getClass(), "propertySources");
     }
 
     /**
@@ -130,17 +127,10 @@ public class PropertyReload {
                     }
                 } else if (beanDefinition instanceof GenericBeanDefinition) {
                     GenericBeanDefinition currentBeanDefinition = (GenericBeanDefinition) beanDefinition;
-                    if (currentBeanDefinition instanceof AnnotatedBeanDefinition) {
-                        AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) currentBeanDefinition;
-                        if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(annotatedBeanDefinition) != null) {
-                            continue;
-                        }
+                    AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) currentBeanDefinition;
+                    if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(annotatedBeanDefinition) != null) {
+                        continue;
                     }
-                    if (BeanFactoryProcessor.needReloadOnConstructor(beanFactory, currentBeanDefinition, beanName, constructors -> checkConstructorContainsValueAnnotation(constructors))) {
-                        needRecreateBeans.add(beanName);
-                    }
-                } else if (beanDefinition instanceof AnnotatedGenericBeanDefinition) {
-                    AnnotatedGenericBeanDefinition currentBeanDefinition = (AnnotatedGenericBeanDefinition) beanDefinition;
                     if (BeanFactoryProcessor.needReloadOnConstructor(beanFactory, currentBeanDefinition, beanName, constructors -> checkConstructorContainsValueAnnotation(constructors))) {
                         needRecreateBeans.add(beanName);
                     }
@@ -178,8 +168,7 @@ public class PropertyReload {
             return AccessController.doPrivileged((PrivilegedAction<Method[]>) () ->
                     (mbd.isNonPublicAccessAllowed() ?
                             ReflectionUtils.getAllDeclaredMethods(factoryClass) : factoryClass.getMethods()));
-        }
-        else {
+        } else {
             return (mbd.isNonPublicAccessAllowed() ?
                     ReflectionUtils.getAllDeclaredMethods(factoryClass) : factoryClass.getMethods());
         }

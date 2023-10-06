@@ -59,29 +59,27 @@ public class ResetBeanPostProcessorCaches {
         if (c != null) {
             try {
                 Method m = c.getDeclaredMethod("clearCache");
-                m.invoke(c);
+                m.invoke(null);
+                LOGGER.trace("Cleared Spring 4.2+ internal method/field cache.");
             } catch (Exception version42Failed) {
-                try {
-                    // spring 4.0.x, 4.1.x without clearCache method, clear manually
-                    Field declaredMethodsCache = c.getDeclaredField("declaredMethodsCache");
-                    declaredMethodsCache.setAccessible(true);
-                    ((Map)declaredMethodsCache.get(null)).clear();
+                LOGGER.debug("Failed to clear internal method/field cache, it's normal with spring 4.1.x or lower", version42Failed);
+                // spring 4.0.x, 4.1.x without clearCache method, clear manually
+                Object declaredMethodsCache = ReflectionHelper.getNoException(null, c, "declaredMethodsCache");
+                if (declaredMethodsCache != null) {
+                    ((Map) declaredMethodsCache).clear();
+                }
 
-                    Object declaredFieldsCache1 = ReflectionHelper.getNoException(null, c, "declaredFieldsCache");
-                    if (declaredFieldsCache1 != null) {
-                        ((Map)declaredFieldsCache1).clear();
-                    }
-                } catch (Exception version40Failed) {
-                    LOGGER.debug("Failed to clear internal method/field cache, it's normal with spring 4.1x or lower", version40Failed);
+                Object declaredFieldsCache1 = ReflectionHelper.getNoException(null, c, "declaredFieldsCache");
+                if (declaredFieldsCache1 != null) {
+                    ((Map) declaredFieldsCache1).clear();
                 }
             }
-            LOGGER.trace("Cleared Spring 4.2+ internal method/field cache.");
         }
         for (BeanPostProcessor bpp : beanFactory.getBeanPostProcessors()) {
             if (bpp instanceof AutowiredAnnotationBeanPostProcessor) {
-                resetAutowiredAnnotationBeanPostProcessorCache((AutowiredAnnotationBeanPostProcessor)bpp);
+                resetAutowiredAnnotationBeanPostProcessorCache((AutowiredAnnotationBeanPostProcessor) bpp);
             } else if (bpp instanceof InitDestroyAnnotationBeanPostProcessor) {
-                resetInitDestroyAnnotationBeanPostProcessorCache((InitDestroyAnnotationBeanPostProcessor)bpp);
+                resetInitDestroyAnnotationBeanPostProcessorCache((InitDestroyAnnotationBeanPostProcessor) bpp);
             }
         }
     }

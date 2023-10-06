@@ -72,12 +72,12 @@ public class SpringPlugin2Test {
         }
         swappingRule.setBeanFactory(xmlApplicationContext.getBeanFactory());
         System.out.println("SpringPlugin2Test.before." + xmlApplicationContext.getBeanFactory());
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory()).setPause(false);
+//        SpringChangedAgent.getInstance((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory());
     }
 
     @After
     public void after() throws IOException {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory()).setPause(true);
+//        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) xmlApplicationContext.getBeanFactory());
     }
 
     private void writeRepositoryToXml() throws IOException {

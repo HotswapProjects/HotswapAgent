@@ -33,23 +33,22 @@ public class BeanFactoryProcessor {
         beanFactory.destroySingleton(beanName);
     }
 
-    public static boolean isFactoryBean(DefaultListableBeanFactory beanFactory, String beanName, RootBeanDefinition beanDefinition) {
-        Method isFactoryBeanMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "isFactoryBean", String.class, RootBeanDefinition.class);
-        if (isFactoryBeanMethod != null) {
-            isFactoryBeanMethod.setAccessible(true);
-            try {
-                return (boolean) isFactoryBeanMethod.invoke(beanFactory, beanName, beanDefinition);
-            } catch (IllegalAccessException e) {
-                LOGGER.warning("isFactoryBean error", e);
-            } catch (InvocationTargetException e) {
-                LOGGER.warning("isFactoryBean error", e);
-            }
-        }
-        if (beanName.startsWith("&")) {
-            return true;
-        }
-        return false;
-    }
+    // temporary removed
+//    public static boolean isFactoryBean(DefaultListableBeanFactory beanFactory, String beanName, RootBeanDefinition beanDefinition) {
+//        Method isFactoryBeanMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "isFactoryBean", String.class, RootBeanDefinition.class);
+//        if (isFactoryBeanMethod != null) {
+//            isFactoryBeanMethod.setAccessible(true);
+//            try {
+//                return (boolean) isFactoryBeanMethod.invoke(beanFactory, beanName, beanDefinition);
+//            } catch (Exception e) {
+//                LOGGER.warning("isFactoryBean error", e);
+//            }
+//        }
+//        if (beanName.startsWith("&")) {
+//            return true;
+//        }
+//        return false;
+//    }
 
     public static boolean needReloadOnConstructor(DefaultListableBeanFactory beanFactory, AbstractBeanDefinition currentBeanDefinition,
                                                   String beanName, Predicate<Constructor<?>[]> predicate) {

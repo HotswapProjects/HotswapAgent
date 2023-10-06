@@ -50,9 +50,7 @@ public class SpringBeanReload {
 
     private Set<String> processedBeans = new HashSet<>();
     private Set<String> destroyClasses = new HashSet<>();
-    //    private Set<String> newBeans = new HashSet<>();
     private Set<String> beansToProcess = new HashSet<>();
-    //    private Set<String> needInjectedBeans = new HashSet<>();
     private final BeanNameGenerator beanNameGenerator;
     private final BeanFactoryAssistant beanFactoryAssistant;
 
@@ -277,6 +275,8 @@ public class SpringBeanReload {
                     if ((names == null || names.length == 0) && !isFactoryMethod(clazz)) {
                         LOGGER.trace("the class '{}' is not spring bean or factory class", clazz.getName());
                         iterator.remove();
+                    } else {
+                        LOGGER.debug("the class '{}' is spring bean or factory class", clazz.getName());
                     }
                 }
             }
@@ -354,6 +354,7 @@ public class SpringBeanReload {
                 }
             }
             // 3.3 clear class cache
+            LOGGER.trace("clear class cache of {}", ObjectUtils.identityToString(beanFactory));
             classes.clear();
         }
     }
@@ -578,7 +579,6 @@ public class SpringBeanReload {
             if (Arrays.asList(bdrppNames).contains(name)) {
                 continue;
             }
-
             BeanFactoryPostProcessor pp = factory.getBean(name, BeanFactoryPostProcessor.class);
             pp.postProcessBeanFactory(factory);
         }

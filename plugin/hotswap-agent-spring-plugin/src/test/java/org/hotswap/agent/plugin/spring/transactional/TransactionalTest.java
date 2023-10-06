@@ -34,12 +34,12 @@ public class TransactionalTest {
     public void before() {
         BaseTestUtil.configMaxReloadTimes();
         swappingRule.setBeanFactory(beanFactory);
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory);
     }
 
     @After
     public void after() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) beanFactory);
     }
 
     @Test

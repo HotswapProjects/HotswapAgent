@@ -45,7 +45,7 @@ public class AnnotationConfigTest {
             assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
         } finally {
             Files.write(xmlFileWithoutAnnotationConfig.getFile().toPath(), content);
-            SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+            SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) applicationContext.getBeanFactory());
         }
     }
 }

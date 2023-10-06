@@ -21,6 +21,8 @@ package org.hotswap.agent.plugin.spring.scanner;
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -28,6 +30,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public class SpringBeanWatchEventListener implements WatchEventListener {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringBeanWatchEventListener.class);
@@ -67,6 +70,10 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
                 // refresh spring only for new classes
                 scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
                         basePackage, className, event, scheduler), WAIT_ON_CREATE);
+                // schedule reload after 1000 milliseconds
+                LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", className, appClassLoader);
+                scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
+                        TimeUnit.MILLISECONDS);
             }
         }
     }

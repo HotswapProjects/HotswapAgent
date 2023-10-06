@@ -1,6 +1,5 @@
 package org.hotswap.agent.plugin.spring.reload;
 
-import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
@@ -8,40 +7,31 @@ import org.hotswap.agent.plugin.spring.listener.SpringListener;
 import org.hotswap.agent.plugin.spring.scanner.BeanDefinitionChangeEvent;
 import org.hotswap.agent.plugin.spring.scanner.ClassChangeEvent;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
-import org.springframework.beans.factory.config.*;
+import org.springframework.beans.factory.config.BeanDefinitionHolder;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import java.net.URL;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringChangedAgent.class);
-    private static final Set<String> IGNORE_PACKAGES = new HashSet<>();
 
-    private static AtomicInteger waitingReloadCount = new AtomicInteger(0);
+    private static final AtomicInteger waitingReloadCount = new AtomicInteger(0);
 
     private DefaultListableBeanFactory defaultListableBeanFactory;
     private static ClassLoader appClassLoader;
     private static Map<DefaultListableBeanFactory, SpringChangedAgent> springChangeAgents = new ConcurrentHashMap<>(2);
-    //    final BeanFactoryAssistant beanFactoryAssistant;
-    final AtomicBoolean pause = new AtomicBoolean(false);
     private final SpringBeanReload springReload;
     ReentrantLock reloadLock = new ReentrantLock();
 
-    static {
-        IGNORE_PACKAGES.add("org.hotswap.agent.plugin.spring.reload");
-        IGNORE_PACKAGES.add("org.hotswap.agent.plugin.spring.scanner");
-    }
-
     public SpringChangedAgent(DefaultListableBeanFactory defaultListableBeanFactory) {
-//        beanFactoryAssistant = new BeanFactoryAssistant(defaultListableBeanFactory);
         springReload = new SpringBeanReload(defaultListableBeanFactory);
         this.defaultListableBeanFactory = defaultListableBeanFactory;
         SpringEventSource.INSTANCE.addListener(this);
@@ -86,16 +76,6 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         return true;
     }
 
-    private boolean isIgnorePackage(Class<?> clazz) {
-        String className = clazz.getName();
-        for (String ignorePackage : IGNORE_PACKAGES) {
-            if (className.startsWith(ignorePackage)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public static void reload(long changeTimeStamps) {
         int reloadCount = waitingReloadCount.incrementAndGet();
         // avoid reload too much times, allow 2 tasks into waiting queue
@@ -114,8 +94,19 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         }
     }
 
+    /**
+     * unit test
+     * @param beanFactory
+     */
+    public static void destroyBeanFactory(AbstractAutowireCapableBeanFactory beanFactory) {
+        if (!(beanFactory instanceof DefaultListableBeanFactory)) {
+            return;
+        }
+        springChangeAgents.remove(beanFactory);
+    }
+
     boolean addClass(Class clazz) {
-        if (clazz == null || isIgnorePackage(clazz)) {
+        if (clazz == null) {
             return false;
         }
         springReload.addClass(clazz);
@@ -165,16 +156,6 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
     }
 
 
-//    public void finishReload() {
-//        current = next;
-//        if (status.compareAndSet(RELOADED, INIT)) {
-//            current.appendAll(failed);
-//            failed = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
-//            next = new SpringReload(defaultListableBeanFactory, beanFactoryAssistant);
-//            next.setBeanNameGenerator(this.beanNameGenerator);
-//        }
-//    }
-
     @Override
     public DefaultListableBeanFactory beanFactory() {
         return defaultListableBeanFactory;
@@ -189,9 +170,5 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
             ClassChangeEvent changeEvent = (ClassChangeEvent) event;
             addClass(changeEvent.getSource());
         }
-    }
-
-    public void setPause(boolean pause) {
-        this.pause.set(pause);
     }
 }

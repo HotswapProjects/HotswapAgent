@@ -40,12 +40,12 @@ public class ConfigurationXmlTest {
     @Before
     public void before() {
         BaseTestUtil.configMaxReloadTimes();
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) context.getBeanFactory());
     }
 
     @After
     public void after() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) context.getBeanFactory()).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) context.getBeanFactory());
     }
 
     @Test

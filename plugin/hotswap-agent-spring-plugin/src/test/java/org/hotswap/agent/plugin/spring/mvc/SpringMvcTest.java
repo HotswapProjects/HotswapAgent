@@ -47,12 +47,12 @@ public class SpringMvcTest {
         swappingRule.setBeanFactory(beanFactory);
         BeanFactoryAssistant.getBeanFactoryAssistant(beanFactory).reset();
         System.out.println("SpringMvcTest.setup." + beanFactory);
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory);
     }
 
     @After
     public void after() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) beanFactory).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) beanFactory);
     }
 
     @Test

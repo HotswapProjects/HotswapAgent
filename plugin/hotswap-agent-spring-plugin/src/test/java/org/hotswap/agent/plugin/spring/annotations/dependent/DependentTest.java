@@ -25,17 +25,17 @@ public class DependentTest {
     @Before
     public void before() {
         BaseTestUtil.configMaxReloadTimes();
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @After
     public void after() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @Test
     public void swapClassTest() throws Exception {
-        System.out.println("DependentTest.swapPropertyTest" + applicationContext.getBeanFactory());
+        System.out.println("DependentTest.swapClassTest" + applicationContext.getBeanFactory());
         DepStudent1 depStudent1 = applicationContext.getBean(DepStudent1.class);
         DepStudent2 depStudent2 = applicationContext.getBean(DepStudent2.class);
         DepStudent3 depStudent3 = applicationContext.getBean(DepStudent3.class);

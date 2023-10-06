@@ -30,12 +30,12 @@ public class FactoryBeanChangeTest {
 
     @Before
     public void before() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @After
     public void after() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) applicationContext.getBeanFactory());
     }
 
     @Test

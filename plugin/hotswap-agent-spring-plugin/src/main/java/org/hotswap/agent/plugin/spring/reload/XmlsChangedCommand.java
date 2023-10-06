@@ -51,10 +51,6 @@ public class XmlsChangedCommand extends MergeableCommand {
             Method method = clazz.getDeclaredMethod(
                     "addChangedXml", new Class[]{URL.class});
             method.invoke(null, url);
-            // schedule reload after 1000 milliseconds, the timeout of execution is 30000 milliseconds
-            LOGGER.trace("Scheduling Spring reload for XML '{}'", url);
-            scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                    TimeUnit.MILLISECONDS);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {

@@ -94,14 +94,7 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
             Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent", true, appClassLoader);
             Method method  = clazz.getDeclaredMethod(
                     "refreshClassAndCheckReload", new Class[] {ClassLoader.class, String.class, String.class, byte[].class});
-            boolean result = (boolean)method.invoke(null, appClassLoader , basePackage, basePackage, classDefinition);
-            if (!result) {
-                return;
-            }
-            // schedule reload after 1000 milliseconds
-            LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", className, appClassLoader);
-            scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                    TimeUnit.MILLISECONDS);
+            method.invoke(null, appClassLoader , basePackage, basePackage, classDefinition);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {

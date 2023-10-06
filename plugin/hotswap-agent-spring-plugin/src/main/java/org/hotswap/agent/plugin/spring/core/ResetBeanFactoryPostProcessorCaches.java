@@ -33,20 +33,26 @@ public class ResetBeanFactoryPostProcessorCaches {
     }
 
     private static void resetConfigurationClassPostProcessorCache(DefaultListableBeanFactory beanFactory) {
+        LOGGER.trace("Resetting ConfigurationClassPostProcessor caches");
+        int factoryId = System.identityHashCode(beanFactory);
         try {
-            int factoryId = System.identityHashCode(beanFactory);
             ConfigurationClassPostProcessor ccpp = beanFactory.getBean(ConfigurationClassPostProcessor.class);
-            Field field = ConfigurationClassPostProcessor.class.getDeclaredField("factoriesPostProcessed");
-            field.setAccessible(true);
-            Set<Integer> factoriesPostProcessed = (Set<Integer>) field.get(ccpp);
-            factoriesPostProcessed.remove(factoryId);
-
-            field = ConfigurationClassPostProcessor.class.getDeclaredField("registriesPostProcessed");
-            field.setAccessible(true);
-            Set<Integer> registriesPostProcessed = (Set<Integer>) field.get(ccpp);
-            registriesPostProcessed.remove(factoryId);
+            clearSetFieldOfConfigurationClassPostProcessor(ccpp, "factoriesPostProcessed", factoryId);
+            clearSetFieldOfConfigurationClassPostProcessor(ccpp, "registriesPostProcessed", factoryId);
         } catch (Exception e) {
-            LOGGER.debug("ConfigurationClassPostProcessor bean doesn't present");
+            LOGGER.debug("ConfigurationClassPostProcessor bean doesn't present", e);
+        }
+    }
+
+    private static void clearSetFieldOfConfigurationClassPostProcessor(ConfigurationClassPostProcessor ccpp,
+                                                                       String fieldName, int factoryId) {
+        try {
+            Field field = ConfigurationClassPostProcessor.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Set<Integer> set = (Set<Integer>) field.get(ccpp);
+            set.remove(factoryId);
+        } catch (Exception e) {
+            LOGGER.debug("ConfigurationClassPostProcessor bean doesn't present", e);
         }
     }
 }

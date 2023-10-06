@@ -40,13 +40,13 @@ public class AnnotationConfigurationTest {
     @Before
     public void before() {
         BaseTestUtil.configMaxReloadTimes();
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory());
         BeanFactoryAssistant.getBeanFactoryAssistant((DefaultListableBeanFactory) applicationContext.getBeanFactory()).reset();
     }
 
     @After
     public void after() {
-        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) applicationContext.getBeanFactory());
         BeanFactoryAssistant.getBeanFactoryAssistant((DefaultListableBeanFactory) applicationContext.getBeanFactory()).reset();
     }
 

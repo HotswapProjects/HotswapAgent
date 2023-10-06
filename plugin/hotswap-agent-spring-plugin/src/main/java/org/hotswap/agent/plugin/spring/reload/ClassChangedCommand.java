@@ -58,14 +58,7 @@ public class ClassChangedCommand extends MergeableCommand {
         try {
             Class<?> targetClass = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
             Method targetMethod = targetClass.getDeclaredMethod("addChangedClass", Class.class);
-            boolean invokeResult = (boolean) targetMethod.invoke(null, clazz);
-            if (!invokeResult) {
-                return;
-            }
-            // schedule reload after 1000 milliseconds
-            LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", clazz, appClassLoader);
-            scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                    TimeUnit.MILLISECONDS);
+            targetMethod.invoke(null, clazz);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
