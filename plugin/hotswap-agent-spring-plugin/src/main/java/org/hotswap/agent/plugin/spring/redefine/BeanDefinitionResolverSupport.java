@@ -125,7 +125,7 @@ public abstract class BeanDefinitionResolverSupport implements BeanDefinitionRes
                     ConfigurationClassPostProcessorAgent.getInstance().postProcess(registry, beanName);
                 }
 
-                ProxyReplacer.clearAllProxies();
+                ProxyReplacer.clearProxyByName(beanName);
                 freezeConfiguration();
             }
         }
