@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-spring-boot-plugin</artifactId>
 
     <properties>
-        <org.springframework.boot.version>2.0.9.RELEASE</org.springframework.boot.version>
+        <org.springframework.boot.version>2.7.16</org.springframework.boot.version>
     </properties>
 
     <dependencyManagement>
@@ -46,12 +46,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
 
         <!-- Dependency for Spring 3.0 versions -->
         <dependency>

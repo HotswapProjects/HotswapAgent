@@ -2,12 +2,9 @@ package org.hotswap.agent.plugin.spring.boot.transformers;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.javassist.expr.ConstructorCall;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.ReflectionHelper;
-import org.hotswap.agent.util.spring.util.ReflectionUtils;
 
 import java.security.ProtectionDomain;
 
@@ -60,7 +57,6 @@ public class PropertySourceLoaderTransformer {
                                                                ProtectionDomain protectionDomain) throws NotFoundException, CannotCompileException {
         enhanceBasePropertySourceLoader(clazz);
 
-
         CtMethod ctMethod = clazz.getDeclaredMethod("load");
         if (ctMethod.getParameterTypes().length == 2) {
             if (isSpringBoot2LowerVersion(clazz, classPool)) {
@@ -112,6 +108,7 @@ public class PropertySourceLoaderTransformer {
             return true;
         }
     }
+
 
     private static void enhanceBasePropertySourceLoader(CtClass clazz) throws CannotCompileException {
         clazz.addMethod(CtMethod.make("private void load0(org.springframework.core.env.PropertySource p, " +

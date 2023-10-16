@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.spring.reload;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
+
 public class BeanChangeEvent extends SpringEvent<String[]> {
     /**
      * Constructs a prototypical Event.

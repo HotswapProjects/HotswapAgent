@@ -9,11 +9,13 @@ import org.springframework.core.io.Resource;
 import java.util.List;
 import java.util.Map;
 
+
 public class Boot2PropertiesPropertySourceReload implements PropertySourceReload<List<Map<String, ?>>> {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(Boot2PropertiesPropertySourceReload.class);
 
     private PropertiesPropertySourceLoader propertiesPropertySourceLoader;
+
     private ListPropertySourceReload basePropertySourceReload;
 
 
@@ -22,6 +24,7 @@ public class Boot2PropertiesPropertySourceReload implements PropertySourceReload
         basePropertySourceReload = new ListPropertySourceReload<>(name, resource);
         this.propertiesPropertySourceLoader = propertiesPropertySourceLoader;
     }
+
 
     @Override
     public void reload() {
@@ -54,5 +57,4 @@ public class Boot2PropertiesPropertySourceReload implements PropertySourceReload
         return (List<Map<String, ?>>) ReflectionHelper.invoke(propertiesPropertySourceLoader, PropertiesPropertySourceLoader.class,
                 "loadProperties", new Class[]{Resource.class}, basePropertySourceReload.resource);
     }
-
 }

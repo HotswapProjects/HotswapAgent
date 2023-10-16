@@ -52,5 +52,4 @@ public class Boot2YamlPropertySourceReload implements PropertySourceReload<List<
         }
         return null;
     }
-
 }

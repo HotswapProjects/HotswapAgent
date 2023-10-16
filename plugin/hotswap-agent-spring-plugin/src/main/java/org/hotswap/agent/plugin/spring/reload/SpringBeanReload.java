@@ -523,7 +523,8 @@ public class SpringBeanReload {
                 beanName = beanName.substring(1);
             }
             BeanDefinition beanDefinition = BeanFactoryProcessor.getBeanDefinition(beanFactory, beanName);
-            if (AnnotationHelper.hasAnnotation(clazz, "org.springframework.context.annotation.Configuration")
+            if ((AnnotationHelper.hasAnnotation(clazz, "org.springframework.context.annotation.Configuration") ||
+                    AnnotationHelper.hasAnnotation(clazz, "org.springframework.stereotype.Component"))
                     && beanDefinition.getAttribute("org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass") != null) {
                 configurationBeansToReload.add(beanName);
                 String generateBeanName = beanNameGenerator.generateBeanName(beanDefinition, beanFactory);

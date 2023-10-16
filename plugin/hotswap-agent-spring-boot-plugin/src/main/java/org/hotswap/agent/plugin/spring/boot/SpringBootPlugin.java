@@ -13,6 +13,7 @@ import org.hotswap.agent.util.ReflectionHelper;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
 @Plugin(name = "SpringBoot", description = "Reload Spring Boot after properties/yaml changed.",
         testedVersions = {"All between 1.4.x - 2.7.x"}, expectedVersions = {"1.4.x+", "1.5.x+", "2.x"},
         supportClass = {PropertySourceLoaderTransformer.class,
