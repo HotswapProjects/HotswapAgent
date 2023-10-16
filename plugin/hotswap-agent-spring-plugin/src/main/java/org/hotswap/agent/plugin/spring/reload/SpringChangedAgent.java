@@ -5,7 +5,6 @@ import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
 import org.hotswap.agent.plugin.spring.listener.SpringListener;
 import org.hotswap.agent.plugin.spring.scanner.BeanDefinitionChangeEvent;
-import org.hotswap.agent.plugin.spring.scanner.ClassChangeEvent;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -62,6 +61,16 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         return result;
     }
 
+    public static boolean addChangedClass(Class clazz, DefaultListableBeanFactory beanFactory) {
+        boolean result = false;
+        for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+            if (springChangedAgent.beanFactory() == beanFactory){
+                result |= springChangedAgent.addClass(clazz);
+            }
+        }
+        return result;
+    }
+
     public static boolean addChangedXml(URL xmlUrl) {
         for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
             springChangedAgent.addXml(xmlUrl);
@@ -72,6 +81,22 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
     public static boolean addChangedProperty(URL property) {
         for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
             springChangedAgent.addProperty(property);
+        }
+        return true;
+    }
+
+    public static boolean addChangedYaml(URL yamlProperty) {
+        for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+            springChangedAgent.addYaml(yamlProperty);
+        }
+        return true;
+    }
+
+    public static boolean addNewBean(BeanDefinitionHolder beanDefinitionHolder, DefaultListableBeanFactory beanFactory) {
+        for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+            if (springChangedAgent.beanFactory() == beanFactory){
+                springChangedAgent.addNewBean(beanFactory, beanDefinitionHolder);
+            }
         }
         return true;
     }
@@ -96,6 +121,7 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
 
     /**
      * unit test
+     *
      * @param beanFactory
      */
     public static void destroyBeanFactory(AbstractAutowireCapableBeanFactory beanFactory) {
@@ -117,8 +143,16 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         springReload.addProperty(property);
     }
 
+    void addYaml(URL yaml) {
+        springReload.addYaml(yaml);
+    }
+
     void addXml(URL xml) {
         springReload.addXml(xml);
+    }
+
+    void addChangedBeanNames(String[] beanNames) {
+        springReload.addChangedBeanNames(beanNames);
     }
 
     void addNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
@@ -166,9 +200,9 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         if (event instanceof BeanDefinitionChangeEvent) {
             BeanDefinitionChangeEvent beanDefinitionChangeEvent = (BeanDefinitionChangeEvent) event;
             addNewBean(beanDefinitionChangeEvent.getBeanFactory(), beanDefinitionChangeEvent.getSource());
-        } else if (event instanceof ClassChangeEvent) {
-            ClassChangeEvent changeEvent = (ClassChangeEvent) event;
-            addClass(changeEvent.getSource());
+        } else if (event instanceof BeanChangeEvent) {
+            BeanChangeEvent beanChangeEvent = (BeanChangeEvent) event;
+            addChangedBeanNames(beanChangeEvent.getSource());
         }
     }
 }

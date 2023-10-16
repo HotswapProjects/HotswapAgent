@@ -64,6 +64,17 @@ public class ConfigurationClassPostProcessorEnhance {
         return processor;
     }
 
+    public void resetConfigurationClassPostProcessor(BeanDefinitionRegistry registry) {
+        LOGGER.debug("ConfigurationClassPostProcessorAgent.resetConfigurationClassPostProcessor({})");
+        if (processor == null) {
+            return;
+        }
+
+        resetCachingMetadataReaderFactoryCache();
+        resetBeanNameCache();
+        resetBeanFactoryCache(registry);
+    }
+
     public void postProcess(BeanDefinitionRegistry registry, String beanName) {
         if (processor == null) {
             return;

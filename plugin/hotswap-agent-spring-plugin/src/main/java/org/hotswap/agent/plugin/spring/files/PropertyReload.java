@@ -2,11 +2,12 @@ package org.hotswap.agent.plugin.spring.files;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
+import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
+import org.hotswap.agent.plugin.spring.transformers.api.IReloadPropertySource;
 import org.hotswap.agent.plugin.spring.transformers.api.IResourcePropertySource;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
-import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.util.ClassUtils;
@@ -22,13 +24,12 @@ import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Consumer;
 
 public class PropertyReload {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PropertyReload.class);
@@ -37,22 +38,77 @@ public class PropertyReload {
     public static void reloadPropertySource(DefaultListableBeanFactory beanFactory) {
         ConfigurableEnvironment environment = beanFactory.getBean(ConfigurableEnvironment.class);
         if (environment != null) {
-            for (PropertySource<?> propertySource : environment.getPropertySources()) {
-                if (propertySource instanceof IResourcePropertySource) {
-                    try {
-                        ((IResourcePropertySource) propertySource).reloadPropertySource();
-                    } catch (IOException e) {
-                        LOGGER.error("reload property source error", e, propertySource.getName());
-                    }
-                }
-            }
+            Map<String, String> oldValueMap = getPropertyOfPropertySource(environment);
+            // reload
+            doReloadPropertySource(environment.getPropertySources());
+            // compare the old value and new value, and fire changed event
+            processChangedValue(beanFactory, environment, oldValueMap);
         }
 
+        refreshPlaceholderConfigurerSupport(beanFactory);
+    }
+
+    private static Map<String, String> getPropertyOfPropertySource(ConfigurableEnvironment environment) {
+        Set<String> canModifiedKey = new HashSet<>();
+        Map<String, String> result = new HashMap<>();
+        // fetch the keys of modified property source
+        processKeysOfPropertySource(environment.getPropertySources(), canModifiedKey::addAll);
+        // fetch the old value of modified property source
+        for (String key : canModifiedKey) {
+            result.put(key, environment.getProperty(key));
+        }
+        return result;
+    }
+
+    private static void processChangedValue(DefaultListableBeanFactory beanFactory, ConfigurableEnvironment environment,
+                                            Map<String, String> oldValueMap) {
+        Set<String> canModifiedKey = new HashSet<>();
+        processKeysOfPropertySource(environment.getPropertySources(), canModifiedKey::addAll);
+
+        List<PropertiesChangeEvent.PropertyChangeItem> propertyChangeItems = new ArrayList<>();
+        for (String key : canModifiedKey) {
+            String oldValue = oldValueMap.get(key);
+            String newValue = environment.getProperty(key);
+            if ((oldValue != null && !oldValue.equals(newValue)) || (oldValue == null && newValue != null)) {
+                propertyChangeItems.add(new PropertiesChangeEvent.PropertyChangeItem(key, oldValue, newValue));
+                LOGGER.debug("property reload, key:{}, oldValue:{}, newValue:{}", key, oldValue, newValue);
+            }
+        }
+        if (!propertyChangeItems.isEmpty()) {
+            SpringEventSource.INSTANCE.fireEvent(new PropertiesChangeEvent(propertyChangeItems, beanFactory));
+        }
+    }
+
+    private static void processKeysOfPropertySource(MutablePropertySources propertySources, Consumer<Set<String>> consumer) {
+        for (PropertySource<?> propertySource : propertySources) {
+            if (propertySource instanceof MapPropertySource) {
+                consumer.accept(((MapPropertySource)propertySource).getSource().keySet());
+            }
+        }
+    }
+
+
+    private static void doReloadPropertySource(MutablePropertySources propertySources) {
+        for (PropertySource<?> propertySource : propertySources) {
+            if (propertySource instanceof IResourcePropertySource) {
+                try {
+                    ((IResourcePropertySource) propertySource).reloadPropertySource();
+                } catch (IOException e) {
+                    LOGGER.error("reload property source error", e, propertySource.getName());
+                }
+            }
+            if (propertySource instanceof IReloadPropertySource) {
+                ((IReloadPropertySource) propertySource).reload();
+            }
+        }
+    }
+
+    private static void refreshPlaceholderConfigurerSupport(DefaultListableBeanFactory beanFactory) {
         String[] beanFactoryBeanNamesForTypes = beanFactory.getBeanNamesForType(PlaceholderConfigurerSupport.class);
         if (beanFactoryBeanNamesForTypes != null) {
             for (String beanFactoryBeanName : beanFactoryBeanNamesForTypes) {
                 PlaceholderConfigurerSupport placeholderConfigurerSupport = beanFactory.getBean(beanFactoryBeanName, PlaceholderConfigurerSupport.class);
-                refreshPlaceholderConfigurerSupport(beanFactory, placeholderConfigurerSupport);
+                refreshSinglePlaceholderConfigurerSupport(beanFactory, placeholderConfigurerSupport);
             }
         }
     }
@@ -78,7 +134,7 @@ public class PropertyReload {
      * <property name="locations" value="classpath:foo.properties" />
      * </bean>
      */
-    private static void refreshPlaceholderConfigurerSupport(DefaultListableBeanFactory beanFactory, PlaceholderConfigurerSupport placeholderConfigurerSupport) {
+    private static void refreshSinglePlaceholderConfigurerSupport(DefaultListableBeanFactory beanFactory, PlaceholderConfigurerSupport placeholderConfigurerSupport) {
         if (placeholderConfigurerSupport instanceof PropertySourcesPlaceholderConfigurer) {
             PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer = (PropertySourcesPlaceholderConfigurer) placeholderConfigurerSupport;
             // if placeholderConfigurerSupport is PropertySourcesPlaceholderConfigurer instance, it should clear and reload propertySources

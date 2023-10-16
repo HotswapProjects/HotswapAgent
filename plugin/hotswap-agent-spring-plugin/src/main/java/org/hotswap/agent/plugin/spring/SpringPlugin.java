@@ -121,6 +121,15 @@ public class SpringPlugin {
                 TimeUnit.MILLISECONDS);
     }
 
+    @OnResourceFileEvent(path = "/", filter = ".*.yaml", events = {FileEvent.MODIFY})
+    public void registerYamlListeners(URL url) {
+        scheduler.scheduleCommand(new YamlChangedCommand(appClassLoader, url, scheduler));
+        // schedule reload after 1000 milliseconds
+        LOGGER.trace("Scheduling Spring reload for yaml '{}'", url);
+        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
+                TimeUnit.MILLISECONDS);
+    }
+
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
         scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));

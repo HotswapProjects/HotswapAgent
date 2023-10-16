@@ -19,4 +19,8 @@ public interface SpringListener<E extends SpringEvent<?>> extends EventListener 
      * @param event the event to respond to
      */
     void onEvent(E event);
+
+    default boolean isFilterBeanFactory() {
+        return true;
+    }
 }

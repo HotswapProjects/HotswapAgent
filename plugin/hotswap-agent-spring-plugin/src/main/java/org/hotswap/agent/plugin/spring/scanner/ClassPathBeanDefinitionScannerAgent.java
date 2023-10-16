@@ -23,7 +23,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
-import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.plugin.spring.utils.RegistryUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -182,8 +182,7 @@ public class ClassPathBeanDefinitionScannerAgent {
         if (beanDefinitionHolder != null) {
             LOGGER.debug("Registering Spring bean '{}'", beanName);
             if (defaultListableBeanFactory != null) {
-                BeanDefinitionChangeEvent beanDefinitionChangeEvent = new BeanDefinitionChangeEvent(beanDefinitionHolder, defaultListableBeanFactory);
-                SpringEventSource.INSTANCE.fireEvent(beanDefinitionChangeEvent);
+                SpringChangedAgent.addNewBean(beanDefinitionHolder, defaultListableBeanFactory);
                 return true;
             }
         }
@@ -199,8 +198,7 @@ public class ClassPathBeanDefinitionScannerAgent {
             if (defaultListableBeanFactory != null && clazz != null) {
                 String[] beanNames = defaultListableBeanFactory.getBeanNamesForType(clazz);
                 if (beanNames != null && beanNames.length != 0) {
-                    ClassChangeEvent classChangeEvent = new ClassChangeEvent(clazz, defaultListableBeanFactory);
-                    SpringEventSource.INSTANCE.fireEvent(classChangeEvent);
+                    SpringChangedAgent.addChangedClass(clazz, defaultListableBeanFactory);
                     return true;
                 }
             }
