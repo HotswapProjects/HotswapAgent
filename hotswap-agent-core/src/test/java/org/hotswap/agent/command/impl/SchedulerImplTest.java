@@ -72,21 +72,4 @@ public class SchedulerImplTest {
 
         assertTrue("Event listener not called", WaitHelper.waitForResult(resultHolder));
     }
-
-    @Test
-    public void testScheduleDelayCommand() throws Exception {
-        final WaitHelper.ResultHolder resultHolder = new WaitHelper.ResultHolder();
-        command.setCommandExecutionListener(new CommandExecutionListener() {
-            @Override
-            public void commandExecuted(Object result) {
-                assertNotNull("Command result not null", result);
-                assertTrue("Command result true", result instanceof Boolean && ((Boolean) result));
-                resultHolder.result = true;
-            }
-        });
-
-        scheduler.scheduleDelayedCommand(command, 3000, TimeUnit.MILLISECONDS);
-
-        assertTrue("Event listener not called", WaitHelper.waitForResult(resultHolder, 5000));
-    }
 }

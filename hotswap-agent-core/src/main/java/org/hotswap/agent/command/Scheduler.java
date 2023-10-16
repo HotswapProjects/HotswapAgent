@@ -68,15 +68,6 @@ public interface Scheduler {
     void scheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour);
 
     /**
-     * Delay scheduling new command for execution.
-     *
-     * @param command the command to execute
-     * @param delay delay after which the command is executed
-     * @param unit time unit of the delay parameter
-     */
-    void scheduleDelayedCommand(Command command, long delay, TimeUnit unit);
-
-    /**
      * Run the scheduler agent thread.
      */
     void run();

@@ -2,7 +2,7 @@ package org.hotswap.agent.plugin.spring.reload;
 
 public class SpringReloadConfig {
 
-    public static int reloadDelayMillis = 1000;
+    public static int reloadDelayMillis = 1600;
 
 
     public static void setDelayMillis(int delayMillis) {

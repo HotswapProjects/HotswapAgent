@@ -70,10 +70,8 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
                 // refresh spring only for new classes
                 scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
                         basePackage, className, event, scheduler), WAIT_ON_CREATE);
-                // schedule reload after 1000 milliseconds
                 LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", className, appClassLoader);
-                scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                        TimeUnit.MILLISECONDS);
+                scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
             }
         }
     }
