@@ -46,9 +46,6 @@ public class ProxyReplacer {
         DetachableBeanHolder.detachBeans();
     }
 
-    public static void clearProxyByName(String beanName) {
-        DetachableBeanHolder.detachBean(beanName);
-    }
     /**
      * Creates a proxied Spring bean. Called from within WebApp code by modification of Spring classes
      *
@@ -103,18 +100,7 @@ public class ProxyReplacer {
                 return bean;
             }
 
-            //try to find cache
-            String beanName = DetachableBeanHolder.deduceBeanName(beanFactry, paramClasses, paramValues);
-
-            Object cachedProxy;
-            if (beanName != null && (cachedProxy = DetachableBeanHolder.getHAProxy(beanName)) != null) {
-                return cachedProxy;
-            }
-
-            //do create and cache
-            Object proxy = EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
-            DetachableBeanHolder.addHAProxy(beanName, proxy);
-            return proxy;
+            return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
         }
 
         return bean;
