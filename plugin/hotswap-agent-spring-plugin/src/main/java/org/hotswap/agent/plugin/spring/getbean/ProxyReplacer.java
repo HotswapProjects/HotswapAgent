@@ -21,6 +21,7 @@ package org.hotswap.agent.plugin.spring.getbean;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.SpringPlugin;

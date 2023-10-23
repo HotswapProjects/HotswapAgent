@@ -18,6 +18,8 @@
  */
 package org.hotswap.agent.plugin.spring.getbean;
 
+import org.hotswap.agent.logging.AgentLogger;
+
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
@@ -27,7 +29,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.hotswap.agent.logging.AgentLogger;
 
 /**
  *
@@ -65,6 +66,7 @@ public class DetachableBeanHolder implements Serializable {
         this.beanFactory = beanFactry;
         this.paramClasses = paramClasses;
         this.paramValues = paramValues;
+
         beanProxies.add(new WeakReference<DetachableBeanHolder>(this));
     }
 

@@ -253,7 +253,8 @@ public class SpringBeanReload {
         // when there are changes, it will rerun the while loop
         while (true) {
             // 1. clear cache
-            clearSpringCache();
+            Set<String> beanNamesForProxyReplacer = getBeanNamesForProxyReplacer();
+            clearSpringCache(beanNamesForProxyReplacer);
             // 2. properties reload
             boolean propertiesChanged = refreshProperties();
             // 3. reload xmls: the beans will be destroyed
@@ -292,6 +293,16 @@ public class SpringBeanReload {
         refreshRequestMapping();
         // 11 clear all process cache
         clearLocalCache();
+    }
+
+    private Set<String> getBeanNamesForProxyReplacer() {
+        Set<String> newBeanNames = new HashSet<>();
+        synchronized (newScanBeanDefinitions) {
+            for (BeanDefinitionHolder beanDefinitionHolder : newScanBeanDefinitions) {
+                newBeanNames.add(beanDefinitionHolder.getBeanName());
+            }
+        }
+        return newBeanNames;
     }
 
     private boolean preCheckReload() {
@@ -497,7 +508,7 @@ public class SpringBeanReload {
         ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).postProcess(beanFactory);
     }
 
-    private void clearSpringCache() {
+    private void clearSpringCache(Set<String> beanNamesForProxyReplacer) {
         // spring won't rebuild dependency map if injectionMetadataCache is not cleared
         // which lead to singletons depend on beans in xml won't be destroy and recreate, may be a spring bug?
         ResetSpringStaticCaches.reset();
