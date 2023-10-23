@@ -12,6 +12,7 @@ import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.Map;
 
 
@@ -34,11 +35,11 @@ public class GetBeanTest {
         Map<String, Object> HA_PROXIES_CACHE = (Map<String, Object>) haProxiesCache
                 .get(DetachableBeanHolder.class);
 
-        DetachableBeanHolder.detachBeans();
-        DetachableBeanHolder.detachBeans();
+        String beanName = "serviceA";
+        DetachableBeanHolder.detachBeans(Collections.singleton(beanName));
+        DetachableBeanHolder.detachBeans(Collections.singleton(beanName));
 
         //serviceA is cached
-        String beanName = "serviceA";
         Object serviceA = applicationContext.getBean(beanName);
         Assert.assertSame(serviceA, HA_PROXIES_CACHE.get(beanName));
 
@@ -48,7 +49,7 @@ public class GetBeanTest {
         Assert.assertSame(serviceA, serviceA1);
 
         //swap
-        swappingRule.swapClasses(ServiceA.class, ServiceB.class);
+        swappingRule.swapClasses(ServiceA.class, ServiceB.class, 1);
 
         //serviceA cache is removed
         Assert.assertFalse(HA_PROXIES_CACHE.containsKey(beanName));
