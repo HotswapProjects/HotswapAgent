@@ -18,37 +18,20 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import org.hotswap.agent.annotation.FileEvent;
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.LoadEvent;
-import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.annotation.OnResourceFileEvent;
-import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.getbean.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.processor.ConfigurationClassPostProcessorTransformer;
-import org.hotswap.agent.plugin.spring.reader.AnnotatedBeanDefinitionReaderTransformer;
-import org.hotswap.agent.plugin.spring.reader.ComponentClassTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanRefreshCommand;
-import org.hotswap.agent.plugin.spring.scanner.PropertiesRefreshCommand;
-import org.hotswap.agent.plugin.spring.scanner.SpringBeanTransformer;
+import org.hotswap.agent.plugin.spring.core.BeanDefinitionProcessor;
+import org.hotswap.agent.plugin.spring.reload.*;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanRefreshCommand;
-import org.hotswap.agent.plugin.spring.scanner.XmlFileRefreshCommand;
+import org.hotswap.agent.plugin.spring.transformers.*;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.watch.Watcher;
-import org.springframework.context.annotation.AnnotatedBeanDefinitionReader;
 
 import java.io.IOException;
 import java.net.URL;
@@ -65,10 +48,12 @@ import java.util.List;
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
         testedVersions = {"All between 3.0.1 - 5.2.2"}, expectedVersions = {"3x", "4x", "5x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class,
-                AnnotatedBeanDefinitionReaderTransformer.class,
                 ProxyReplacerTransformer.class,
                 ConfigurationClassPostProcessorTransformer.class,
+                ResourcePropertySourceTransformer.class,
+                PlaceholderConfigurerSupportTransformer.class,
                 XmlBeanDefinitionScannerTransformer.class})
+
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
@@ -86,14 +71,20 @@ public class SpringPlugin {
     @Init
     ClassLoader appClassLoader;
 
-    public void init() {
+    private Class springChangeHubClass;
+
+    public void init() throws ClassNotFoundException {
         LOGGER.info("Spring plugin initialized");
+        springChangeHubClass = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
+        ReflectionHelper.set(null, springChangeHubClass, "appClassLoader", appClassLoader);
         this.registerBasePackageFromConfiguration();
         this.initBasePackagePrefixes();
     }
 
-    public void init(String version) {
+    public void init(String version) throws ClassNotFoundException {
         LOGGER.info("Spring plugin initialized - Spring core version '{}'", version);
+        springChangeHubClass = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
+        ReflectionHelper.set(null, springChangeHubClass, "appClassLoader", appClassLoader);
         this.registerBasePackageFromConfiguration();
         this.initBasePackagePrefixes();
     }
@@ -113,17 +104,23 @@ public class SpringPlugin {
 
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
-        scheduler.scheduleCommand(new XmlFileRefreshCommand(appClassLoader, url));
+        scheduler.scheduleCommand(new XmlsChangedCommand(appClassLoader, url, scheduler));
+        LOGGER.trace("Scheduling Spring reload for XML '{}'", url);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
-        scheduler.scheduleCommand(new PropertiesRefreshCommand(appClassLoader, url));
+        scheduler.scheduleCommand(new PropertiesChangedCommand(appClassLoader, url, scheduler));
+        LOGGER.trace("Scheduling Spring reload for properties '{}'", url);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
-        scheduler.scheduleCommand(new XmlBeanRefreshCommand(appClassLoader, clazz.getName()));
+        scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
+        LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", clazz, appClassLoader);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 
     /**
@@ -140,9 +137,8 @@ public class SpringPlugin {
     private void registerBasePackage(final String basePackage) {
         // v.d.: Force load/Initialize ClassPathBeanRefreshCommand classe in JVM. This is hack, in whatever reason sometimes new ClassPathBeanRefreshCommand()
         //       stays locked inside agent's transform() call. It looks like some bug in JVMTI or JVMTI-debugger() locks handling.
-        ClassPathBeanRefreshCommand fooCmd = new ClassPathBeanRefreshCommand();
         hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(basePackage),
-                new SpringBeanTransformer(appClassLoader, scheduler, basePackage));
+                new SpringBeanClassFileTransformer(appClassLoader, scheduler, basePackage));
     }
 
     /**
@@ -180,18 +176,6 @@ public class SpringPlugin {
         }
     }
 
-    /**
-     * Register a hotswap transformer for individual component class registration.
-     *
-     * @param clazz component class
-     * @see AnnotatedBeanDefinitionReader#register(Class[])
-     */
-    public void registerComponentClass(String clazz) {
-        LOGGER.info("Registering component class {}", clazz);
-        hotswapTransformer.registerTransformer(appClassLoader, getClassNameRegExp(clazz),
-                new ComponentClassTransformer(appClassLoader, scheduler, clazz));
-    }
-
     private String getClassNameRegExp(String basePackage) {
         String regexp = basePackage;
         while (regexp.contains("**")) {
@@ -219,12 +203,12 @@ public class SpringPlugin {
 
     /**
      * Plugin initialization is after Spring has finished its startup and freezeConfiguration is called.
-     *
+     * <p>
      * This will override freeze method to init plugin - plugin will be initialized and the configuration
      * remains unfrozen, so bean (re)definition may be done by the plugin.
      */
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
-    public static void register(CtClass clazz) throws NotFoundException, CannotCompileException {
+    public static void register(ClassLoader appClassLoader, CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
         src.append("setCacheBeanMetadata(false);");
         // init a spring plugin with every appclassloader
@@ -235,6 +219,7 @@ public class SpringPlugin {
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
             constructor.insertBeforeBody(src.toString());
+            constructor.insertAfter("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent.getInstance(this);");
         }
 
         // freezeConfiguration cannot be disabled because of performance degradation
@@ -250,15 +235,16 @@ public class SpringPlugin {
 
         CtMethod method = clazz.getDeclaredMethod("freezeConfiguration");
         method.insertBefore(
-                "org.hotswap.agent.plugin.spring.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
-                "setAllowRawInjectionDespiteWrapping(true); ");
+                "org.hotswap.agent.plugin.spring.core.ResetSpringStaticCaches.resetBeanNamesByType(this); " +
+                        "setAllowRawInjectionDespiteWrapping(true); ");
 
         // Patch registerBeanDefinition so that XmlBeanDefinitionScannerAgent has chance to keep track of all beans
         // defined from the XML configuration.
         CtMethod registerBeanDefinitionMethod = clazz.getDeclaredMethod("registerBeanDefinition");
-        registerBeanDefinitionMethod.insertBefore(
-                "org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent.registerBean($1, $2);"
-        );
+        registerBeanDefinitionMethod.insertBefore(BeanDefinitionProcessor.class.getName() + ".registerBeanDefinition(this, $1, $2);");
+
+        CtMethod removeBeanDefinitionMethod = clazz.getDeclaredMethod("removeBeanDefinition");
+        removeBeanDefinitionMethod.insertBefore(BeanDefinitionProcessor.class.getName() + ".removeBeanDefinition(this, $1);");
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.aop.framework.CglibAopProxy")

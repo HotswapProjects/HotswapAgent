@@ -21,7 +21,10 @@ package org.hotswap.agent.plugin.spring.scanner;
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
+import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.watch.WatchFileEvent;
 
@@ -29,6 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Do refresh Spring class (scanned by classpath scanner) based on URI or byte[] definition.
@@ -48,22 +52,24 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
     WatchFileEvent event;
     byte[] classDefinition;
 
-    public ClassPathBeanRefreshCommand() {
+    Scheduler scheduler;
 
-    }
-
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className, byte[] classDefinition) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className,
+                                       byte[] classDefinition, Scheduler scheduler) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
         this.className = className;
         this.classDefinition = classDefinition;
+        this.scheduler = scheduler;
     }
 
-    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className, WatchFileEvent event) {
+    public ClassPathBeanRefreshCommand(ClassLoader appClassLoader, String basePackage, String className,
+                                       WatchFileEvent event, Scheduler scheduler) {
         this.appClassLoader = appClassLoader;
         this.basePackage = basePackage;
         this.event = event;
         this.className = className;
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -87,8 +93,8 @@ public class ClassPathBeanRefreshCommand extends MergeableCommand {
 
             Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent", true, appClassLoader);
             Method method  = clazz.getDeclaredMethod(
-                    "refreshClass", new Class[] {ClassLoader.class, String.class, byte[].class});
-            method.invoke(null, appClassLoader , basePackage, classDefinition);
+                    "refreshClassAndCheckReload", new Class[] {ClassLoader.class, String.class, String.class, byte[].class});
+            method.invoke(null, appClassLoader , basePackage, basePackage, classDefinition);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {

@@ -40,6 +40,9 @@ public class BeanServiceImpl2 implements BeanService {
 
     @Override
     public String hello() {
+        if (beanChangedRepository == null) {
+            System.out.println("====xxxx:" + this);
+        }
         return beanChangedRepository.hello() + " " + name;
     }
 

@@ -14,7 +14,7 @@
     <artifactId>hotswap-agent-ibatis-plugin</artifactId>
 
     <properties>
-        <spring.version>5.2.21.RELEASE</spring.version>
+        <spring.version>5.3.28</spring.version>
         <ibatis.version>2.3.4.726</ibatis.version>
     </properties>
 

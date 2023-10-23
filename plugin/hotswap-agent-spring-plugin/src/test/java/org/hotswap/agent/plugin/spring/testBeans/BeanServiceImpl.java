@@ -36,6 +36,9 @@ public class BeanServiceImpl implements BeanService {
 
     @Override
     public String hello() {
+        if (beanRepository == null) {
+            System.out.println("xxxx====: " + this);
+        }
         return beanRepository.hello() + " Service";
     }
 

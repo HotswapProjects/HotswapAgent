@@ -81,6 +81,27 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo>Calculating MD5 sum for hotswap-agent.jar...</echo>
+                                <exec executable="md5" output="${project.build.directory}/hotswap-agent.jar.md5">
+                                    <arg value="-q" />
+                                    <arg file="${project.build.directory}/hotswap-agent.jar"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

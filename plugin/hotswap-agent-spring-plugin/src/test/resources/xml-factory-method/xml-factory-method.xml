@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd"
+       default-autowire="byName">
+
+    <context:component-scan base-package="org.hotswap.agent.plugin.spring.xml.factorymethods"/>
+
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="location" value="classpath:xml-factory-method/xml-factory-method-item.properties"/>
+    </bean>
+
+    <bean id="factoryMethodFactoryBean34"
+          class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodFactoryBean34"/>
+    <bean id="factoryMethodFactoryBeanMix"
+          class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodFactoryBeanMix"/>
+
+    <bean id="factoryMethodBean1" class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodFactoryBean12"
+          factory-method="factoryMethodBean1"/>
+    <bean id="factoryMethodBean2" class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodFactoryBean12"
+          factory-method="factoryMethodBean2">
+        <constructor-arg index="0" value="${xml.factory.method.item2.name}"/>
+    </bean>
+
+    <bean id="factoryMethodBean5" class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodFactoryBeanMix"
+          factory-method="factoryMethodBean5">
+    </bean>
+
+    <bean id="factoryMethodBean6" factory-bean="factoryMethodFactoryBeanMix" factory-method="factoryMethodBean6">
+        <constructor-arg index="0" value="${xml.factory.method.item6.name}"/>
+    </bean>
+    <bean id="factoryMethodBean3" factory-bean="factoryMethodFactoryBean34" factory-method="factoryMethodBean3"/>
+    <bean id="factoryMethodBean4" factory-bean="factoryMethodFactoryBean34" factory-method="factoryMethodBean4">
+        <constructor-arg index="0" value="${xml.factory.method.item4.name}"/>
+    </bean>
+
+    <bean id="factoryMethodParentBean2"
+          class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodParentBean2"/>
+    <bean id="factoryMethodParentBean3"
+          class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodParentBean3">
+        <constructor-arg index="0" ref="factoryMethodBean3"/>
+    </bean>
+    <bean id="factoryMethodParentBean4"
+          class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodParentBean4"/>
+    <bean id="factoryMethodParentBean6"
+          class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodParentBean6"/>
+    <bean id="factoryMethodParentBean5"
+          class="org.hotswap.agent.plugin.spring.xml.factorymethods.FactoryMethodParentBean5">
+        <constructor-arg name="factoryMethodBean5" ref="factoryMethodBean5"/>
+    </bean>
+</beans>
