@@ -24,11 +24,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.spring.util.CollectionUtils;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
@@ -72,7 +74,7 @@ public class DetachableBeanHolder implements Serializable {
         if (beanName != null) {
             synchronized (beanProxies) {
                 if (beanProxies.containsKey(beanName)) {
-                    detachBean(beanName);
+                    detachBeans(Collections.singleton(beanName));
                 }
                 beanProxies.put(beanName, new WeakReference<>(this));
             }
@@ -99,7 +101,7 @@ public class DetachableBeanHolder implements Serializable {
     /**
      * Clears the bean references inside all of the proxies
      */
-    public static void detachBeans() {
+    /*public static void detachBeans() {
         int i = 0;
         synchronized (beanProxies) {
             Iterator<Map.Entry<String, WeakReference<DetachableBeanHolder>>> iterator = beanProxies.entrySet().iterator();
@@ -120,25 +122,30 @@ public class DetachableBeanHolder implements Serializable {
         } else {
             LOGGER.debug("No spring proxies reset");
         }
-    }
+    }*/
 
 
     /**
      * Clears the bean references inside the beanName's proxy
      */
-    public static void detachBean(String beanName) {
-        synchronized (beanProxies) {
-            if (beanProxies.containsKey(beanName)) {
-                DetachableBeanHolder beanHolder = beanProxies.get(beanName).get();
-                if (beanHolder != null) {
-                    beanHolder.detach();
-                } else {
-                    beanProxies.remove(beanName);
-                }
-            }
-            HA_PROXIES_CACHE.remove(beanName);
+    public static void detachBeans(Set<String> beanNames) {
+        if (CollectionUtils.isEmpty(beanNames)) {
+            return;
         }
-        LOGGER.info("{} Spring proxies reset", beanName);
+        synchronized (beanProxies) {
+            for (String beanName : beanNames) {
+                if (beanProxies.containsKey(beanName)) {
+                    DetachableBeanHolder beanHolder = beanProxies.get(beanName).get();
+                    if (beanHolder != null) {
+                        beanHolder.detach();
+                    } else {
+                        beanProxies.remove(beanName);
+                    }
+                }
+                HA_PROXIES_CACHE.remove(beanName);
+            }
+        }
+        LOGGER.info("{} Spring proxies reset", beanNames);
     }
 
     /**

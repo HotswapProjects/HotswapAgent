@@ -21,6 +21,7 @@ package org.hotswap.agent.plugin.spring.getbean;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
@@ -42,12 +43,12 @@ public class ProxyReplacer {
     /**
      * Clears the bean references inside all the proxies
      */
-    public static void clearAllProxies() {
+    /*public static void clearAllProxies() {
         DetachableBeanHolder.detachBeans();
-    }
+    }*/
 
-    public static void clearProxyByName(String beanName) {
-        DetachableBeanHolder.detachBean(beanName);
+    public static void clearProxiesByNames(Set<String> beanNames) {
+        DetachableBeanHolder.detachBeans(beanNames);
     }
     /**
      * Creates a proxied Spring bean. Called from within WebApp code by modification of Spring classes
