@@ -94,29 +94,28 @@ public class EnhancerProxyCreater {
     }
 
     private Object create(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
-        return doCreate(beanFactry, bean, paramClasses, paramValues);
-//        Object proxyBean = null;
-//        if (beanProxies.containsKey(bean)) {
-//            proxyBean = beanProxies.get(bean);
-//        } else {
-//            synchronized (beanProxies) {
-//                if (beanProxies.containsKey(bean)) {
-//                    proxyBean = bean;
-//                } else {
-//                    proxyBean = doCreate(beanFactry, bean, paramClasses, paramValues);
-//                }
-//                beanProxies.put(bean, proxyBean);
-//            }
-//        }
-//
-//        // in case of HA proxy set the target. It might be cleared by clearProxies
-//        //   but the underlying bean did not change. We need this to resolve target bean
-//        //   in org.hotswap.agent.plugin.spring.getbean.DetachableBeanHolder.getBean()
-//        if (proxyBean instanceof SpringHotswapAgentProxy) {
-//            ((SpringHotswapAgentProxy) proxyBean).$$ha$setTarget(bean);
-//        }
-//
-//        return proxyBean;
+        Object proxyBean = null;
+        if (beanProxies.containsKey(bean)) {
+            proxyBean = beanProxies.get(bean);
+        } else {
+            synchronized (beanProxies) {
+                if (beanProxies.containsKey(bean)) {
+                    proxyBean = bean;
+                } else {
+                    proxyBean = doCreate(beanFactry, bean, paramClasses, paramValues);
+                }
+                beanProxies.put(bean, proxyBean);
+            }
+        }
+
+        // in case of HA proxy set the target. It might be cleared by clearProxies
+        //   but the underlying bean did not change. We need this to resolve target bean
+        //   in org.hotswap.agent.plugin.spring.getbean.DetachableBeanHolder.getBean()
+        if (proxyBean instanceof SpringHotswapAgentProxy) {
+            ((SpringHotswapAgentProxy) proxyBean).$$ha$setTarget(bean);
+        }
+
+        return proxyBean;
     }
 
     private Object doCreate(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
