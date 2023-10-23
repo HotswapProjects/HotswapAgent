@@ -263,9 +263,9 @@ public class SpringBeanReload {
 
     private Set<String> getBeanNamesForProxyReplacer() {
         Set<String> newBeanNames = new HashSet<>();
-        synchronized (newScanBeanDefinitions) {
-            for (BeanDefinitionHolder beanDefinitionHolder : newScanBeanDefinitions) {
-                newBeanNames.add(beanDefinitionHolder.getBeanName());
+        synchronized (classes) {
+            for (Class clazz : classes) {
+                Collections.addAll(newBeanNames, beanFactory.getBeanNamesForType(clazz));
             }
         }
         return newBeanNames;

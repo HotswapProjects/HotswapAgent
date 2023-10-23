@@ -51,7 +51,7 @@ public class DetachableBeanHolder implements Serializable {
     //key: bean name
     private static final Map<String, WeakReference<DetachableBeanHolder>> beanProxies = new ConcurrentHashMap<>();
     //key:bean name, value: proxy bean cached for DefaultListableBeanFactory's getBean(..) methods
-    private static final Map<String, Object> HA_PROXIES_CACHE = new ConcurrentHashMap<>();
+    public static final Map<String, Object> HA_PROXIES_CACHE = new ConcurrentHashMap<>();
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 
