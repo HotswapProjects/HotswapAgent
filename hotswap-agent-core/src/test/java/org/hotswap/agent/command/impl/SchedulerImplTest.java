@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
@@ -71,6 +72,4 @@ public class SchedulerImplTest {
 
         assertTrue("Event listener not called", WaitHelper.waitForResult(resultHolder));
     }
-
-
 }

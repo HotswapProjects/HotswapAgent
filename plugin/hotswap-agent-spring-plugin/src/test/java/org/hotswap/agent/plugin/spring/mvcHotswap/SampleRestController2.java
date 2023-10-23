@@ -1,19 +1,21 @@
 package org.hotswap.agent.plugin.spring.mvcHotswap;
 
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-@RestController
+@Controller
 public class SampleRestController2 {
 
-    @GetMapping("/helloSwapped")
+    @RequestMapping("/helloSwapped")
+    @ResponseBody
     public String hello() {
         return "Hello World Swapped";
     }
 
     @RequestMapping(value = "/helloRequestMappingSwapped", method = RequestMethod.GET)
+    @ResponseBody
     public String helloRequestMapping() {
         return "Hello World2 Swapped";
     }

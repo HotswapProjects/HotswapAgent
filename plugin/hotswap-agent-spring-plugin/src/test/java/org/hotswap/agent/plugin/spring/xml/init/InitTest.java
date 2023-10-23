@@ -18,10 +18,10 @@
  */
 package org.hotswap.agent.plugin.spring.xml.init;
 
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Test;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -39,18 +39,18 @@ public class InitTest {
 
     @Test
     public void swapXmlTest() throws Exception {
-        ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:initContext-1.xml");
+        BaseTestUtil.configMaxReloadTimes();
+        AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:initContext-1.xml");
         assertEquals(1, FooBean.getStaticValue());
 
 
-        XmlBeanDefinitionScannerAgent.reloadFlag = true;
         Files.copy(xmlFile2.getFile().toPath(), xmlFile1.getFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !XmlBeanDefinitionScannerAgent.reloadFlag;
+                return BaseTestUtil.finishReloading(applicationContext.getBeanFactory(), 1);
             }
-        }, 5000));
+        }, 8000));
 
         assertEquals(2, FooBean.getStaticValue());
     }

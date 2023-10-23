@@ -28,35 +28,49 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.scanner.ClassPathBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.hotswap.BeanServiceImpl2;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.hotswap.NewHelloServiceImpl;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.BeanService;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.BeanServiceImpl;
 import org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.NewHelloService;
 import org.hotswap.agent.util.test.WaitHelper;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 /**
  * Tests when the application context file is using component-scan with wildcards
- *
+ * <p>
  * See maven setup for javaagent and autohotswap settings.
  *
  * @author Cedric Chabanois
- *
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "classpath:wildcardsApplicationContext.xml" })
+@ContextConfiguration(locations = {"classpath:wildcardsApplicationContext.xml"})
 public class ComponentScanWithWildcardsTest {
 
     @Autowired
     AutowireCapableBeanFactory factory;
+
+    @Autowired
+    private AbstractApplicationContext context;
+
+    private volatile int reloadTimes = 1;
+
+    @Before
+    public void before() {
+        BaseTestUtil.configMaxReloadTimes();
+        System.out.println("ComponentScanWithWildcardsTest.before" + context.getBeanFactory());
+        reloadTimes = 1;
+        BeanFactoryAssistant.getBeanFactoryAssistant(context.getBeanFactory()).reset();
+    }
 
     @Test
     public void testHotswapService() throws Exception {
@@ -73,6 +87,7 @@ public class ComponentScanWithWildcardsTest {
             assertEquals("Hello from ChangedRepository Service2WithAspect", factory.getBean(BeanService.class).hello());
         } finally {
             swapClasses(BeanServiceImpl.class, BeanServiceImpl.class.getName());
+            bean = factory.getBean(BeanServiceImpl.class);
             assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
         }
     }
@@ -114,16 +129,14 @@ public class ComponentScanWithWildcardsTest {
     }
 
     private void swapClasses(Class<?> original, String swap) throws Exception {
-        ClassPathBeanDefinitionScannerAgent.reloadFlag = true;
         HotSwapper.swapClasses(original, swap);
-        waitForReload(1000);
+        waitForReload(8000);
     }
 
-    public static File copyClassFileAndWaitForReload(Class<?> clazz, String newName) throws Exception {
-        ClassPathBeanDefinitionScannerAgent.reloadFlag = true;
+    public File copyClassFileAndWaitForReload(Class<?> clazz, String newName) throws Exception {
         File file = copyClassFile(clazz, newName);
         try {
-            waitForReload(10000);
+            waitForReload(8000);
         } catch (Throwable e) {
             file.delete();
             throw e;
@@ -131,11 +144,12 @@ public class ComponentScanWithWildcardsTest {
         return file;
     }
 
-    private static void waitForReload(int timeout) throws InterruptedException {
+    private void waitForReload(int timeout) throws InterruptedException {
+        int rt = reloadTimes++;
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
-                return !ClassPathBeanDefinitionScannerAgent.reloadFlag;
+                return BaseTestUtil.finishReloading(context.getBeanFactory(), rt);
             }
         }, timeout));
         // TODO do not know why sleep is needed, maybe a separate thread in Spring
@@ -143,7 +157,7 @@ public class ComponentScanWithWildcardsTest {
         Thread.sleep(100);
     }
 
-    public static File copyClassFile(Class<?> clazz, String newName) throws Exception {
+    public File copyClassFile(Class<?> clazz, String newName) throws Exception {
         String directoryName = clazz.getClassLoader().getResource("").getPath();
         ClassPool classPool = new ClassPool();
         classPool.appendClassPath(new LoaderClassPath(clazz.getClassLoader()));

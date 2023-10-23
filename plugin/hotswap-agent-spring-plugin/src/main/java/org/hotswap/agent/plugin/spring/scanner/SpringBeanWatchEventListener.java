@@ -18,8 +18,11 @@
  */
 package org.hotswap.agent.plugin.spring.scanner;
 
+import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -27,6 +30,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public class SpringBeanWatchEventListener implements WatchEventListener {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringBeanWatchEventListener.class);
@@ -51,7 +55,8 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
 
     @Override
     public void onEvent(WatchFileEvent event) {
-        if (event.isFile() && event.getURI().toString().endsWith(".class")) {
+        // new File
+        if (event.getEventType() == FileEvent.CREATE && event.isFile() && event.getURI().toString().endsWith(".class")) {
             // check that the class is not loaded by the classloader yet (avoid duplicate reload)
             String className;
             try {
@@ -64,7 +69,9 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
                 // refresh spring only for new classes
                 scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                        basePackage, className, event), WAIT_ON_CREATE);
+                        basePackage, className, event, scheduler), WAIT_ON_CREATE);
+                LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", className, appClassLoader);
+                scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
             }
         }
     }

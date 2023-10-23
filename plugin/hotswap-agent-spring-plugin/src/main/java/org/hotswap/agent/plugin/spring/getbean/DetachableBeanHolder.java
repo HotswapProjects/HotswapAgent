@@ -58,6 +58,9 @@ public class DetachableBeanHolder implements Serializable {
      * @param paramValues
      */
     public DetachableBeanHolder(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
+        if (bean == null) {
+            LOGGER.error("Bean is null. The param value: {}", Arrays.toString(paramValues));
+        }
         this.bean = bean;
         this.beanFactory = beanFactry;
         this.paramClasses = paramClasses;
@@ -137,9 +140,12 @@ public class DetachableBeanHolder implements Serializable {
                     if (freshBean instanceof SpringHotswapAgentProxy) {
                         freshBean = ((SpringHotswapAgentProxy) freshBean).$$ha$getTarget();
                     }
-
                     bean = freshBean;
                     beanCopy = bean;
+                    if (beanCopy == null) {
+                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
+                        break;
+                    }
                     LOGGER.info("Bean '{}' loaded", bean.getClass().getName());
                     break;
                 }

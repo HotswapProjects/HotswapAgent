@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
-import org.springframework.transaction.TransactionManager;
 
 import javax.sql.DataSource;
 
@@ -39,7 +38,7 @@ public class MyBatisConfig {
     }
 
     @Bean
-    public TransactionManager transactionManager(DataSource dataSource) {
+    public DataSourceTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }
 }
