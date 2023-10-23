@@ -42,6 +42,8 @@ public class ProxyReplacer {
 
     /**
      * Clears the bean references inside all the proxies
+     *
+     * Please note that this will clear the cached proxy and cause a new proxy to be created every time getBean is called, which will cause OOM in the long run.
      */
     public static void clearAllProxies() {
         DetachableBeanHolder.detachBeans();
