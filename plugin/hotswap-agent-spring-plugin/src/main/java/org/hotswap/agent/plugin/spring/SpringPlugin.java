@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Spring plugin.
@@ -53,7 +52,8 @@ import java.util.concurrent.TimeUnit;
                 ConfigurationClassPostProcessorTransformer.class,
                 ResourcePropertySourceTransformer.class,
                 PlaceholderConfigurerSupportTransformer.class,
-                XmlBeanDefinitionScannerTransformer.class})
+                XmlBeanDefinitionScannerTransformer.class,
+                PostProcessorRegistrationDelegateTransformer.class})
 
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
@@ -106,19 +106,15 @@ public class SpringPlugin {
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
         scheduler.scheduleCommand(new XmlsChangedCommand(appClassLoader, url, scheduler));
-        // schedule reload after 1000 milliseconds
         LOGGER.trace("Scheduling Spring reload for XML '{}'", url);
-        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                TimeUnit.MILLISECONDS);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
         scheduler.scheduleCommand(new PropertiesChangedCommand(appClassLoader, url, scheduler));
-        // schedule reload after 1000 milliseconds
         LOGGER.trace("Scheduling Spring reload for properties '{}'", url);
-        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                TimeUnit.MILLISECONDS);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.yaml", events = {FileEvent.MODIFY})
@@ -126,17 +122,14 @@ public class SpringPlugin {
         scheduler.scheduleCommand(new YamlChangedCommand(appClassLoader, url, scheduler));
         // schedule reload after 1000 milliseconds
         LOGGER.trace("Scheduling Spring reload for yaml '{}'", url);
-        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                TimeUnit.MILLISECONDS);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
         scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
-        // schedule reload after 1000 milliseconds
         LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", clazz, appClassLoader);
-        scheduler.scheduleDelayedCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis,
-                TimeUnit.MILLISECONDS);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 
     /**

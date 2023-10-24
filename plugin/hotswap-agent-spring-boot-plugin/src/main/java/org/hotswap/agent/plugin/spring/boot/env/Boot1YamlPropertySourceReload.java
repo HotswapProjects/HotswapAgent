@@ -1,44 +1,24 @@
 package org.hotswap.agent.plugin.spring.boot.env;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.boot.core.HotswapReloadMap;
 import org.hotswap.agent.plugin.spring.api.PropertySourceReload;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.core.io.Resource;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 public class Boot1YamlPropertySourceReload implements PropertySourceReload<Map<String, Object>> {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(Boot1YamlPropertySourceReload.class);
-    final String name;
-    final Resource resource;
-    final String profile;
 
-    Map<String, Object> hotswapMap;
+    final String profile;
+    MapPropertySourceReload mapPropertySourceReload;
 
     public Boot1YamlPropertySourceReload(String name, Resource resource, String profile) {
-        this.name = name;
-        this.resource = resource;
+        mapPropertySourceReload = new MapPropertySourceReload(name, resource);
         this.profile = profile;
     }
 
-    private void updateHotswapMap(Map<String, Object> newHotswapMap) {
-        if (hotswapMap == null) {
-            synchronized (this) {
-                if (hotswapMap == null) {
-                    hotswapMap = new HotswapReloadMap<>(newHotswapMap);
-                    return;
-                }
-            }
-        }
-
-        if (hotswapMap instanceof HotswapReloadMap) {
-            ((HotswapReloadMap) hotswapMap).updateNewValue(newHotswapMap);
-        }
-    }
 
     @Override
     public void reload() {
@@ -46,7 +26,7 @@ public class Boot1YamlPropertySourceReload implements PropertySourceReload<Map<S
         if (newHotswapMap == null || newHotswapMap.size() == 0) {
             return;
         }
-        updateHotswapMap(newHotswapMap);
+        mapPropertySourceReload.updateHotswapMap(newHotswapMap);
     }
 
     /**
@@ -58,14 +38,14 @@ public class Boot1YamlPropertySourceReload implements PropertySourceReload<Map<S
         if (result == null) {
             return result;
         }
-        updateHotswapMap(result);
-        return hotswapMap;
+        mapPropertySourceReload.updateHotswapMap(result);
+        return mapPropertySourceReload.hotswapMap;
     }
 
     private Map<String, Object> doLoad() {
         try {
             Object target = ReflectionHelper.invokeConstructor("org.springframework.boot.env.YamlPropertySourceLoader$Processor",
-                    this.getClass().getClassLoader(), new Class[]{Resource.class, String.class}, resource, profile);
+                    this.getClass().getClassLoader(), new Class[]{Resource.class, String.class}, mapPropertySourceReload.resource, profile);
             return (Map<String, Object>) ReflectionHelper.invoke(target, "process");
         } catch (Exception e) {
             throw new RuntimeException(e);

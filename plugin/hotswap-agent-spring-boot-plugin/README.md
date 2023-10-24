@@ -1,53 +1,72 @@
 Spring plugin
 =============
-Reload Spring configuration after class definition/change.
+Reload Spring Boot configuration after class definition/change.
 
-The plugin hooks for initialization into `DefaultListableBeanFactory` which is the default bean factory for
-all applicationContexts. This plugin should work for you if you use a standard Spring setup.
+The plugin hooks for initialization into `org.springframework.boot.SpringApplication` which is the entry of Spring Boot Application.
 
-Currently component scan and annotation config is supported (as it is the most common configuration).
-and XML-based bean definition is available (basePackagePrefix attribute is needed to improve performance).
-For more complex configuration reload any help is warmly welcomed :-).
+The plugin based on Spring Plugin, it depends on Spring Dependency. The spring boot have some features, now we just support the reload of the configuration.
 
-> Note
->
-> Instances of non-singleton bean with no default constructor created before class file change won't be rewired with new props. It just cost too much pain too implement that with so little in return.
->
->  
->
-> A bean defined by xml must have a id/name equals className with lowercase first letter or instances created before won't be rewired with new props (Updating corrsponding xml can trigger rewiring. For me, it's weird to define a bean in xml which have @Autowire props/methods).
-
-
-
-Component scan
+Configuration Reload
 --------------
-Plugin supports reloading of all components registered by component scan
-([Spring classpath scanning documentation](http://docs.spring.io/spring/docs/4.0.x/spring-framework-reference/html/beans.html#beans-classpath-scanning)).
-For example:
+The plugin supports reloading of Spring Boot configuration. For example:
+```
+    ####hotswap-demo.properties
+    properties.l10.l1=hotswap-demo
 
-    <context:component-scan base-package="org.example"/>
+    @Configuration
+    @PropertySource("classpath:hotswap-demo.properties")
+    @EnableConfigurationProperties(value = {Test10Properties.class})
+    public class ApplicationConfiguration {
+        @Value("${application.name}")
+        private String applicationName;
+        ...
+    }
 
-Spring will scan package org.example at initialization and register all beans. HotswapAgent plugin will register
-events on the base package as well to catch any class reload or new class definition. After you reload a class or
-define a new class, the class is processed by Spring container as if it was discovered by standard scan process.
-If the bean was already registered in Spring bean registry, it is unregistered and all appropriate caches are reset.
+    @ConfigurationProperties(prefix = "properties.l10")
+    public class Test10Properties {
+        private String l1;
+        ...
+    }
+    
+    @Component
+    public class Test50Service {
+        @Value("${properties.l10.l1}")
+        private String l1;
+        ...
+    }
 
-#### Implementation notes:
-The plugin is initialized in `DefaultListableBeanFactory` constructor. Than `ClassPathBeanDefinitionScanner` is patched
-to hook into component scan process (actually
-`org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider.findCandidateComponents(String basePackage))`
-is enhanced to register hotswap reload and file creation events on basePackage path. After the event is fired,
-a method similar to `org.springframework.context.annotation.ClassPathBeanDefinitionScanner.doScan()` is invoked. There
-are two main differences - it scans only a single file and unregister bean definition from bean registry if required.
+```
+#### Refresh the configuration
 
----
+If you change the value of `properties.l10.l1` in `hotswap-demo.properties` file or `application.yaml/application.properties` file, 
+* the value in any beans which use `@Value` will be changed. (destroy and recreate the bean)
+* the value in any beans which use `@ConfigurationProperties` will be changed. (destroy and recreate the bean)
 
-For xml defined bean:
+#### Notify the configuration change 
 
-Hooked XmlBeanDefinitionReader.loadBeanDefinitions(URL url) method to get it's args, and use that method to loadBeanDefinition when xml changed.
+After any value of PropertySource changed, it will send an event that provided by Spring Plugin. 
+You can implement one listener to receive the event. It will be used by any Hotswap plugin of Spring Boot Starter.
 
-If you are running server using IDE, just change the xml and save it.
-If the server is running standalone, you need to change the xml under server's webapp path with autoHotswap on, because there is actually no hotswap for xml
+```
+public class PropertiesChangeMockListener implements SpringListener<SpringEvent<?>> {
+
+    public boolean isFilterBeanFactory() {
+        return false;
+    }
+
+    @Override
+    public DefaultListableBeanFactory beanFactory() {
+        return null;
+    }
+
+    @Override
+    public void onEvent(SpringEvent<?> event) {
+        if (event instanceof PropertiesChangeEvent) {
+            xxxxx
+        }
+    }
+```
+
 
 # TODO:
 * ... a lot to do ...

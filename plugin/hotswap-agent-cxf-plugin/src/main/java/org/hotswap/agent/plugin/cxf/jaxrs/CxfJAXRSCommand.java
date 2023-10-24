@@ -22,6 +22,8 @@ import org.apache.cxf.jaxrs.model.ClassResourceInfo;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 
+import java.util.Objects;
+
 /**
  * The Class CxfJAXRSCommand.
  */
@@ -31,10 +33,12 @@ public class CxfJAXRSCommand extends MergeableCommand {
 
     private ClassLoader classLoader;
     private ClassResourceInfo criProxy;
+    private String resourceClassPath;
 
     public void setupCmd(ClassLoader classLoader, Object criProxy) {
         this.classLoader = classLoader;
         this.criProxy = (ClassResourceInfo) criProxy;
+        resourceClassPath = this.criProxy.getServiceClass().toString();
     }
 
     @Override
@@ -55,35 +59,17 @@ public class CxfJAXRSCommand extends MergeableCommand {
         }
     }
 
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((classLoader == null) ? 0 : classLoader.hashCode());
-        result = prime * result + ((criProxy == null) ? 0 : criProxy.hashCode());
-        return result;
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        CxfJAXRSCommand that = (CxfJAXRSCommand) object;
+        return Objects.equals(resourceClassPath, that.resourceClassPath);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        CxfJAXRSCommand other = (CxfJAXRSCommand) obj;
-
-        if (classLoader == null) {
-            if (other.classLoader != null)
-                return false;
-        } else if (!classLoader.equals(other.classLoader))
-            return false;
-        if (criProxy == null) {
-            if (other.criProxy != null)
-                return false;
-        } else if (!criProxy.equals(other.criProxy))
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(resourceClassPath);
     }
 
     @Override

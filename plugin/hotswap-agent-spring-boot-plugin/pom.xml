@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-spring-boot-plugin</artifactId>
 
     <properties>
-        <spring-boot.version>2.7.16</spring-boot.version>
+        <org.springframework.boot.version>2.0.9.RELEASE</org.springframework.boot.version>
     </properties>
 
     <dependencyManagement>
@@ -21,7 +21,7 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
+                <version>${org.springframework.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -47,6 +47,12 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Dependency for Spring 3.0 versions -->
         <dependency>
             <groupId>cglib</groupId>
@@ -58,6 +64,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

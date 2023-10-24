@@ -19,6 +19,7 @@
 package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.ConfigurationClassPostProcessor;
 
@@ -39,8 +40,8 @@ public class ResetBeanFactoryPostProcessorCaches {
             ConfigurationClassPostProcessor ccpp = beanFactory.getBean(ConfigurationClassPostProcessor.class);
             clearSetFieldOfConfigurationClassPostProcessor(ccpp, "factoriesPostProcessed", factoryId);
             clearSetFieldOfConfigurationClassPostProcessor(ccpp, "registriesPostProcessed", factoryId);
-        } catch (Exception e) {
-            LOGGER.debug("ConfigurationClassPostProcessor bean doesn't present", e);
+        } catch (NoSuchBeanDefinitionException e) {
+            LOGGER.trace("ConfigurationClassPostProcessor bean doesn't present");
         }
     }
 
@@ -52,7 +53,7 @@ public class ResetBeanFactoryPostProcessorCaches {
             Set<Integer> set = (Set<Integer>) field.get(ccpp);
             set.remove(factoryId);
         } catch (Exception e) {
-            LOGGER.debug("ConfigurationClassPostProcessor bean doesn't present", e);
+            LOGGER.debug("Error while resetting ConfigurationClassPostProcessor caches", e);
         }
     }
 }

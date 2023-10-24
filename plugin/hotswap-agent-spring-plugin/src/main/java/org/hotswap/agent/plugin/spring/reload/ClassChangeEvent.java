@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.spring.reload;
 
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 public class ClassChangeEvent extends SpringEvent<Class> {
     /**
@@ -10,7 +10,7 @@ public class ClassChangeEvent extends SpringEvent<Class> {
      * @param source the object on which the Event initially occurred
      * @throws IllegalArgumentException if source is null
      */
-    public ClassChangeEvent(Class<?> source, DefaultListableBeanFactory beanFactory) {
+    public ClassChangeEvent(Class<?> source, ConfigurableListableBeanFactory beanFactory) {
         super(source, beanFactory);
     }
 }

@@ -7,6 +7,7 @@ import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.support.*;
 import org.springframework.util.StringValueResolver;
@@ -33,22 +34,6 @@ public class BeanFactoryProcessor {
         beanFactory.destroySingleton(beanName);
     }
 
-    // temporary removed
-//    public static boolean isFactoryBean(DefaultListableBeanFactory beanFactory, String beanName, RootBeanDefinition beanDefinition) {
-//        Method isFactoryBeanMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "isFactoryBean", String.class, RootBeanDefinition.class);
-//        if (isFactoryBeanMethod != null) {
-//            isFactoryBeanMethod.setAccessible(true);
-//            try {
-//                return (boolean) isFactoryBeanMethod.invoke(beanFactory, beanName, beanDefinition);
-//            } catch (Exception e) {
-//                LOGGER.warning("isFactoryBean error", e);
-//            }
-//        }
-//        if (beanName.startsWith("&")) {
-//            return true;
-//        }
-//        return false;
-//    }
 
     public static boolean needReloadOnConstructor(DefaultListableBeanFactory beanFactory, AbstractBeanDefinition currentBeanDefinition,
                                                   String beanName, Predicate<Constructor<?>[]> predicate) {
@@ -121,7 +106,7 @@ public class BeanFactoryProcessor {
         beanFactory.setAllowBeanDefinitionOverriding(allowEagerClassLoading);
     }
 
-    public static BeanDefinition getBeanDefinition(DefaultListableBeanFactory beanFactory, String beanName) {
+    public static BeanDefinition getBeanDefinition(ConfigurableListableBeanFactory beanFactory, String beanName) {
         if (beanName.startsWith("&")) {
             beanName = beanName.substring(1);
         }

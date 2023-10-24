@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.spring.reload;
 
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 public class BeanChangeEvent extends SpringEvent<String[]> {
     /**
@@ -11,7 +11,7 @@ public class BeanChangeEvent extends SpringEvent<String[]> {
      * @param beanFactory
      * @throws IllegalArgumentException if source is null
      */
-    public BeanChangeEvent(String[] source, DefaultListableBeanFactory beanFactory) {
+    public BeanChangeEvent(String[] source, ConfigurableListableBeanFactory beanFactory) {
         super(source, beanFactory);
     }
 }

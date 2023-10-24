@@ -85,9 +85,9 @@ public class DetachableBeanHolder implements Serializable {
             }
         }
         if (i > 0) {
-            LOGGER.info("{} Spring proxies reset", i);
+            LOGGER.debug("{} Spring proxies reset", i);
         } else {
-            LOGGER.debug("No spring proxies reset");
+            LOGGER.trace("No spring proxies reset");
         }
     }
 

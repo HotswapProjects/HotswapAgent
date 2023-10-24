@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.spring.files;
 
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 import java.util.List;
 
@@ -15,7 +15,7 @@ public class PropertiesChangeEvent extends SpringEvent<List<PropertiesChangeEven
      * @param source the object on which the Event initially occurred
      * @throws IllegalArgumentException if source is null
      */
-    public PropertiesChangeEvent(List<PropertyChangeItem> source, DefaultListableBeanFactory beanFactory) {
+    public PropertiesChangeEvent(List<PropertyChangeItem> source, ConfigurableListableBeanFactory beanFactory) {
         super(source, beanFactory);
     }
 

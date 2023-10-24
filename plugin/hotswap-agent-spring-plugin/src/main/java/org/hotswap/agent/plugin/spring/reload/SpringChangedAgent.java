@@ -64,7 +64,7 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
     public static boolean addChangedClass(Class clazz, DefaultListableBeanFactory beanFactory) {
         boolean result = false;
         for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
-            if (springChangedAgent.beanFactory() == beanFactory){
+            if (springChangedAgent.beanFactory() == beanFactory) {
                 result |= springChangedAgent.addClass(clazz);
             }
         }
@@ -92,10 +92,10 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         return true;
     }
 
-    public static boolean addNewBean(BeanDefinitionHolder beanDefinitionHolder, DefaultListableBeanFactory beanFactory) {
+    public static boolean addNewBean(BeanDefinitionHolder beanDefinitionHolder, ConfigurableListableBeanFactory beanFactory) {
         for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
-            if (springChangedAgent.beanFactory() == beanFactory){
-                springChangedAgent.addNewBean(beanFactory, beanDefinitionHolder);
+            if (springChangedAgent.beanFactory() == beanFactory) {
+                springChangedAgent.addNewBean(springChangedAgent.beanFactory(), beanDefinitionHolder);
             }
         }
         return true;
@@ -199,7 +199,7 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
     public void onEvent(SpringEvent<?> event) {
         if (event instanceof BeanDefinitionChangeEvent) {
             BeanDefinitionChangeEvent beanDefinitionChangeEvent = (BeanDefinitionChangeEvent) event;
-            addNewBean(beanDefinitionChangeEvent.getBeanFactory(), beanDefinitionChangeEvent.getSource());
+            addNewBean(beanFactory(), beanDefinitionChangeEvent.getSource());
         } else if (event instanceof BeanChangeEvent) {
             BeanChangeEvent beanChangeEvent = (BeanChangeEvent) event;
             addChangedBeanNames(beanChangeEvent.getSource());

@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.spring.listener;
 
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import java.util.EventObject;
@@ -13,7 +14,7 @@ import java.util.EventObject;
  */
 public abstract class SpringEvent<T> extends EventObject {
 
-    private DefaultListableBeanFactory beanFactory;
+    private ConfigurableListableBeanFactory beanFactory;
 
     /**
      * Constructs a prototypical Event.
@@ -21,7 +22,7 @@ public abstract class SpringEvent<T> extends EventObject {
      * @param source the object on which the Event initially occurred
      * @throws IllegalArgumentException if source is null
      */
-    public SpringEvent(T source, DefaultListableBeanFactory beanFactory) {
+    public SpringEvent(T source, ConfigurableListableBeanFactory beanFactory) {
         super(source);
         this.beanFactory = beanFactory;
     }
@@ -30,7 +31,7 @@ public abstract class SpringEvent<T> extends EventObject {
         return (T) super.getSource();
     }
 
-    public DefaultListableBeanFactory getBeanFactory() {
+    public ConfigurableListableBeanFactory getBeanFactory() {
         return beanFactory;
     }
 }

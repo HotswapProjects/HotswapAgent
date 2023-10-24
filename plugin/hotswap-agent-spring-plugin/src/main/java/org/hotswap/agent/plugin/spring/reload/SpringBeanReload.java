@@ -330,7 +330,7 @@ public class SpringBeanReload {
     }
 
     private boolean printReloadLog() {
-        LOGGER.debug("the class or the file at '{}' has changes, rerun the while loop", ObjectUtils.identityToString(beanFactory));
+        LOGGER.debug("the class or the file at '{}' has changes, rerun the while loop.{}", ObjectUtils.identityToString(beanFactory), this);
         return true;
     }
 
@@ -340,6 +340,7 @@ public class SpringBeanReload {
             LOGGER.trace("no change, ignore reloading '{}'", ObjectUtils.identityToString(beanFactory));
             return false;
         }
+        LOGGER.trace("has change, start reloading '{}', {}", ObjectUtils.identityToString(beanFactory), this);
         return true;
     }
 
@@ -364,6 +365,7 @@ public class SpringBeanReload {
             LOGGER.reload("the properties of '{}' is changed", ObjectUtils.identityToString(beanFactory));
             PropertyReload.reloadPropertySource(beanFactory);
             beansToProcess.addAll(PropertyReload.getContainValueAnnotationBeans(beanFactory));
+            return true;
         }
         return false;
     }
@@ -521,8 +523,7 @@ public class SpringBeanReload {
                 beanName = beanName.substring(1);
             }
             BeanDefinition beanDefinition = BeanFactoryProcessor.getBeanDefinition(beanFactory, beanName);
-            if ((AnnotationHelper.hasAnnotation(clazz, "org.springframework.context.annotation.Configuration") ||
-                    AnnotationHelper.hasAnnotation(clazz, "org.springframework.stereotype.Component"))
+            if (AnnotationHelper.hasAnnotation(clazz, "org.springframework.context.annotation.Configuration")
                     && beanDefinition.getAttribute("org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass") != null) {
                 configurationBeansToReload.add(beanName);
                 String generateBeanName = beanNameGenerator.generateBeanName(beanDefinition, beanFactory);
@@ -626,10 +627,7 @@ public class SpringBeanReload {
         } catch (NoSuchMethodException t) {
             LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
             invokeBeanFactoryPostProcessors0(factory);
-        } catch (InvocationTargetException e) {
-            LOGGER.error("Failed to invoke PostProcessorRegistrationDelegate", e);
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to invoke PostProcessorRegistrationDelegate", e);
             throw new RuntimeException(e);
         }
@@ -649,12 +647,24 @@ public class SpringBeanReload {
         String[] bdrppNames = factory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
         for (String name : bdrppNames) {
             BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
+            try {
+                pp.postProcessBeanDefinitionRegistry(factory);
+            } catch (Exception e) {
+                LOGGER.debug("Failed to invoke BeanDefinitionRegistryPostProcessor: {}, reason:{}",
+                        pp.getClass().getName(), e.getMessage());
+            }
             pp.postProcessBeanDefinitionRegistry(factory);
         }
 
         for (String name : bdrppNames) {
             BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
-            pp.postProcessBeanFactory(factory);
+            try {
+                pp.postProcessBeanFactory(factory);
+            } catch (Exception e) {
+                LOGGER.debug("Failed to invoke BeanDefinitionRegistryPostProcessor: {}, reason:{}",
+                        pp.getClass().getName(), e.getMessage());
+                LOGGER.trace("Failed to invoke BeanDefinitionRegistryPostProcessor", e);
+            }
         }
 
         String[] bfppNames = factory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
@@ -663,7 +673,13 @@ public class SpringBeanReload {
                 continue;
             }
             BeanFactoryPostProcessor pp = factory.getBean(name, BeanFactoryPostProcessor.class);
-            pp.postProcessBeanFactory(factory);
+            try {
+                pp.postProcessBeanFactory(factory);
+            } catch (Exception e) {
+                LOGGER.debug("Failed to invoke BeanDefinitionRegistryPostProcessor: {}, reason:{}",
+                        pp.getClass().getName(), e.getMessage());
+                LOGGER.trace("Failed to invoke BeanDefinitionRegistryPostProcessor", e);
+            }
         }
     }
 
@@ -672,19 +688,19 @@ public class SpringBeanReload {
         for (String name : names) {
             BeanPostProcessor pp = factory.getBean(name, BeanPostProcessor.class);
             factory.addBeanPostProcessor(pp);
-            LOGGER.debug("Add BeanPostProcessor {} that mapping to {}", name, ObjectUtils.identityToString(pp));
+            LOGGER.trace("Add BeanPostProcessor '{}' that mapping to {}", name, ObjectUtils.identityToString(pp));
         }
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("SpringReload{");
+        final StringBuilder sb = new StringBuilder("SpringBeanReload{");
         sb.append("classes=").append(classes);
         sb.append(", properties=").append(properties);
+        sb.append(", yamls=").append(yamls);
         sb.append(", xmls=").append(xmls);
-        sb.append(", dependentBeanMap=").append(dependentBeanMap);
-        sb.append(", destroyBeans=").append(processedBeans);
-        sb.append(", recreatedBeans=").append(beansToProcess);
+        sb.append(", newScanBeanDefinitions=").append(newScanBeanDefinitions);
+        sb.append(", changedBeanNames=").append(changedBeanNames);
         sb.append('}');
         return sb.toString();
     }

@@ -1,0 +1,10 @@
+properties:
+  l10:
+    l1: base-yaml-world
+    l2: base-yaml-greeting
+  l50:
+    l1: base-yaml-world
+    l2: base-yaml-greeting
+  l80:
+    l1: ps-yaml-l1
+    l3: ps-yaml-l3

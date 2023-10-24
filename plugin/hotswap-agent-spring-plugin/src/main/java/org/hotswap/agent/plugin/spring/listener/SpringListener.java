@@ -23,4 +23,8 @@ public interface SpringListener<E extends SpringEvent<?>> extends EventListener 
     default boolean isFilterBeanFactory() {
         return true;
     }
+
+    default int priority() {
+        return 10000;
+    };
 }

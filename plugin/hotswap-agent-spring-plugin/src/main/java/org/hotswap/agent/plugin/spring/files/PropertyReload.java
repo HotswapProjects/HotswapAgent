@@ -7,6 +7,7 @@ import org.hotswap.agent.plugin.spring.transformers.api.IReloadPropertySource;
 import org.hotswap.agent.plugin.spring.transformers.api.IResourcePropertySource;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
@@ -71,7 +72,8 @@ public class PropertyReload {
             String newValue = environment.getProperty(key);
             if ((oldValue != null && !oldValue.equals(newValue)) || (oldValue == null && newValue != null)) {
                 propertyChangeItems.add(new PropertiesChangeEvent.PropertyChangeItem(key, oldValue, newValue));
-                LOGGER.debug("property reload, key:{}, oldValue:{}, newValue:{}", key, oldValue, newValue);
+                LOGGER.debug("property of '{}' reload, key:{}, oldValue:{}, newValue:{}",
+                        ObjectUtils.identityToString(beanFactory), key, oldValue, newValue);
             }
         }
         if (!propertyChangeItems.isEmpty()) {
@@ -82,7 +84,7 @@ public class PropertyReload {
     private static void processKeysOfPropertySource(MutablePropertySources propertySources, Consumer<Set<String>> consumer) {
         for (PropertySource<?> propertySource : propertySources) {
             if (propertySource instanceof MapPropertySource) {
-                consumer.accept(((MapPropertySource)propertySource).getSource().keySet());
+                consumer.accept(((MapPropertySource) propertySource).getSource().keySet());
             }
         }
     }

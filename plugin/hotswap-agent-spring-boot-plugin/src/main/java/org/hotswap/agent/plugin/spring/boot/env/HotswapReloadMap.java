@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.spring.boot.core;
+package org.hotswap.agent.plugin.spring.boot.env;
 
 import org.hotswap.agent.plugin.spring.env.HotswapChangeItem;
 

@@ -1,7 +1,6 @@
 package org.hotswap.agent.plugin.spring.boot.env;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.boot.core.HotswapProperties;
 import org.hotswap.agent.plugin.spring.api.PropertySourceReload;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.core.io.Resource;
@@ -23,7 +22,7 @@ public class Boot1PropertiesPropertySourceReload implements PropertySourceReload
         this.profile = profile;
     }
 
-    private void updateHotswapMap(Properties newProperties) {
+    private void updateHotswap(Properties newProperties) {
         if (properties == null) {
             synchronized (this) {
                 if (properties == null) {
@@ -43,7 +42,7 @@ public class Boot1PropertiesPropertySourceReload implements PropertySourceReload
         if (newHotswapMap == null || newHotswapMap.size() == 0) {
             return;
         }
-        updateHotswapMap(newHotswapMap);
+        updateHotswap(newHotswapMap);
     }
 
     /**
@@ -53,9 +52,9 @@ public class Boot1PropertiesPropertySourceReload implements PropertySourceReload
     public Properties load() {
         Properties result = doLoad();
         if (result == null) {
-            return result;
+            return null;
         }
-        updateHotswapMap(result);
+        updateHotswap(result);
         return properties;
     }
 
