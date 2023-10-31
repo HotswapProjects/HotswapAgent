@@ -45,16 +45,9 @@ public class DetachableBeanHolder implements Serializable {
     private Object beanFactory;
     private Class<?>[] paramClasses;
     private Object[] paramValues;
-<<<<<<< HEAD
     private static List<WeakReference<DetachableBeanHolder>> beanProxies =
             Collections.synchronizedList(new ArrayList<WeakReference<DetachableBeanHolder>>());
-=======
-    //key: bean name
-    private static final Map<String, WeakReference<DetachableBeanHolder>> beanProxies = new ConcurrentHashMap<>();
-    //key:bean name, value: proxy bean cached for DefaultListableBeanFactory's getBean(..) methods
-    public static final Map<String, Object> HA_PROXIES_CACHE = new ConcurrentHashMap<>();
 
->>>>>>> 3b2d2e9f (Fix getBean OOM)
     private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 
     /**
@@ -74,6 +67,7 @@ public class DetachableBeanHolder implements Serializable {
         this.beanFactory = beanFactry;
         this.paramClasses = paramClasses;
         this.paramValues = paramValues;
+
 
         beanProxies.add(new WeakReference<DetachableBeanHolder>(this));
     }

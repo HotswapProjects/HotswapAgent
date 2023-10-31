@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.hotswap.agent.plugin.spring.transformers.api.IPlaceholderConfigurerSupport;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -31,6 +32,7 @@ public class BeanFactoryProcessor {
     public static void destroySingleton(DefaultListableBeanFactory beanFactory, String beanName) {
         // remove embeddedValueResolvers cache in PlaceholderConfigurerSupport
         resetEmbeddedValueResolvers(beanFactory, beanName);
+        ProxyReplacer.clearProxiesByName(beanName);
         beanFactory.destroySingleton(beanName);
     }
 

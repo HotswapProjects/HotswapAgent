@@ -50,8 +50,8 @@ public class GetBeanTest {
                 .get(DetachableBeanHolder.class);
 
         String beanName = "serviceA";
-        DetachableBeanHolder.detachBeans(Collections.singleton(beanName));
-        DetachableBeanHolder.detachBeans(Collections.singleton(beanName));
+        DetachableBeanHolder.detachBean(beanName);
+        DetachableBeanHolder.detachBean(beanName);
 
         //serviceA is cached
         Object serviceA = beanFactory.getBean(beanName);
