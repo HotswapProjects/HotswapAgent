@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.spring.util.CollectionUtils;
+import org.hotswap.agent.util.spring.util.StringUtils;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
@@ -74,7 +75,7 @@ public class DetachableBeanHolder implements Serializable {
         if (beanName != null) {
             synchronized (beanProxies) {
                 if (beanProxies.containsKey(beanName)) {
-                    detachBeans(Collections.singleton(beanName));
+                    detachBean(beanName);
                 }
                 beanProxies.put(beanName, new WeakReference<>(this));
             }
@@ -128,24 +129,22 @@ public class DetachableBeanHolder implements Serializable {
     /**
      * Clears the bean references inside the beanName's proxy
      */
-    public static void detachBeans(Set<String> beanNames) {
-        if (CollectionUtils.isEmpty(beanNames)) {
+    public static void detachBean(String beanName) {
+        if (StringUtils.isEmpty(beanName)) {
             return;
         }
         synchronized (beanProxies) {
-            for (String beanName : beanNames) {
-                if (beanProxies.containsKey(beanName)) {
-                    DetachableBeanHolder beanHolder = beanProxies.get(beanName).get();
-                    if (beanHolder != null) {
-                        beanHolder.detach();
-                    } else {
-                        beanProxies.remove(beanName);
-                    }
+            if (beanProxies.containsKey(beanName)) {
+                DetachableBeanHolder beanHolder = beanProxies.get(beanName).get();
+                if (beanHolder != null) {
+                    beanHolder.detach();
+                } else {
+                    beanProxies.remove(beanName);
                 }
-                HA_PROXIES_CACHE.remove(beanName);
             }
+            HA_PROXIES_CACHE.remove(beanName);
         }
-        LOGGER.info("{} Spring proxies reset", beanNames);
+        LOGGER.info("{} Spring proxy reset", beanName);
     }
 
     /**

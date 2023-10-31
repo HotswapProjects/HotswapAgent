@@ -49,8 +49,8 @@ public class ProxyReplacer {
         DetachableBeanHolder.detachBeans();
     }*/
 
-    public static void clearProxiesByNames(Set<String> beanNames) {
-        DetachableBeanHolder.detachBeans(beanNames);
+    public static void clearProxiesByName(String beanName) {
+        DetachableBeanHolder.detachBean(beanName);
     }
     /**
      * Creates a proxied Spring bean. Called from within WebApp code by modification of Spring classes
