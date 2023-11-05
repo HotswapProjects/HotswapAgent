@@ -21,7 +21,6 @@ package org.hotswap.agent.plugin.spring.getbean;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
-import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.SpringPlugin;
@@ -40,16 +39,7 @@ public class ProxyReplacer {
      */
     public static final String FACTORY_METHOD_NAME = "getBean";
 
-    /**
-     * Clears the bean references inside all the proxies
-     *
-     * Please note that this will clear the cached proxy and cause a new proxy to be created every time getBean is called, which will cause OOM in the long run.
-     */
-    /*public static void clearAllProxies() {
-        DetachableBeanHolder.detachBeans();
-    }*/
-
-    public static void clearProxiesByName(String beanName) {
+    public static void clearProxyByName(String beanName) {
         DetachableBeanHolder.detachBean(beanName);
     }
     /**
@@ -105,19 +95,7 @@ public class ProxyReplacer {
             if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {
                 return bean;
             }
-
-            //try to find cache
-            String beanName = DetachableBeanHolder.deduceBeanName(beanFactry, paramClasses, paramValues);
-
-            Object cachedProxy;
-            if (beanName != null && (cachedProxy = DetachableBeanHolder.getHAProxy(beanName)) != null) {
-                return cachedProxy;
-            }
-
-            //do create and cache
-            Object proxy = EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
-            DetachableBeanHolder.addHAProxy(beanName, proxy);
-            return proxy;
+            return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
         }
 
         return bean;

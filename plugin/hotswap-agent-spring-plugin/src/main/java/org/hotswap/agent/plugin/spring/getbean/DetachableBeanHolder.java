@@ -23,10 +23,7 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hotswap.agent.logging.AgentLogger;
@@ -35,11 +32,9 @@ import org.hotswap.agent.util.spring.util.StringUtils;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
- *
  * Loadable detachable Spring bean holder
  *
  * @author Erki Ehtla
- *
  */
 public class DetachableBeanHolder implements Serializable {
 
@@ -50,10 +45,7 @@ public class DetachableBeanHolder implements Serializable {
     private Class<?>[] paramClasses;
     private Object[] paramValues;
     //key: bean name
-    private static final Map<String, WeakReference<DetachableBeanHolder>> beanProxies = new ConcurrentHashMap<>();
-    //key:bean name, value: proxy bean cached for DefaultListableBeanFactory's getBean(..) methods
-    public static final Map<String, Object> HA_PROXIES_CACHE = new ConcurrentHashMap<>();
-
+    private static final Map<String, List<WeakReference<DetachableBeanHolder>>> beanProxies = new ConcurrentHashMap<>();
     private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 
     /**
@@ -74,10 +66,8 @@ public class DetachableBeanHolder implements Serializable {
         String beanName = deduceBeanName(beanFactry, paramClasses, paramValues);
         if (beanName != null) {
             synchronized (beanProxies) {
-                if (beanProxies.containsKey(beanName)) {
-                    detachBean(beanName);
-                }
-                beanProxies.put(beanName, new WeakReference<>(this));
+                beanProxies.computeIfAbsent(beanName, k -> new ArrayList<>());
+                beanProxies.get(beanName).add(new WeakReference<>(this));
             }
         }
     }
@@ -100,33 +90,6 @@ public class DetachableBeanHolder implements Serializable {
     }
 
     /**
-     * Clears the bean references inside all of the proxies
-     */
-    /*public static void detachBeans() {
-        int i = 0;
-        synchronized (beanProxies) {
-            Iterator<Map.Entry<String, WeakReference<DetachableBeanHolder>>> iterator = beanProxies.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, WeakReference<DetachableBeanHolder>> entry = iterator.next();
-                DetachableBeanHolder beanHolder = entry.getValue().get();
-                if (beanHolder != null) {
-                    beanHolder.detach();
-                    i++;
-                } else {
-                    iterator.remove();
-                }
-            }
-            HA_PROXIES_CACHE.clear();
-        }
-        if (i > 0) {
-            LOGGER.info("{} Spring proxies reset", i);
-        } else {
-            LOGGER.debug("No spring proxies reset");
-        }
-    }*/
-
-
-    /**
      * Clears the bean references inside the beanName's proxy
      */
     public static void detachBean(String beanName) {
@@ -135,16 +98,19 @@ public class DetachableBeanHolder implements Serializable {
         }
         synchronized (beanProxies) {
             if (beanProxies.containsKey(beanName)) {
-                DetachableBeanHolder beanHolder = beanProxies.get(beanName).get();
-                if (beanHolder != null) {
-                    beanHolder.detach();
-                } else {
-                    beanProxies.remove(beanName);
+                List<WeakReference<DetachableBeanHolder>> weakReferences = beanProxies.get(beanName);
+                if (CollectionUtils.isEmpty(weakReferences)) {
+                    return;
+                }
+                for (WeakReference<DetachableBeanHolder> weakReference : weakReferences) {
+                    DetachableBeanHolder beanHolder = weakReference.get();
+                    if (beanHolder != null) {
+                        beanHolder.detach();
+                    }
+                    LOGGER.info("{} Spring proxy reset", beanName);
                 }
             }
-            HA_PROXIES_CACHE.remove(beanName);
         }
-        LOGGER.info("{} Spring proxy reset", beanName);
     }
 
     /**
@@ -183,10 +149,12 @@ public class DetachableBeanHolder implements Serializable {
         if (beanCopy == null) {
             Method[] methods = beanFactory.getClass().getMethods();
             for (Method factoryMethod : methods) {
+                Class<?>[] parameterTypes = factoryMethod.getParameterTypes();
                 if (ProxyReplacer.FACTORY_METHOD_NAME.equals(factoryMethod.getName())
-                        && Arrays.equals(factoryMethod.getParameterTypes(), paramClasses)) {
+                        && parameterTypes.length == 1 && parameterTypes[0] == String.class) {
 
-                    Object freshBean = factoryMethod.invoke(beanFactory, paramValues);
+                    String beanName = (String) paramValues[0];
+                    Object freshBean = factoryMethod.invoke(beanFactory, beanName);
 
                     // Factory returns HA proxy, but current method is invoked from HA proxy!
                     // It might be the same object (if factory returns same object - meaning
@@ -210,19 +178,4 @@ public class DetachableBeanHolder implements Serializable {
         return beanCopy;
     }
 
-    protected static Object getHAProxy(String beanName){
-        if (beanName != null){
-            return HA_PROXIES_CACHE.get(beanName);
-        }
-        return null;
-    }
-
-    protected static void addHAProxy(String beanName, Object proxy){
-        if (beanName != null){
-            HA_PROXIES_CACHE.put(beanName, proxy);
-        }
-    }
-    protected boolean isBeanLoaded(){
-        return bean != null;
-    }
 }

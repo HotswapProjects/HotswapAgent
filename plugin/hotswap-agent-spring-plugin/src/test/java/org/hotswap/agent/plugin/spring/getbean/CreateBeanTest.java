@@ -16,14 +16,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.Map;
-
-
 @RunWith(SpringRunner.class)
 @ContextHierarchy({@ContextConfiguration(classes = GetBeanApplication.class)})
-public class GetBeanTest {
+public class CreateBeanTest {
     @Rule
     public ClassSwappingRule swappingRule = new ClassSwappingRule();
 
@@ -41,21 +36,11 @@ public class GetBeanTest {
 
     //test DetachableBeanHolder.HA_PROXIES_CACHE
     @Test
-    public void getBeanCacheTest() throws Exception {
-        //values are instances of something like ServiceA$HOTSWAPAGENT_$$EnhancerBySpringCGLIB$$....
-        Field haProxiesCache = DetachableBeanHolder.class
-                .getDeclaredField("HA_PROXIES_CACHE");
-        haProxiesCache.setAccessible(true);
-        Map<String, Object> HA_PROXIES_CACHE = (Map<String, Object>) haProxiesCache
-                .get(DetachableBeanHolder.class);
-
+    public void createBeanTest() throws Exception {
         String beanName = "serviceA";
-        DetachableBeanHolder.detachBean(beanName);
-        DetachableBeanHolder.detachBean(beanName);
 
         //serviceA is cached
         Object serviceA = beanFactory.getBean(beanName);
-        Assert.assertSame(serviceA, HA_PROXIES_CACHE.get(beanName));
 
         //getBean("serviceA") won't generate proxy class and its bean again before swap (This is the bug fixed by this commit)
         Object serviceA1 = beanFactory.getBean(beanName);
@@ -65,12 +50,12 @@ public class GetBeanTest {
         //swap
         swappingRule.swapClasses(ServiceA.class, ServiceB.class, 1);
 
-        //new proxy has been created by getBean
+        //new proxy has been created by org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#createBean(String,RootBeanDefinition, Object[])
         Object serviceAAfterSwap = beanFactory.getBean(beanName);
         Assert.assertEquals(((ServiceA) serviceAAfterSwap).service(), "hello from serviceB and aspect");
 
         //serviceA is cached again
-        Assert.assertSame(serviceAAfterSwap, HA_PROXIES_CACHE.get(beanName));
+        Assert.assertNotSame(serviceAAfterSwap, serviceA1);
     }
 
 
