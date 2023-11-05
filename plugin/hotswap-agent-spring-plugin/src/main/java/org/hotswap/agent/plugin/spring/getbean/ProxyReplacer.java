@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 
+
 /**
  * Proxies the beans. The beans inside these proxies can be cleared.
  *
@@ -101,7 +102,6 @@ public class ProxyReplacer {
             if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {
                 return bean;
             }
-
             return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
         }
 

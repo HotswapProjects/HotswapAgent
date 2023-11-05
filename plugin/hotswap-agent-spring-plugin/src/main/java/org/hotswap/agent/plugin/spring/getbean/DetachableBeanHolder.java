@@ -30,12 +30,11 @@ import java.util.Collections;
 import java.util.List;
 
 
+
 /**
- *
  * Loadable detachable Spring bean holder
  *
  * @author Erki Ehtla
- *
  */
 public class DetachableBeanHolder implements Serializable {
 
@@ -47,7 +46,6 @@ public class DetachableBeanHolder implements Serializable {
     private Object[] paramValues;
     private static List<WeakReference<DetachableBeanHolder>> beanProxies =
             Collections.synchronizedList(new ArrayList<WeakReference<DetachableBeanHolder>>());
-
     private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 
     /**
@@ -67,8 +65,6 @@ public class DetachableBeanHolder implements Serializable {
         this.beanFactory = beanFactry;
         this.paramClasses = paramClasses;
         this.paramValues = paramValues;
-
-
         beanProxies.add(new WeakReference<DetachableBeanHolder>(this));
     }
 
@@ -131,10 +127,12 @@ public class DetachableBeanHolder implements Serializable {
         if (beanCopy == null) {
             Method[] methods = beanFactory.getClass().getMethods();
             for (Method factoryMethod : methods) {
+                Class<?>[] parameterTypes = factoryMethod.getParameterTypes();
                 if (ProxyReplacer.FACTORY_METHOD_NAME.equals(factoryMethod.getName())
-                        && Arrays.equals(factoryMethod.getParameterTypes(), paramClasses)) {
+                        && parameterTypes.length == 1 && parameterTypes[0] == String.class) {
 
-                    Object freshBean = factoryMethod.invoke(beanFactory, paramValues);
+                    String beanName = (String) paramValues[0];
+                    Object freshBean = factoryMethod.invoke(beanFactory, beanName);
 
                     // Factory returns HA proxy, but current method is invoked from HA proxy!
                     // It might be the same object (if factory returns same object - meaning
