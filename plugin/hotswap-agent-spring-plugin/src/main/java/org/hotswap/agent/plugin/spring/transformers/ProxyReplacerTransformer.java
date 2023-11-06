@@ -46,43 +46,22 @@ public class ProxyReplacerTransformer {
      * @throws CannotCompileException
      */
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory")
-    public static void replaceBeanWithProxy(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        CtMethod[] methods = ctClass.getMethods();
-        for (CtMethod ctMethod : methods) {
-            if (!ctMethod.getName().equals(FACTORY_CREATE_METHOD_NAME))
-                continue;
+    public static void replaceBeanWithProxy(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        CtMethod ctMethod = ctClass.getDeclaredMethod(FACTORY_CREATE_METHOD_NAME,
+                new CtClass[]{classPool.get(String.class.getName()), classPool.get(RootBeanDefinition.class.getName()), classPool.get("java.lang.Object[]")});
 
-            CtClass[] parameterTypes = ctMethod.getParameterTypes();
-            if (parameterTypes.length == 3
-                    && String.class.getName().equals(parameterTypes[0].getName())
-                    && RootBeanDefinition.class.getName().equals(parameterTypes[1].getName())
-                    && "java.lang.Object[]".equals(parameterTypes[2].getName())) {
-
-                StringBuilder methodParamTypes = new StringBuilder();
-                for (CtClass type : parameterTypes) {
-                    methodParamTypes.append(type.getName()).append(".class").append(", ");
-                }
-                ctMethod.insertAfter("if(true){return org.hotswap.agent.plugin.spring.getbean.ProxyReplacer.register($0, $_,new Class[]{"
-                        + methodParamTypes.substring(0, methodParamTypes.length() - 2) + "}, $args);}");
-                break;
-            }
+        StringBuilder methodParamTypes = new StringBuilder();
+        for (CtClass type : ctMethod.getParameterTypes()) {
+            methodParamTypes.append(type.getName()).append(".class").append(", ");
         }
+        ctMethod.insertAfter("if(true){return org.hotswap.agent.plugin.spring.getbean.ProxyReplacer.register($0, $_,new Class[]{"
+                + methodParamTypes.substring(0, methodParamTypes.length() - 2) + "}, $args);}");
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
-    public static void enhanceDestroy(CtClass ctClass) throws NotFoundException, CannotCompileException {
-        CtMethod[] methods = ctClass.getMethods();
-        for (CtMethod ctMethod : methods) {
-            if (!ctMethod.getName().equals(FACTORY_DESTROY_METHOD_NAME))
-                continue;
-
-            CtClass[] parameterTypes = ctMethod.getParameterTypes();
-            if (parameterTypes.length == 1 && String.class.getName().equals(parameterTypes[0].getName())) {
-                ctMethod.insertBefore("org.hotswap.agent.plugin.spring.getbean.ProxyReplacer.clearProxyByName($1);");
-                break;
-            }
-        }
-
+    public static void enhanceDestroy(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        CtMethod ctMethod = ctClass.getDeclaredMethod(FACTORY_DESTROY_METHOD_NAME, new CtClass[]{classPool.get(String.class.getName())});
+        ctMethod.insertBefore("org.hotswap.agent.plugin.spring.getbean.ProxyReplacer.clearProxyByName($1);");
     }
 
     /**
@@ -109,7 +88,8 @@ public class ProxyReplacerTransformer {
      * @throws CannotCompileException
      */
     @OnClassLoadEvent(classNameRegexp = "net.sf.cglib.reflect.FastClass.Generator")
-    public static void replaceCglibFastClassGenerator(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void replaceCglibFastClassGenerator(CtClass ctClass) throws
+            NotFoundException, CannotCompileException {
         CtConstructor[] constructors = ctClass.getConstructors();
         for (CtConstructor ctConstructor : constructors) {
             ctConstructor.insertAfter("setUseCache(false);");
