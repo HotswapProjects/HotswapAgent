@@ -50,12 +50,7 @@ public class ProxyReplacerTransformer {
         CtMethod ctMethod = ctClass.getDeclaredMethod(FACTORY_CREATE_METHOD_NAME,
                 new CtClass[]{classPool.get(String.class.getName()), classPool.get(RootBeanDefinition.class.getName()), classPool.get("java.lang.Object[]")});
 
-        StringBuilder methodParamTypes = new StringBuilder();
-        for (CtClass type : ctMethod.getParameterTypes()) {
-            methodParamTypes.append(type.getName()).append(".class").append(", ");
-        }
-        ctMethod.insertAfter("if(true){return org.hotswap.agent.plugin.spring.getbean.ProxyReplacer.register($0, $_,new Class[]{"
-                + methodParamTypes.substring(0, methodParamTypes.length() - 2) + "}, $args);}");
+        ctMethod.insertAfter("if(true){return org.hotswap.agent.plugin.spring.getbean.ProxyReplacer.register($0, $_, $args[0]);}");
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")

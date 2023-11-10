@@ -30,6 +30,14 @@ import java.util.Collections;
 import java.util.List;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.spring.util.CollectionUtils;
+import org.hotswap.agent.util.spring.util.StringUtils;
 
 /**
  * Loadable detachable Spring bean holder
@@ -40,8 +48,10 @@ public class DetachableBeanHolder implements Serializable {
 
     private static final long serialVersionUID = -7443802320153815102L;
 
+    private String beanName;
     private Object bean;
     private Object beanFactory;
+
     private Class<?>[] paramClasses;
     private Object[] paramValues;
     private static List<WeakReference<DetachableBeanHolder>> beanProxies =
@@ -57,12 +67,10 @@ public class DetachableBeanHolder implements Serializable {
      * @param paramClasses
      * @param paramValues
      */
-    public DetachableBeanHolder(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
-        if (bean == null) {
-            LOGGER.error("Bean is null. The param value: {}", Arrays.toString(paramValues));
-        }
+    public DetachableBeanHolder(Object bean, Object beanFactory, Object beanName) {
+        String beanNameStr = beanName.toString();
         this.bean = bean;
-        this.beanFactory = beanFactry;
+        this.beanFactory = beanFactory;
         this.paramClasses = paramClasses;
         this.paramValues = paramValues;
         beanProxies.add(new WeakReference<DetachableBeanHolder>(this));
@@ -131,7 +139,6 @@ public class DetachableBeanHolder implements Serializable {
                 if (ProxyReplacer.FACTORY_METHOD_NAME.equals(factoryMethod.getName())
                         && parameterTypes.length == 1 && parameterTypes[0] == String.class) {
 
-                    String beanName = (String) paramValues[0];
                     Object freshBean = factoryMethod.invoke(beanFactory, beanName);
 
                     // Factory returns HA proxy, but current method is invoked from HA proxy!
@@ -145,10 +152,10 @@ public class DetachableBeanHolder implements Serializable {
                     bean = freshBean;
                     beanCopy = bean;
                     if (beanCopy == null) {
-                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
+                        LOGGER.debug("Bean '{}' loaded", beanName);
                         break;
                     }
-                    LOGGER.info("Bean '{}' loaded", bean.getClass().getName());
+                    LOGGER.info("Bean '{}' loaded", beanName);
                     break;
                 }
             }
