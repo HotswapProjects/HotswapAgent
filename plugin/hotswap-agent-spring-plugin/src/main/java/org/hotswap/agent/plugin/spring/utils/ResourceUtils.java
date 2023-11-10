@@ -15,6 +15,9 @@ public class ResourceUtils {
 
 
     public static String getPath(Resource resource) {
+        if (resource == null) {
+            return null;
+        }
         String path;
         if (resource instanceof ClassPathResource) {
             path = ((ClassPathResource) resource).getPath();
