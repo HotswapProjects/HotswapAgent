@@ -49,15 +49,9 @@ public class ProxyReplacer {
      *            Spring beanFactory
      * @param bean
      *            Spring bean
-     * @param paramClasses
-     *            Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
-     * @param paramValues
-     *            Parameter values of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
      * @return Proxied bean
      */
-    public static Object register(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+    public static Object register(Object beanFactry, Object bean, Object beanName) {
         if (bean == null) {
             return bean;
         }
@@ -79,7 +73,7 @@ public class ProxyReplacer {
 
         // create proxy for prototype-scope beans and apsect proxied beans
         if (bean.getClass().getName().startsWith("com.sun.proxy.$Proxy")) {
-            InvocationHandler handler = new HotswapSpringInvocationHandler(bean, beanFactry, paramClasses, paramValues);
+            InvocationHandler handler = new HotswapSpringInvocationHandler(bean, beanFactry, beanName.toString());
             Class<?>[] interfaces = bean.getClass().getInterfaces();
             try {
                 if (!Arrays.asList(interfaces).contains(getInfrastructureProxyClass())) {
@@ -95,7 +89,7 @@ public class ProxyReplacer {
             if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {
                 return bean;
             }
-            return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
+            return EnhancerProxyCreater.createProxy(beanFactry, bean, beanName.toString());
         }
 
         return bean;

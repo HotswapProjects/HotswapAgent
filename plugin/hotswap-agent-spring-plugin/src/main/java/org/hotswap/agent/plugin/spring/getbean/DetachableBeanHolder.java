@@ -23,13 +23,14 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.spring.util.CollectionUtils;
 import org.hotswap.agent.util.spring.util.StringUtils;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
  * Loadable detachable Spring bean holder
@@ -40,53 +41,39 @@ public class DetachableBeanHolder implements Serializable {
 
     private static final long serialVersionUID = -7443802320153815102L;
 
+    private String beanName;
     private Object bean;
     private Object beanFactory;
-    private Class<?>[] paramClasses;
-    private Object[] paramValues;
-    //key: bean name
+    /**
+     * Q:Why beanProxies is a map?
+     * A:beanProxies used to be a list structure, without beanName, so it could not be cleared
+     * based on beanName, and could only be cleared in full, which caused those beans
+     * that had not changed to be cleared, which was unnecessary.
+     * -
+     * Q:Why value is a list?
+     * A:If want to let HotSwap to take effect on multiple prototype beans of the same
+     * class, a structure with one name corresponding to multiple beans is required.
+     * SpringPluginTest#hotswapPrototypeTestExistingInstance can test prototype beans.
+     */
     private static final Map<String, List<WeakReference<DetachableBeanHolder>>> beanProxies = new ConcurrentHashMap<>();
     private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 
     /**
-     * @param bean         Spring Bean this object holds
-     * @param beanFactry   Spring factory that produced the bean with a ProxyReplacer.FACTORY_METHOD_NAME method
-     * @param paramClasses
-     * @param paramValues
+     * @param bean       Spring Bean this object holds
+     * @param beanFactory Spring factory that produced the bean with a ProxyReplacer.FACTORY_METHOD_NAME method
      */
-    public DetachableBeanHolder(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
-        if (bean == null) {
-            LOGGER.error("Bean is null. The param value: {}", Arrays.toString(paramValues));
-        }
+    public DetachableBeanHolder(Object bean, Object beanFactory, Object beanName) {
+        String beanNameStr = beanName.toString();
         this.bean = bean;
-        this.beanFactory = beanFactry;
-        this.paramClasses = paramClasses;
-        this.paramValues = paramValues;
+        this.beanFactory = beanFactory;
+        this.beanName = beanNameStr;
 
-        String beanName = deduceBeanName(beanFactry, paramClasses, paramValues);
         if (beanName != null) {
             synchronized (beanProxies) {
-                beanProxies.computeIfAbsent(beanName, k -> new ArrayList<>());
+                beanProxies.computeIfAbsent(beanNameStr, k -> new ArrayList<>());
                 beanProxies.get(beanName).add(new WeakReference<>(this));
             }
         }
-    }
-
-    protected static String deduceBeanName(Object beanFactory, Class<?>[] paramClasses, Object[] paramValues) {
-        String beanName = null;
-        if (String.class.getName().equals(paramClasses[0].getName())) {
-            beanName = paramValues[0].toString();
-        } else {
-            //getBeanNamesForType method will return only one here, because getBean with requiredType param has NoUniqueBeanDefinitionException check
-            String[] beanNamesForType = ((DefaultListableBeanFactory) beanFactory).getBeanNamesForType((Class<?>) paramValues[0]);
-            if (beanNamesForType.length == 1) {
-                beanName = beanNamesForType[0];
-            } else {
-                //this should never happen
-                LOGGER.warning("Method beanNamesForType return unexpected names:{}", String.join(",", beanNamesForType));
-            }
-        }
-        return beanName;
     }
 
     /**
@@ -153,7 +140,6 @@ public class DetachableBeanHolder implements Serializable {
                 if (ProxyReplacer.FACTORY_METHOD_NAME.equals(factoryMethod.getName())
                         && parameterTypes.length == 1 && parameterTypes[0] == String.class) {
 
-                    String beanName = (String) paramValues[0];
                     Object freshBean = factoryMethod.invoke(beanFactory, beanName);
 
                     // Factory returns HA proxy, but current method is invoked from HA proxy!
@@ -167,10 +153,10 @@ public class DetachableBeanHolder implements Serializable {
                     bean = freshBean;
                     beanCopy = bean;
                     if (beanCopy == null) {
-                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
+                        LOGGER.debug("Bean '{}' loaded", beanName);
                         break;
                     }
-                    LOGGER.info("Bean '{}' loaded", bean.getClass().getName());
+                    LOGGER.info("Bean '{}' loaded", beanName);
                     break;
                 }
             }

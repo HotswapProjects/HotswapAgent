@@ -78,23 +78,18 @@ public class EnhancerProxyCreater {
      *
      * @param beanFactry Spring beanFactory
      * @param bean Spring bean
-     * @param paramClasses
-     *            Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
-     * @param paramValues
-     *            Parameter values of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
+
      * @return
      */
-    public static Object createProxy(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+    public static Object createProxy(Object beanFactry, Object bean, String beanName) {
         if (INSTANCE == null) {
             INSTANCE = new EnhancerProxyCreater(bean.getClass().getClassLoader(), bean.getClass().getProtectionDomain());
         }
-        return INSTANCE.create(beanFactry, bean, paramClasses, paramValues);
+        return INSTANCE.create(beanFactry, bean, beanName);
     }
 
-    private Object create(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
-        return doCreate(beanFactry, bean, paramClasses, paramValues);
+    private Object create(Object beanFactry, Object bean, String beanName) {
+        return doCreate(beanFactry, bean, beanName);
 //        Object proxyBean = null;
 //        if (beanProxies.containsKey(bean)) {
 //            proxyBean = beanProxies.get(bean);
@@ -119,13 +114,13 @@ public class EnhancerProxyCreater {
 //        return proxyBean;
     }
 
-    private Object doCreate(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
+    private Object doCreate(Object beanFactry, Object bean, String beanName) {
         try {
             Method proxyCreater = getProxyCreationMethod(bean);
             if (proxyCreater == null) {
                 return bean;
             } else {
-                return proxyCreater.invoke(null, beanFactry, bean, paramClasses, paramValues);
+                return proxyCreater.invoke(null, beanFactry, bean, beanName);
             }
         } catch (IllegalArgumentException | InvocationTargetException e) {
             LOGGER.warning("Can't create proxy for " + bean.getClass().getSuperclass()
@@ -191,8 +186,8 @@ public class EnhancerProxyCreater {
         String proxy = cglibPackage + "proxy.";
         String core = cglibPackage + "core.";
         String rawBody =
-                "public static Object create(Object beanFactry, Object bean, Class[] classes, Object[] params) {" +
-                        "{2} handler = new {2}(bean, beanFactry, classes, params);" +
+                "public static Object create(Object beanFactry, Object bean, Object beanName) {" +
+                        "{2} handler = new {2}(bean, beanFactry, beanName);" +
                         "{0}Enhancer e = new {0}Enhancer();" +
                         "e.setUseCache(false);" +
                         "Class[] proxyInterfaces = new Class[bean.getClass().getInterfaces().length+1];" +
