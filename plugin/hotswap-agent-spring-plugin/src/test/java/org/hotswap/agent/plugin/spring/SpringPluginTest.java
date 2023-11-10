@@ -21,9 +21,11 @@ package org.hotswap.agent.plugin.spring;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.testBeans.*;
+import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanCreatedByIABPP;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
+import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2NoAspect;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.Pojo2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.junit.*;
@@ -192,6 +194,21 @@ public class SpringPluginTest {
         // recovery
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
         assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
+    }
+
+    //IABPP = InstantiationAwareBeanPostProcessor
+    @Test
+    public void hotswapBeanCreatedByIABPP() throws Exception {
+        BeanCreatedByIABPP beanCreatedByIABPP = applicationContext.getBean(BeanCreatedByIABPP.class);
+        assertEquals("Hello from Repository Service", beanCreatedByIABPP.helloWithoutAspec());
+
+        swapClasses(BeanServiceImplNoAspect.class, BeanServiceImpl2NoAspect.class);
+
+        assertEquals("Hello from ChangedRepository Service2", beanCreatedByIABPP.helloWithoutAspec());
+
+        // recovery
+        swapClasses(BeanServiceImplNoAspect.class, BeanServiceImplNoAspect.class);
+        assertEquals("Hello from Repository Service", beanCreatedByIABPP.helloWithoutAspec());
     }
 
     @Test
