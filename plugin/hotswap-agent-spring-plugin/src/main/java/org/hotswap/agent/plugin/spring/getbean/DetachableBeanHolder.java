@@ -59,20 +59,17 @@ public class DetachableBeanHolder implements Serializable {
     private static AgentLogger LOGGER = AgentLogger.getLogger(DetachableBeanHolder.class);
 
     /**
-     * @param bean       Spring Bean this object holds
+     * @param bean        Spring Bean this object holds
      * @param beanFactory Spring factory that produced the bean with a ProxyReplacer.FACTORY_METHOD_NAME method
      */
-    public DetachableBeanHolder(Object bean, Object beanFactory, Object beanName) {
-        String beanNameStr = beanName.toString();
+    public DetachableBeanHolder(Object bean, Object beanFactory, String beanName) {
         this.bean = bean;
         this.beanFactory = beanFactory;
-        this.beanName = beanNameStr;
+        this.beanName = beanName;
 
-        if (beanName != null) {
-            synchronized (beanProxies) {
-                beanProxies.computeIfAbsent(beanNameStr, k -> new ArrayList<>());
-                beanProxies.get(beanName).add(new WeakReference<>(this));
-            }
+        synchronized (beanProxies) {
+            beanProxies.computeIfAbsent(beanName, k -> new ArrayList<>());
+            beanProxies.get(beanName).add(new WeakReference<>(this));
         }
     }
 
