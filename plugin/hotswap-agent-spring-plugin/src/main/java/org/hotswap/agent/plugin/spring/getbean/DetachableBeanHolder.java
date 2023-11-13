@@ -67,8 +67,7 @@ public class DetachableBeanHolder implements Serializable {
      * @param paramClasses
      * @param paramValues
      */
-    public DetachableBeanHolder(Object bean, Object beanFactory, Object beanName) {
-        String beanNameStr = beanName.toString();
+    public DetachableBeanHolder(Object bean, Object beanFactory, String beanName) {
         this.bean = bean;
         this.beanFactory = beanFactory;
         this.paramClasses = paramClasses;

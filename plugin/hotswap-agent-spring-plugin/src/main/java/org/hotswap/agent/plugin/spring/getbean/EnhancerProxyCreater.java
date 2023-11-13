@@ -186,7 +186,7 @@ public class EnhancerProxyCreater {
         String proxy = cglibPackage + "proxy.";
         String core = cglibPackage + "core.";
         String rawBody =
-                "public static Object create(Object beanFactry, Object bean, Object beanName) {" +
+                "public static Object create(Object beanFactry, Object bean, String beanName) {" +
                         "{2} handler = new {2}(bean, beanFactry, beanName);" +
                         "{0}Enhancer e = new {0}Enhancer();" +
                         "e.setUseCache(false);" +
