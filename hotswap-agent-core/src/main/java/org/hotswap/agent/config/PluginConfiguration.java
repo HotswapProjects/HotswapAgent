@@ -49,7 +49,13 @@ public class PluginConfiguration {
 
     private static final String PLUGIN_CONFIGURATION = "hotswap-agent.properties";
 
-    /** The Constant EXCLUDED_CLASS_LOADERS_KEY. */
+    /**
+     * The Constant INCLUDED_CLASS_LOADERS_KEY.
+     * allowed list, have higher priority than blocked list {@link PluginConfiguration#EXCLUDED_CLASS_LOADERS_KEY}
+     */
+    private static final String INCLUDED_CLASS_LOADERS_KEY = "includedClassLoaderPatterns";
+
+    /** The Constant EXCLUDED_CLASS_LOADERS_KEY. blocked list */
     private static final String EXCLUDED_CLASS_LOADERS_KEY = "excludedClassLoaderPatterns";
 
     Properties properties = new HotswapProperties();
@@ -182,7 +188,7 @@ public class PluginConfiguration {
     protected void init() {
         LogConfigurationHelper.configureLog(properties);
         initPluginPackage();
-
+        initIncludedClassLoaderPatterns();
         initExcludedClassLoaderPatterns();
         initExtraClassPath();
     }
@@ -213,6 +219,17 @@ public class PluginConfiguration {
         }
     }
 
+    private void initIncludedClassLoaderPatterns() {
+        if (properties != null && properties.containsKey(INCLUDED_CLASS_LOADERS_KEY)) {
+            List<Pattern> includedClassLoaderPatterns = new ArrayList<>();
+            for (String pattern : properties.getProperty(INCLUDED_CLASS_LOADERS_KEY).split(",")) {
+                includedClassLoaderPatterns.add(Pattern.compile(pattern));
+            }
+            PluginManager.getInstance().getHotswapTransformer()
+                    .setIncludedClassLoaderPatterns(includedClassLoaderPatterns);
+        }
+    }
+
     private void initExcludedClassLoaderPatterns() {
         if (properties != null && properties.containsKey(EXCLUDED_CLASS_LOADERS_KEY)) {
             List<Pattern> excludedClassLoaderPatterns = new ArrayList<>();
@@ -226,6 +243,16 @@ public class PluginConfiguration {
     }
 
     private boolean checkExcludedClassLoaderPatterns() {
+        if (PluginManager.getInstance().getHotswapTransformer().getIncludedClassLoaderPatterns() != null) {
+            for (Pattern pattern : PluginManager.getInstance().getHotswapTransformer().getIncludedClassLoaderPatterns()) {
+                if (pattern.matcher(classLoader.getClass().getName()).matches()) {
+                    return false;
+                }
+            }
+        } else {
+            return true;
+        }
+
         if (PluginManager.getInstance().getHotswapTransformer().getExcludedClassLoaderPatterns() != null) {
             for (Pattern pattern : PluginManager.getInstance().getHotswapTransformer().getExcludedClassLoaderPatterns()) {
                 if (pattern.matcher(classLoader.getClass().getName()).matches()) {

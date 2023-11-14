@@ -76,8 +76,16 @@ public class HotswapTransformer implements ClassFileTransformer {
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<>();
 
     protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<>();
-
+    private List<Pattern> includedClassLoaderPatterns;
     private List<Pattern> excludedClassLoaderPatterns;
+    public List<Pattern> getIncludedClassLoaderPatterns() {
+        return includedClassLoaderPatterns;
+    }
+
+    public void setIncludedClassLoaderPatterns(List<Pattern> includedClassLoaderPatterns) {
+        this.includedClassLoaderPatterns = includedClassLoaderPatterns;
+    }
+
 
     /**
      * @param excludedClassLoaderPatterns
@@ -326,6 +334,17 @@ public class HotswapTransformer implements ClassFileTransformer {
         if (excludedClassLoaders.contains(name)) {
             return false;
         }
+
+        if (includedClassLoaderPatterns != null) {
+            for (Pattern pattern : includedClassLoaderPatterns) {
+                if (pattern.matcher(name).matches()) {
+                    return true;
+                }
+            }
+        } else {
+            return false;
+        }
+
         if (excludedClassLoaderPatterns != null) {
             for (Pattern pattern : excludedClassLoaderPatterns) {
                 if (pattern.matcher(name).matches()) {
