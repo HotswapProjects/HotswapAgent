@@ -71,7 +71,6 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
                 PluginManager.getInstance().hotswap(reloadMap);
                 LOGGER.reload("Class '{}' has been reloaded.", className);
             }
-            ProxyPlugin.removeProxyDefiningClassName(className);
         } catch (ClassNotFoundException e) {
             LOGGER.error("Error redefining java proxy {}", e, className);
         }
