@@ -235,6 +235,8 @@ public class SpringBeanReload {
             if (checkHasChange() && printReloadLog()) {
                 continue;
             }
+            //beanDefinition enhanced: BeanFactoryPostProcessor
+            ProxyReplacer.clearAllProxies();
 
             // 7. invoke the Bean lifecycle steps
             // 7.1 invoke BeanFactoryPostProcessor
@@ -418,6 +420,7 @@ public class SpringBeanReload {
         ResetBeanPostProcessorCaches.reset(beanFactory);
         ResetTransactionAttributeCaches.reset(beanFactory);
         ResetBeanFactoryPostProcessorCaches.reset(beanFactory);
+        ProxyReplacer.clearAllProxies();
         // fixme temperately disable it
 //        ResetBeanFactoryCaches.reset(beanFactory);
         ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).postProcess(beanFactory);
