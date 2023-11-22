@@ -78,16 +78,20 @@ public class EnhancerProxyCreater {
      *
      * @param beanFactry Spring beanFactory
      * @param bean Spring bean
-
+     * @param paramClasses
+     *            Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
+     *            ProxyReplacer.FACTORY_METHOD_NAME
+     * @param paramValues
+     *            Parameter values of the Spring beanFactory method which returned the bean. The method is named
+     *            ProxyReplacer.FACTORY_METHOD_NAME
      * @return
      */
-    public static Object createProxy(Object beanFactry, Object bean, String beanName) {
+    public static Object createProxy(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
         if (INSTANCE == null) {
             INSTANCE = new EnhancerProxyCreater(bean.getClass().getClassLoader(), bean.getClass().getProtectionDomain());
         }
-        return INSTANCE.create(beanFactry, bean, beanName);
+        return INSTANCE.create(beanFactry, bean, paramClasses, paramValues);
     }
-
 
     private Object create(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
         Object proxyBean = null;
@@ -114,13 +118,13 @@ public class EnhancerProxyCreater {
         return proxyBean;
     }
 
-    private Object doCreate(Object beanFactry, Object bean, String beanName) {
+    private Object doCreate(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
         try {
             Method proxyCreater = getProxyCreationMethod(bean);
             if (proxyCreater == null) {
                 return bean;
             } else {
-                return proxyCreater.invoke(null, beanFactry, bean, beanName);
+                return proxyCreater.invoke(null, beanFactry, bean, paramClasses, paramValues);
             }
         } catch (IllegalArgumentException | InvocationTargetException e) {
             LOGGER.warning("Can't create proxy for " + bean.getClass().getSuperclass()
@@ -186,24 +190,24 @@ public class EnhancerProxyCreater {
         String proxy = cglibPackage + "proxy.";
         String core = cglibPackage + "core.";
         String rawBody =
-                "public static Object create(Object beanFactry, Object bean, String beanName) {" +
-                        "{2} handler = new {2}(bean, beanFactry, beanName);" +
+                "public static Object create(Object beanFactry, Object bean, Class[] classes, Object[] params) {" +
+                        "{2} handler = new {2}(bean, beanFactry, classes, params);" +
                         "{0}Enhancer e = new {0}Enhancer();" +
                         "e.setUseCache(false);" +
                         "Class[] proxyInterfaces = new Class[bean.getClass().getInterfaces().length+1];" +
                         "Class[] classInterfaces = bean.getClass().getInterfaces();" +
                         "for (int i = 0; i < classInterfaces.length; i++) {" +
-                            "proxyInterfaces[i] = classInterfaces[i];" +
-                         "}" +
-                         "proxyInterfaces[proxyInterfaces.length-1] = org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy.class;" +
-                         "e.setInterfaces(proxyInterfaces);" +
-                         "e.setSuperclass(bean.getClass().getSuperclass());" +
-                         "e.setNamingPolicy(new {3}());" +
-                         "e.setCallbackType({2}.class);" +
-                         tryObjenesisProxyCreation(cp) +
-                         "e.setCallback(handler);" +
-                         "return e.create();" +
-                "}";
+                        "proxyInterfaces[i] = classInterfaces[i];" +
+                        "}" +
+                        "proxyInterfaces[proxyInterfaces.length-1] = org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy.class;" +
+                        "e.setInterfaces(proxyInterfaces);" +
+                        "e.setSuperclass(bean.getClass().getSuperclass());" +
+                        "e.setNamingPolicy(new {3}());" +
+                        "e.setCallbackType({2}.class);" +
+                        tryObjenesisProxyCreation(cp) +
+                        "e.setCallback(handler);" +
+                        "return e.create();" +
+                        "}";
         String body = rawBody
                 .replaceAll("\\{0\\}", proxy)
                 .replaceAll("\\{1\\}", core)
@@ -233,15 +237,15 @@ public class EnhancerProxyCreater {
 
         return
                 "org.springframework.objenesis.SpringObjenesis objenesis = new org.springframework.objenesis.SpringObjenesis();" +
-                    "if (objenesis.isWorthTrying()) {" +
+                        "if (objenesis.isWorthTrying()) {" +
 //                      "try {" +
-                            "Class proxyClass = e.createClass();" +
-                            "Object proxyInstance = objenesis.newInstance(proxyClass, false);" +
-                            "((org.springframework.cglib.proxy.Factory) proxyInstance).setCallbacks(new org.springframework.cglib.proxy.Callback[] {handler});" +
-                            "return proxyInstance;" +
+                        "Class proxyClass = e.createClass();" +
+                        "Object proxyInstance = objenesis.newInstance(proxyClass, false);" +
+                        "((org.springframework.cglib.proxy.Factory) proxyInstance).setCallbacks(new org.springframework.cglib.proxy.Callback[] {handler});" +
+                        "return proxyInstance;" +
 //                      "}" +
 //                      "catch (Throwable ex) {}" +
-                    "}";
+                        "}";
     }
 
     /**
@@ -265,7 +269,7 @@ public class EnhancerProxyCreater {
         String rawBody =
                 "public String getClassName(String prefix, String source, Object key, {0}Predicate names) {" +
                         "return super.getClassName(prefix + \"$HOTSWAPAGENT_\", source, key, names);" +
-                "}";
+                        "}";
         String body = rawBody.replaceAll("\\{0\\}", core);
         CtMethod m = CtNewMethod.make(body, ct);
         ct.addMethod(m);
@@ -294,17 +298,17 @@ public class EnhancerProxyCreater {
 
         String rawBody =
                 "public Object intercept(Object obj, java.lang.reflect.Method method, Object[] args, {0}MethodProxy proxy) throws Throwable {" +
-                    "if(method != null && method.getName().equals(\"finalize\") && method.getParameterTypes().length == 0) {" +
+                        "if(method != null && method.getName().equals(\"finalize\") && method.getParameterTypes().length == 0) {" +
                         "return null;" +
-                    "}" +
-                    "if(method != null && method.getName().equals(\"$$ha$getTarget\")) {" +
+                        "}" +
+                        "if(method != null && method.getName().equals(\"$$ha$getTarget\")) {" +
                         "return getTarget();" +
-                    "}" +
-                    "if(method != null && method.getName().equals(\"$$ha$setTarget\")) {" +
+                        "}" +
+                        "if(method != null && method.getName().equals(\"$$ha$setTarget\")) {" +
                         "setTarget(args[0]); return null;" +
-                    "}" +
-                    "return proxy.invoke(getBean(), args);" +
-                "}";
+                        "}" +
+                        "return proxy.invoke(getBean(), args);" +
+                        "}";
         String body = rawBody.replaceAll("\\{0\\}", proxyPackage);
 
         CtMethod m = CtNewMethod.make(body, ct);

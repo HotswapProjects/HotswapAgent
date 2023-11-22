@@ -18,13 +18,12 @@
  */
 package org.hotswap.agent.plugin.spring.getbean;
 
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.SpringPlugin;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.SpringPlugin;
 
 /**
  * Proxies the beans. The beans inside these proxies can be cleared.
@@ -42,8 +41,6 @@ public class ProxyReplacer {
 
     /**
      * Clears the bean references inside all the proxies
-     *
-     * Please note that this will clear the cached proxy and cause a new proxy to be created every time getBean is called, which will cause OOM in the long run.
      */
     public static void clearAllProxies() {
         DetachableBeanHolder.detachBeans();
@@ -56,9 +53,15 @@ public class ProxyReplacer {
      *            Spring beanFactory
      * @param bean
      *            Spring bean
+     * @param paramClasses
+     *            Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
+     *            ProxyReplacer.FACTORY_METHOD_NAME
+     * @param paramValues
+     *            Parameter values of the Spring beanFactory method which returned the bean. The method is named
+     *            ProxyReplacer.FACTORY_METHOD_NAME
      * @return Proxied bean
      */
-    public static Object register(Object beanFactry, Object bean, Object beanName) {
+    public static Object register(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
         if (bean == null) {
             return bean;
         }
@@ -80,7 +83,7 @@ public class ProxyReplacer {
 
         // create proxy for prototype-scope beans and apsect proxied beans
         if (bean.getClass().getName().startsWith("com.sun.proxy.$Proxy")) {
-            InvocationHandler handler = new HotswapSpringInvocationHandler(bean, beanFactry, beanName.toString());
+            InvocationHandler handler = new HotswapSpringInvocationHandler(bean, beanFactry, paramClasses, paramValues);
             Class<?>[] interfaces = bean.getClass().getInterfaces();
             try {
                 if (!Arrays.asList(interfaces).contains(getInfrastructureProxyClass())) {
@@ -96,7 +99,8 @@ public class ProxyReplacer {
             if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {
                 return bean;
             }
-            return EnhancerProxyCreater.createProxy(beanFactry, bean, beanName.toString());
+
+            return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
         }
 
         return bean;

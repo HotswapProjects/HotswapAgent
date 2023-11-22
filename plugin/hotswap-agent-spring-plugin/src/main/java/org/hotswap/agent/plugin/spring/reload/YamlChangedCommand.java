@@ -50,14 +50,8 @@ public class YamlChangedCommand extends MergeableCommand {
             Method method = clazz.getDeclaredMethod(
                     "addChangedYaml", new Class[]{URL.class});
             method.invoke(null, url);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalStateException("Plugin error, method not found", e);
-        } catch (InvocationTargetException e) {
-            LOGGER.error("Error invoking method", e);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Plugin error, illegal access", e);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
+        } catch (Exception e) {
+            throw new RuntimeException("YamlChangedCommand.execute error", e);
         }
     }
 }

@@ -15,11 +15,11 @@ function test {
 
 # test following SpringBoot versions
 
-#test 2.7.16
+test 2.7.16
 
 #test 2.0.9.RELEASE
 
 #test 1.5.19.RELEASE
 
-test 1.5.0.RELEASE
+#test 1.5.0.RELEASE
 

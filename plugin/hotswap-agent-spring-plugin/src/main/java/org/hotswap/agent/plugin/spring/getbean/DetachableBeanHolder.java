@@ -18,8 +18,6 @@
  */
 package org.hotswap.agent.plugin.spring.getbean;
 
-import org.hotswap.agent.logging.AgentLogger;
-
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
@@ -29,29 +27,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.spring.util.CollectionUtils;
-import org.hotswap.agent.util.spring.util.StringUtils;
 
 /**
+ *
  * Loadable detachable Spring bean holder
  *
  * @author Erki Ehtla
+ *
  */
 public class DetachableBeanHolder implements Serializable {
 
     private static final long serialVersionUID = -7443802320153815102L;
 
-    private String beanName;
     private Object bean;
     private Object beanFactory;
-
     private Class<?>[] paramClasses;
     private Object[] paramValues;
     private static List<WeakReference<DetachableBeanHolder>> beanProxies =
@@ -67,9 +57,12 @@ public class DetachableBeanHolder implements Serializable {
      * @param paramClasses
      * @param paramValues
      */
-    public DetachableBeanHolder(Object bean, Object beanFactory, String beanName) {
+    public DetachableBeanHolder(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
+        if (bean == null) {
+            LOGGER.error("Bean is null. The param value: {}", Arrays.toString(paramValues));
+        }
         this.bean = bean;
-        this.beanFactory = beanFactory;
+        this.beanFactory = beanFactry;
         this.paramClasses = paramClasses;
         this.paramValues = paramValues;
         beanProxies.add(new WeakReference<DetachableBeanHolder>(this));
@@ -92,9 +85,9 @@ public class DetachableBeanHolder implements Serializable {
             }
         }
         if (i > 0) {
-            LOGGER.debug("{} Spring proxies reset", i);
+            LOGGER.info("{} Spring proxies reset", i);
         } else {
-            LOGGER.trace("No spring proxies reset");
+            LOGGER.debug("No spring proxies reset");
         }
     }
 
@@ -134,11 +127,10 @@ public class DetachableBeanHolder implements Serializable {
         if (beanCopy == null) {
             Method[] methods = beanFactory.getClass().getMethods();
             for (Method factoryMethod : methods) {
-                Class<?>[] parameterTypes = factoryMethod.getParameterTypes();
                 if (ProxyReplacer.FACTORY_METHOD_NAME.equals(factoryMethod.getName())
-                        && parameterTypes.length == 1 && parameterTypes[0] == String.class) {
+                        && Arrays.equals(factoryMethod.getParameterTypes(), paramClasses)) {
 
-                    Object freshBean = factoryMethod.invoke(beanFactory, beanName);
+                    Object freshBean = factoryMethod.invoke(beanFactory, paramValues);
 
                     // Factory returns HA proxy, but current method is invoked from HA proxy!
                     // It might be the same object (if factory returns same object - meaning
@@ -151,10 +143,10 @@ public class DetachableBeanHolder implements Serializable {
                     bean = freshBean;
                     beanCopy = bean;
                     if (beanCopy == null) {
-                        LOGGER.debug("Bean '{}' loaded", beanName);
+                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
                         break;
                     }
-                    LOGGER.info("Bean '{}' loaded", beanName);
+                    LOGGER.info("Bean '{}' loaded", bean.getClass().getName());
                     break;
                 }
             }
