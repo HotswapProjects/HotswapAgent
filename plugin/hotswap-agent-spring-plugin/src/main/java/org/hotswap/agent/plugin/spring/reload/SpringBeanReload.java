@@ -469,7 +469,11 @@ public class SpringBeanReload {
                 continue;
             }
             if (beanDefinition.isSingleton()) {
-                beanFactory.getBean(beanName);
+                try {
+                    beanFactory.getBean(beanName);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to get bean: " + beanName, e);
+                }
             }
         }
     }
