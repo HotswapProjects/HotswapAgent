@@ -329,7 +329,7 @@ public class ClassPathBeanDefinitionScannerAgent {
 
             if (metadataReaderCache != null) {
                 metadataReaderCache.clear();
-                LOGGER.debug("Cache cleared: CachingMetadataReaderFactory.clearCache()");
+                LOGGER.trace("Cache cleared: CachingMetadataReaderFactory.clearCache()");
             } else {
                 LOGGER.warning("Cache NOT cleared: neither CachingMetadataReaderFactory.metadataReaderCache nor clearCache does not exist.");
             }

@@ -59,7 +59,7 @@ public class ResetRequestMappingCaches {
         try {
             for (Entry<String, ?> e : mappings.entrySet()) {
                 Object am = e.getValue();
-                LOGGER.info("Spring: clearing HandlerMapping for {}", am.getClass());
+                LOGGER.trace("Spring: clearing HandlerMapping for {}", am.getClass());
                 try {
                     Field f = c.getDeclaredField("handlerMethods");
                     f.setAccessible(true);

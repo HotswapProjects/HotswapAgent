@@ -4,6 +4,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.transformers.api.IPlaceholderConfigurerSupport;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -34,6 +35,16 @@ public class BeanFactoryProcessor {
         beanFactory.destroySingleton(beanName);
     }
 
+    public static void postProcessDestroySingleton(DefaultSingletonBeanRegistry beanFactory, String beanName) {
+        LOGGER.info("destroy bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+    }
+
+    public static void postProcessCreateBean(AbstractAutowireCapableBeanFactory beanFactory, String beanName,
+                                             RootBeanDefinition mbd) {
+        if (mbd.isSingleton()) {
+            LOGGER.info("create new singleton bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+        }
+    }
 
     public static boolean needReloadOnConstructor(DefaultListableBeanFactory beanFactory, AbstractBeanDefinition currentBeanDefinition,
                                                   String beanName, Predicate<Constructor<?>[]> predicate) {

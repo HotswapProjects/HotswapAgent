@@ -152,9 +152,9 @@ public class SpringBeanReload {
         }
         synchronized (this.changedBeanNames) {
             if (this.changedBeanNames.addAll(Arrays.asList(beanNames))) {
-                LOGGER.info("try to add changed beanNames '{}' into {}", Arrays.asList(beanNames), ObjectUtils.identityToString(beanFactory));
+                LOGGER.debug("try to add changed beanNames '{}' into {}", Arrays.asList(beanNames), ObjectUtils.identityToString(beanFactory));
             } else {
-                LOGGER.debug("try to add changed beanNames '{}' into {}, but exist", Arrays.asList(beanNames), ObjectUtils.identityToString(beanFactory));
+                LOGGER.trace("try to add changed beanNames '{}' into {}, but exist", Arrays.asList(beanNames), ObjectUtils.identityToString(beanFactory));
             }
         }
     }
@@ -377,6 +377,8 @@ public class SpringBeanReload {
     }
 
     private void refreshChangedClassesAndBeans() {
+        LOGGER.debug("refresh changed classes and beans of {}, classes:{}, changedBeans:{}",
+                ObjectUtils.identityToString(beanFactory), classes, changedBeanNames);
         Set<String> configurationBeansToReload = new HashSet<>();
         // we should refresh changed classes before refresh changed beans.
         // after refresh class, maybe we will add some changed beans into changedBeanNames
@@ -418,6 +420,7 @@ public class SpringBeanReload {
         }
         for (String beanName : beanNamesToProcess) {
             beansToProcess.add(beanName);
+            // maybe this bean is not exist, or it belongs to other beanFactory
             if (!beanFactory.containsBeanDefinition(beanName)) {
                 continue;
             }
@@ -458,8 +461,6 @@ public class SpringBeanReload {
 
     private void preInstantiateSingleton() {
         for (String beanName : beanFactory.getBeanDefinitionNames()) {
-            // recreate the bean and do the initialization
-            Object singleton = beanFactory.getSingleton(beanName);
             BeanDefinition beanDefinition = null;
             try {
                 beanDefinition = beanFactory.getBeanDefinition(beanName);
@@ -468,18 +469,7 @@ public class SpringBeanReload {
                 continue;
             }
             if (beanDefinition.isSingleton()) {
-                Object target = beanFactory.getBean(beanName);
-                if (singleton == null) {
-                    if (newBeanNames.contains(beanName)) {
-                        LOGGER.reload("the bean '{}' of {} is singleton and new created", beanName, ClassUtils.getUserClass(target).getName());
-                    } else {
-                        LOGGER.reload("the bean '{}' of {} is singleton and recreated", beanName, ClassUtils.getUserClass(target).getName());
-                    }
-                }
-            } else if (beanDefinition.isPrototype()) {
-                if (beansToProcess.contains(beanName)) {
-                    LOGGER.reload("bean '{}' is protoType and reloaded", beanName);
-                }
+                beanFactory.getBean(beanName);
             }
         }
     }
@@ -518,24 +508,24 @@ public class SpringBeanReload {
 
     private List<String> reloadAnnotatedBeanDefinitions(Class clazz, String[] beanNames) {
         List<String> configurationBeansToReload = new ArrayList<>();
+        Class realClass = ClassUtils.getUserClass(clazz);
         for (String beanName : beanNames) {
             if (beanName.startsWith("&")) {
                 beanName = beanName.substring(1);
             }
             BeanDefinition beanDefinition = BeanFactoryProcessor.getBeanDefinition(beanFactory, beanName);
-            if ((AnnotationHelper.hasAnnotation(clazz, "org.springframework.context.annotation.Configuration") ||
-                    AnnotationHelper.hasAnnotation(clazz, "org.springframework.stereotype.Component"))
+            if (AnnotationHelper.hasAnnotation(realClass, "org.springframework.context.annotation.Configuration")
                     && beanDefinition.getAttribute("org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass") != null) {
                 configurationBeansToReload.add(beanName);
                 String generateBeanName = beanNameGenerator.generateBeanName(beanDefinition, beanFactory);
                 // the beanName is not the same as generateBeanName, it should register a new bean definition and remove the old one.
                 if (!beanName.equals(generateBeanName)) {
                     beanFactory.removeBeanDefinition(beanName);
-                    BeanDefinition newBeanDefinition = new AnnotatedGenericBeanDefinition(clazz);
+                    BeanDefinition newBeanDefinition = new AnnotatedGenericBeanDefinition(realClass);
                     beanFactory.registerBeanDefinition(generateBeanName, newBeanDefinition);
                 } else {
                     // remove the attribute, and it will recreate the bean
-                    ((AbstractBeanDefinition) beanDefinition).setBeanClass(clazz);
+                    ((AbstractBeanDefinition) beanDefinition).setBeanClass(realClass);
                     beanDefinition.removeAttribute("org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass");
                 }
             }
@@ -564,11 +554,11 @@ public class SpringBeanReload {
             return false;
         }
         if (beanDefinition.getBeanClassName() != null && destroyClasses.contains(beanDefinition.getBeanClassName())) {
-            LOGGER.debug("the bean '{}' will be recreating because the factory class '{}' is changed", beanName,
+            LOGGER.debug("the bean '{}' of factory class '{}' is changed", beanName,
                     beanDefinition.getBeanClassName());
             return true;
         } else if (beanDefinition.getFactoryBeanName() != null && processedBeans.contains(beanDefinition.getFactoryBeanName())) {
-            LOGGER.debug("the bean '{}' will be recreating because the factory bean '{}' is changed", beanName,
+            LOGGER.debug("the bean '{}' of factory bean '{}' is changed", beanName,
                     beanDefinition.getFactoryBeanName());
             return true;
         }
@@ -584,7 +574,7 @@ public class SpringBeanReload {
             return;
         }
         String[] dependentBeans = beanFactory.getDependentBeans(beanName);
-        LOGGER.debug("the bean '{}' is destroyed, and it is depended by {}", beanName, Arrays.toString(dependentBeans));
+        LOGGER.trace("the bean '{}' is destroyed, and it is depended by {}", beanName, Arrays.toString(dependentBeans));
         doDestroyBean(beanName);
     }
 

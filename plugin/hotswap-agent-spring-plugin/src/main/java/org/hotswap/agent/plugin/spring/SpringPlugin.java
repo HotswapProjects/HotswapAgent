@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Spring plugin.
@@ -53,8 +54,8 @@ import java.util.List;
                 ResourcePropertySourceTransformer.class,
                 PlaceholderConfigurerSupportTransformer.class,
                 XmlBeanDefinitionScannerTransformer.class,
-                PostProcessorRegistrationDelegateTransformer.class})
-
+                PostProcessorRegistrationDelegateTransformer.class,
+                BeanFactoryTransformer.class})
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 

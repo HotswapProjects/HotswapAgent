@@ -36,6 +36,12 @@ public class PropertySourceChangeBootListener implements SpringListener<SpringEv
         for (String singleton : beanFactory.getSingletonNames()) {
             Object bean = beanFactory.getSingleton(singleton);
             Class beanClass = ClassUtils.getUserClass(bean.getClass());
+            // fixme temperately skip spring boot classes
+//            if (beanClass.getName().startsWith("org.springframework.boot")) {
+//                LOGGER.trace("skip refresh configuration properties: {}", beanClass);
+//                continue;
+//            }
+
             if (AnnotationHelper.hasAnnotation(beanClass, ConfigurationProperties.class.getName())) {
                 LOGGER.debug("refresh configuration properties: {}", beanClass);
                 String[] beanNames = beanFactory.getBeanNamesForType(beanClass);

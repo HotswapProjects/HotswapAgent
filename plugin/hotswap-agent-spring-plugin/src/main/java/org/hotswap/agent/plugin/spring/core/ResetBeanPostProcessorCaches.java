@@ -104,7 +104,7 @@ public class ResetBeanPostProcessorCaches {
             // noinspection unchecked
             Map<Class<?>, Constructor<?>[]> candidateConstructorsCache = (Map<Class<?>, Constructor<?>[]>) field.get(bpp);
             candidateConstructorsCache.clear();
-            LOGGER.debug("Cache cleared: AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache");
+            LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache");
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clear AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache", e);
         }
@@ -116,7 +116,7 @@ public class ResetBeanPostProcessorCaches {
             Map<Class<?>, InjectionMetadata> injectionMetadataCache = (Map<Class<?>, InjectionMetadata>) field.get(bpp);
             injectionMetadataCache.clear();
             // noinspection unchecked
-            LOGGER.debug("Cache cleared: AutowiredAnnotationBeanPostProcessor.injectionMetadataCache");
+            LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.injectionMetadataCache");
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clear AutowiredAnnotationBeanPostProcessor.injectionMetadataCache", e);
         }

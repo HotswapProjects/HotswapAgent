@@ -10,12 +10,13 @@ public class BeanDefinitionProcessor {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(BeanDefinitionProcessor.class);
 
     public static void registerBeanDefinition(DefaultListableBeanFactory defaultListableBeanFactory, String beanName, BeanDefinition beanDefinition) {
-        LOGGER.debug("register bean '{}' into '{}' with definition '{}'", beanName, ObjectUtils.identityToString(defaultListableBeanFactory),
-                beanDefinition);
+        LOGGER.debug("register new BeanDefinition '{}' into '{}'", beanName,
+                ObjectUtils.identityToString(defaultListableBeanFactory));
         org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent.registerBean(beanName, beanDefinition);
     }
 
     public static void removeBeanDefinition(DefaultListableBeanFactory defaultListableBeanFactory, String beanName) {
-        LOGGER.debug("remove bean '{}' from '{}'", beanName, ObjectUtils.identityToString(defaultListableBeanFactory));
+        LOGGER.debug("remove BeanDefinition '{}' from '{}'", beanName,
+                ObjectUtils.identityToString(defaultListableBeanFactory));
     }
 }
