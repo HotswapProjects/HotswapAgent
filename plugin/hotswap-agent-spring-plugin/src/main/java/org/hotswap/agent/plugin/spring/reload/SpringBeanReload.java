@@ -401,6 +401,7 @@ public class SpringBeanReload {
             destroyClasses.add(ClassUtils.getUserClass(clazz).getName());
             String[] names = beanFactory.getBeanNamesForType(clazz);
             if (names != null && names.length > 0) {
+                LOGGER.trace("the bean of class {} has the bean names {}", clazz.getName(), Arrays.asList(names));
                 beansToProcess.addAll(Arrays.asList(names));
                 // 3.1 when the bean is @Configuration, it should be recreated.
                 reloadBeans.accept(reloadAnnotatedBeanDefinitions(clazz, names));
@@ -460,6 +461,7 @@ public class SpringBeanReload {
     }
 
     private void preInstantiateSingleton() {
+        LOGGER.debug("preInstantiateSingleton of {}", ObjectUtils.identityToString(beanFactory));
         for (String beanName : beanFactory.getBeanDefinitionNames()) {
             BeanDefinition beanDefinition = null;
             try {
@@ -480,14 +482,17 @@ public class SpringBeanReload {
 
     private void refreshRequestMapping() {
         // reset mvc initialized, it will update the mapping of url and handler
+        LOGGER.debug("refreshRequestMapping of {}", ObjectUtils.identityToString(beanFactory));
         ResetRequestMappingCaches.reset(beanFactory);
     }
 
     private void processAutowiredAnnotationBeans() {
+        LOGGER.debug("process @Value and @Autowired of singleton beans of {}", ObjectUtils.identityToString(beanFactory));
         AutowiredAnnotationProcessor.processSingletonBeanInjection(beanFactory);
     }
 
     private void processConfigBeanDefinitions() {
+        LOGGER.debug("process @Configuration of {}", ObjectUtils.identityToString(beanFactory));
         ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).postProcess(beanFactory);
     }
 
@@ -578,7 +583,7 @@ public class SpringBeanReload {
             return;
         }
         String[] dependentBeans = beanFactory.getDependentBeans(beanName);
-        LOGGER.trace("the bean '{}' is destroyed, and it is depended by {}", beanName, Arrays.toString(dependentBeans));
+        LOGGER.debug("the bean '{}' is destroyed, and it is depended by {}", beanName, Arrays.toString(dependentBeans));
         doDestroyBean(beanName);
     }
 
@@ -615,6 +620,7 @@ public class SpringBeanReload {
 
     private static void invokeBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
         try {
+            LOGGER.debug("try to invoke PostProcessorRegistrationDelegate");
             invokePostProcessorRegistrationDelegate(factory);
         } catch (ClassNotFoundException t) {
             LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
@@ -680,6 +686,7 @@ public class SpringBeanReload {
 
     private static void addBeanPostProcessors(DefaultListableBeanFactory factory) {
         String[] names = factory.getBeanNamesForType(BeanPostProcessor.class, true, false);
+        LOGGER.debug("try to add BeanPostProcessor: {}", Arrays.asList(names));
         for (String name : names) {
             BeanPostProcessor pp = factory.getBean(name, BeanPostProcessor.class);
             factory.addBeanPostProcessor(pp);
