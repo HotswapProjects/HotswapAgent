@@ -51,12 +51,12 @@ public class ListPropertySourceReload<T> {
     }
 
     Map<String, T> createMap(Map map) {
-        return new HotswapReloadMap<>(map);
+        return new HotswapSpringReloadMap<>(map);
     }
 
     void updateNewValue(Map hotswapMap, Map newHotswapMap) {
-        if (hotswapMap instanceof HotswapReloadMap) {
-            ((HotswapReloadMap) hotswapMap).updateNewValue(newHotswapMap);
+        if (hotswapMap instanceof HotswapSpringReloadMap) {
+            ((HotswapSpringReloadMap) hotswapMap).updateNewValue(newHotswapMap);
         }
     }
 }

@@ -6,6 +6,7 @@ import org.hotswap.agent.plugin.spring.files.PropertyReload;
 import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
+import org.hotswap.agent.plugin.spring.transformers.api.IBeanFactoryLifecycle;
 import org.hotswap.agent.plugin.spring.utils.ResourceUtils;
 import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.spring.util.ClassUtils;
@@ -513,6 +514,9 @@ public class SpringBeanReload {
     private void clearLocalCache() {
         beansToProcess.clear();
         newBeanNames.clear();
+        if (beanFactory instanceof IBeanFactoryLifecycle) {
+            ((IBeanFactoryLifecycle) beanFactory).hotswapAgent$clearDestroyBean();
+        }
     }
 
     private List<String> reloadAnnotatedBeanDefinitions(Class clazz, String[] beanNames) {

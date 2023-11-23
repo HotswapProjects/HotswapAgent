@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.spring.boot.core;
+package org.hotswap.agent.plugin.spring.boot.env;
 
 import org.hotswap.agent.plugin.spring.env.HotswapChangeItem;
 
@@ -7,13 +7,16 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class HotswapReloadMap<K, V> implements Map<K, V> {
+public class HotswapSpringReloadMap<K, V> implements Map<K, V> {
     private Map<K, V> value;
     private Map<K, V> originValue;
 
-    public HotswapReloadMap(Map<K, V> value) {
+    private HotswapSpringMapSupport<K, V> mapSupport;
+
+    public HotswapSpringReloadMap(Map<K, V> value) {
         this.value = value;
         this.originValue = value;
+        mapSupport = new HotswapSpringMapSupport<K, V>();
     }
 
     public void updateNewValue(Map<K, V> newValue) {
@@ -83,26 +86,6 @@ public class HotswapReloadMap<K, V> implements Map<K, V> {
     }
 
     public Set<HotswapChangeItem> changeList() {
-        Set<HotswapChangeItem> items = new HashSet<>();
-        for (Map.Entry<K, V> entry : this.entrySet()) {
-            Object key;
-            key = entry.getKey();
-            Object newValue = entry.getValue();
-            Object oldValue = this.originValue.get(key);
-            if (newValue != null && !newValue.equals(oldValue) && key instanceof String) {
-                items.add(new HotswapChangeItem((String) key, oldValue, newValue));
-            }
-        }
-        for (Map.Entry<K, V> entry : this.originValue.entrySet()) {
-            Object key;
-            key = entry.getKey();
-            Object oldValue = entry.getValue();
-            Object newValue = this.get(key);
-            if (newValue != null && !newValue.equals(oldValue) && key instanceof String) {
-                items.add(new HotswapChangeItem((String) key, oldValue, newValue));
-            }
-        }
-
-        return items;
+        return mapSupport.changeList(this, originValue);
     }
 }

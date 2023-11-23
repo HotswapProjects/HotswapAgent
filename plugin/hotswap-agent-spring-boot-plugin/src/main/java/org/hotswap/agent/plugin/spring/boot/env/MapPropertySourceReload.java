@@ -18,14 +18,14 @@ public class MapPropertySourceReload<T> {
         if (hotswapMap == null) {
             synchronized (this) {
                 if (hotswapMap == null) {
-                    hotswapMap = new HotswapReloadMap<>(newHotswapMap);
+                    hotswapMap = new HotswapSpringReloadMap<>(newHotswapMap);
                     return;
                 }
             }
         }
 
-        if (hotswapMap instanceof HotswapReloadMap) {
-            ((HotswapReloadMap) hotswapMap).updateNewValue(newHotswapMap);
+        if (hotswapMap instanceof HotswapSpringReloadMap) {
+            ((HotswapSpringReloadMap) hotswapMap).updateNewValue(newHotswapMap);
         }
     }
 }

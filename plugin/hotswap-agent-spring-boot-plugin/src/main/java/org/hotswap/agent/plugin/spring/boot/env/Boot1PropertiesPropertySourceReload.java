@@ -1,9 +1,6 @@
 package org.hotswap.agent.plugin.spring.boot.env;
 
 import org.hotswap.agent.logging.AgentLogger;
-
-import org.hotswap.agent.plugin.spring.boot.core.HotswapProperties;
-
 import org.hotswap.agent.plugin.spring.api.PropertySourceReload;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.core.io.Resource;
@@ -30,13 +27,13 @@ public class Boot1PropertiesPropertySourceReload implements PropertySourceReload
         if (properties == null) {
             synchronized (this) {
                 if (properties == null) {
-                    properties = new HotswapProperties<>(newProperties);
+                    properties = new HotswapSpringProperties<>(newProperties);
                     return;
                 }
             }
         }
-        if (properties instanceof HotswapProperties) {
-            ((HotswapProperties) properties).updateNewValue(newProperties);
+        if (properties instanceof HotswapSpringProperties) {
+            ((HotswapSpringProperties) properties).updateNewValue(newProperties);
         }
     }
 

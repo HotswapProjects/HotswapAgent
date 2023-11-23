@@ -1,5 +1,5 @@
 #!/bin/bash
-# simple script to run all Spring versions from 3.0 up to latest.
+# simple script to run all Spring Boot versions from 1.5.0 up to latest.
 # this should be replaced by build sever in the future
 
 # fail with first failed test

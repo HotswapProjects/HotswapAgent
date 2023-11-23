@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.transformers.api.IBeanFactoryLifecycle;
 import org.hotswap.agent.plugin.spring.transformers.api.IPlaceholderConfigurerSupport;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -35,10 +36,23 @@ public class BeanFactoryProcessor {
         beanFactory.destroySingleton(beanName);
     }
 
+    /**
+     * invoked by @see org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer
+     * @param beanFactory
+     * @param beanName
+     */
     public static void postProcessDestroySingleton(DefaultSingletonBeanRegistry beanFactory, String beanName) {
         LOGGER.info("destroy bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+        if (beanFactory instanceof IBeanFactoryLifecycle) {
+            ((IBeanFactoryLifecycle) beanFactory).hotswapAgent$destroyBean(beanName);
+        }
     }
 
+    /**
+     * invoked by @see org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer
+     * @param beanFactory
+     * @param beanName
+     */
     public static void postProcessCreateBean(AbstractAutowireCapableBeanFactory beanFactory, String beanName,
                                              RootBeanDefinition mbd) {
         if (mbd.isSingleton()) {

@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.spring.reload;
 
+import org.hotswap.agent.plugin.spring.transformers.api.IBeanFactoryLifecycle;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 import java.util.Map;
@@ -56,5 +57,17 @@ public class BeanFactoryAssistant {
 
     public void setReload(boolean isReload) {
         this.isReload = isReload;
+    }
+
+    /**
+     * check the bean is destroyed or not
+     * @param beanName
+     * @return
+     */
+    public boolean isDestroyedBean(String beanName) {
+        if (beanFactory instanceof IBeanFactoryLifecycle) {
+            return ((IBeanFactoryLifecycle) beanFactory).hotswapAgent$isDestroyedBean(beanName);
+        }
+        return false;
     }
 }

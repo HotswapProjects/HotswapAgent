@@ -45,6 +45,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>${org.springframework.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
