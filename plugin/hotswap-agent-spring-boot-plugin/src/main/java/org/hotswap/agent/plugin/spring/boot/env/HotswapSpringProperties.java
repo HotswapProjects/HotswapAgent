@@ -1,29 +1,31 @@
 package org.hotswap.agent.plugin.spring.boot.env;
 
-import org.hotswap.agent.plugin.spring.env.HotswapChangeItem;
+import java.util.Properties;
+import java.util.function.Supplier;
 
-import java.util.*;
+public class HotswapSpringProperties extends Properties implements HotswapSpringPropertiesReloader<Properties> {
 
-public class HotswapSpringProperties<K, V> extends Properties {
-
-    private Properties originValue;
-    private HotswapSpringMapSupport<Object, Object> mapSupport;
-
-    public HotswapSpringProperties(Properties p) {
+    public HotswapSpringProperties() {
         super();
-        this.putAll(p);
-        this.originValue = p;
-        mapSupport = new HotswapSpringMapSupport();
     }
 
-    public void updateNewValue(Properties newValue) {
-        this.originValue.clear();
-        this.originValue.putAll(this);
+    public HotswapSpringProperties(Properties properties) {
+        super();
+        this.putAll(properties);
+    }
+
+
+    @Override
+    public void update(Properties newValue) {
+        if (newValue == null || newValue.size() == 0) {
+            return;
+        }
         this.clear();
         this.putAll(newValue);
     }
 
-    public Set<HotswapChangeItem> changeList() {
-        return mapSupport.changeList(this, originValue);
+    @Override
+    public Properties get() {
+        return this;
     }
 }

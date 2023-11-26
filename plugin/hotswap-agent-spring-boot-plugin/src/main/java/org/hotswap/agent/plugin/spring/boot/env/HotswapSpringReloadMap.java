@@ -1,29 +1,19 @@
 package org.hotswap.agent.plugin.spring.boot.env;
 
-import org.hotswap.agent.plugin.spring.env.HotswapChangeItem;
-
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
-public class HotswapSpringReloadMap<K, V> implements Map<K, V> {
+public class HotswapSpringReloadMap<K, V> implements Map<K, V>, HotswapSpringPropertiesReloader<Map<K, V>> {
     private Map<K, V> value;
-    private Map<K, V> originValue;
-
-    private HotswapSpringMapSupport<K, V> mapSupport;
 
     public HotswapSpringReloadMap(Map<K, V> value) {
         this.value = value;
-        this.originValue = value;
-        mapSupport = new HotswapSpringMapSupport<K, V>();
     }
 
-    public void updateNewValue(Map<K, V> newValue) {
-        this.originValue = this.value;
-        this.value = newValue;
+    public HotswapSpringReloadMap() {
     }
-
 
     @Override
     public int size() {
@@ -85,7 +75,16 @@ public class HotswapSpringReloadMap<K, V> implements Map<K, V> {
         return this.value.entrySet();
     }
 
-    public Set<HotswapChangeItem> changeList() {
-        return mapSupport.changeList(this, originValue);
+    @Override
+    public void update(Map<K, V> newValue) {
+        if (newValue == null || newValue.size() == 0) {
+            return;
+        }
+        this.value = newValue;
+    }
+
+    @Override
+    public Map<K, V> get() {
+        return this;
     }
 }

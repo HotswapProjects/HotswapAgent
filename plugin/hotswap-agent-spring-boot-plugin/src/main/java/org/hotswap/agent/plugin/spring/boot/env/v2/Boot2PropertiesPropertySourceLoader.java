@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.spring.boot.env;
+package org.hotswap.agent.plugin.spring.boot.env.v2;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.api.PropertySourceReload;
@@ -10,16 +10,16 @@ import java.util.List;
 import java.util.Map;
 
 
-public class Boot2PropertiesPropertySourceReload implements PropertySourceReload<List<Map<String, ?>>> {
+public class Boot2PropertiesPropertySourceLoader implements PropertySourceReload<List<Map<String, ?>>> {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(Boot2PropertiesPropertySourceReload.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(Boot2PropertiesPropertySourceLoader.class);
 
     private PropertiesPropertySourceLoader propertiesPropertySourceLoader;
 
     private ListPropertySourceReload basePropertySourceReload;
 
 
-    public Boot2PropertiesPropertySourceReload(PropertiesPropertySourceLoader propertiesPropertySourceLoader,
+    public Boot2PropertiesPropertySourceLoader(PropertiesPropertySourceLoader propertiesPropertySourceLoader,
                                                String name, Resource resource) {
         basePropertySourceReload = new ListPropertySourceReload<>(name, resource);
         this.propertiesPropertySourceLoader = propertiesPropertySourceLoader;
@@ -28,11 +28,7 @@ public class Boot2PropertiesPropertySourceReload implements PropertySourceReload
 
     @Override
     public void reload() {
-        List<Map<String, ?>> newHotswapMapList = doLoad();
-        if (newHotswapMapList == null || newHotswapMapList.size() == 0) {
-            return;
-        }
-        basePropertySourceReload.updateHotswapMap(newHotswapMapList);
+        basePropertySourceReload.update(() -> doLoad());
     }
 
     /**
@@ -40,12 +36,8 @@ public class Boot2PropertiesPropertySourceReload implements PropertySourceReload
      */
     @Override
     public List<Map<String, ?>> load() {
-        List<Map<String, ?>> result = doLoad();
-        if (result == null) {
-            return null;
-        }
-        basePropertySourceReload.updateHotswapMap(result);
-        return basePropertySourceReload.hotswapMapList;
+        reload();
+        return basePropertySourceReload.get();
     }
 
     /**
