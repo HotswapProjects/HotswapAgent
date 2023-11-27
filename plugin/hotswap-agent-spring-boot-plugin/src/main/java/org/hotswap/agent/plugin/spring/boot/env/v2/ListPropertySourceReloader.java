@@ -14,15 +14,15 @@ import java.util.Map;
  *
  * @param <T>
  */
-public class ListPropertySourceReload<T> implements HotswapSpringPropertiesReloader<List<Map<String, T>>> {
+public class ListPropertySourceReloader<T> implements HotswapSpringPropertiesReloader<List<Map<String, T>>> {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ListPropertySourceReload.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ListPropertySourceReloader.class);
 
     protected final String name;
     protected final Resource resource;
     protected List<Map<String, T>> hotswapMapList;
 
-    public ListPropertySourceReload(String name, Resource resource) {
+    public ListPropertySourceReloader(String name, Resource resource) {
         this.name = name;
         this.resource = resource;
     }
