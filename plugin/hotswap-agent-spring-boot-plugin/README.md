@@ -1,10 +1,17 @@
 Spring plugin
 =============
-Reload Spring Boot configuration after class definition/change.
 
-The plugin hooks for initialization into `org.springframework.boot.SpringApplication` which is the entry of Spring Boot Application.
+Dynamic reloading of Spring Boot configuration files in real-time. Directly leverages Spring's environment and 
+context mechanisms to ensure seamless integration.
 
-The plugin based on Spring Plugin, it depends on Spring Dependency. The spring boot have some features, now we just support the reload of the configuration.
+It works with Spring Boot 1.5.x and 2.0.x.
+
+Applicability
+--------------
+The plugin is specifically designed for Spring Boot applications where starters are responsible for managing their own 
+configuration properties and corresponding beans. It does not enforce a global refresh of all beans but rather delegates 
+to each starter to listen for configuration changes and make decisions on which beans to refresh. If not for this way, 
+we may need to destroy and recreate all spring boot beans which is not a good idea.
 
 Configuration Reload
 --------------
@@ -36,6 +43,8 @@ The plugin supports reloading of Spring Boot configuration. For example:
     }
 
 ```
+It will reload the configuration when the `hotswap-demo.properties` file changed and send an event to notify the configuration changed.
+
 #### Refresh the configuration
 
 If you change the value of `properties.l10.l1` in `hotswap-demo.properties` file or `application.yaml/application.properties` file, 
