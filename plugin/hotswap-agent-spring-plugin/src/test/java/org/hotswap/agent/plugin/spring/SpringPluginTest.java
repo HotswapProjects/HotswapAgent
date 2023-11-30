@@ -21,9 +21,12 @@ package org.hotswap.agent.plugin.spring;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.testBeans.*;
+import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanService;
+import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanServiceImplNoAspect;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
+import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2NoAspect;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.Pojo2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.junit.*;
@@ -77,7 +80,7 @@ public class SpringPluginTest {
      */
     @Test
     public void basicTest() {
-        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(BeanService.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).hello());
         assertEquals("Hello from Repository ServiceWithAspect Prototype",
                 applicationContext.getBean(BeanPrototype.class).hello());
     }
@@ -94,7 +97,7 @@ public class SpringPluginTest {
         assertEquals("Hello from ChangedRepository Service2WithAspect", bean.hello());
         // ensure that using interface is Ok as well
         assertEquals("Hello from ChangedRepository Service2WithAspect",
-                applicationContext.getBean(BeanService.class).hello());
+                applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).hello());
         // recovery
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
     }
@@ -109,7 +112,7 @@ public class SpringPluginTest {
         printDetail();
 
         // get bean via interface
-        String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(applicationContext.getBean(BeanService.class),
+        String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class),
                 BeanServiceImpl.class, "helloNewMethod", new Class[]{});
         assertEquals("Hello from helloNewMethod Service2", helloNewMethodIfaceVal);
 
@@ -127,9 +130,9 @@ public class SpringPluginTest {
      */
     @Test
     public void hotswapServiceAddFieldWithInject() throws Exception {
-        assertEquals("injected:true", applicationContext.getBean(BeanService.class).isInjectFieldInjected());
+        assertEquals("injected:true", applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).isInjectFieldInjected());
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class);
-        assertEquals("injectedChanged:true", applicationContext.getBean(BeanService.class).isInjectFieldInjected());
+        assertEquals("injectedChanged:true", applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).isInjectFieldInjected());
         // recovery
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
     }
@@ -192,6 +195,19 @@ public class SpringPluginTest {
         // recovery
         swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
         assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
+    }
+
+    @Test
+    public void hotswapBeanCreatedByIABPP() throws Exception {
+        BeanService beanService = applicationContext.getBean(BeanService.class);
+        assertEquals("Hello from Repository Service", beanService.hello());
+
+        swapClasses(BeanServiceImplNoAspect.class, BeanServiceImpl2NoAspect.class);
+        assertEquals("Hello from ChangedRepository Service2", beanService.hello());
+
+        // recovery
+        swapClasses(BeanServiceImplNoAspect.class, BeanServiceImplNoAspect.class);
+        assertEquals("Hello from Repository Service", beanService.hello());
     }
 
     @Test
