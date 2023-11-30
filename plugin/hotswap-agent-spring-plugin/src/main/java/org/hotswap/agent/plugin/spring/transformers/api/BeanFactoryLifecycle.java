@@ -1,6 +1,6 @@
 package org.hotswap.agent.plugin.spring.transformers.api;
 
-public interface IBeanFactoryLifecycle {
+public interface BeanFactoryLifecycle {
 
     void hotswapAgent$destroyBean(String beanName);
 

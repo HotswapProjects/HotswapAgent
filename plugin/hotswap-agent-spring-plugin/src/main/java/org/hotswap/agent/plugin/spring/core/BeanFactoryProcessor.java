@@ -19,13 +19,11 @@
 package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.transformers.api.IBeanFactoryLifecycle;
-import org.hotswap.agent.plugin.spring.transformers.api.IPlaceholderConfigurerSupport;
-import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
+import org.hotswap.agent.plugin.spring.transformers.api.BeanFactoryLifecycle;
+import org.hotswap.agent.plugin.spring.transformers.api.ValueResolverSupport;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.hotswap.agent.util.spring.util.ReflectionUtils;
-import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
@@ -34,7 +32,6 @@ import org.springframework.util.StringValueResolver;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Predicate;
@@ -61,8 +58,8 @@ public class BeanFactoryProcessor {
      */
     public static void postProcessDestroySingleton(DefaultSingletonBeanRegistry beanFactory, String beanName) {
         LOGGER.info("destroy bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
-        if (beanFactory instanceof IBeanFactoryLifecycle) {
-            ((IBeanFactoryLifecycle) beanFactory).hotswapAgent$destroyBean(beanName);
+        if (beanFactory instanceof BeanFactoryLifecycle) {
+            ((BeanFactoryLifecycle) beanFactory).hotswapAgent$destroyBean(beanName);
         }
     }
 
@@ -125,8 +122,8 @@ public class BeanFactoryProcessor {
 
     private static void resetEmbeddedValueResolvers(DefaultListableBeanFactory beanFactory, String beanName) {
         Object target = beanFactory.getSingleton(beanName);
-        if (target != null && target instanceof PlaceholderConfigurerSupport && target instanceof IPlaceholderConfigurerSupport) {
-            IPlaceholderConfigurerSupport placeholderConfigurerSupport = (IPlaceholderConfigurerSupport) target;
+        if (target != null && target instanceof PlaceholderConfigurerSupport && target instanceof ValueResolverSupport) {
+            ValueResolverSupport placeholderConfigurerSupport = (ValueResolverSupport) target;
             Field field = ReflectionUtils.findField(beanFactory.getClass(), "embeddedValueResolvers");
             if (field != null) {
                 ReflectionUtils.makeAccessible(field);

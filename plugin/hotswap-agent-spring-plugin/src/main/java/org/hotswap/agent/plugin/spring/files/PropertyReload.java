@@ -21,8 +21,8 @@ package org.hotswap.agent.plugin.spring.files;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
-import org.hotswap.agent.plugin.spring.transformers.api.IReloadPropertySource;
-import org.hotswap.agent.plugin.spring.transformers.api.IResourcePropertySource;
+import org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource;
+import org.hotswap.agent.plugin.spring.transformers.api.ReloadableResourcePropertySource;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
@@ -110,15 +110,15 @@ public class PropertyReload {
 
     private static void doReloadPropertySource(MutablePropertySources propertySources) {
         for (PropertySource<?> propertySource : propertySources) {
-            if (propertySource instanceof IResourcePropertySource) {
+            if (propertySource instanceof ReloadableResourcePropertySource) {
                 try {
-                    ((IResourcePropertySource) propertySource).reloadPropertySource();
+                    ((ReloadableResourcePropertySource) propertySource).reload();
                 } catch (IOException e) {
                     LOGGER.error("reload property source error", e, propertySource.getName());
                 }
             }
-            if (propertySource instanceof IReloadPropertySource) {
-                ((IReloadPropertySource) propertySource).reload();
+            if (propertySource instanceof ReloadablePropertySource) {
+                ((ReloadablePropertySource) propertySource).reload();
             }
         }
     }

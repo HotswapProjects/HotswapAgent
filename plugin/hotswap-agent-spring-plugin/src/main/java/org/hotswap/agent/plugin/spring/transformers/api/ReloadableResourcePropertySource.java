@@ -9,13 +9,13 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-public interface IResourcePropertySource {
+public interface ReloadableResourcePropertySource {
 
     EncodedResource encodedResource();
 
     Resource resource();
 
-    default boolean reloadPropertySource() throws IOException {
+    default boolean reload() throws IOException {
         Properties properties = null;
         if (encodedResource() != null) {
             properties = PropertiesLoaderUtils.loadProperties(encodedResource());
