@@ -137,8 +137,8 @@ public class PropertySourceLoaderTransformer {
     private static void enhanceBasePropertySourceLoader(CtClass clazz) throws CannotCompileException {
         clazz.addMethod(CtMethod.make("private void load0(org.springframework.core.env.PropertySource p, " +
                 "org.hotswap.agent.plugin.spring.api.PropertySourceReloader r) throws java.io.IOException { " +
-                "if (p instanceof org.hotswap.agent.plugin.spring.transformers.api.IReloadPropertySource) { " +
-                "((org.hotswap.agent.plugin.spring.transformers.api.IReloadPropertySource) p).setReload(r); " +
+                "if (p instanceof org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource) { " +
+                "((org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource) p).setReload(r); " +
                 "} }", clazz));
         clazz.addMethod(CtMethod.make("private void loadList0(java.util.List ps, " +
                 "org.hotswap.agent.plugin.spring.api.PropertySourceReloader r) throws java.io.IOException { " +

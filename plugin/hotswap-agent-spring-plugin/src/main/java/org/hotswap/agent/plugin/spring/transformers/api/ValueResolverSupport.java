@@ -4,7 +4,7 @@ import org.springframework.util.StringValueResolver;
 
 import java.util.List;
 
-public interface IPlaceholderConfigurerSupport {
+public interface ValueResolverSupport {
 
     List<StringValueResolver> valueResolvers();
 }

@@ -44,7 +44,7 @@ public class PropertySourceTransformer {
     }
 
     private static void transformPropertySource(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
-        clazz.addInterface(classPool.get("org.hotswap.agent.plugin.spring.transformers.api.IReloadPropertySource"));
+        clazz.addInterface(classPool.get("org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource"));
         clazz.addField(CtField.make("private org.hotswap.agent.plugin.spring.api.PropertySourceReloader reload;", clazz));
 
         clazz.addMethod(CtMethod.make("public void setReload(org.hotswap.agent.plugin.spring.api.PropertySourceReloader r) { this.reload = r; }", clazz));
