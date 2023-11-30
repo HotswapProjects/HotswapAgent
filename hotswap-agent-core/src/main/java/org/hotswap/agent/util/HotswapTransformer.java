@@ -341,7 +341,6 @@ public class HotswapTransformer implements ClassFileTransformer {
                     return true;
                 }
             }
-        } else {
             return false;
         }
 
