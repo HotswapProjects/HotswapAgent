@@ -123,7 +123,7 @@ public class ReflectionHelper {
     public static Object invokeConstructor(String className, ClassLoader cl, Class<?>[] parameterTypes,
                                            Object... args) throws ClassNotFoundException, NoSuchMethodException,
             InvocationTargetException, InstantiationException, IllegalAccessException {
-        Class clazz = Class.forName(className, true, cl);
+        Class<?> clazz = Class.forName(className, true, cl);
         Constructor constructor = clazz.getDeclaredConstructor(parameterTypes);
         constructor.setAccessible(true);
         return constructor.newInstance(args);

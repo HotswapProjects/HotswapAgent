@@ -1,14 +1,13 @@
 package org.hotswap.agent.plugin.spring.boot.env.v1;
 
+import java.util.Properties;
+
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.api.PropertySourceReload;
 import org.hotswap.agent.plugin.spring.boot.env.BasePropertiesPropertySourceLoader;
 import org.hotswap.agent.plugin.spring.boot.env.HotswapSpringProperties;
-import org.hotswap.agent.plugin.spring.boot.env.HotswapSpringReloadMap;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.springframework.core.io.Resource;
-
-import java.util.Properties;
 
 public class Boot1PropertiesPropertySourceLoader extends BasePropertiesPropertySourceLoader<Properties> implements PropertySourceReload<Properties> {
 

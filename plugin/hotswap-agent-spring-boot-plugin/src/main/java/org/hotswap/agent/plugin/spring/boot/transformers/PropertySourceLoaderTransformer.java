@@ -1,7 +1,11 @@
 package org.hotswap.agent.plugin.spring.boot.transformers;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
 import org.hotswap.agent.logging.AgentLogger;
@@ -29,9 +33,6 @@ public class PropertySourceLoaderTransformer {
                             && m.getMethodName().equals("load")) {
                         m.replace("{$_ = _reload.load();}");
                     }
-//                    else if (m.getMethodName().equals("add")) {
-//                        m.replace("{ $_ = $proceed($$); load0($1,_reload);}");
-//                    }
                 }
             });
             ctMethod.insertAfter("{ loadList0($_ , _reload);}");

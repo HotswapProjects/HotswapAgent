@@ -9,7 +9,7 @@ public abstract class BasePropertiesPropertySourceLoader<T> {
     }
 
     public void reload() {
-        properties.update(() -> doLoad());
+        properties.update(this::doLoad);
     }
 
     /**
@@ -21,5 +21,10 @@ public abstract class BasePropertiesPropertySourceLoader<T> {
         return properties.get();
     }
 
+    /**
+     * try to load properties/yaml or List, it should reuse the code of spring boot.
+     * it is different in different version of spring boot , it is different in properties and yaml.
+     * @return
+     */
     protected abstract T doLoad();
 }
