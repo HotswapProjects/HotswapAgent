@@ -1,6 +1,9 @@
 package org.hotswap.agent.plugin.spring.testBeans.iabpp;
 
+import java.beans.PropertyDescriptor;
+
 import org.springframework.beans.BeansException;
+import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
 import org.springframework.cglib.proxy.Enhancer;
@@ -25,6 +28,23 @@ public class BeanServiceCreator implements InstantiationAwareBeanPostProcessor {
             return beanService;
         }
         return null;
+    }
+
+    public boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
+        return true;
+    }
+
+    public PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, Object bean,
+        String beanName) throws BeansException {
+        return pvs;
+    }
+
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
     }
 }
 
