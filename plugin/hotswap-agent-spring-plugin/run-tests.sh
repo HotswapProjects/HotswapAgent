@@ -36,8 +36,8 @@ function test {
 # test 5.3.16
 # test 5.3.17
 
-# 5.3.28 is lowest not vulnerable version(2023.7.05)
-test 5.3.28
+# 5.3.30 is lowest not vulnerable version(2023.7.05)
+test 5.3.30
 
 # test 5.2.0.RELEASE
 # test 5.2.1.RELEASE
@@ -96,7 +96,7 @@ test 5.3.28
 # test 4.3.13.RELEASE
 
 # 4.3.20 is lowest not vulnerable version(2022.01.19) look at CVE-2018-15756
-#test 4.3.20.RELEASE
+test 4.3.20.RELEASE
 
 # test 4.0.x
 #test 4.0.9.RELEASE

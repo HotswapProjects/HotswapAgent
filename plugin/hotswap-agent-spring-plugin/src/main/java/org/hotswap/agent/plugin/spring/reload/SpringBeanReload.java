@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013-2023 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring.reload;
 
 import org.hotswap.agent.logging.AgentLogger;
@@ -5,6 +23,8 @@ import org.hotswap.agent.plugin.spring.core.*;
 import org.hotswap.agent.plugin.spring.files.PropertyReload;
 import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
+import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
+import org.hotswap.agent.plugin.spring.transformers.api.IBeanFactoryLifecycle;
 import org.hotswap.agent.plugin.spring.utils.ResourceUtils;
 import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.spring.util.ClassUtils;
@@ -23,6 +43,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import static org.hotswap.agent.plugin.spring.utils.RegistryUtils.maybeRegistryToBeanFactory;
 import static org.hotswap.agent.util.ReflectionHelper.get;
@@ -39,10 +60,12 @@ public class SpringBeanReload {
     private Set<Class<?>> classes = Collections.newSetFromMap(new ConcurrentHashMap<>());
     // it is synchronized set because it is used synchronized block
     private Set<URL> properties = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private Set<URL> yamls = Collections.newSetFromMap(new ConcurrentHashMap<>());
     // it is synchronized set because it is used synchronized block
     private Set<URL> xmls = Collections.newSetFromMap(new ConcurrentHashMap<>());
     // it is synchronized set because it is used synchronized block
     private Set<BeanDefinitionHolder> newScanBeanDefinitions = new HashSet<>();
+    private Set<String> changedBeanNames = new HashSet<>();
     Set<String> newBeanNames = new HashSet<>();
 
     DefaultListableBeanFactory beanFactory;
@@ -99,6 +122,19 @@ public class SpringBeanReload {
         }
     }
 
+    public void addYaml(URL property) {
+        if (property == null) {
+            return;
+        }
+        synchronized (yamls) {
+            if (yamls.add(property)) {
+                LOGGER.info("try to add changed yaml '{}' into {}", property, ObjectUtils.identityToString(beanFactory));
+            } else {
+                LOGGER.debug("try to add changed yaml '{}' into {}, but exist", property, ObjectUtils.identityToString(beanFactory));
+            }
+        }
+    }
+
     public void addScanNewBean(BeanDefinitionRegistry registry, BeanDefinitionHolder beanDefinitionHolder) {
         if (beanDefinitionHolder == null) {
             return;
@@ -125,6 +161,19 @@ public class SpringBeanReload {
                 LOGGER.info("try to add xml '{}' into {}", xml, ObjectUtils.identityToString(beanFactory));
             } else {
                 LOGGER.debug("try to add xml '{}' into {}", xml, ObjectUtils.identityToString(beanFactory));
+            }
+        }
+    }
+
+    public void addChangedBeanNames(String[] beanNames) {
+        if (beanNames == null) {
+            return;
+        }
+        synchronized (this.changedBeanNames) {
+            if (this.changedBeanNames.addAll(Arrays.asList(beanNames))) {
+                LOGGER.debug("try to add changed beanNames '{}' into {}", Arrays.asList(beanNames), ObjectUtils.identityToString(beanFactory));
+            } else {
+                LOGGER.trace("try to add changed beanNames '{}' into {}, but exist", Arrays.asList(beanNames), ObjectUtils.identityToString(beanFactory));
             }
         }
     }
@@ -199,7 +248,9 @@ public class SpringBeanReload {
         }
         boolean allowBeanDefinitionOverriding = BeanFactoryProcessor.isAllowBeanDefinitionOverriding(beanFactory);
         long now = System.currentTimeMillis();
+        ClassLoader origContextClassLoader = null;
         try {
+            origContextClassLoader = ClassUtils.overrideThreadContextClassLoader(beanFactory.getBeanClassLoader());
             beanFactoryAssistant.setReload(true);
             LOGGER.info("##### start reloading '{}' with timestamp '{}'", ObjectUtils.identityToString(beanFactory), changeTimeStamps);
             LOGGER.trace("SpringReload:{},  beanFactory:{}", this, beanFactory);
@@ -209,6 +260,7 @@ public class SpringBeanReload {
             } while (checkHasChange() && printReloadLog());
             return true;
         } finally {
+            ClassUtils.overrideThreadContextClassLoader(origContextClassLoader);
             beanFactoryAssistant.increaseReloadTimes();
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, allowBeanDefinitionOverriding);
             LOGGER.info("##### [{}th] finish reloading '{}', it cost {}ms", beanFactoryAssistant.getReloadTimes(),
@@ -225,8 +277,9 @@ public class SpringBeanReload {
             boolean propertiesChanged = refreshProperties();
             // 3. reload xmls: the beans will be destroyed
             reloadXmlBeanDefinitions(propertiesChanged);
-            // 4. add changed class into recreate beans
-            refreshChangedClasses();
+            // 4. add changed classes and changed beans into recreate beans
+            refreshChangedClassesAndBeans();
+
             // 5. load new beans from scanning. The newBeanNames is used to print the suitable log.
             refreshNewBean();
             // 6. destroy bean including factory bean
@@ -296,28 +349,42 @@ public class SpringBeanReload {
     }
 
     private boolean printReloadLog() {
-        LOGGER.debug("the class or the file at '{}' has changes, rerun the while loop", ObjectUtils.identityToString(beanFactory));
+        LOGGER.debug("the class or the file at '{}' has changes, rerun the while loop.{}", ObjectUtils.identityToString(beanFactory), this);
         return true;
     }
 
     private boolean checkHasChange() {
-        if (properties.isEmpty() && classes.isEmpty() && xmls.isEmpty() && newScanBeanDefinitions.isEmpty()) {
+        if (properties.isEmpty() && classes.isEmpty() && xmls.isEmpty() && newScanBeanDefinitions.isEmpty()
+                && yamls.isEmpty() && changedBeanNames.isEmpty()) {
             LOGGER.trace("no change, ignore reloading '{}'", ObjectUtils.identityToString(beanFactory));
             return false;
         }
+        LOGGER.trace("has change, start reloading '{}', {}", ObjectUtils.identityToString(beanFactory), this);
         return true;
     }
 
     private boolean refreshProperties() {
+        boolean propertiesChanged = false;
         synchronized (properties) {
             if (!properties.isEmpty()) {
-                PropertyReload.reloadPropertySource(beanFactory);
-                beansToProcess.addAll(PropertyReload.getContainValueAnnotationBeans(beanFactory));
                 beansToProcess.addAll(beanFactoryAssistant.placeHolderXmlMapping.keySet());
                 // clear properties
                 properties.clear();
-                return true;
+                propertiesChanged = true;
             }
+        }
+        synchronized (yamls) {
+            if (!yamls.isEmpty()) {
+                // clear
+                yamls.clear();
+                propertiesChanged = true;
+            }
+        }
+        if (propertiesChanged) {
+            LOGGER.reload("the properties of '{}' is changed", ObjectUtils.identityToString(beanFactory));
+            PropertyReload.reloadPropertySource(beanFactory);
+            beansToProcess.addAll(PropertyReload.getContainValueAnnotationBeans(beanFactory));
+            return true;
         }
         return false;
     }
@@ -328,34 +395,74 @@ public class SpringBeanReload {
         processedBeans.addAll(result);
     }
 
-    private void refreshChangedClasses() {
+    private void refreshChangedClassesAndBeans() {
+        LOGGER.debug("refresh changed classes and beans of {}, classes:{}, changedBeans:{}",
+                ObjectUtils.identityToString(beanFactory), classes, changedBeanNames);
         Set<String> configurationBeansToReload = new HashSet<>();
+        // we should refresh changed classes before refresh changed beans.
+        // after refresh class, maybe we will add some changed beans into changedBeanNames
+        // 1. refresh changed classes
+        refreshChangedClass(configurationBeansToReload::addAll);
+        // 2. refresh changed beans
+        refreshChangedBeans(configurationBeansToReload::addAll);
+        // 3 when the bean is factory bean, it should be recreated.
+        resetConfigurationBeanDefinition(configurationBeansToReload);
+        LOGGER.trace("clear class cache of {}", ObjectUtils.identityToString(beanFactory));
+    }
+
+    private void refreshChangedClass(Consumer<List<String>> reloadBeans) {
+        Set<Class> classToProcess;
         synchronized (classes) {
-            for (Class clazz : classes) {
-                destroyClasses.add(ClassUtils.getUserClass(clazz).getName());
-                String[] names = beanFactory.getBeanNamesForType(clazz);
-                if (names != null && names.length > 0) {
-                    beansToProcess.addAll(Arrays.asList(names));
-                    // 3.1 when the bean is @Configuration, it should be recreated.
-                    configurationBeansToReload.addAll(reloadAnnotatedBeanDefinitions(clazz, names));
-                } else {
-                    LOGGER.debug("the bean of class {} not found", clazz.getName());
-                }
-            }
-            // 3.2 when the bean is factory bean, it should be recreated.
-            if (!configurationBeansToReload.isEmpty()) {
-                for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                    BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
-                    String factoryBeanName = beanDefinition.getFactoryBeanName();
-                    if (factoryBeanName != null && configurationBeansToReload.contains(factoryBeanName)) {
-                        LOGGER.debug("the bean '{}' will be recreating because the factory bean '{}' is changed", beanName, factoryBeanName);
-                        beanFactory.removeBeanDefinition(beanName);
-                    }
-                }
-            }
-            // 3.3 clear class cache
-            LOGGER.trace("clear class cache of {}", ObjectUtils.identityToString(beanFactory));
+            classToProcess = new HashSet<>(classes);
             classes.clear();
+        }
+        for (Class clazz : classToProcess) {
+            destroyClasses.add(ClassUtils.getUserClass(clazz).getName());
+            String[] names = beanFactory.getBeanNamesForType(clazz);
+            if (names != null && names.length > 0) {
+                LOGGER.trace("the bean of class {} has the bean names {}", clazz.getName(), Arrays.asList(names));
+                beansToProcess.addAll(Arrays.asList(names));
+                // 3.1 when the bean is @Configuration, it should be recreated.
+                reloadBeans.accept(reloadAnnotatedBeanDefinitions(clazz, names));
+                // notify the class is changed
+                SpringEventSource.INSTANCE.fireEvent(new ClassChangeEvent(clazz, beanFactory));
+            } else {
+                LOGGER.debug("the bean of class {} not found", clazz.getName());
+            }
+        }
+    }
+
+    private void refreshChangedBeans(Consumer<List<String>> reloadBeans) {
+        Set<String> beanNamesToProcess;
+        synchronized (changedBeanNames) {
+            beanNamesToProcess = new HashSet<>(changedBeanNames);
+            changedBeanNames.clear();
+        }
+        for (String beanName : beanNamesToProcess) {
+            beansToProcess.add(beanName);
+            // maybe this bean is not exist, or it belongs to other beanFactory
+            if (!beanFactory.containsBeanDefinition(beanName)) {
+                continue;
+            }
+            BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
+            if (beanDefinition instanceof AbstractBeanDefinition) {
+                AbstractBeanDefinition abstractBeanDefinition = (AbstractBeanDefinition) beanDefinition;
+                if (abstractBeanDefinition.hasBeanClass()) {
+                    Class<?> clazz = abstractBeanDefinition.getBeanClass();
+                    reloadBeans.accept(reloadAnnotatedBeanDefinitions(clazz, new String[]{beanName}));
+                }
+            }
+        }
+    }
+
+    private void resetConfigurationBeanDefinition(Set<String> configurationBeansToReload) {
+        for (String beanName : beanFactory.getBeanDefinitionNames()) {
+            BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
+            String factoryBeanName = beanDefinition.getFactoryBeanName();
+            if (factoryBeanName != null && configurationBeansToReload.contains(factoryBeanName)) {
+                LOGGER.debug("the bean '{}' will be recreating because the factory bean '{}' is changed", beanName, factoryBeanName);
+                beanFactory.removeBeanDefinition(beanName);
+            }
         }
     }
 
@@ -373,9 +480,8 @@ public class SpringBeanReload {
     }
 
     private void preInstantiateSingleton() {
+        LOGGER.debug("preInstantiateSingleton of {}", ObjectUtils.identityToString(beanFactory));
         for (String beanName : beanFactory.getBeanDefinitionNames()) {
-            // recreate the bean and do the initialization
-            Object singleton = beanFactory.getSingleton(beanName);
             BeanDefinition beanDefinition = null;
             try {
                 beanDefinition = beanFactory.getBeanDefinition(beanName);
@@ -384,17 +490,10 @@ public class SpringBeanReload {
                 continue;
             }
             if (beanDefinition.isSingleton()) {
-                Object target = beanFactory.getBean(beanName);
-                if (singleton == null) {
-                    if (newBeanNames.contains(beanName)) {
-                        LOGGER.reload("the bean '{}' of {} is singleton and new created", beanName, ClassUtils.getUserClass(target).getName());
-                    } else {
-                        LOGGER.reload("the bean '{}' of {} is singleton and recreated", beanName, ClassUtils.getUserClass(target).getName());
-                    }
-                }
-            } else if (beanDefinition.isPrototype()) {
-                if (beansToProcess.contains(beanName)) {
-                    LOGGER.reload("bean '{}' is protoType and reloaded", beanName);
+                try {
+                    beanFactory.getBean(beanName);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to get bean: " + beanName, e);
                 }
             }
         }
@@ -402,14 +501,17 @@ public class SpringBeanReload {
 
     private void refreshRequestMapping() {
         // reset mvc initialized, it will update the mapping of url and handler
+        LOGGER.debug("refreshRequestMapping of {}", ObjectUtils.identityToString(beanFactory));
         ResetRequestMappingCaches.reset(beanFactory);
     }
 
     private void processAutowiredAnnotationBeans() {
+        LOGGER.debug("process @Value and @Autowired of singleton beans of {}", ObjectUtils.identityToString(beanFactory));
         AutowiredAnnotationProcessor.processSingletonBeanInjection(beanFactory);
     }
 
     private void processConfigBeanDefinitions() {
+        LOGGER.debug("process @Configuration of {}", ObjectUtils.identityToString(beanFactory));
         ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).postProcess(beanFactory);
     }
 
@@ -423,34 +525,38 @@ public class SpringBeanReload {
         ProxyReplacer.clearAllProxies();
         // fixme temperately disable it
 //        ResetBeanFactoryCaches.reset(beanFactory);
-        ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).postProcess(beanFactory);
+        ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).resetConfigurationClassPostProcessor(beanFactory);
         ResetAnnotationCache.resetAnnotationScanner(beanFactory);
     }
 
     private void clearLocalCache() {
         beansToProcess.clear();
         newBeanNames.clear();
+        if (beanFactory instanceof IBeanFactoryLifecycle) {
+            ((IBeanFactoryLifecycle) beanFactory).hotswapAgent$clearDestroyBean();
+        }
     }
 
     private List<String> reloadAnnotatedBeanDefinitions(Class clazz, String[] beanNames) {
         List<String> configurationBeansToReload = new ArrayList<>();
+        Class realClass = ClassUtils.getUserClass(clazz);
         for (String beanName : beanNames) {
             if (beanName.startsWith("&")) {
                 beanName = beanName.substring(1);
             }
             BeanDefinition beanDefinition = BeanFactoryProcessor.getBeanDefinition(beanFactory, beanName);
-            if (AnnotationHelper.hasAnnotation(clazz, "org.springframework.context.annotation.Configuration")
+            if (AnnotationHelper.hasAnnotation(realClass, "org.springframework.context.annotation.Configuration")
                     && beanDefinition.getAttribute("org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass") != null) {
                 configurationBeansToReload.add(beanName);
                 String generateBeanName = beanNameGenerator.generateBeanName(beanDefinition, beanFactory);
                 // the beanName is not the same as generateBeanName, it should register a new bean definition and remove the old one.
                 if (!beanName.equals(generateBeanName)) {
                     beanFactory.removeBeanDefinition(beanName);
-                    BeanDefinition newBeanDefinition = new AnnotatedGenericBeanDefinition(clazz);
+                    BeanDefinition newBeanDefinition = new AnnotatedGenericBeanDefinition(realClass);
                     beanFactory.registerBeanDefinition(generateBeanName, newBeanDefinition);
                 } else {
                     // remove the attribute, and it will recreate the bean
-                    ((AbstractBeanDefinition) beanDefinition).setBeanClass(clazz);
+                    ((AbstractBeanDefinition) beanDefinition).setBeanClass(realClass);
                     beanDefinition.removeAttribute("org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass");
                 }
             }
@@ -479,11 +585,11 @@ public class SpringBeanReload {
             return false;
         }
         if (beanDefinition.getBeanClassName() != null && destroyClasses.contains(beanDefinition.getBeanClassName())) {
-            LOGGER.debug("the bean '{}' will be recreating because the factory class '{}' is changed", beanName,
+            LOGGER.debug("the bean '{}' of factory class '{}' is changed", beanName,
                     beanDefinition.getBeanClassName());
             return true;
         } else if (beanDefinition.getFactoryBeanName() != null && processedBeans.contains(beanDefinition.getFactoryBeanName())) {
-            LOGGER.debug("the bean '{}' will be recreating because the factory bean '{}' is changed", beanName,
+            LOGGER.debug("the bean '{}' of factory bean '{}' is changed", beanName,
                     beanDefinition.getFactoryBeanName());
             return true;
         }
@@ -536,6 +642,7 @@ public class SpringBeanReload {
 
     private static void invokeBeanFactoryPostProcessors(DefaultListableBeanFactory factory) {
         try {
+            LOGGER.debug("try to invoke PostProcessorRegistrationDelegate");
             invokePostProcessorRegistrationDelegate(factory);
         } catch (ClassNotFoundException t) {
             LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
@@ -543,10 +650,7 @@ public class SpringBeanReload {
         } catch (NoSuchMethodException t) {
             LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
             invokeBeanFactoryPostProcessors0(factory);
-        } catch (InvocationTargetException e) {
-            LOGGER.error("Failed to invoke PostProcessorRegistrationDelegate", e);
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to invoke PostProcessorRegistrationDelegate", e);
             throw new RuntimeException(e);
         }
@@ -566,12 +670,24 @@ public class SpringBeanReload {
         String[] bdrppNames = factory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
         for (String name : bdrppNames) {
             BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
+            try {
+                pp.postProcessBeanDefinitionRegistry(factory);
+            } catch (Exception e) {
+                LOGGER.debug("Failed to invoke BeanDefinitionRegistryPostProcessor: {}, reason:{}",
+                        pp.getClass().getName(), e.getMessage());
+            }
             pp.postProcessBeanDefinitionRegistry(factory);
         }
 
         for (String name : bdrppNames) {
             BeanDefinitionRegistryPostProcessor pp = factory.getBean(name, BeanDefinitionRegistryPostProcessor.class);
-            pp.postProcessBeanFactory(factory);
+            try {
+                pp.postProcessBeanFactory(factory);
+            } catch (Exception e) {
+                LOGGER.debug("Failed to invoke BeanDefinitionRegistryPostProcessor: {}, reason:{}",
+                        pp.getClass().getName(), e.getMessage());
+                LOGGER.trace("Failed to invoke BeanDefinitionRegistryPostProcessor", e);
+            }
         }
 
         String[] bfppNames = factory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
@@ -580,28 +696,35 @@ public class SpringBeanReload {
                 continue;
             }
             BeanFactoryPostProcessor pp = factory.getBean(name, BeanFactoryPostProcessor.class);
-            pp.postProcessBeanFactory(factory);
+            try {
+                pp.postProcessBeanFactory(factory);
+            } catch (Exception e) {
+                LOGGER.debug("Failed to invoke BeanDefinitionRegistryPostProcessor: {}, reason:{}",
+                        pp.getClass().getName(), e.getMessage());
+                LOGGER.trace("Failed to invoke BeanDefinitionRegistryPostProcessor", e);
+            }
         }
     }
 
     private static void addBeanPostProcessors(DefaultListableBeanFactory factory) {
         String[] names = factory.getBeanNamesForType(BeanPostProcessor.class, true, false);
+        LOGGER.debug("try to add BeanPostProcessor: {}", Arrays.asList(names));
         for (String name : names) {
             BeanPostProcessor pp = factory.getBean(name, BeanPostProcessor.class);
             factory.addBeanPostProcessor(pp);
-            LOGGER.debug("Add BeanPostProcessor {} that mapping to {}", name, ObjectUtils.identityToString(pp));
+            LOGGER.trace("Add BeanPostProcessor '{}' that mapping to {}", name, ObjectUtils.identityToString(pp));
         }
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("SpringReload{");
+        final StringBuilder sb = new StringBuilder("SpringBeanReload{");
         sb.append("classes=").append(classes);
         sb.append(", properties=").append(properties);
+        sb.append(", yamls=").append(yamls);
         sb.append(", xmls=").append(xmls);
-        sb.append(", dependentBeanMap=").append(dependentBeanMap);
-        sb.append(", destroyBeans=").append(processedBeans);
-        sb.append(", recreatedBeans=").append(beansToProcess);
+        sb.append(", newScanBeanDefinitions=").append(newScanBeanDefinitions);
+        sb.append(", changedBeanNames=").append(changedBeanNames);
         sb.append('}');
         return sb.toString();
     }

@@ -1,12 +1,33 @@
+/*
+ * Copyright 2013-2023 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.transformers.api.IBeanFactoryLifecycle;
 import org.hotswap.agent.plugin.spring.transformers.api.IPlaceholderConfigurerSupport;
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.hotswap.agent.util.spring.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.support.*;
 import org.springframework.util.StringValueResolver;
@@ -33,22 +54,29 @@ public class BeanFactoryProcessor {
         beanFactory.destroySingleton(beanName);
     }
 
-    // temporary removed
-//    public static boolean isFactoryBean(DefaultListableBeanFactory beanFactory, String beanName, RootBeanDefinition beanDefinition) {
-//        Method isFactoryBeanMethod = ReflectionUtils.findMethod(beanFactory.getClass(), "isFactoryBean", String.class, RootBeanDefinition.class);
-//        if (isFactoryBeanMethod != null) {
-//            isFactoryBeanMethod.setAccessible(true);
-//            try {
-//                return (boolean) isFactoryBeanMethod.invoke(beanFactory, beanName, beanDefinition);
-//            } catch (Exception e) {
-//                LOGGER.warning("isFactoryBean error", e);
-//            }
-//        }
-//        if (beanName.startsWith("&")) {
-//            return true;
-//        }
-//        return false;
-//    }
+    /**
+     * invoked by @see org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer
+     * @param beanFactory
+     * @param beanName
+     */
+    public static void postProcessDestroySingleton(DefaultSingletonBeanRegistry beanFactory, String beanName) {
+        LOGGER.info("destroy bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+        if (beanFactory instanceof IBeanFactoryLifecycle) {
+            ((IBeanFactoryLifecycle) beanFactory).hotswapAgent$destroyBean(beanName);
+        }
+    }
+
+    /**
+     * invoked by @see org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer
+     * @param beanFactory
+     * @param beanName
+     */
+    public static void postProcessCreateBean(AbstractAutowireCapableBeanFactory beanFactory, String beanName,
+                                             RootBeanDefinition mbd) {
+        if (mbd.isSingleton()) {
+            LOGGER.info("create new singleton bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+        }
+    }
 
     public static boolean needReloadOnConstructor(DefaultListableBeanFactory beanFactory, AbstractBeanDefinition currentBeanDefinition,
                                                   String beanName, Predicate<Constructor<?>[]> predicate) {
@@ -121,7 +149,7 @@ public class BeanFactoryProcessor {
         beanFactory.setAllowBeanDefinitionOverriding(allowEagerClassLoading);
     }
 
-    public static BeanDefinition getBeanDefinition(DefaultListableBeanFactory beanFactory, String beanName) {
+    public static BeanDefinition getBeanDefinition(ConfigurableListableBeanFactory beanFactory, String beanName) {
         if (beanName.startsWith("&")) {
             beanName = beanName.substring(1);
         }

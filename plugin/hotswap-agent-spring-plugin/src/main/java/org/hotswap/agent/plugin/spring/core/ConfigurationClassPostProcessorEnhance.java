@@ -56,12 +56,23 @@ public class ConfigurationClassPostProcessorEnhance {
     }
 
     public void setProcessor(ConfigurationClassPostProcessor processor) {
-        LOGGER.debug("ConfigurationClassPostProcessorAgent.setProcessor({})", processor);
+        LOGGER.trace("ConfigurationClassPostProcessorAgent.setProcessor({})", processor);
         this.processor = processor;
     }
 
     public ConfigurationClassPostProcessor getProcessor() {
         return processor;
+    }
+
+    public void resetConfigurationClassPostProcessor(BeanDefinitionRegistry registry) {
+        LOGGER.trace("ConfigurationClassPostProcessorAgent.resetConfigurationClassPostProcessor({})");
+        if (processor == null) {
+            return;
+        }
+
+        resetCachingMetadataReaderFactoryCache();
+        resetBeanNameCache();
+        resetBeanFactoryCache(registry);
     }
 
     public void postProcess(BeanDefinitionRegistry registry, String beanName) {
@@ -78,7 +89,7 @@ public class ConfigurationClassPostProcessorEnhance {
     }
 
     public void postProcess(BeanDefinitionRegistry registry) {
-        LOGGER.debug("ConfigurationClassPostProcessorAgent.postProcess({})", ObjectUtils.identityToString(registry));
+        LOGGER.trace("ConfigurationClassPostProcessorAgent.postProcess({})", ObjectUtils.identityToString(registry));
         if (processor == null) {
             return;
         }
@@ -130,7 +141,7 @@ public class ConfigurationClassPostProcessorEnhance {
         Map<Class<?>, Method[]> cache = (Map<Class<?>, Method[]>) ReflectionHelper.getNoException(factory,
                 AbstractAutowireCapableBeanFactory.class, "factoryMethodCandidateCache");
         if (cache != null) {
-            LOGGER.debug("Cache cleared: AbstractAutowireCapableBeanFactory.factoryMethodCandidateCache");
+            LOGGER.trace("Cache cleared: AbstractAutowireCapableBeanFactory.factoryMethodCandidateCache");
             cache.clear();
         }
     }
@@ -140,7 +151,7 @@ public class ConfigurationClassPostProcessorEnhance {
                 "org.springframework.context.annotation.BeanAnnotationHelper",
                 processor.getClass().getClassLoader(), "beanNameCache");
         if (cache != null) {
-            LOGGER.debug("Cache cleared: BeanAnnotationHelper.beanNameCache");
+            LOGGER.trace("Cache cleared: BeanAnnotationHelper.beanNameCache");
             cache.clear();
         }
     }

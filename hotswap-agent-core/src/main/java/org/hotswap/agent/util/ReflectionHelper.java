@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.util;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -117,6 +118,15 @@ public class ReflectionHelper {
      */
     public static Object invoke(Object target, String methodName) {
         return invoke(target, target.getClass(), methodName, new Class[] {});
+    }
+
+    public static Object invokeConstructor(String className, ClassLoader cl, Class<?>[] parameterTypes,
+                                           Object... args) throws ClassNotFoundException, NoSuchMethodException,
+            InvocationTargetException, InstantiationException, IllegalAccessException {
+        Class<?> clazz = Class.forName(className, true, cl);
+        Constructor constructor = clazz.getDeclaredConstructor(parameterTypes);
+        constructor.setAccessible(true);
+        return constructor.newInstance(args);
     }
 
     /**

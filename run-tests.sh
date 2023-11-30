@@ -19,7 +19,8 @@ function test {
     mvn clean install -DskipTests
 
     # run tests for different versions
-    cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..
+    cd plugin/hotswap-agent-spring-boot-plugin; ./run-tests.sh; cd ../..
 #    cd plugin/hotswap-agent-hibernate-plugin; ./run-tests.sh; cd ../..
 #    cd plugin/hotswap-agent-hibernate3-plugin; ./run-tests.sh; cd ../..
 #    cd plugin/hotswap-agent-weld-plugin; ./run-tests.sh; cd ../..

@@ -266,6 +266,7 @@ Hotswap agent:
 * AJ Banck - FreeMarker plugin
 * Sinan Yumak - Mojarra, MyFaces plugins
 * smallfour - Mybatis plugin
+* @cvictory - Spring plugin, Spring Boot plugin
 
 DCEVM:
 

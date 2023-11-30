@@ -18,27 +18,49 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import org.hotswap.agent.annotation.*;
-import org.hotswap.agent.command.Scheduler;
-import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.core.BeanDefinitionProcessor;
-import org.hotswap.agent.plugin.spring.reload.*;
-import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
-import org.hotswap.agent.plugin.spring.transformers.*;
-import org.hotswap.agent.util.HotswapTransformer;
-import org.hotswap.agent.util.IOUtils;
-import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.util.ReflectionHelper;
-import org.hotswap.agent.watch.Watcher;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+
+import org.hotswap.agent.annotation.FileEvent;
+import org.hotswap.agent.annotation.Init;
+import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.annotation.OnResourceFileEvent;
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.command.Scheduler;
+import org.hotswap.agent.config.PluginConfiguration;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.core.BeanDefinitionProcessor;
+import org.hotswap.agent.plugin.spring.reload.ClassChangedCommand;
+import org.hotswap.agent.plugin.spring.reload.PropertiesChangedCommand;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
+import org.hotswap.agent.plugin.spring.reload.XmlsChangedCommand;
+import org.hotswap.agent.plugin.spring.reload.YamlChangedCommand;
+import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
+import org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer;
+import org.hotswap.agent.plugin.spring.transformers.ClassPathBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.transformers.ConfigurationClassPostProcessorTransformer;
+import org.hotswap.agent.plugin.spring.transformers.PlaceholderConfigurerSupportTransformer;
+import org.hotswap.agent.plugin.spring.transformers.PostProcessorRegistrationDelegateTransformer;
+import org.hotswap.agent.plugin.spring.transformers.ProxyReplacerTransformer;
+import org.hotswap.agent.plugin.spring.transformers.ResourcePropertySourceTransformer;
+import org.hotswap.agent.plugin.spring.transformers.XmlBeanDefinitionScannerTransformer;
+import org.hotswap.agent.util.HotswapTransformer;
+import org.hotswap.agent.util.IOUtils;
+import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.watch.Watcher;
 
 /**
  * Spring plugin.
@@ -52,8 +74,9 @@ import java.util.List;
                 ConfigurationClassPostProcessorTransformer.class,
                 ResourcePropertySourceTransformer.class,
                 PlaceholderConfigurerSupportTransformer.class,
-                XmlBeanDefinitionScannerTransformer.class})
-
+                XmlBeanDefinitionScannerTransformer.class,
+                PostProcessorRegistrationDelegateTransformer.class,
+                BeanFactoryTransformer.class})
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
@@ -113,6 +136,14 @@ public class SpringPlugin {
     public void registerPropertiesListeners(URL url) {
         scheduler.scheduleCommand(new PropertiesChangedCommand(appClassLoader, url, scheduler));
         LOGGER.trace("Scheduling Spring reload for properties '{}'", url);
+        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
+    }
+
+    @OnResourceFileEvent(path = "/", filter = ".*.yaml", events = {FileEvent.MODIFY})
+    public void registerYamlListeners(URL url) {
+        scheduler.scheduleCommand(new YamlChangedCommand(appClassLoader, url, scheduler));
+        // schedule reload after 1000 milliseconds
+        LOGGER.trace("Scheduling Spring reload for yaml '{}'", url);
         scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
     }
 

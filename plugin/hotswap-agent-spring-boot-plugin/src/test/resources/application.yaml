@@ -1,0 +1,17 @@
+properties:
+  l10:
+    l1: base-yaml-world
+    l2: base-yaml-greeting
+    l3: base-yaml-geek
+    l4: base-yaml-boot
+    l5: 1024
+  l50:
+    l1: base-yaml-world
+    l2: base-yaml-greeting
+    l3: base-yaml-geek
+    l4: base-yaml-boot
+    l5: 1024
+  l80:
+    l1: base-yaml-l1
+    l4: base-yaml-l4
+    l5: base-yaml-l5
