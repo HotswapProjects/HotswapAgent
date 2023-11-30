@@ -25,13 +25,16 @@ import java.io.InputStream;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.scanner.ClassPathScanner;
 import org.hotswap.agent.util.scanner.Scanner;
@@ -61,7 +64,7 @@ public class ClassLoaderDefineClassPatcher {
      * Patch the classloader.
      *
      * @param classLoaderFrom  classloader to load classes from
-     * @param path             path to copy
+     * @param pluginPath             path to copy
      * @param classLoaderTo    classloader to copy classes to
      * @param protectionDomain required protection in target classloader
      */
@@ -74,6 +77,8 @@ public class ClassLoaderDefineClassPatcher {
 
             final ClassPool cp = new ClassPool();
             cp.appendClassPath(new LoaderClassPath(getClass().getClassLoader()));
+            Set<String> loadedClasses = new HashSet<>();
+            String packagePrefix = pluginPath.replace('/', '.');
 
             for (byte[] pluginBytes: cache) {
                 CtClass pluginClass = null;
@@ -89,8 +94,8 @@ public class ClassLoaderDefineClassPatcher {
                         LOGGER.trace("Skipping class loading {} in classloader {} - " +
                                 "class has probably unresolvable dependency.", pluginClass.getName(), classLoaderTo);
                     }
-                    // and load the class in classLoaderTo as well. NOw the class is defined in BOTH classloaders.
-                    pluginClass.toClass(classLoaderTo, protectionDomain);
+                    // and load the class in classLoaderTo as well. Now the class is defined in BOTH classloaders.
+                    transferTo(pluginClass, packagePrefix, classLoaderTo, protectionDomain, loadedClasses);
                 } catch (CannotCompileException e) {
                     LOGGER.trace("Skipping class definition {} in app classloader {} - " +
                             "class is probably already defined.", pluginClass.getName(), classLoaderTo);
@@ -106,6 +111,47 @@ public class ClassLoaderDefineClassPatcher {
 
         LOGGER.debug("Classloader {} patched with plugin classes from agent classloader {}.", classLoaderTo, classLoaderFrom);
 
+    }
+
+    private void transferTo(CtClass pluginClass, String pluginPath, ClassLoader classLoaderTo,
+                            ProtectionDomain protectionDomain, Set<String> loadedClasses) throws CannotCompileException {
+        // if the class is already loaded, skip it
+        if (loadedClasses.contains(pluginClass.getName()) || pluginClass.isFrozen() ||
+                !pluginClass.getName().startsWith(pluginPath)) {
+            return;
+        }
+        // 1. interface
+        try {
+            if (!pluginClass.isInterface()) {
+                CtClass[] ctClasses = pluginClass.getInterfaces();
+                if (ctClasses != null && ctClasses.length > 0) {
+                    for (CtClass ctClass : ctClasses) {
+                        try {
+                            transferTo(ctClass, pluginPath, classLoaderTo, protectionDomain, loadedClasses);
+                        } catch (Throwable e) {
+                            LOGGER.trace("Skipping class loading {} in classloader {} - " +
+                                    "class has probably unresolvable dependency.", ctClass.getName(), classLoaderTo);
+                        }
+                    }
+                }
+            }
+        } catch (NotFoundException e) {
+        }
+        // 2. superClass
+        try {
+            CtClass ctClass = pluginClass.getSuperclass();
+            if (ctClass != null) {
+                try {
+                    transferTo(ctClass, pluginPath, classLoaderTo, protectionDomain, loadedClasses);
+                } catch (Throwable e) {
+                    LOGGER.trace("Skipping class loading {} in classloader {} - " +
+                            "class has probably unresolvable dependency.", ctClass.getName(), classLoaderTo);
+                }
+            }
+        } catch (NotFoundException e) {
+        }
+        pluginClass.toClass(classLoaderTo, protectionDomain);
+        loadedClasses.add(pluginClass.getName());
     }
 
     private List<byte[]> getPluginCache(final ClassLoader classLoaderFrom, final String pluginPath) {
