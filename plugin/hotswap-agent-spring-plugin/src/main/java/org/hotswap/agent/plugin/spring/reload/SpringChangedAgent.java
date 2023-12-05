@@ -18,6 +18,16 @@
  */
 package org.hotswap.agent.plugin.spring.reload;
 
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
@@ -27,17 +37,11 @@ import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
-import java.net.URL;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
-
-public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
+public class SpringChangedAgent implements SpringListener<SpringEvent<?>>, Comparable<SpringChangedAgent> {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringChangedAgent.class);
 
     private static final AtomicInteger waitingReloadCount = new AtomicInteger(0);
@@ -65,7 +69,6 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         }
         return springChangeAgents.get(beanFactory);
     }
-
 
     public static void setClassLoader(ClassLoader classLoader) {
         SpringChangedAgent.appClassLoader = classLoader;
@@ -110,7 +113,8 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         return true;
     }
 
-    public static boolean addNewBean(BeanDefinitionHolder beanDefinitionHolder, ConfigurableListableBeanFactory beanFactory) {
+    public static boolean addNewBean(BeanDefinitionHolder beanDefinitionHolder,
+        ConfigurableListableBeanFactory beanFactory) {
         for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
             if (springChangedAgent.beanFactory() == beanFactory) {
                 springChangedAgent.addNewBean(springChangedAgent.beanFactory(), beanDefinitionHolder);
@@ -128,7 +132,10 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
             return;
         }
         try {
-            for (SpringChangedAgent springChangedAgent : springChangeAgents.values()) {
+            // sore the list by beanFactory order, make sure the parent beanFactory reload first
+            List<SpringChangedAgent> changedAgentList = new ArrayList<>(springChangeAgents.values());
+            Collections.sort(changedAgentList);
+            for (SpringChangedAgent springChangedAgent : changedAgentList) {
                 // ensure reload only once, there is one lock.
                 springChangedAgent.reloadAll(changeTimeStamps);
             }
@@ -189,7 +196,8 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         boolean isLockAcquired = reloadLock.tryLock(1, TimeUnit.SECONDS);
         if (isLockAcquired) {
             try {
-                LOGGER.trace("Spring reload: {} at timestamps '{}'", ObjectUtils.identityToString(defaultListableBeanFactory), changeTimeStamps);
+                LOGGER.trace("Spring reload: {} at timestamps '{}'",
+                    ObjectUtils.identityToString(defaultListableBeanFactory), changeTimeStamps);
                 springReload.reload(changeTimeStamps);
             } finally {
                 reloadLock.unlock();
@@ -204,9 +212,9 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
         if (!(configurableListableBeanFactory instanceof DefaultListableBeanFactory)) {
             return;
         }
-        getInstance((DefaultListableBeanFactory) configurableListableBeanFactory).springReload.collectPlaceHolderProperties();
+        getInstance(
+            (DefaultListableBeanFactory)configurableListableBeanFactory).springReload.collectPlaceHolderProperties();
     }
-
 
     @Override
     public DefaultListableBeanFactory beanFactory() {
@@ -216,11 +224,37 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>> {
     @Override
     public void onEvent(SpringEvent<?> event) {
         if (event instanceof BeanDefinitionChangeEvent) {
-            BeanDefinitionChangeEvent beanDefinitionChangeEvent = (BeanDefinitionChangeEvent) event;
+            BeanDefinitionChangeEvent beanDefinitionChangeEvent = (BeanDefinitionChangeEvent)event;
             addNewBean(beanFactory(), beanDefinitionChangeEvent.getSource());
         } else if (event instanceof BeanChangeEvent) {
-            BeanChangeEvent beanChangeEvent = (BeanChangeEvent) event;
+            BeanChangeEvent beanChangeEvent = (BeanChangeEvent)event;
             addChangedBeanNames(beanChangeEvent.getSource());
         }
+    }
+
+    /**
+     * calculate the order by beanFactory.
+     * If the beanFactory is root, return 1, else return 1 + parentBeanFactory's order
+     *
+     * @param beanFactory
+     * @return
+     */
+    private int orderByParentBeanFactory(AbstractBeanFactory beanFactory) {
+        if (beanFactory == null) {
+            return 0;
+        }
+        if (beanFactory.getParentBeanFactory() == null) {
+            return 1;
+        }
+        if (beanFactory.getParentBeanFactory() instanceof AbstractBeanFactory) {
+            return 1 + orderByParentBeanFactory((AbstractBeanFactory)beanFactory.getParentBeanFactory());
+        }
+        return 1;
+    }
+
+    @Override
+    public int compareTo(SpringChangedAgent o) {
+        return Integer.compare(orderByParentBeanFactory(defaultListableBeanFactory),
+            orderByParentBeanFactory(o.defaultListableBeanFactory));
     }
 }

@@ -18,6 +18,9 @@
  */
 package org.hotswap.agent.plugin.spring.boot.listener;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.files.PropertiesChangeEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
@@ -26,9 +29,11 @@ import org.hotswap.agent.plugin.spring.listener.SpringListener;
 import org.hotswap.agent.plugin.spring.reload.BeanChangeEvent;
 import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.spring.util.ClassUtils;
+import org.hotswap.agent.util.spring.util.ObjectUtils;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.ConfigurableApplicationContext;
 
 /**
  * PropertySourceChangeBootListener: refresh configuration properties when property source changed.
@@ -36,15 +41,37 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 public class PropertySourceChangeBootListener implements SpringListener<SpringEvent<?>> {
 
-    public static void register() {
-        SpringEventSource.INSTANCE.addListener(new PropertySourceChangeBootListener());
+    private static AgentLogger LOGGER = AgentLogger.getLogger(PropertySourceChangeBootListener.class);
+
+    private static Map<ConfigurableListableBeanFactory, PropertySourceChangeBootListener> instances = new HashMap<>(4);
+    private DefaultListableBeanFactory beanFactory;
+
+    public static void register(ConfigurableApplicationContext context) {
+        ConfigurableListableBeanFactory configurableListableBeanFactory = context.getBeanFactory();
+        if (!(configurableListableBeanFactory instanceof DefaultListableBeanFactory)) {
+            LOGGER.debug(
+                "beanFactory is not DefaultListableBeanFactory, skip register PropertySourceChangeBootListener, {}",
+                ObjectUtils.identityToString(configurableListableBeanFactory));
+            return;
+        }
+        if (instances.containsKey(configurableListableBeanFactory)) {
+            LOGGER.trace("PropertySourceChangeBootListener already registered, {}",
+                ObjectUtils.identityToString(configurableListableBeanFactory));
+            return;
+        }
+        LOGGER.debug("register PropertySourceChangeBootListener, {}",
+            ObjectUtils.identityToString(configurableListableBeanFactory));
+        SpringEventSource.INSTANCE.addListener(new PropertySourceChangeBootListener(
+            (DefaultListableBeanFactory)configurableListableBeanFactory));
     }
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(PropertySourceChangeBootListener.class);
+    public PropertySourceChangeBootListener(DefaultListableBeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
 
     @Override
     public DefaultListableBeanFactory beanFactory() {
-        return null;
+        return beanFactory;
     }
 
     @Override
@@ -54,7 +81,7 @@ public class PropertySourceChangeBootListener implements SpringListener<SpringEv
         }
     }
 
-    private void refreshConfigurationProperties(ConfigurableListableBeanFactory beanFactory) {
+    private void refreshConfigurationProperties(ConfigurableListableBeanFactory eventBeanFactory) {
         for (String singleton : beanFactory.getSingletonNames()) {
             Object bean = beanFactory.getSingleton(singleton);
             Class<?> beanClass = ClassUtils.getUserClass(bean.getClass());
@@ -63,7 +90,7 @@ public class PropertySourceChangeBootListener implements SpringListener<SpringEv
                 LOGGER.debug("refresh configuration properties: {}", beanClass);
                 String[] beanNames = beanFactory.getBeanNamesForType(beanClass);
                 if (beanNames != null && beanNames.length > 0) {
-                    SpringEventSource.INSTANCE.fireEvent(new BeanChangeEvent(beanNames, beanFactory));
+                    SpringEventSource.INSTANCE.fireEvent(new BeanChangeEvent(beanNames, eventBeanFactory));
                 }
             }
         }

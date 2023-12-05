@@ -20,6 +20,8 @@ package org.hotswap.agent.plugin.spring.listener;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.reload.SpringBeanReload;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +42,7 @@ public class SpringEventSource {
 
     public void fireEvent(SpringEvent event) {
         for (SpringListener listener : listeners) {
-            if (listener.isFilterBeanFactory() && listener.beanFactory() != null &&
-                    listener.beanFactory() != event.getBeanFactory()) {
+            if (needSkipNotify(listener, event)) {
                 continue;
             }
             try {
@@ -50,5 +51,50 @@ public class SpringEventSource {
                 LOGGER.warning("SpringListener onEvent error", e);
             }
         }
+    }
+
+    /**
+     * check it need skip notify:
+     * 1. if listener is not filterBeanFactory, return false
+     * 2. check it is the same beanFactory for listener and event
+     * @param listener
+     * @param event
+     * @return
+     */
+    private boolean needSkipNotify(SpringListener listener, SpringEvent event) {
+        if (!listener.isFilterBeanFactory()) {
+            return false;
+        }
+        if (listener.beanFactory() == null) {
+            return true;
+        }
+        if (listener.beanFactory() == event.getBeanFactory()) {
+            return false;
+        }
+        return !checkSameBeanFactory(listener.beanFactory(), event.getBeanFactory());
+    }
+
+    /**
+     * need check sourceBeanFactory and its parentBeanFactory
+     * @param beanFactory
+     * @param sourceBeanFactory
+     * @return
+     */
+    private boolean checkSameBeanFactory(ConfigurableListableBeanFactory beanFactory,
+        ConfigurableListableBeanFactory sourceBeanFactory) {
+        if (beanFactory == null) {
+            return false;
+        }
+        if (sourceBeanFactory == beanFactory) {
+            return true;
+        }
+        if (sourceBeanFactory.getParentBeanFactory() == null) {
+            return false;
+        }
+        if (sourceBeanFactory.getParentBeanFactory() instanceof ConfigurableListableBeanFactory) {
+            return checkSameBeanFactory(beanFactory, (ConfigurableListableBeanFactory)
+                sourceBeanFactory.getParentBeanFactory());
+        }
+        return false;
     }
 }
