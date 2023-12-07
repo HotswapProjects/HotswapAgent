@@ -24,8 +24,10 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.expr.ConstructorCall;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
+import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
 
 import java.security.ProtectionDomain;
@@ -53,11 +55,15 @@ public class PropertySourceLoaderTransformer {
                         && m.getMethodName().equals("load")) {
                         m.replace("{$_ = _reload.load();}");
                     } else {
-                        removeUnmodifiedMap(m);
+                        makeMapWritable(m);
                     }
                 }
+                @Override
+                public void edit(NewExpr e) {
+                    makePropertySourceWritable(e);
+                }
             });
-            ctMethod.insertAfter("{ loadList0($_ , _reload);}");
+            ctMethod.insertAfter("{ $ha$loadList0($_ , _reload);}");
         } else if (ctMethod.getParameterTypes().length == 3) {
             LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader with 3 parameters");
             ctMethod.addLocalVariable("_reload",
@@ -71,11 +77,15 @@ public class PropertySourceLoaderTransformer {
                         && m.getMethodName().equals("process")) {
                         m.replace("{$_ = _reload.load();}");
                     } else {
-                        removeUnmodifiedMap(m);
+                        makeMapWritable(m);
                     }
                 }
+                @Override
+                public void edit(NewExpr e) {
+                    makePropertySourceWritable(e);
+                }
             });
-            ctMethod.insertAfter("{ load0($_ , _reload); }");
+            ctMethod.insertAfter("{ $ha$load0($_ , _reload); }");
         }
 
         LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader success");
@@ -114,11 +124,16 @@ public class PropertySourceLoaderTransformer {
                     if (m.getMethodName().equals("loadProperties")) {
                         m.replace("{$_ = _reload.load();}");
                     } else {
-                        removeUnmodifiedMap(m);
+                        makeMapWritable(m);
                     }
                 }
+
+                @Override
+                public void edit(NewExpr e) {
+                    makePropertySourceWritable(e);
+                }
             });
-            ctMethod.insertAfter("{ loadList0($_ , _reload); }");
+            ctMethod.insertAfter("{ $ha$loadList0($_ , _reload); }");
         } else if (ctMethod.getParameterTypes().length == 3) {
             LOGGER.debug("Patch org.springframework.boot.env.PropertiesPropertySourceLoader with 3 parameters");
             ctMethod.addLocalVariable("_reload",
@@ -133,11 +148,15 @@ public class PropertySourceLoaderTransformer {
                         && m.getMethodName().equals("loadProperties")) {
                         m.replace("{$_ = (java.util.Properties)_reload.load();}");
                     } else {
-                        removeUnmodifiedMap(m);
+                        makeMapWritable(m);
                     }
                 }
+                @Override
+                public void edit(NewExpr e) {
+                    makePropertySourceWritable(e);
+                }
             });
-            ctMethod.insertAfter("{ load0($_ , _reload); }");
+            ctMethod.insertAfter("{ $ha$load0($_ , _reload); }");
         }
 
         LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader success");
@@ -158,34 +177,53 @@ public class PropertySourceLoaderTransformer {
     }
 
     private static void enhanceBasePropertySourceLoader(CtClass clazz) throws CannotCompileException {
-        clazz.addMethod(CtMethod.make("private void load0(org.springframework.core.env.PropertySource p, " +
+        clazz.addMethod(CtMethod.make("private void $ha$load0(org.springframework.core.env.PropertySource p, " +
             "org.hotswap.agent.plugin.spring.api.PropertySourceReloader r) throws java.io.IOException { " +
             "if (p instanceof org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource) { " +
             "((org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource) p).setReload(r); " +
             "} }", clazz));
-        clazz.addMethod(CtMethod.make("private void loadList0(java.util.List ps, " +
+        clazz.addMethod(CtMethod.make("private void $ha$loadList0(java.util.List ps, " +
             "org.hotswap.agent.plugin.spring.api.PropertySourceReloader r) throws java.io.IOException { " +
             "for (int i=0;i< ps.size();i++) { " +
             "Object pp = ps.get(i);" +
             " if (pp instanceof org.springframework.core.env.PropertySource) {" +
-            "load0((org.springframework.core.env.PropertySource)pp,r);" +
+            "$ha$load0((org.springframework.core.env.PropertySource)pp,r);" +
             "} } }", clazz));
     }
 
     /**
-     * UnmodifiedMap has some transient fields which cause problems, such as @see java.util.Collections.UnmodifiableMap#keySet():
-     *      public Set<K> keySet() {
-     *             if (keySet==null)
-     *                 keySet = unmodifiableSet(m.keySet());
-     *             return keySet;
-     *         }
+     * UnmodifiedMap has some transient fields which cause problems, such as @see
+     * java.util.Collections.UnmodifiableMap#keySet():
+     * public Set<K> keySet() {
+     * if (keySet==null)
+     * keySet = unmodifiableSet(m.keySet());
+     * return keySet;
+     * }
+     *
      * @param m
      * @throws CannotCompileException
      */
-    private static void removeUnmodifiedMap(MethodCall m) throws CannotCompileException {
+    private static void makeMapWritable(MethodCall m) throws CannotCompileException {
         if ("java.util.Collections".equals(m.getClassName()) &&
             "unmodifiableMap".equals(m.getMethodName())) {
             m.replace("{ $_ = $1; }");
+        }
+    }
+
+    /**
+     * rewrite
+     *
+     * @param e
+     */
+    private static void makePropertySourceWritable(NewExpr e) {
+        try {
+            if (e.getClassName().equals("org.springframework.boot.env.OriginTrackedMapPropertySource") &&
+                e.getConstructor().getParameterTypes().length == 3) {
+                LOGGER.trace("rewrite NewExpr: {}", e.getClassName());
+                e.replace("{ $_ = new org.springframework.boot.env.OriginTrackedMapPropertySource($1, $2); }");
+            }
+        } catch (Exception t) {
+            LOGGER.debug("edit NewExpr error", t);
         }
     }
 }
