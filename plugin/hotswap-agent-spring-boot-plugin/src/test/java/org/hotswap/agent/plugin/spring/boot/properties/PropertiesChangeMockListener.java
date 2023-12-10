@@ -31,7 +31,7 @@ public class PropertiesChangeMockListener implements SpringListener<SpringEvent<
     Map<String, String> oldValueContainer = new HashMap<>();
     Map<String, String> newValueContainer = new HashMap<>();
 
-    public boolean isFilterBeanFactory() {
+    public boolean shouldSkip(SpringEvent<?> event) {
         return false;
     }
 

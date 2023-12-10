@@ -39,11 +39,11 @@ import org.springframework.context.ConfigurableApplicationContext;
  * PropertySourceChangeBootListener: refresh configuration properties when property source changed.
  * (Not refresh directly but send a BeanChangeEvent to refresh ConfigurationProperties bean)
  */
-public class PropertySourceChangeBootListener implements SpringListener<SpringEvent<?>> {
+public class PropertySourceChangeListener implements SpringListener<SpringEvent<?>> {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(PropertySourceChangeBootListener.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(PropertySourceChangeListener.class);
 
-    private static Map<ConfigurableListableBeanFactory, PropertySourceChangeBootListener> instances = new HashMap<>(4);
+    private static Map<ConfigurableListableBeanFactory, PropertySourceChangeListener> instances = new HashMap<>(4);
     private DefaultListableBeanFactory beanFactory;
 
     public static void register(ConfigurableApplicationContext context) {
@@ -61,11 +61,14 @@ public class PropertySourceChangeBootListener implements SpringListener<SpringEv
         }
         LOGGER.debug("register PropertySourceChangeBootListener, {}",
             ObjectUtils.identityToString(configurableListableBeanFactory));
-        SpringEventSource.INSTANCE.addListener(new PropertySourceChangeBootListener(
-            (DefaultListableBeanFactory)configurableListableBeanFactory));
+        PropertySourceChangeListener propertySourceChangeListener = new PropertySourceChangeListener(
+            (DefaultListableBeanFactory)configurableListableBeanFactory);
+        // add instance to map and instance
+        instances.put(configurableListableBeanFactory,propertySourceChangeListener);
+        SpringEventSource.INSTANCE.addListener(propertySourceChangeListener);
     }
 
-    public PropertySourceChangeBootListener(DefaultListableBeanFactory beanFactory) {
+    public PropertySourceChangeListener(DefaultListableBeanFactory beanFactory) {
         this.beanFactory = beanFactory;
     }
 

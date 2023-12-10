@@ -78,8 +78,8 @@ public class SpringBootPlugin {
             constructor.insertBeforeBody(src.toString());
         }
 
-        CtMethod createApplicationContextMethod = clazz.getDeclaredMethod("createApplicationContext");
-        createApplicationContextMethod.insertAfter(
-            "{org.hotswap.agent.plugin.spring.boot.listener.PropertySourceChangeBootListener.register($_);}");
+        CtMethod method = clazz.getDeclaredMethod("createApplicationContext");
+        method.insertAfter(
+            "{org.hotswap.agent.plugin.spring.boot.listener.PropertySourceChangeListener.register($_);}");
     }
 }
