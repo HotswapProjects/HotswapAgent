@@ -37,23 +37,23 @@ public class PropertySourceLoaderTransformer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PropertySourceLoaderTransformer.class);
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.boot.env.YamlPropertySourceLoader")
-    public static void transformYamlPropertySourceLoader(CtClass clazz, ClassPool classPool, ClassLoader classLoader,
-        ProtectionDomain protectionDomain) throws NotFoundException, CannotCompileException {
+    public static void transformYamlPropertySourceLoader(CtClass clazz, ClassPool classPool) throws
+        NotFoundException, CannotCompileException {
         enhanceBasePropertySourceLoader(clazz);
 
         CtMethod ctMethod = clazz.getDeclaredMethod("load");
         if (ctMethod.getParameterTypes().length == 2) {
             LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader with 2 parameters");
-            ctMethod.addLocalVariable("_reload",
+            ctMethod.addLocalVariable(reloadVariableName(),
                 classPool.get("org.hotswap.agent.plugin.spring.boot.env.v2.YamlPropertySourceLoader"));
             ctMethod.insertBefore(
-                "{_reload = new org.hotswap.agent.plugin.spring.boot.env.v2.YamlPropertySourceLoader($1, $2);}");
+                "{" + reloadVariableName() + " = new org.hotswap.agent.plugin.spring.boot.env.v2.YamlPropertySourceLoader($1, $2);}");
             ctMethod.instrument(new ExprEditor() {
                 @Override
                 public void edit(MethodCall m) throws CannotCompileException {
                     if (m.getClassName().equals("org.springframework.boot.env.OriginTrackedYamlLoader")
                         && m.getMethodName().equals("load")) {
-                        m.replace("{$_ = _reload.load();}");
+                        m.replace("{$_ = " + reloadVariableName() + ".load();}");
                     } else {
                         makeMapWritable(m);
                     }
@@ -63,19 +63,19 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$loadList0($_ , _reload);}");
+            ctMethod.insertAfter("{ $ha$loadList0($_ , " + reloadVariableName() + ");}");
         } else if (ctMethod.getParameterTypes().length == 3) {
             LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader with 3 parameters");
-            ctMethod.addLocalVariable("_reload",
+            ctMethod.addLocalVariable(reloadVariableName(),
                 classPool.get("org.hotswap.agent.plugin.spring.boot.env.v1.YamlPropertySourceLoader"));
             ctMethod.insertBefore(
-                "{_reload = new org.hotswap.agent.plugin.spring.boot.env.v1.YamlPropertySourceLoader($1, $2, $3);}");
+                "{" + reloadVariableName() + " = new org.hotswap.agent.plugin.spring.boot.env.v1.YamlPropertySourceLoader($1, $2, $3);}");
             ctMethod.instrument(new ExprEditor() {
                 @Override
                 public void edit(MethodCall m) throws CannotCompileException {
                     if (m.getClassName().equals("org.springframework.boot.env.YamlPropertySourceLoader$Processor")
                         && m.getMethodName().equals("process")) {
-                        m.replace("{$_ = _reload.load();}");
+                        m.replace("{$_ = " + reloadVariableName() + ".load();}");
                     } else {
                         makeMapWritable(m);
                     }
@@ -85,16 +85,15 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$load0($_ , _reload); }");
+            ctMethod.insertAfter("{ $ha$load0($_ , " + reloadVariableName() + "); }");
         }
 
         LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader success");
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.boot.env.PropertiesPropertySourceLoader")
-    public static void transformPropertiesPropertySourceLoader(CtClass clazz, ClassPool classPool,
-        ClassLoader classLoader,
-        ProtectionDomain protectionDomain) throws NotFoundException, CannotCompileException {
+    public static void transformPropertiesPropertySourceLoader(CtClass clazz, ClassPool classPool)
+        throws NotFoundException, CannotCompileException {
         enhanceBasePropertySourceLoader(clazz);
 
         CtMethod ctMethod = clazz.getDeclaredMethod("load");
@@ -103,26 +102,26 @@ public class PropertySourceLoaderTransformer {
                 LOGGER.debug(
                     "Patch org.springframework.boot.env.PropertiesPropertySourceLoader with 2 parameters and lower "
                         + "version");
-                ctMethod.addLocalVariable("_reload", classPool.get(
+                ctMethod.addLocalVariable(reloadVariableName(), classPool.get(
                     "org.hotswap.agent.plugin.spring.boot.env.v2.LowVersionPropertiesPropertySourceLoader"));
                 ctMethod.insertBefore(
-                    "{_reload = new org.hotswap.agent.plugin.spring.boot.env.v2"
+                    "{" + reloadVariableName() + " = new org.hotswap.agent.plugin.spring.boot.env.v2"
                         + ".LowVersionPropertiesPropertySourceLoader($0, $1, $2);}");
             } else {
                 LOGGER.debug(
                     "Patch org.springframework.boot.env.PropertiesPropertySourceLoader with 2 parameters and not "
                         + "lower version");
-                ctMethod.addLocalVariable("_reload",
+                ctMethod.addLocalVariable(reloadVariableName(),
                     classPool.get("org.hotswap.agent.plugin.spring.boot.env.v2.PropertiesPropertySourceLoader"));
                 ctMethod.insertBefore(
-                    "{_reload = new org.hotswap.agent.plugin.spring.boot.env.v2.PropertiesPropertySourceLoader($0, "
+                    "{" + reloadVariableName() + " = new org.hotswap.agent.plugin.spring.boot.env.v2.PropertiesPropertySourceLoader($0, "
                         + "$1, $2);}");
             }
             ctMethod.instrument(new ExprEditor() {
                 @Override
                 public void edit(MethodCall m) throws CannotCompileException {
                     if (m.getMethodName().equals("loadProperties")) {
-                        m.replace("{$_ = _reload.load();}");
+                        m.replace("{$_ = " + reloadVariableName() + ".load();}");
                     } else {
                         makeMapWritable(m);
                     }
@@ -133,20 +132,20 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$loadList0($_ , _reload); }");
+            ctMethod.insertAfter("{ $ha$loadList0($_ , " + reloadVariableName() + "); }");
         } else if (ctMethod.getParameterTypes().length == 3) {
             LOGGER.debug("Patch org.springframework.boot.env.PropertiesPropertySourceLoader with 3 parameters");
-            ctMethod.addLocalVariable("_reload",
+            ctMethod.addLocalVariable(reloadVariableName(),
                 classPool.get("org.hotswap.agent.plugin.spring.boot.env.v1.PropertiesPropertySourceLoader"));
             ctMethod.insertBefore(
-                "{_reload = new org.hotswap.agent.plugin.spring.boot.env.v1.PropertiesPropertySourceLoader($1, $2, "
+                "{" + reloadVariableName() + " = new org.hotswap.agent.plugin.spring.boot.env.v1.PropertiesPropertySourceLoader($1, $2, "
                     + "$3);}");
             ctMethod.instrument(new ExprEditor() {
                 @Override
                 public void edit(MethodCall m) throws CannotCompileException {
                     if (m.getClassName().equals("org.springframework.core.io.support.PropertiesLoaderUtils")
                         && m.getMethodName().equals("loadProperties")) {
-                        m.replace("{$_ = (java.util.Properties)_reload.load();}");
+                        m.replace("{$_ = (java.util.Properties)" + reloadVariableName() + ".load();}");
                     } else {
                         makeMapWritable(m);
                     }
@@ -156,10 +155,14 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$load0($_ , _reload); }");
+            ctMethod.insertAfter("{ $ha$load0($_ , " + reloadVariableName() + "); }");
         }
 
         LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader success");
+    }
+
+    private static String reloadVariableName() {
+        return "$$ha$reload";
     }
 
     private static boolean isSpringBoot2LowerVersion(CtClass clazz, ClassPool classPool) {
