@@ -63,7 +63,7 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$loadList0($_ , " + reloadVariableName() + ");}");
+            ctMethod.insertAfter("{ $$ha$loadList0($_ , " + reloadVariableName() + ");}");
         } else if (ctMethod.getParameterTypes().length == 3) {
             LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader with 3 parameters");
             ctMethod.addLocalVariable(reloadVariableName(),
@@ -85,7 +85,7 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$load0($_ , " + reloadVariableName() + "); }");
+            ctMethod.insertAfter("{ $$ha$load0($_ , " + reloadVariableName() + "); }");
         }
 
         LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader success");
@@ -132,7 +132,7 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$loadList0($_ , " + reloadVariableName() + "); }");
+            ctMethod.insertAfter("{ $$ha$loadList0($_ , " + reloadVariableName() + "); }");
         } else if (ctMethod.getParameterTypes().length == 3) {
             LOGGER.debug("Patch org.springframework.boot.env.PropertiesPropertySourceLoader with 3 parameters");
             ctMethod.addLocalVariable(reloadVariableName(),
@@ -155,7 +155,7 @@ public class PropertySourceLoaderTransformer {
                     makePropertySourceWritable(e);
                 }
             });
-            ctMethod.insertAfter("{ $ha$load0($_ , " + reloadVariableName() + "); }");
+            ctMethod.insertAfter("{ $$ha$load0($_ , " + reloadVariableName() + "); }");
         }
 
         LOGGER.debug("Patch org.springframework.boot.env.YamlPropertySourceLoader success");
@@ -180,17 +180,17 @@ public class PropertySourceLoaderTransformer {
     }
 
     private static void enhanceBasePropertySourceLoader(CtClass clazz) throws CannotCompileException {
-        clazz.addMethod(CtMethod.make("private void $ha$load0(org.springframework.core.env.PropertySource p, " +
+        clazz.addMethod(CtMethod.make("private void $$ha$load0(org.springframework.core.env.PropertySource p, " +
             "org.hotswap.agent.plugin.spring.api.PropertySourceReloader r) throws java.io.IOException { " +
             "if (p instanceof org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource) { " +
             "((org.hotswap.agent.plugin.spring.transformers.api.ReloadablePropertySource) p).setReload(r); " +
             "} }", clazz));
-        clazz.addMethod(CtMethod.make("private void $ha$loadList0(java.util.List ps, " +
+        clazz.addMethod(CtMethod.make("private void $$ha$loadList0(java.util.List ps, " +
             "org.hotswap.agent.plugin.spring.api.PropertySourceReloader r) throws java.io.IOException { " +
             "for (int i=0;i< ps.size();i++) { " +
             "Object pp = ps.get(i);" +
-            " if (pp instanceof org.springframework.core.env.PropertySource) {" +
-            "$ha$load0((org.springframework.core.env.PropertySource)pp,r);" +
+            " if (pp instanceof org.springframework.core.env.PropertySource) { " +
+            "$$ha$load0((org.springframework.core.env.PropertySource)pp,r);" +
             "} } }", clazz));
     }
 
