@@ -25,20 +25,29 @@ import org.hotswap.agent.logging.AgentLogger;
 
 public class SpringEventSource {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringEventSource.class);
+    private final static AgentLogger LOGGER = AgentLogger.getLogger(SpringEventSource.class);
     public static final SpringEventSource INSTANCE = new SpringEventSource();
 
     private SpringEventSource() {
     }
 
-    private Set<SpringListener> listeners = new HashSet<>();
+    private final Set<SpringListener<SpringEvent<?>>> listeners = new HashSet<>();
 
-    public void addListener(SpringListener listener) {
-        listeners.add(listener);
+    public void addListener(SpringListener<SpringEvent<?>> listener) {
+        if (listener == null) {
+            return;
+        }
+        synchronized (listeners) {
+            if (listeners.contains(listener)) {
+                LOGGER.debug("SpringListener already registered, {}", listener);
+                return;
+            }
+            listeners.add(listener);
+        }
     }
 
-    public void fireEvent(SpringEvent event) {
-        for (SpringListener listener : listeners) {
+    public void fireEvent(SpringEvent<?> event) {
+        for (SpringListener<SpringEvent<?>> listener : listeners) {
             if (listener.shouldSkip(event)) {
                 continue;
             }

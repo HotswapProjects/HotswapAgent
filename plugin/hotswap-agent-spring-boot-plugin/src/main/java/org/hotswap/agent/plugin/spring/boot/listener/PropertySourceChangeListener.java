@@ -18,10 +18,7 @@
  */
 package org.hotswap.agent.plugin.spring.boot.listener;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.files.PropertiesChangeEvent;
@@ -43,10 +40,9 @@ import org.springframework.context.ConfigurableApplicationContext;
  */
 public class PropertySourceChangeListener implements SpringListener<SpringEvent<?>> {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(PropertySourceChangeListener.class);
+    private final static AgentLogger LOGGER = AgentLogger.getLogger(PropertySourceChangeListener.class);
 
-    private static final Set<ConfigurableListableBeanFactory> PROCESSED_BEAN_FACTORIES = new HashSet<>(4);
-    private DefaultListableBeanFactory beanFactory;
+    private final DefaultListableBeanFactory beanFactory;
 
     public static void register(ConfigurableApplicationContext context) {
         ConfigurableListableBeanFactory configurableListableBeanFactory = context.getBeanFactory();
@@ -56,20 +52,12 @@ public class PropertySourceChangeListener implements SpringListener<SpringEvent<
                 ObjectUtils.identityToString(configurableListableBeanFactory));
             return;
         }
-        synchronized (PROCESSED_BEAN_FACTORIES) {
-            if (PROCESSED_BEAN_FACTORIES.contains(configurableListableBeanFactory)) {
-                LOGGER.trace("PropertySourceChangeBootListener already registered, {}",
-                    ObjectUtils.identityToString(configurableListableBeanFactory));
-                return;
-            }
-            LOGGER.debug("register PropertySourceChangeBootListener, {}",
-                ObjectUtils.identityToString(configurableListableBeanFactory));
-            PropertySourceChangeListener propertySourceChangeListener = new PropertySourceChangeListener(
-                (DefaultListableBeanFactory)configurableListableBeanFactory);
-            // add instance to map and instance
-            PROCESSED_BEAN_FACTORIES.add(configurableListableBeanFactory);
-            SpringEventSource.INSTANCE.addListener(propertySourceChangeListener);
-        }
+        LOGGER.debug("register PropertySourceChangeBootListener, {}",
+            ObjectUtils.identityToString(configurableListableBeanFactory));
+        PropertySourceChangeListener propertySourceChangeListener = new PropertySourceChangeListener(
+            (DefaultListableBeanFactory)configurableListableBeanFactory);
+        // add instance to map and instance
+        SpringEventSource.INSTANCE.addListener(propertySourceChangeListener);
     }
 
     public PropertySourceChangeListener(DefaultListableBeanFactory beanFactory) {
@@ -101,5 +89,18 @@ public class PropertySourceChangeListener implements SpringListener<SpringEvent<
                 }
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {return true;}
+        if (!(o instanceof PropertySourceChangeListener)) {return false;}
+        PropertySourceChangeListener that = (PropertySourceChangeListener)o;
+        return Objects.equals(beanFactory, that.beanFactory);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(beanFactory);
     }
 }
