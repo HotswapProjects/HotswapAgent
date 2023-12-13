@@ -18,30 +18,37 @@
  */
 package org.hotswap.agent.plugin.spring.listener;
 
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.reload.SpringBeanReload;
+import java.util.HashSet;
+import java.util.Set;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.hotswap.agent.logging.AgentLogger;
 
 public class SpringEventSource {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringEventSource.class);
+    private final static AgentLogger LOGGER = AgentLogger.getLogger(SpringEventSource.class);
     public static final SpringEventSource INSTANCE = new SpringEventSource();
 
     private SpringEventSource() {
     }
 
-    private List<SpringListener> listeners = new ArrayList<SpringListener>();
+    private final Set<SpringListener<SpringEvent<?>>> listeners = new HashSet<>();
 
-    public void addListener(SpringListener listener) {
-        listeners.add(listener);
+    public void addListener(SpringListener<SpringEvent<?>> listener) {
+        if (listener == null) {
+            return;
+        }
+        synchronized (listeners) {
+            if (listeners.contains(listener)) {
+                LOGGER.debug("SpringListener already registered, {}", listener);
+                return;
+            }
+            listeners.add(listener);
+        }
     }
 
-    public void fireEvent(SpringEvent event) {
-        for (SpringListener listener : listeners) {
-            if (listener.isFilterBeanFactory() && listener.beanFactory() != null &&
-                    listener.beanFactory() != event.getBeanFactory()) {
+    public void fireEvent(SpringEvent<?> event) {
+        for (SpringListener<SpringEvent<?>> listener : listeners) {
+            if (listener.shouldSkip(event)) {
                 continue;
             }
             try {
