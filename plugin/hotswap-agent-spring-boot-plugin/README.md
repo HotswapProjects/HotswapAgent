@@ -1,5 +1,5 @@
-Spring plugin
-=============
+Spring Boot plugin
+==================
 
 Dynamic reloading of Spring Boot configuration files in real-time. Directly leverages Spring's environment and 
 context mechanisms to ensure seamless integration.
