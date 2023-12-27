@@ -19,7 +19,6 @@
 package org.hotswap.agent.plugin.spring.boot.env;
 
 import java.util.Properties;
-import java.util.function.Supplier;
 
 public class HotswapSpringProperties extends Properties implements HotswapSpringPropertiesReloader<Properties> {
 
@@ -35,7 +34,8 @@ public class HotswapSpringProperties extends Properties implements HotswapSpring
 
     @Override
     public void update(Properties newValue) {
-        if (newValue == null || newValue.size() == 0) {
+        if (newValue == null || newValue.isEmpty()) {
+            this.clear();
             return;
         }
         this.clear();
