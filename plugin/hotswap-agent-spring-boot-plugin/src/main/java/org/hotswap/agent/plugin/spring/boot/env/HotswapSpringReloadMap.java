@@ -19,10 +19,10 @@
 package org.hotswap.agent.plugin.spring.boot.env;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public class HotswapSpringReloadMap<K, V> implements Map<K, V>, HotswapSpringPropertiesReloader<Map<K, V>> {
     private Map<K, V> value;
@@ -95,9 +95,11 @@ public class HotswapSpringReloadMap<K, V> implements Map<K, V>, HotswapSpringPro
         return this.value.entrySet();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void update(Map<K, V> newValue) {
-        if (newValue == null || newValue.size() == 0) {
+        if (newValue == null || newValue.isEmpty()) {
+            this.value = (newValue == null ? Collections.EMPTY_MAP : newValue);
             return;
         }
         this.value = newValue;

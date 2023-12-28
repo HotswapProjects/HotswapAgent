@@ -23,6 +23,7 @@ import org.springframework.boot.env.PropertySourceLoader;
 import org.springframework.core.io.Resource;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +58,8 @@ public class ListPropertySourceReloader<T> implements HotswapSpringPropertiesRel
 
     @Override
     public void update(List<Map<String, T>> newValue) {
-        if (newValue == null || newValue.size() == 0) {
+        if (newValue == null || newValue.isEmpty()) {
+            hotswapMapList = (newValue == null ? Collections.emptyList() : newValue);
             return;
         }
         if (hotswapMapList == null) {
