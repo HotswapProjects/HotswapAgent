@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPos
 import org.springframework.beans.factory.annotation.InjectionMetadata;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.annotation.CommonAnnotationBeanPostProcessor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -37,7 +38,7 @@ import java.util.Map;
  * @author Jiri Bubnik
  */
 public class ResetBeanPostProcessorCaches {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ResetBeanPostProcessorCaches.class);
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(ResetBeanPostProcessorCaches.class);
 
     private static Class<?> getReflectionUtilsClassOrNull() {
         try {
@@ -66,18 +67,20 @@ public class ResetBeanPostProcessorCaches {
                 // spring 4.0.x, 4.1.x without clearCache method, clear manually
                 Object declaredMethodsCache = ReflectionHelper.getNoException(null, c, "declaredMethodsCache");
                 if (declaredMethodsCache != null) {
-                    ((Map) declaredMethodsCache).clear();
+                    ((Map<?, ?>) declaredMethodsCache).clear();
                 }
 
                 Object declaredFieldsCache1 = ReflectionHelper.getNoException(null, c, "declaredFieldsCache");
                 if (declaredFieldsCache1 != null) {
-                    ((Map) declaredFieldsCache1).clear();
+                    ((Map<?, ?>) declaredFieldsCache1).clear();
                 }
             }
         }
         for (BeanPostProcessor bpp : beanFactory.getBeanPostProcessors()) {
             if (bpp instanceof AutowiredAnnotationBeanPostProcessor) {
                 resetAutowiredAnnotationBeanPostProcessorCache((AutowiredAnnotationBeanPostProcessor) bpp);
+            } else if (bpp instanceof CommonAnnotationBeanPostProcessor) {
+                resetAnnotationBeanPostProcessorCache(bpp, CommonAnnotationBeanPostProcessor.class);
             } else if (bpp instanceof InitDestroyAnnotationBeanPostProcessor) {
                 resetInitDestroyAnnotationBeanPostProcessorCache((InitDestroyAnnotationBeanPostProcessor) bpp);
             }
@@ -108,18 +111,27 @@ public class ResetBeanPostProcessorCaches {
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clear AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache", e);
         }
+        resetAnnotationBeanPostProcessorCache(bpp, AutowiredAnnotationBeanPostProcessor.class);
+    }
 
+    /**
+     * deal injectionMetadataCache field of
+     * @see org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+     * @see org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+     */
+    private static void resetAnnotationBeanPostProcessorCache(Object object, Class<?> clazz) {
         try {
-            Field field = AutowiredAnnotationBeanPostProcessor.class.getDeclaredField("injectionMetadataCache");
+            Field field = clazz.getDeclaredField("injectionMetadataCache");
             field.setAccessible(true);
             //noinspection unchecked
-            Map<Class<?>, InjectionMetadata> injectionMetadataCache = (Map<Class<?>, InjectionMetadata>) field.get(bpp);
+            Map<Class<?>, InjectionMetadata> injectionMetadataCache = (Map<Class<?>, InjectionMetadata>) field.get(object);
             injectionMetadataCache.clear();
             // noinspection unchecked
-            LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.injectionMetadataCache");
+            LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor/CommonAnnotationBeanPostProcessor"
+                + " injectionMetadataCache");
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to clear AutowiredAnnotationBeanPostProcessor.injectionMetadataCache", e);
+            throw new IllegalStateException("Unable to clear "
+                + "AutowiredAnnotationBeanPostProcessor/CommonAnnotationBeanPostProcessor injectionMetadataCache", e);
         }
-
     }
 }
