@@ -245,17 +245,21 @@ public class PluginClassFileTransformer implements HaClassFileTransformer {
             }
 
         } catch (IllegalAccessException e) {
-            LOGGER.error("IllegalAccessException in transform method on plugin '{}' class '{}' of classLoader '{}'", e,
-                pluginAnnotation.getPluginClass(), className, classLoader.getClass().getName());
+            LOGGER.error("IllegalAccessException in transform method on plugin '{}' class '{}' of classLoader '{}'",
+                e, pluginAnnotation.getPluginClass(), className,
+                classLoader != null ? classLoader.getClass().getName() : "");
         } catch (InvocationTargetException e) {
             LOGGER.error("InvocationTargetException in transform method on plugin '{}' class '{}' of classLoader '{}'",
-                e, pluginAnnotation.getPluginClass(), className, classLoader.getClass().getName());
+                e, pluginAnnotation.getPluginClass(), className,
+                classLoader != null ? classLoader.getClass().getName() : "");
         } catch (CannotCompileException e) {
-            LOGGER.error("Cannot compile class after manipulation on plugin '{}' class '{}' of classLoader '{}'", e,
-                pluginAnnotation.getPluginClass(), className, classLoader.getClass().getName());
+            LOGGER.error("Cannot compile class after manipulation on plugin '{}' class '{}' of classLoader '{}'",
+                e, pluginAnnotation.getPluginClass(), className,
+                classLoader != null ? classLoader.getClass().getName() : "");
         } catch (IOException e) {
-            LOGGER.error("IOException in transform method on plugin '{}' class '{}' of classLoader '{}'", e,
-                pluginAnnotation.getPluginClass(), className, classLoader.getClass().getName());
+            LOGGER.error("IOException in transform method on plugin '{}' class '{}' of classLoader '{}'",
+                e, pluginAnnotation.getPluginClass(), className,
+                classLoader != null ? classLoader.getClass().getName() : "");
         }
 
         return result;

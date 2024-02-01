@@ -198,11 +198,11 @@ public class WatchEventCommand<T extends Annotation> extends MergeableCommand {
         } catch (IllegalAccessException e) {
             LOGGER.error("IllegalAccessException in method '{}' class '{}' classLoader '{}' on plugin '{}'",
                 e, pluginAnnotation.getMethod().getName(), ctClass != null ? ctClass.getName() : "",
-                classLoader.getClass().getName(), plugin.getClass().getName());
+                classLoader != null ? classLoader.getClass().getName() : "", plugin.getClass().getName());
         } catch (InvocationTargetException e) {
             LOGGER.error("InvocationTargetException in method '{}' class '{}' classLoader '{}' on plugin '{}'",
                 e, pluginAnnotation.getMethod().getName(), ctClass != null ? ctClass.getName() : "",
-                classLoader.getClass().getName(), plugin.getClass().getName());
+                classLoader != null ? classLoader.getClass().getName() : "", plugin.getClass().getName());
         }
     }
 
