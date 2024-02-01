@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.command.MergeableCommand;
+import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
@@ -195,11 +196,13 @@ public class WatchEventCommand<T extends Annotation> extends MergeableCommand {
                 ctClass.detach();
             }
         } catch (IllegalAccessException e) {
-            LOGGER.error("IllegalAccessException in method {} on plugin {}", e,
-                    pluginAnnotation.getMethod().getName(), plugin.getClass().getName());
+            LOGGER.error("IllegalAccessException in method '{}' class '{}' classLoader '{}' on plugin '{}'",
+                e, pluginAnnotation.getMethod().getName(), ctClass != null ? ctClass.getName() : "",
+                classLoader != null ? classLoader.getClass().getName() : "", plugin.getClass().getName());
         } catch (InvocationTargetException e) {
-            LOGGER.error("InvocationTargetException in method {} on plugin {}", e,
-                    pluginAnnotation.getMethod().getName(), plugin.getClass().getName());
+            LOGGER.error("InvocationTargetException in method '{}' class '{}' classLoader '{}' on plugin '{}'",
+                e, pluginAnnotation.getMethod().getName(), ctClass != null ? ctClass.getName() : "",
+                classLoader != null ? classLoader.getClass().getName() : "", plugin.getClass().getName());
         }
     }
 
