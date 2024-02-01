@@ -19,6 +19,7 @@
 package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.transformers.api.BeanFactoryLifecycle;
 import org.hotswap.agent.plugin.spring.transformers.api.ValueResolverSupport;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -57,21 +58,30 @@ public class BeanFactoryProcessor {
      * @param beanName
      */
     public static void postProcessDestroySingleton(DefaultSingletonBeanRegistry beanFactory, String beanName) {
-        LOGGER.info("destroy bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+        // check if reload , then log
+        if (beanFactory instanceof ConfigurableListableBeanFactory &&
+            BeanFactoryAssistant.getBeanFactoryAssistant((ConfigurableListableBeanFactory)beanFactory).isReload()) {
+            LOGGER.info("destroy bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+        }
         if (beanFactory instanceof BeanFactoryLifecycle) {
-            ((BeanFactoryLifecycle) beanFactory).hotswapAgent$destroyBean(beanName);
+            ((BeanFactoryLifecycle)beanFactory).hotswapAgent$destroyBean(beanName);
         }
     }
 
     /**
      * invoked by @see org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer
+     *
      * @param beanFactory
      * @param beanName
      */
     public static void postProcessCreateBean(AbstractAutowireCapableBeanFactory beanFactory, String beanName,
-                                             RootBeanDefinition mbd) {
-        if (mbd.isSingleton()) {
-            LOGGER.info("create new singleton bean '{}' from '{}'", beanName, ObjectUtils.identityToString(beanFactory));
+        RootBeanDefinition mbd) {
+        // check if reload , then log
+        if (beanFactory instanceof ConfigurableListableBeanFactory
+            && BeanFactoryAssistant.getBeanFactoryAssistant((ConfigurableListableBeanFactory)beanFactory).isReload()
+            && mbd.isSingleton()) {
+            LOGGER.info("create new singleton bean '{}' from '{}'", beanName,
+                ObjectUtils.identityToString(beanFactory));
         }
     }
 
