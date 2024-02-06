@@ -51,6 +51,7 @@ import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
 import org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ClassPathBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ConfigurationClassPostProcessorTransformer;
+import org.hotswap.agent.plugin.spring.transformers.InitDestroyAnnotationBeanPostProcessorTransformer;
 import org.hotswap.agent.plugin.spring.transformers.PlaceholderConfigurerSupportTransformer;
 import org.hotswap.agent.plugin.spring.transformers.PostProcessorRegistrationDelegateTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ProxyReplacerTransformer;
@@ -76,7 +77,8 @@ import org.hotswap.agent.watch.Watcher;
                 PlaceholderConfigurerSupportTransformer.class,
                 XmlBeanDefinitionScannerTransformer.class,
                 PostProcessorRegistrationDelegateTransformer.class,
-                BeanFactoryTransformer.class})
+                BeanFactoryTransformer.class,
+                InitDestroyAnnotationBeanPostProcessorTransformer.class})
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
