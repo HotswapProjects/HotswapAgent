@@ -19,8 +19,8 @@ function test {
     mvn clean install -DskipTests
 
     # run tests for different versions
-#    cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..
-    cd plugin/hotswap-agent-spring-boot-plugin; ./run-tests.sh; cd ../..
+    cd plugin/hotswap-agent-spring-plugin; ./run-tests.sh; cd ../..
+#    cd plugin/hotswap-agent-spring-boot-plugin; ./run-tests.sh; cd ../..
 #    cd plugin/hotswap-agent-hibernate-plugin; ./run-tests.sh; cd ../..
 #    cd plugin/hotswap-agent-hibernate3-plugin; ./run-tests.sh; cd ../..
 #    cd plugin/hotswap-agent-weld-plugin; ./run-tests.sh; cd ../..
@@ -30,4 +30,4 @@ function test {
 }
 
 #test "c:\Program Files\Java\jdk1.7.0_45"
-test "/Library/Java/JavaVirtualMachines/dcevm-11.0.15+1/Contents/Home"
+test "/Users/cvictory/Library/Java/JavaVirtualMachines/fastboot-11-3/Contents/Home"
