@@ -1,19 +1,18 @@
 package org.hotswap.agent.plugin.spring;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.Assert;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+
+import static org.junit.Assert.assertTrue;
 
 public class ClassSwappingRule implements TestRule {
 

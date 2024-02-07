@@ -20,6 +20,8 @@ package org.hotswap.agent.plugin.spring.reload;
 
 import org.hotswap.agent.plugin.spring.transformers.api.BeanFactoryLifecycle;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,8 +45,28 @@ public class BeanFactoryAssistant {
         beanFactoryAssistants.put(beanFactory, this);
     }
 
+    public static boolean existReload() {
+        for (BeanFactoryAssistant assistant : beanFactoryAssistants.values()) {
+            if (assistant.isReload) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static BeanFactoryAssistant getBeanFactoryAssistant(ConfigurableListableBeanFactory beanFactory) {
         return beanFactoryAssistants.get(beanFactory);
+    }
+
+    public static BeanFactoryAssistant getBeanFactoryAssistant(DefaultListableBeanFactory beanFactory) {
+        return beanFactoryAssistants.get(beanFactory);
+    }
+
+    public static BeanFactoryAssistant getBeanFactoryAssistant(AbstractAutowireCapableBeanFactory beanFactory) {
+        if (beanFactory instanceof ConfigurableListableBeanFactory) {
+            return getBeanFactoryAssistant((ConfigurableListableBeanFactory) beanFactory);
+        }
+        return null;
     }
 
     public void increaseReloadTimes() {
