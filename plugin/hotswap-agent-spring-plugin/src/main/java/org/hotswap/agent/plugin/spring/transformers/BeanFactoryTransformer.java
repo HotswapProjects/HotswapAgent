@@ -77,20 +77,16 @@ public class BeanFactoryTransformer {
         CtMethod invokeCustomInitMethod = clazz.getDeclaredMethod("invokeCustomInitMethod",
             new CtClass[] {classPool.get(String.class.getName()), classPool.get("java.lang.Object"),
                 classPool.get("org.springframework.beans.factory.support.RootBeanDefinition")});
-        invokeCustomInitMethod.addCatch(InitMethodEnhance.catchException("$2", "$$ha$LOGGER", "$e", false),
+        invokeCustomInitMethod.addCatch(
+            InitMethodEnhance.catchException("$2", "$$ha$LOGGER", "$e", "invokeCustomInitMethod", false),
             classPool.get("java.lang.Throwable"));
 
         // try catch for afterPropertiesSet
         CtMethod invokeInitMethod = clazz.getDeclaredMethod("invokeInitMethods",
             new CtClass[] {classPool.get(String.class.getName()), classPool.get("java.lang.Object"),
                 classPool.get("org.springframework.beans.factory.support.RootBeanDefinition")});
-        invokeInitMethod.instrument(new ExprEditor() {
-            public void edit(MethodCall m) throws CannotCompileException {
-                if ("afterPropertiesSet".equals(m.getMethodName())) {
-                    m.replace("try { $_ = $proceed($$); } catch (Throwable t)  " +
-                        InitMethodEnhance.catchException("$2", "$$ha$LOGGER", "t", false) );
-                }
-            }
-        });
+        invokeInitMethod.addCatch(
+            InitMethodEnhance.catchException("$2", "$$ha$LOGGER", "$e", "invokeInitMethods", false),
+            classPool.get("java.lang.Throwable"));
     }
 }

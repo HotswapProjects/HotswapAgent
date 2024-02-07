@@ -26,8 +26,20 @@ public class InitDestroyAnnotationBeanPostProcessorTransformer {
                 + ".InitDestroyAnnotationBeanPostProcessor.class);",
             clazz));
         CtMethod method = clazz.getDeclaredMethod("postProcessBeforeInitialization",
-            new CtClass[] {classPool.get("java.lang.Object"), classPool.get("java.lang.Object")});
-        method.addCatch(InitMethodEnhance.catchException("$1", "$$ha$LOGGER", "$e", true),
-            classPool.get("java.lang.Throwable"));
+            new CtClass[] {classPool.get("java.lang.Object"), classPool.get("java.lang.String")});
+        String code = "{"
+            + "if (!org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant.existReload()) {"
+            + " throw $e ; }"
+            + "else {"
+            + "if ($$ha$LOGGER.isDebugEnabled()) {"
+            + "$$ha$LOGGER.debug(\"Failed to invoke init method of {} from @PostConstructor: {}\", $e, new java.lang.Object[]{"
+            + "$1.getClass().getName(),$e.getMessage()});"
+            + "} else {"
+            + "$$ha$LOGGER.warning(\"Failed to invoke init method of {} from @PostConstructor: {}\", new java.lang.Object[]{"
+            + "$1.getClass().getName(),$e.getMessage()});"
+            + "}"
+            + "return $1;"
+            + "}}";
+        method.addCatch(code, classPool.get("org.springframework.beans.factory.BeanCreationException"));
     }
 }
