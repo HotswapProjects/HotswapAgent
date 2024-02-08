@@ -247,12 +247,12 @@ public class HotswapTransformer implements ClassFileTransformer {
         // ensure classloader initialized
        if (!ensureClassLoaderInitialized(classLoader, protectionDomain)) {
            // when classLoader is in excluded list, skip the transform
-           LOGGER.debug("Skipping classloader '{}' transform", classLoader);
+           LOGGER.trace("Skipping className '{}' classloader '{}' transform", className, classLoader);
            return bytes;
        }
 
         if(toApply.isEmpty() && pluginTransformers.isEmpty()) {
-            LOGGER.trace("No transformers defing for {} ", className);
+            LOGGER.trace("No transformers define for {} ", className);
             return bytes;
         }
 
