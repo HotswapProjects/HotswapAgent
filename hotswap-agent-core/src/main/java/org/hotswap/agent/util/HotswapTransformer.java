@@ -245,7 +245,11 @@ public class HotswapTransformer implements ClassFileTransformer {
         }
 
         // ensure classloader initialized
-       ensureClassLoaderInitialized(classLoader, protectionDomain);
+       if (!ensureClassLoaderInitialized(classLoader, protectionDomain)) {
+           // when classLoader is in excluded list, skip the transform
+           LOGGER.debug("Skipping classloader '{}' transform", classLoader);
+           return bytes;
+       }
 
         if(toApply.isEmpty() && pluginTransformers.isEmpty()) {
             LOGGER.trace("No transformers defing for {} ", className);
@@ -313,18 +317,21 @@ public class HotswapTransformer implements ClassFileTransformer {
      * @param classLoader the classloader to which this transformation is associated
      * @param protectionDomain associated protection domain (if any)
      */
-    protected void ensureClassLoaderInitialized(final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
+    protected boolean ensureClassLoaderInitialized(final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
         if (!seenClassLoaders.containsKey(classLoader)) {
             seenClassLoaders.put(classLoader, null);
 
             if (classLoader == null) {
                 // directly init null (bootstrap) classloader
                 PluginManager.getInstance().initClassLoader(null, protectionDomain);
+                return true;
             } else {
                 // ensure the classloader should not be excluded
                 if (shouldScheduleClassLoader(classLoader)) {
                     PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
+                    return true;
                 }
+                return false;
             }
         }
     }
