@@ -75,7 +75,7 @@ public class HotswapTransformer implements ClassFileTransformer {
     // keep track about which classloader requested which transformer
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<>();
 
-    protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<>();
+    protected Map<ClassLoader, Boolean> seenClassLoaders = new WeakHashMap<>();
     private List<Pattern> includedClassLoaderPatterns;
     private List<Pattern> excludedClassLoaderPatterns;
     public List<Pattern> getIncludedClassLoaderPatterns() {
@@ -319,21 +319,22 @@ public class HotswapTransformer implements ClassFileTransformer {
      */
     protected boolean ensureClassLoaderInitialized(final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
         if (!seenClassLoaders.containsKey(classLoader)) {
-            seenClassLoaders.put(classLoader, null);
 
             if (classLoader == null) {
                 // directly init null (bootstrap) classloader
                 PluginManager.getInstance().initClassLoader(null, protectionDomain);
-                return true;
             } else {
                 // ensure the classloader should not be excluded
                 if (shouldScheduleClassLoader(classLoader)) {
                     PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
-                    return true;
+                } else {
+                    seenClassLoaders.put(classLoader, false);
+                    return false;
                 }
-                return false;
             }
+            seenClassLoaders.put(classLoader, true);
         }
+        return seenClassLoaders.get(classLoader) != null && seenClassLoaders.get(classLoader);
     }
 
     private boolean shouldScheduleClassLoader(final ClassLoader classLoader) {
