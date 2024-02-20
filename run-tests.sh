@@ -30,4 +30,4 @@ function test {
 }
 
 #test "c:\Program Files\Java\jdk1.7.0_45"
-test "/Library/Java/JavaVirtualMachines/dcevm-11.0.15+1/Contents/Home"
+test "/Users/cvictory/Library/Java/JavaVirtualMachines/fastboot-11-3/Contents/Home"
