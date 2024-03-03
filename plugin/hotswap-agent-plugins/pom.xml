@@ -48,6 +48,12 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-spring-boot-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-jersey1-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
