@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2023 the HotswapAgent authors.
+ * Copyright 2013-2024 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *

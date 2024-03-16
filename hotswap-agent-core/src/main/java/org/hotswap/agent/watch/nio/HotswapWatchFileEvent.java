@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2023 the HotswapAgent authors.
+ * Copyright 2013-2024 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -25,7 +25,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import java.net.URI;
 import java.nio.file.Files;
 /*
- * Copyright 2013-2023 the HotswapAgent authors.
+ * Copyright 2013-2024 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
