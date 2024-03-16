@@ -40,6 +40,7 @@ that approach can be used even in a closed environment like Docker.
 * For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases)
 
 2.HotswapAgent modes
+
 Starting with dcevm-11.0.9, the HotswapAgent is disabled by default. Support for HotswapAgent can now be enabled by JVM options 
 in three different modes:
 - `XX:HotswapAgent=fatjar` activates the internal fatjar HotswapAgent.
