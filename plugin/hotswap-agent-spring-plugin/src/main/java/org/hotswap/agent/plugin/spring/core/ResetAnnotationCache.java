@@ -7,6 +7,9 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import java.lang.reflect.Method;
 import java.util.Map;
 
+/**
+ * This class provides a method to reset the Spring annotation scanner cache.
+ */
 public class ResetAnnotationCache {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ResetAnnotationCache.class);
