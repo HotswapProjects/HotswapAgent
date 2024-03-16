@@ -26,22 +26,39 @@ This is an overview page, please visit [hotswapagent.org](http://hotswapagent.or
 
 Java unlimited runtime class and resource redefinition.
 
-Originally, the main purpose of this project was to avoid the infamous **change code**->**restart and wait...**->**check development** lifecycle. Lately, this schema evolved into a new paradigm in the Java world, based on the development of software in running application, that approach can be used even in a closed environment like Docker.
+Originally, the main purpose of this project was to avoid the infamous **change code** -> **restart and wait...** -> **check development** lifecycle. 
+Lately, this schema evolved into a new paradigm in the Java world, based on the development of software in running application,
+that approach can be used even in a closed environment like Docker.
 
 ### Easy to start
 1.Download and install:
 
-* For Java17: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17** does not include a built-in Hotswap Agent, copy `hotswap-agent.jar` to the `lib/hotswap` folder. The latest Hotswap Agent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases).  When using the agent, it's important to note that the file name in `lib/hotswap` folder should not contain the version name, and should instead use the plain `hotswap-agent.jar` filename.
+* For Java17/21: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17,21** does not include a built-in Hotswap Agent, 
+  copy `hotswap-agent.jar` to the `lib/hotswap` folder. The latest Hotswap Agent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases).  When using the agent, it's important 
+  to note that the file name in `lib/hotswap` folder should not contain the version name, and should instead use the plain `hotswap-agent.jar` filename.
 * For Java11: [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
 * For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases)
 
-2.Launching:
+2.HotswapAgent modes
+Starting with dcevm-11.0.9, the HotswapAgent is disabled by default. Support for HotswapAgent can now be enabled by JVM options 
+in three different modes:
+- `XX:HotswapAgent=fatjar` activates the internal fatjar HotswapAgent.
+- `XX:HotswapAgent=core` activates the internal core HotswapAgent.
+- `XX:HotswapAgent=external` configures JVM support for HotswapAgent and defers the settings of an external HotswapAgent to the user. 
+  The user must supply `hotswap-agent.jar` using `-javaagent:<path>/hotswap-agent.jar`.
 
-* Java17: launch your application with the options `-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=fatjar` to turn on advanced hotswap (dcevm) and use Hotswap Agent fatjar release.
+The `HotswapAgent=core` mode operates without plugins, except for core JVM plugins. This mode is faster because it requires 
+fewer scanning tasks and less class copying. Additional plugins must be configured as Maven dependencies in the pom.xml file. In contrast, 
+the `HotswapAgent=fatjar` mode includes all plugins from the start, which slightly slows down the application startup.
+
+3.Launching:
+
+* Java17/21: launch your application with the options `-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=fatjar` to turn 
+  on advanced hotswap (dcevm) and use Hotswap Agent fatjar release. As an alternative `core` or `external` modes can be used insted of `fatjar`.
 * Java11: launch your application with the options `-XX:HotswapAgent=fatjar` to use Hotswap Agent fatjar release.
 * Java8: launch your application with the options `-XXaltjvm=dcevm -javaagent:hotswap-agent.jar` to get a basic setup. Optionally you can add `hotswap-agent.properties` to your application to configure plugins and agent's behavior.
 
-3. Run your application:
+3.Run your application:
 
 Start the application in debug mode, check that the agent and plugins are initialized correctly:
 
@@ -50,7 +67,7 @@ Start the application in debug mode, check that the agent and plugins are initia
         ...
         HOTSWAP AGENT: 9:49:38.700 INFO (org.hotswap.agent.plugin.spring.SpringPlugin) - Spring plugin initialized - Spring core version '3.2.3.RELEASE'
 
-4. Check redefinition
+4.Check redefinition
 
 Save a changed resource and/or use the HotSwap feature of your IDE to reload changes
 
@@ -73,7 +90,7 @@ example/integration test. There is always a need for documentation improvement :
     * or set autoHotswap property `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar=autoHotswap=true` to reload
     changed classes after compilation. This setup allows even reload on a production system without a restart.
 * Automatic configuration - all local classes and resources, known to the running Java application, are automatically
-  discovered and watched for the reload (all files on the local filesystem, not inside the any JAR file).
+  discovered and watched for the reload (all files on the local filesystem, not inside any JAR file).
 * Extra classpath - Need change a runtime class inside dependent JAR? Use extraClasspath property to add any directory
 as a classpath to watch for class files.
 * Reload resource after a change - resources from the webapp directory are usually reloaded by the application server. But what about
@@ -139,7 +156,7 @@ How does it work?
 Hotswap agent does the work of reloading resources and framework configuration (Spring, Hibernate, ...),
 but it depends on the standard Java hotswap mechanism to reload classes. Standard Java hotswap allows
 only method body change, which makes it practically unusable. DCEVM is a JVM (Hotspot) patch that allows almost any
-structural class change on hotswap (with an exception of a hierarchy change). Although hotswap agent works
+structural class change on hotswap (with an exception to a hierarchy change). Although hotswap agent works
 even with standard java, we recommend using DCEVM (and all tutorials use DCEVM as target JVM).
 
 ### Hotswap Agent
@@ -149,14 +166,14 @@ for class annotated with @Plugin annotation, injects agent services, and registe
 modification is provided by javaasist library.
 
 ### Plugins
-Plugins administered by Hotswap Agent are usually focused on a specific framework. For example Spring plugin
+Plugins administered by Hotswap Agent are usually focused on a specific framework. For example, Spring plugin
 uses HA services to:
 
 * Modify root Spring classes to get Spring contexts and registered scan path
 * Watch for any resource change on a scan path
 * Watch for a hotswap of a class file within a scan path package
 * Reload bean definition after a change
-* ... and many other
+* ... and many others
 
 #### Java frameworks plugins:
 
@@ -167,12 +184,12 @@ uses HA services to:
 * [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3x,4x,5x) - Reload Hibernate configuration after entity create/change.
 * [iBatis](plugin/hotswap-agent-ibatis-plugin/README.md) - iBatis configuration reload.
 * [IDEA](plugin/hotswap-agent-idea-plugin/README.md) - support for IntelliJ IDEA development in IDEA
-* [Jackson](plugin/hotswap-agent-jackson-plugin/README.md) - clears jackson internal caches when class redefined..
+* [Jackson](plugin/hotswap-agent-jackson-plugin/README.md) - clears jackson internal caches when class redefined.
 * [Jersey1](plugin/hotswap-agent-jersey1-plugin/README.md) - reload Jersey1 container after root resource or provider class definition or redefinition.
 * [Jersey2](plugin/hotswap-agent-jersey2-plugin/README.md) - reload Jersey2 container after root resource or provider class definition or redefinition.
 * [Logback](plugin/hotswap-agent-logback-plugin/README.md) - Logback configuration reload.
 * [Log4j2](plugin/hotswap-agent-log4j2-plugin/README.md) - Log4j2 configuration reload.
-* [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.1,2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
+* [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.1,2.2) - support for application resource bundle changes (properties file). Support for ViewScoped beans reinjection/reloading.
 * [MyBatis](plugin/hotswap-agent-mybatis-plugin/README.md) (5.3) - reload configuration after mapper file changes
 * [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
 * [OmniFaces](plugin/hotswap-agent-owb-plugin/README.md) - support for ViewScoped beans reinjection/reloading.
@@ -181,7 +198,7 @@ uses HA services to:
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
 * [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3.2.x+, 4.x, 5.x) - Reload Spring configuration after class definition/change.
 * [Spring Boot](plugin/hotswap-agent-spring-boot-plugin/README.md) (1.5.x+, 2.0.x) - Dynamic reloading of Spring Boot configuration files in real-time.
-* [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (23.x, 24.x) - Update routes, template models and in practice anything on the fly.
+* [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (23.x, 24.x) - Update routes, template models and in practice, anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
 * [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2,2.3,3.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [Wicket](plugin/hotswap-agent-wicket-plugin/README.md) - clear wicket caches if property files are changed
@@ -222,7 +239,7 @@ How to write a plugin
 =====================
 You can write plugin directly as a part of your application. Set `pluginPackages=your.plugin.package` inside
 your `hotswap-agent.properties` configuration to discover `@Plugin` annotated classes. You will also need
-agent JAR dependency to compile, but be careful NOT to add the JAR to your application, it must be loaded only
+agent JAR dependency to compile, but be careful NOT to add the JAR to your application; it must be loaded only
 as a javaagent. Maven dependency:
 
         <dependency>
@@ -240,7 +257,7 @@ See [ExamplePlugin](https://github.com/HotswapProjects/HotswapAgentExamples/blob
 
 Creating Release
 ================
-Launch `run-tests.sh` script in the main directory. Currently, you have to setup JAVA_HOME location directory manually.
+Launch `run-tests.sh` script in the main directory. Currently, you have to set up JAVA_HOME location directory manually.
 At least Java 11 with DCEVM should be checked before a release. All automatic tests are set to fail the whole script in case of any single test failure.
 
 Go to the directory representing repository root. In case DCEVM is named `dcevm`
@@ -275,5 +292,5 @@ DCEVM:
 * Thomas Würthinger - initial implementation.
 * Kerstin Breitender - contributor.
 * Christoph Wimberger - contributor.
-* Vladimir Dvorak - java9,java11 migration, contributor
+* Vladimir Dvorak - java9,java11,jbr17,jbr21 migration, contributor
 * Jiri Bubnik - java9,java11 migration
