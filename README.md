@@ -33,7 +33,7 @@ that approach can be used even in a closed environment like Docker.
 ### Easy to start
 1.Download and install:
 
-* For Java17/21: [latest JBR17](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17,21** does not include a built-in Hotswap Agent, 
+* For Java17/21: [latest JBR17,21](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17,21** does not include a built-in Hotswap Agent, 
   copy `hotswap-agent.jar` to the `lib/hotswap` folder. The latest Hotswap Agent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases).  When using the agent, it's important 
   to note that the file name in `lib/hotswap` folder should not contain the version name, and should instead use the plain `hotswap-agent.jar` filename.
 * For Java11: [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
