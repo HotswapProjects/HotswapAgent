@@ -292,4 +292,13 @@ public class SpringPlugin {
 
         LOGGER.debug("org.springframework.aop.framework.CglibAopProxy - cglib Enhancer cache disabled");
     }
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.web.servlet.DispatcherServlet")
+    public static void registryHandlerMappings(ClassLoader appClassLoader, CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod method = ctClass.getDeclaredMethod("initHandlerMappings", new CtClass[]{
+                classPool.get("org.springframework.context.ApplicationContext")
+        });
+        method.insertAfter("org.hotswap.agent.plugin.spring.core.ResetRequestMappingCaches.setHandlerMappings(this.handlerMappings);");
+        LOGGER.debug("registry servlet handler mappings");
+    }
 }
