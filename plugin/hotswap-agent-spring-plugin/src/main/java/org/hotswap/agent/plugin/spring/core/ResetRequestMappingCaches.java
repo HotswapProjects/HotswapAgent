@@ -66,7 +66,7 @@ public class ResetRequestMappingCaches {
         ResetRequestMappingCaches.newBeanNames = newBeanNames;
         ResetRequestMappingCaches.beanFactory = beanFactory;
 
-        // 判断是否是 SpringMVC Controller bean 变更
+        // Determine whether it is a spring mvc controller bean change
         if (!needReloadSpringMVC()) {
             LOGGER.trace("Spring: spring mvc no changes");
             return;
@@ -78,9 +78,9 @@ public class ResetRequestMappingCaches {
         }
 
         try {
-            // 处理 Servlet 的映射
+            // Handle Servlet mapping
             processServletMappings(abstractHandlerMethodMapping);
-            // 处理 Spring 的映射
+            // Handle Spring mapping
             processSpringMappings(abstractHandlerMethodMapping, beanFactory);
         } catch (Exception e) {
             LOGGER.error("Failed to clear HandlerMappings", e);
@@ -160,11 +160,11 @@ public class ResetRequestMappingCaches {
                 HandlerMethod handlerMethod = (HandlerMethod) unmodifiableHandlerMethods.get(key);
                 if (ResetRequestMappingCaches.beansToProcess.contains(handlerMethod.getBean().toString())) {
                     LOGGER.trace("Unregistering handler method {}", key);
-                    // 卸载mapping
+                    // Uninstall mapping
                     u.invoke(handlerMapping, key);
                 }
             }
-            // 手动注册mapping
+            // Register mapping manually
             registerHandlerBeans(ResetRequestMappingCaches.beansToProcess, abstractHandlerMethodMapping, handlerMapping);
             registerHandlerBeans(ResetRequestMappingCaches.newBeanNames, abstractHandlerMethodMapping, handlerMapping);
         }
@@ -189,17 +189,17 @@ public class ResetRequestMappingCaches {
     }
 
     private static boolean isMvcHandler(Class<?> beanClass) {
-        // 判断类上是否有@Controller注解或其衍生注解
+        // Determine whether there is @Controller annotation or its derived annotation on the class
         if (beanClass.isAnnotationPresent(Controller.class) || beanClass.isAnnotationPresent(RestController.class)) {
             return true;
         }
 
-        // 判断类是否实现了Spring MVC中的控制器接口
+        // Determine whether the class implements the controller interface in Spring MVC
         if (Controller.class.isAssignableFrom(beanClass)) {
             return true;
         }
 
-        // 判断方法是否使用了Spring MVC中的相关注解
+        // Determine whether the method uses relevant annotations in Spring MVC
         for (Method method : beanClass.getDeclaredMethods()) {
             if (method.isAnnotationPresent(RequestMapping.class) ||
                     method.isAnnotationPresent(GetMapping.class) ||
@@ -215,7 +215,7 @@ public class ResetRequestMappingCaches {
     }
 
     /**
-     * DispatcherServlet实例化注册HandlerMapping
+     * DispatcherServlet instantiation registration HandlerMapping
      *
      * @param handlerMappings
      */
