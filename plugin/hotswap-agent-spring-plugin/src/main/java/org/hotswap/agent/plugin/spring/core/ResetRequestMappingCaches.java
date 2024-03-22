@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2024 the HotswapAgent authors.
+ * Copyright 2013-2023 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -20,15 +20,20 @@ package org.hotswap.agent.plugin.spring.core;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.spring.util.CollectionUtils;
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -40,6 +45,9 @@ public class ResetRequestMappingCaches {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(ResetRequestMappingCaches.class);
 
     public static List<HandlerMapping> handlerMappings;
+    public static Set<String> beansToProcess;
+    public static Set<String> newBeanNames;
+    public static DefaultListableBeanFactory beanFactory;
 
     private static Class<?> getHandlerMethodMappingClassOrNull() {
         try {
@@ -51,21 +59,50 @@ public class ResetRequestMappingCaches {
         }
     }
 
-    public static void reset(DefaultListableBeanFactory beanFactory) {
-        Class<?> c = getHandlerMethodMappingClassOrNull();
-        if (c == null) {
+    public static void reset(DefaultListableBeanFactory beanFactory,
+                             Set<String> beansToProcess,
+                             Set<String> newBeanNames) {
+        ResetRequestMappingCaches.beansToProcess = beansToProcess;
+        ResetRequestMappingCaches.newBeanNames = newBeanNames;
+        ResetRequestMappingCaches.beanFactory = beanFactory;
+
+        // 判断是否是 SpringMVC Controller bean 变更
+        if (!needReloadSpringMVC()) {
+            LOGGER.trace("Spring: spring mvc no changes");
+            return;
+        }
+
+        Class<?> abstractHandlerMethodMapping = getHandlerMethodMappingClassOrNull();
+        if (abstractHandlerMethodMapping == null) {
             return;
         }
 
         try {
             // 处理 Servlet 的映射
-            processServletMappings(c);
+            processServletMappings(abstractHandlerMethodMapping);
             // 处理 Spring 的映射
-            processSpringMappings(c, beanFactory);
+            processSpringMappings(abstractHandlerMethodMapping, beanFactory);
         } catch (Exception e) {
             LOGGER.error("Failed to clear HandlerMappings", e);
         }
 
+    }
+
+    private static boolean needReloadSpringMVC() {
+        Set<String> allBeans = new HashSet<>();
+        allBeans.addAll(ResetRequestMappingCaches.beansToProcess);
+        allBeans.addAll(ResetRequestMappingCaches.newBeanNames);
+        for (String beanName : allBeans) {
+            Class<?> beanClass = ResetRequestMappingCaches.beanFactory.getType(beanName);
+            if (beanClass == null) {
+                LOGGER.trace("Spring: bean {} not found", beanName);
+                continue;
+            }
+            if (isMvcHandler(beanClass)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void processSpringMappings(Class<?> c, DefaultListableBeanFactory beanFactory) throws Exception {
@@ -81,52 +118,107 @@ public class ResetRequestMappingCaches {
         }
     }
 
-    private static void processServletMappings(Class<?> c) throws Exception {
+    private static void processServletMappings(Class<?> abstractHandlerMethodMapping) throws Exception {
         if (CollectionUtils.isEmpty(handlerMappings)) {
             return;
         }
         for (HandlerMapping handlerMapping : handlerMappings) {
             if (handlerMapping instanceof RequestMappingHandlerMapping) {
-                processMappings(c, handlerMapping);
+                processMappings(abstractHandlerMethodMapping, handlerMapping);
             }
         }
     }
 
-    private static void processMappings(Class<?> c, Object am) throws Exception {
-        LOGGER.trace("clearing HandlerMapping for {}", am.getClass());
+    private static void processMappings(Class<?> abstractHandlerMethodMapping, Object handlerMapping) throws Exception {
+        LOGGER.trace("clearing HandlerMapping for {}", handlerMapping.getClass());
         try {
-            Field f = c.getDeclaredField("handlerMethods");
+            Field f = abstractHandlerMethodMapping.getDeclaredField("handlerMethods");
             f.setAccessible(true);
-            ((Map<?, ?>) f.get(am)).clear();
-            f = c.getDeclaredField("urlMap");
+            ((Map<?, ?>) f.get(handlerMapping)).clear();
+            f = abstractHandlerMethodMapping.getDeclaredField("urlMap");
             f.setAccessible(true);
-            ((Map<?, ?>) f.get(am)).clear();
+            ((Map<?, ?>) f.get(handlerMapping)).clear();
             try {
-                f = c.getDeclaredField("nameMap");
+                f = abstractHandlerMethodMapping.getDeclaredField("nameMap");
                 f.setAccessible(true);
-                ((Map<?, ?>) f.get(am)).clear();
+                ((Map<?, ?>) f.get(handlerMapping)).clear();
             } catch (NoSuchFieldException nsfe) {
                 LOGGER.trace("Probably using Spring 4.0 or below: {}", nsfe.getMessage());
             }
+            if (handlerMapping instanceof InitializingBean) {
+                ((InitializingBean) handlerMapping).afterPropertiesSet();
+            }
         } catch (NoSuchFieldException nsfe) {
             LOGGER.trace("Probably using Spring 4.2+", nsfe.getMessage());
-            Method m = c.getDeclaredMethod("getHandlerMethods");
+            Method m = abstractHandlerMethodMapping.getDeclaredMethod("getHandlerMethods");
             Class<?>[] parameterTypes = new Class[1];
             parameterTypes[0] = Object.class;
-            Method u = c.getDeclaredMethod("unregisterMapping", parameterTypes);
-            Map<?, ?> unmodifiableHandlerMethods = (Map<?, ?>) m.invoke(am);
+            Method u = abstractHandlerMethodMapping.getDeclaredMethod("unregisterMapping", parameterTypes);
+            Map<?, ?> unmodifiableHandlerMethods = (Map<?, ?>) m.invoke(handlerMapping);
             Object[] keys = unmodifiableHandlerMethods.keySet().toArray();
-            unmodifiableHandlerMethods = null;
             for (Object key : keys) {
-                LOGGER.trace("Unregistering handler method {}", key);
-                u.invoke(am, key);
+                HandlerMethod handlerMethod = (HandlerMethod) unmodifiableHandlerMethods.get(key);
+                if (ResetRequestMappingCaches.beansToProcess.contains(handlerMethod.getBean().toString())) {
+                    LOGGER.trace("Unregistering handler method {}", key);
+                    // 卸载mapping
+                    u.invoke(handlerMapping, key);
+                }
             }
-        }
-        if (am instanceof InitializingBean) {
-            ((InitializingBean) am).afterPropertiesSet();
+            // 手动注册mapping
+            registerHandlerBeans(ResetRequestMappingCaches.beansToProcess, abstractHandlerMethodMapping, handlerMapping);
+            registerHandlerBeans(ResetRequestMappingCaches.newBeanNames, abstractHandlerMethodMapping, handlerMapping);
         }
     }
 
+    private static void registerHandlerBeans(Set<String> beanNames,
+                                             Class<?> abstractHandlerMethodMapping,
+                                             Object handlerMapping) throws Exception {
+        for (String beanName : beanNames) {
+            Class<?> beanClass = ResetRequestMappingCaches.beanFactory.getType(beanName);
+            if (beanClass == null) {
+                LOGGER.warning("Spring: bean {} not found", beanName);
+                continue;
+            }
+            if (isMvcHandler(beanClass)) {
+                LOGGER.info("Spring: registering handler bean {}", beanName);
+                Method detectHandlerMethods = abstractHandlerMethodMapping.getDeclaredMethod("detectHandlerMethods", Object.class);
+                detectHandlerMethods.setAccessible(true);
+                detectHandlerMethods.invoke(handlerMapping, beanName);
+            }
+        }
+    }
+
+    private static boolean isMvcHandler(Class<?> beanClass) {
+        // 判断类上是否有@Controller注解或其衍生注解
+        if (beanClass.isAnnotationPresent(Controller.class) || beanClass.isAnnotationPresent(RestController.class)) {
+            return true;
+        }
+
+        // 判断类是否实现了Spring MVC中的控制器接口
+        if (Controller.class.isAssignableFrom(beanClass)) {
+            return true;
+        }
+
+        // 判断方法是否使用了Spring MVC中的相关注解
+        for (Method method : beanClass.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(RequestMapping.class) ||
+                    method.isAnnotationPresent(GetMapping.class) ||
+                    method.isAnnotationPresent(DeleteMapping.class) ||
+                    method.isAnnotationPresent(PatchMapping.class) ||
+                    method.isAnnotationPresent(PutMapping.class) ||
+                    method.isAnnotationPresent(PostMapping.class)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * DispatcherServlet实例化注册HandlerMapping
+     *
+     * @param handlerMappings
+     */
     public static void setHandlerMappings(List<HandlerMapping> handlerMappings) {
         ResetRequestMappingCaches.handlerMappings = handlerMappings;
     }
