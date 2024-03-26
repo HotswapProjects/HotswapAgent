@@ -41,6 +41,9 @@ import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
+/**
+ * The type Spring changed agent.
+ */
 public class SpringChangedAgent implements SpringListener<SpringEvent<?>>, Comparable<SpringChangedAgent> {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringChangedAgent.class);
 

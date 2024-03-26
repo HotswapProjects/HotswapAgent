@@ -18,6 +18,9 @@
  */
 package org.hotswap.agent.plugin.spring.getbean;
 
+/**
+ * The interface Spring hotswap agent proxy.
+ */
 public interface SpringHotswapAgentProxy {
     Object $$ha$getTarget();
     void $$ha$setTarget(Object object);

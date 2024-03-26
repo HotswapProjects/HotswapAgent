@@ -32,6 +32,9 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * The type Spring bean watch event listener.
+ */
 public class SpringBeanWatchEventListener implements WatchEventListener {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringBeanWatchEventListener.class);
 

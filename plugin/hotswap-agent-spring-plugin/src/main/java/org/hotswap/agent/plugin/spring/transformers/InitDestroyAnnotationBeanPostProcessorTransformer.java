@@ -33,8 +33,7 @@ public class InitDestroyAnnotationBeanPostProcessorTransformer {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(
         InitDestroyAnnotationBeanPostProcessorTransformer.class);
 
-    @OnClassLoadEvent(
-        classNameRegexp = "org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor")
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
         LOGGER.debug(
             "Class 'org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor' patched with"
