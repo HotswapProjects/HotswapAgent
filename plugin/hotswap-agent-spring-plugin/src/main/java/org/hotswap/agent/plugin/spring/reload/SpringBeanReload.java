@@ -476,7 +476,7 @@ public class SpringBeanReload {
             }
             newScanBeanDefinitions.clear();
         }
-        newBeanNames.addAll(newBeanNames);
+        this.newBeanNames.addAll(newBeanNames);
     }
 
     private void preInstantiateSingleton() {
