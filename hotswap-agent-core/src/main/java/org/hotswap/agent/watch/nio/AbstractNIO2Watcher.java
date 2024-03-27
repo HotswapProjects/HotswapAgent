@@ -209,7 +209,11 @@ public abstract class AbstractNIO2Watcher implements Watcher {
        registerAll(path);
     }
 
-    protected abstract void registerAll(final Path dir) throws IOException;
+    protected abstract void registerAll(final Path dir, WatchEvent.Kind kind, boolean ignoreFile) throws IOException;
+
+    protected void registerAll(final Path dir) throws IOException {
+        registerAll(dir, null, true);
+    }
 
     /**
      * Process all events for keys queued to the watcher
@@ -254,7 +258,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             if (kind == ENTRY_CREATE) {
                 try {
                     if (Files.isDirectory(child, NOFOLLOW_LINKS)) {
-                        registerAll(child);
+                        registerAll(child, kind, false);
                     }
                 } catch (IOException x) {
                     LOGGER.warning("Unable to register events for directory {}", x, child);
@@ -279,6 +283,11 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             }
         }
         return true;
+    }
+
+    protected void dispatchEvent(WatchEvent.Kind kind, Path replacePath) {
+        Event ev = new Event(kind, replacePath);
+        dispatcher.add(ev, replacePath);
     }
 
     @Override
@@ -326,6 +335,35 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             return (WatchEvent.Modifier) f.get(c);
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private static class Event<T> implements WatchEvent<T> {
+        private final WatchEvent.Kind<T> kind;
+        private final T context;
+
+        // synchronize on watch key to access/increment count
+        private int count;
+
+        Event(WatchEvent.Kind<T> type, T context) {
+            this.kind = type;
+            this.context = context;
+            this.count = 1;
+        }
+
+        @Override
+        public WatchEvent.Kind<T> kind() {
+            return kind;
+        }
+
+        @Override
+        public T context() {
+            return context;
+        }
+
+        @Override
+        public int count() {
+            return count;
         }
     }
 }
