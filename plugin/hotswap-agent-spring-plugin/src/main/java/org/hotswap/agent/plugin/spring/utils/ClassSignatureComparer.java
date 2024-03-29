@@ -26,7 +26,6 @@ import org.hotswap.agent.util.signature.ClassSignatureComparerHelper;
  * Checks if a Signature of a Class has changed enough to necessitate a Spring reload.
  *
  * @author Erki Ehtla, Vladimir Dvorak
- *
  */
 public class ClassSignatureComparer {
 

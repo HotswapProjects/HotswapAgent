@@ -22,6 +22,9 @@ import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 
+/**
+ * The type Bean change event.
+ */
 public class BeanChangeEvent extends SpringEvent<String[]> {
     /**
      * Constructs a prototypical Event.

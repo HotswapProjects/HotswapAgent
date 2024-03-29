@@ -21,6 +21,9 @@ package org.hotswap.agent.plugin.spring.reload;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
+/**
+ * The type Class change event.
+ */
 public class ClassChangeEvent extends SpringEvent<Class> {
     /**
      * Constructs a prototypical Event.

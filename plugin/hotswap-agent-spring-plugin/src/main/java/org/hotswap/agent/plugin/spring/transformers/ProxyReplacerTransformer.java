@@ -26,7 +26,6 @@ import org.hotswap.agent.javassist.*;
  * proxies can be reset and reloaded from Spring.
  *
  * @author Erki Ehtla
- *
  */
 public class ProxyReplacerTransformer {
     public static final String FACTORY_METHOD_NAME = "getBean";

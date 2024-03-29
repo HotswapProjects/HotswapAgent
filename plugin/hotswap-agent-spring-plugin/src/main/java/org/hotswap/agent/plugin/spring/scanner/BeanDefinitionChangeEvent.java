@@ -22,6 +22,9 @@ import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
+/**
+ * The type Bean definition change event.
+ */
 public class BeanDefinitionChangeEvent extends SpringEvent<BeanDefinitionHolder> {
     /**
      * Constructs a prototypical Event.

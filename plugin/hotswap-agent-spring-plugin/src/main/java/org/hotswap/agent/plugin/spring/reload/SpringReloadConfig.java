@@ -18,6 +18,9 @@
  */
 package org.hotswap.agent.plugin.spring.reload;
 
+/**
+ * The type Spring reload config.
+ */
 public class SpringReloadConfig {
 
     public static int reloadDelayMillis = 1600;

@@ -29,7 +29,6 @@ import org.hotswap.agent.plugin.spring.SpringPlugin;
  * Proxies the beans. The beans inside these proxies can be cleared.
  *
  * @author Erki Ehtla
- *
  */
 public class ProxyReplacer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyReplacer.class);
@@ -49,16 +48,12 @@ public class ProxyReplacer {
     /**
      * Creates a proxied Spring bean. Called from within WebApp code by modification of Spring classes
      *
-     * @param beanFactry
-     *            Spring beanFactory
-     * @param bean
-     *            Spring bean
-     * @param paramClasses
-     *            Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
-     * @param paramValues
-     *            Parameter values of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
+     * @param beanFactry   Spring beanFactory
+     * @param bean         Spring bean
+     * @param paramClasses Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
+     *                     ProxyReplacer.FACTORY_METHOD_NAME
+     * @param paramValues  Parameter values of the Spring beanFactory method which returned the bean. The method is named
+     *                     ProxyReplacer.FACTORY_METHOD_NAME
      * @return Proxied bean
      */
     public static Object register(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {

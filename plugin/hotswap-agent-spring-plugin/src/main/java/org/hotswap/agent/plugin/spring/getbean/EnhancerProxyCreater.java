@@ -33,7 +33,6 @@ import java.util.WeakHashMap;
  * Cglib (Spring >= 3.2) or the stand-alone version (Spring < 3.2).
  *
  * @author Erki Ehtla
- *
  */
 public class EnhancerProxyCreater {
 

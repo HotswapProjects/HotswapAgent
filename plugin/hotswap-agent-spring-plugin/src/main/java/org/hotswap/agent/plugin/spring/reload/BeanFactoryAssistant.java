@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * The type Bean factory assistant.
+ */
 public class BeanFactoryAssistant {
     private ConfigurableListableBeanFactory beanFactory;
     private AtomicInteger reloadTimes;

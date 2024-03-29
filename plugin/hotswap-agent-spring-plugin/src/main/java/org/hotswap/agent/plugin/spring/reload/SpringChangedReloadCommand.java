@@ -25,6 +25,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * The type Spring changed reload command.
+ */
 public class SpringChangedReloadCommand extends MergeableCommand {
     private static AgentLogger LOGGER = AgentLogger.getLogger(XmlsChangedCommand.class);
 

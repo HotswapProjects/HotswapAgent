@@ -23,6 +23,9 @@ import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
 
+/**
+ * The type Spring event source.
+ */
 public class SpringEventSource {
 
     private final static AgentLogger LOGGER = AgentLogger.getLogger(SpringEventSource.class);

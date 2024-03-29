@@ -19,15 +19,8 @@
 package org.hotswap.agent.plugin.spring.transformers;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.expr.ExprEditor;
-import org.hotswap.agent.javassist.expr.MethodCall;
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
 import org.hotswap.agent.plugin.spring.transformers.support.InitMethodEnhance;
 
@@ -35,6 +28,8 @@ import org.hotswap.agent.plugin.spring.transformers.support.InitMethodEnhance;
  * Transformer for Spring BeanFactory hierarchy.
  */
 public class BeanFactoryTransformer {
+
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(BeanFactoryTransformer.class);
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultSingletonBeanRegistry")
     public static void registerDefaultSingletonBeanRegistry(ClassLoader appClassLoader, CtClass clazz,
@@ -74,10 +69,11 @@ public class BeanFactoryTransformer {
         createBeanMethod.insertAfter(BeanFactoryProcessor.class.getName() + ".postProcessCreateBean($0, $1, $2);");
 
         // try catch for custom init method
-        CtMethod invokeCustomInitMethod = clazz.getDeclaredMethod("invokeCustomInitMethod",
-            new CtClass[] {classPool.get(String.class.getName()), classPool.get("java.lang.Object"),
-                classPool.get("org.springframework.beans.factory.support.RootBeanDefinition")});
-        invokeCustomInitMethod.addCatch(
+        CtMethod[] invokeCustomInitMethods = clazz.getDeclaredMethods("invokeCustomInitMethod");
+        if (invokeCustomInitMethods.length != 1) {
+            LOGGER.error("Unexpected number of 'invokeCustomInitMethod' methods found. Expected: 1, Found: " + invokeCustomInitMethods.length);
+        }
+        invokeCustomInitMethods[0].addCatch(
             InitMethodEnhance.catchException("$2", "$$ha$LOGGER", "$e", "invokeCustomInitMethod", false),
             classPool.get("java.lang.Throwable"));
 
