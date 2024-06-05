@@ -72,6 +72,11 @@ public class DeltaSpikePlugin {
 
     @Init
     Scheduler scheduler;
+    @Init
+    PluginConfiguration pluginConfiguration;
+
+    boolean initialized = false;
+    int waitOnRedefine = WAIT_ON_REDEFINE;
 
     Map<Object, String> registeredPartialBeans = new WeakHashMap<>();
     Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<>();
@@ -84,7 +89,11 @@ public class DeltaSpikePlugin {
 
     @Init
     public void init(PluginConfiguration pluginConfiguration) {
-        LOGGER.info("Deltaspike plugin initialized.");
+        if (!initialized) {
+            LOGGER.info("Deltaspike plugin initialized.");
+            initialized = true;
+            waitOnRedefine = Integer.valueOf(pluginConfiguration.getProperty("deltaspike.waitOnRedefine", String.valueOf(WAIT_ON_REDEFINE)));
+        }
     }
 
     // ds<1.9
@@ -145,7 +154,7 @@ public class DeltaSpikePlugin {
         if (partialBean != null) {
             String oldSignForProxyCheck = DeltaspikeClassSignatureHelper.getSignaturePartialBeanClass(original);
             cmd = new PartialBeanClassRefreshCommand(appClassLoader, partialBean, clazz.getName(), oldSignForProxyCheck, scheduler);
-            scheduler.scheduleCommand(cmd, WAIT_ON_REDEFINE);
+            scheduler.scheduleCommand(cmd, waitOnRedefine);
         }
         return cmd;
     }
@@ -211,7 +220,7 @@ public class DeltaSpikePlugin {
             List<String> rootClassNameList = entry.getValue();
             for (String viewConfigClassName: rootClassNameList) {
                 if (viewConfigClassName.equals(rootClassName)) {
-                    scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), entry.getValue()), WAIT_ON_REDEFINE);
+                    scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), entry.getValue()), waitOnRedefine);
                     return;
                 }
             }
