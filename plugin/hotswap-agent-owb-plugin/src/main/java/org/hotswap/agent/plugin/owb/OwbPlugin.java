@@ -101,6 +101,9 @@ public class OwbPlugin {
 
     private BeanReloadStrategy beanReloadStrategy;
 
+    private int waitOnCreate = WAIT_ON_CREATE;
+    private int waitOnRedefine = WAIT_ON_REDEFINE;
+
     private Map<URL, URL> registeredArchives = new HashMap<>();
 
     /**
@@ -111,6 +114,8 @@ public class OwbPlugin {
             LOGGER.info("OpenWebBeans plugin initialized.");
             initialized = true;
             beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
+            waitOnCreate = Integer.valueOf(pluginConfiguration.getProperty("owb.waitOnCreate", String.valueOf(WAIT_ON_CREATE)));
+            waitOnRedefine = Integer.valueOf(pluginConfiguration.getProperty("owb.waitOnRedefine", String.valueOf(WAIT_ON_REDEFINE)));
         }
     }
 
@@ -190,7 +195,7 @@ public class OwbPlugin {
                             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className) || isTestEnvironment) {
                                 // refresh weld only for new classes
                                 LOGGER.trace("register reload command: {} ", className);
-                                scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, beanArchiveUrl, event), WAIT_ON_CREATE);
+                                scheduler.scheduleCommand(new BeanClassRefreshCommand(appClassLoader, archivePath, beanArchiveUrl, event), waitOnCreate);
                             }
                         }
                     }
@@ -252,7 +257,7 @@ public class OwbPlugin {
                                     oldSignByStrategy,
                                     entry.getValue(),
                                     beanReloadStrategy),
-                            WAIT_ON_REDEFINE
+                            waitOnRedefine
                             );
                     break;
                 }
