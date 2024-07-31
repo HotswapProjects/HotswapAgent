@@ -28,6 +28,7 @@ import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
 import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
@@ -46,6 +47,7 @@ public class MyBatisTransformers {
     public static final String SRC_FILE_NAME_FIELD = "$$ha$srcFileName";
     public static final String REFRESH_DOCUMENT_METHOD = "$$ha$refreshDocument";
     public static final String REFRESH_METHOD = "$$ha$refresh";
+    public static final String IN_RELOAD_FIELD = "$$ha$inReload";
 
     private static final String INITIALIZED_FIELD = "$$ha$initialized";
     private static final String FACTORYBEAN_FIELD = "$$ha$factoryBean";
@@ -182,5 +184,60 @@ public class MyBatisTransformers {
                         "}", ctClass);
         ctClass.addMethod(proxyMethod);
         LOGGER.debug("org.mybatis.spring.SqlSessionFactoryBean patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.mapper.MapperScannerConfigurer")
+    public static void patchMapperScannerConfigurer(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+        /*
+         * In org.mybatis.spring.mapper.MapperScannerConfigurer#processPropertyPlaceHolders,
+         * a BeanFactory is created using new DefaultListableBeanFactory() that contains only
+         * this mapper scanner and processes the factory. This is not needed;
+         * it should be removed from SpringChangedAgent after processing.
+         */
+        CtMethod processPropertyPlaceHolderM = ctClass.getDeclaredMethod("processPropertyPlaceHolders");
+        int lineNumber = processPropertyPlaceHolderM.getMethodInfo().getLineNumber(0);
+        int lineNum = lineNumber + 16;
+
+        // remove from SpringChangedAgent
+        String codeToInsert = "org.hotswap.agent.plugin.spring.reload.SpringChangedAgent.destroyBeanFactory(factory);";
+        processPropertyPlaceHolderM.insertAt(lineNum + 1, codeToInsert);
+
+        LOGGER.debug("org.mybatis.spring.mapper.MapperScannerConfigurer patched.", new Object[0]);
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.session.Configuration")
+    public static void patchConfiguration(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+        try {
+            CtClass booleanClass = classPool.get(boolean.class.getName());
+            CtField onReloadField = new CtField(booleanClass, IN_RELOAD_FIELD, ctClass);
+            onReloadField.setModifiers(Modifier.PUBLIC);
+            ctClass.addField(onReloadField);
+
+            // If $$ha$inReload is true, then we need to remove the old entry.
+            CtMethod isResourceLoadedMethod = ctClass.getDeclaredMethod("isResourceLoaded", new CtClass[]{
+                    classPool.get(String.class.getName())
+            });
+
+            isResourceLoadedMethod.insertBefore("{\n" +
+                    "if(" + IN_RELOAD_FIELD + "){\n" +
+                    "this.loadedResources.remove($1);" +
+                    "}\n" +
+                    "}");
+        } catch (Exception e) {
+            LOGGER.warning("mybatis class enhance error:", e);
+        }
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.session.Configuration\\$StrictMap")
+    public static void patchStrictMap(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+
+        // To avoid xxx collection already contains value for xxx.
+        CtMethod method = ctClass.getDeclaredMethod("put", new CtClass[]{
+                classPool.get(String.class.getName()), classPool.get(Object.class.getName())
+        });
+        method.insertBefore("if(containsKey($1)){remove($1);}");
     }
 }
