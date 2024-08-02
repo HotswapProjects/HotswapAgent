@@ -20,15 +20,9 @@ package org.hotswap.agent.plugin.mybatis.transformers;
 
 import org.apache.ibatis.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.Modifier;
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.expr.ExprEditor;
+import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
@@ -196,12 +190,25 @@ public class MyBatisTransformers {
          * it should be removed from SpringChangedAgent after processing.
          */
         CtMethod processPropertyPlaceHolderM = ctClass.getDeclaredMethod("processPropertyPlaceHolders");
-        int lineNumber = processPropertyPlaceHolderM.getMethodInfo().getLineNumber(0);
-        int lineNum = lineNumber + 16;
+        processPropertyPlaceHolderM.addLocalVariable("tmpFactoryList", classPool.get("java.util.List"));
+        processPropertyPlaceHolderM.insertBefore("{ tmpFactoryList = new java.util.ArrayList(); }");
 
-        // remove from SpringChangedAgent
-        String codeToInsert = "org.hotswap.agent.plugin.spring.reload.SpringChangedAgent.destroyBeanFactory(factory);";
-        processPropertyPlaceHolderM.insertAt(lineNum + 1, codeToInsert);
+        // Add the instance of DefaultListableBeanFactory to a list after its creation so that it can be removed later
+        processPropertyPlaceHolderM.instrument(new ExprEditor() {
+            @Override
+            public void edit(NewExpr e) throws CannotCompileException {
+                if (e.getClassName().equals("org.springframework.beans.factory.support.DefaultListableBeanFactory")) {
+                    e.replace("{ $_ = $proceed($$); tmpFactoryList.add($_); }");
+                }
+            }
+        });
+
+        processPropertyPlaceHolderM.insertAfter("{ " +
+                "    for (java.util.Iterator it = tmpFactoryList.iterator(); it.hasNext(); ) {\n" +
+                "        org.springframework.beans.factory.support.DefaultListableBeanFactory factory = (org.springframework.beans.factory.support.DefaultListableBeanFactory) it.next();\n" +
+                "        org.hotswap.agent.plugin.spring.reload.SpringChangedAgent.destroyBeanFactory(factory);\n" +
+                "    }\n" +
+                " }");
 
         LOGGER.debug("org.mybatis.spring.mapper.MapperScannerConfigurer patched.", new Object[0]);
     }
