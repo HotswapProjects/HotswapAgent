@@ -192,6 +192,12 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-deltaspike-jakarta-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-glassfish-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
