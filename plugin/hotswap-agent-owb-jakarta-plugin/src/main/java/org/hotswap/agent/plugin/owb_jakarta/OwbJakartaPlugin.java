@@ -55,7 +55,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
 /**
- * OwbPlugin (OpenWebBeans)
+ * OwbJakartaPlugin (OpenWebBeans)
  *
  * @author Vladimir Dvorak
  */
@@ -110,7 +110,7 @@ public class OwbJakartaPlugin {
      */
     public void init() {
         if (!initialized) {
-            LOGGER.info("OpenWebBeans plugin initialized.");
+            LOGGER.info("OwbJakarta plugin initialized.");
             initialized = true;
             beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
             waitOnCreate = Integer.valueOf(pluginConfiguration.getProperty("owb.waitOnCreate", String.valueOf(WAIT_ON_CREATE)));

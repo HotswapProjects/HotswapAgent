@@ -54,7 +54,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
 /**
- * WeldPlugin
+ * WeldJakartaPlugin
  *
  * @author Vladimir Dvorak
  */
@@ -110,14 +110,14 @@ public class WeldJakartaPlugin {
 
     public void initInJBossAS() {
         if (!initialized) {
-            LOGGER.info("Weld plugin initialized in JBossAS.");
+            LOGGER.info("WeldJakarta plugin initialized in JBossAS.");
             doInit();
         }
     }
 
     public void initInGlassFish() {
         if (!initialized) {
-            LOGGER.info("Weld plugin initialized in GlassFish.");
+            LOGGER.info("WeldJakarta plugin initialized in GlassFish.");
             doInit();
         }
     }
