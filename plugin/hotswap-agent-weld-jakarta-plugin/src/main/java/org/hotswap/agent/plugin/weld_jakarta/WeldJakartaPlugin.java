@@ -60,8 +60,8 @@ import org.hotswap.agent.watch.Watcher;
  */
 @Plugin(name = "WeldJakarta",
         description = "Weld Jakarta framework(http://weld.cdi-spec.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"2.2.5-2.2.16, 2.3.x-3.1.x"},
-        expectedVersions = {"All between 2.2.5-3.1.x"},
+        testedVersions = {"5.1.2"},
+        expectedVersions = {"5.x"},
         supportClass = {BeanDeploymentArchiveTransformer.class, ProxyFactoryTransformer.class, AbstractClassBeanTransformer.class, CdiContextsTransformer.class})
 public class WeldJakartaPlugin {
 
