@@ -80,7 +80,6 @@ public class DeltaSpikePlugin {
 
     Map<Object, String> registeredPartialBeans = new WeakHashMap<>();
     Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<>();
-    Set<Object> registeredWindowContexts = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
     // ds<1.9
     Map<Object, String> registeredRepoComponents = new WeakHashMap<>();
     // ds>=1.9
@@ -130,13 +129,6 @@ public class DeltaSpikePlugin {
             registeredPartialBeans.put(bean, partialBeanClass.getName());
         }
         LOGGER.debug("Partial bean '{}' registered", partialBeanClass.getName());
-    }
-
-    public void registerWindowContext(Object windowContext) {
-        if (windowContext != null && !registeredWindowContexts.contains(windowContext)) {
-            registeredWindowContexts.add(windowContext);
-            LOGGER.debug("Window context '{}' registered.", windowContext.getClass().getName());
-        }
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)

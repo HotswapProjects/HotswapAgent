@@ -7,8 +7,7 @@ set -e
 
 function testCDI2 {
     echo "Running with OWB $1"
-    mvn -PCDI2 -Dowb.version=$1 clean package
+    mvn -Dowb.version=$1 clean package
 }
 
-### Run tests CDI2 on j11
-testCDI2 2.0.27
+testCDI2 4.0.2

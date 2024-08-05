@@ -111,7 +111,7 @@ public class OwbPlugin {
      */
     public void init() {
         if (!initialized) {
-            LOGGER.info("OpenWebBeans plugin initialized.");
+            LOGGER.info("Owb plugin initialized.");
             initialized = true;
             beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
             waitOnCreate = Integer.valueOf(pluginConfiguration.getProperty("owb.waitOnCreate", String.valueOf(WAIT_ON_CREATE)));

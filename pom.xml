@@ -16,6 +16,7 @@
         <module>hotswap-agent-parent</module>
         <module>hotswap-agent-core</module>
         <module>plugin/hotswap-agent-hibernate-plugin</module>
+        <module>plugin/hotswap-agent-hibernate-jakarta-plugin</module>
         <module>plugin/hotswap-agent-hibernate3-plugin</module>
         <module>plugin/hotswap-agent-spring-plugin</module>
         <module>plugin/hotswap-agent-spring-boot-plugin</module>
@@ -41,6 +42,7 @@
         <module>plugin/hotswap-agent-jbossmodules-plugin</module>
         <module>plugin/hotswap-agent-resteasy-registry-plugin</module>
         <module>plugin/hotswap-agent-deltaspike-plugin</module>
+        <module>plugin/hotswap-agent-deltaspike-jakarta-plugin</module>
         <module>plugin/hotswap-agent-wildfly-el-plugin</module>
         <module>plugin/hotswap-agent-glassfish-plugin</module>
         <module>plugin/hotswap-agent-vaadin-plugin</module>
@@ -56,7 +58,6 @@
         <module>plugin/hotswap-agent-thymeleaf-plugin</module>
         <module>plugin/hotswap-agent-velocity-plugin</module>
         <module>plugin/hotswap-agent-plugins</module>
-        <module>plugin/hotswap-agent-hibernate-jakarta-plugin</module>
         <module>plugin/hotswap-agent-sponge-plugin</module>
         <module>hotswap-agent</module>
     </modules>

@@ -209,7 +209,7 @@ public class BeanClassRefreshAgent {
     private static void doReinjectBean(BeanManagerImpl beanManager, InjectionTargetBean<?> bean) {
         try {
             if (!bean.getScope().equals(ApplicationScoped.class) &&
-                    (!HaCdiCommons.isRegisteredScope(bean.getScope()) || HaCdiCommons.isInExtraScope(bean))) {
+                    (HaCdiCommons.isRegisteredScope(bean.getScope()) || HaCdiCommons.isInExtraScope(bean))) {
                 doReinjectRegisteredBeanInstances(beanManager, bean);
             } else {
                 doReinjectBeanInstance(beanManager, bean, beanManager.getContext(bean.getScope()));

@@ -60,28 +60,7 @@ public class ProxyClassLoadingDelegate {
         return classLoader.loadClass(className);
     }
 
-    public static Class<?> toClassWeld2(ClassFile ct, ClassLoader loader, ProtectionDomain domain) throws ClassNotFoundException {
-        if (MAGIC_IN_PROGRESS.get()) {
-            try {
-                final Class<?> originalProxyClass = loader.loadClass(ct.getName());
-                try {
-                    Map<Class<?>, byte[]> reloadMap = new HashMap<>();
-                    reloadMap.put(originalProxyClass, ct.toBytecode());
-                    // TODO : is this standard way how to reload class?
-                    PluginManager.getInstance().hotswap(reloadMap);
-                    return originalProxyClass;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            } catch (ClassNotFoundException e) {
-            }
-        }
-        Class<?> classFileUtilsClass = Class.forName("org.jboss.weld.util.bytecode.ClassFileUtils", true, loader);
-        return (Class<?>) ReflectionHelper.invoke(null, classFileUtilsClass, "toClass",
-                new Class[] { ClassFile.class, ClassLoader.class, ProtectionDomain.class }, ct, loader, domain);
-    }
-
-    public static Class<?> toClassWeld3(Object proxyFactory, ClassFile ct, Class<?> originalClass, ProxyServices proxyServices, ProtectionDomain domain) {
+    public static Class<?> toClassWeld(Object proxyFactory, ClassFile ct, Class<?> originalClass, ProxyServices proxyServices, ProtectionDomain domain) {
         if (MAGIC_IN_PROGRESS.get()) {
             try {
                 ClassLoader loader = originalClass.getClassLoader();

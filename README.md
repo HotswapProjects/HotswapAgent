@@ -179,10 +179,10 @@ uses HA services to:
 #### Java frameworks plugins:
 
 * [CXF-JAXRS](plugin/hotswap-agent-cxf-plugin/README.md) (3.x) - redefine JAXRS resource after resource class redefinition, reinject instance if integrated with Spring and CDI (Weld/OWB).
-* [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x) - messages, ViewConfig, repository, proxy reloading. Deltaspike scoped CDI beans reinjection.
+* [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x,2.x) - messages, ViewConfig, repository, proxy reloading. Deltaspike scoped CDI beans reinjection.
 * [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * [FreeMarker](plugin/hotswap-agent-freemarker-plugin/README.md) - clear the Apache Freemarker beans class-introspection cache on class definition change.
-* [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3x,4x,5x) - Reload Hibernate configuration after entity create/change.
+* [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3.x,4.x,5.x,6.x) - Reload Hibernate configuration after entity create/change.
 * [iBatis](plugin/hotswap-agent-ibatis-plugin/README.md) - iBatis configuration reload.
 * [IDEA](plugin/hotswap-agent-idea-plugin/README.md) - support for IntelliJ IDEA development in IDEA
 * [Jackson](plugin/hotswap-agent-jackson-plugin/README.md) - clears jackson internal caches when class redefined.
@@ -194,14 +194,14 @@ uses HA services to:
 * [MyBatis](plugin/hotswap-agent-mybatis-plugin/README.md) (5.3) - reload configuration after mapper file changes
 * [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.2) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
 * [OmniFaces](plugin/hotswap-agent-owb-plugin/README.md) - support for ViewScoped beans reinjection/reloading.
-* [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.x, 2.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
+* [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.x,2.x,4.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
 * [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3.2.x+, 4.x, 5.x) - Reload Spring configuration after class definition/change.
 * [Spring Boot](plugin/hotswap-agent-spring-boot-plugin/README.md) (1.5.x+, 2.0.x) - Dynamic reloading of Spring Boot configuration files in real-time.
 * [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (23.x, 24.x) - Update routes, template models and in practice, anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
-* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2,2.3,3.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
+* [Weld](plugin/hotswap-agent-weld-plugin/README.md) (CDI) (2.2,2.3,3.x,5.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [Wicket](plugin/hotswap-agent-wicket-plugin/README.md) - clear wicket caches if property files are changed
 * [WildFlyELResolver](plugin/hotswap-agent-wildfly-el-plugin/README.md) - Clear BeanELResolver after any class redefinition.
 * [ZK](plugin/hotswap-agent-zk-plugin/README.md) (5x-7x) - ZK Framework (http://www.zkoss.org/). Change library properties default values to disable caches, maintains Label cache and bean resolver cache.
@@ -210,7 +210,7 @@ uses HA services to:
 
 * [JBossModules](plugin/hotswap-agent-jbossmodules-plugin/README.md) - add extra class path to JBoss's module class loader. (Wildfly)
 * [Jetty](plugin/hotswap-agent-jetty-plugin/README.md) - add extra classpath to the app classloader. All versions supporting WebAppContext.getExtraClasspath should be supported.
-* [Tomcat](plugin/hotswap-agent-tomcat-plugin/README.md) (7.x, 8.x) configure Apache Tomcat with extraClasspath and webApp property. Supports also GlassFish, Payara and Tomee7.
+* [Tomcat](plugin/hotswap-agent-tomcat-plugin/README.md) (7.x,8.x,9.x,10.x) configure Apache Tomcat with extraClasspath and webApp property. Supports also GlassFish, Payara and Tomee7.
 * [Undertow](plugin/hotswap-agent-undertow-plugin/README.md) - add extra classpath, watchResources and webappDir to the undertow's resource manager.
 * [Weblogic](plugin/hotswap-agent-weblogic-plugin/README.md) - add extra classpath to the app classloader.
 
