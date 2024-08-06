@@ -24,15 +24,14 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hotswap.agent.annotation.FileEvent;
-import org.hotswap.agent.annotation.Init;
-import org.hotswap.agent.annotation.OnResourceFileEvent;
-import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
 
 /**
@@ -74,6 +73,14 @@ public class MyBatisPlugin {
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) throws URISyntaxException {
         if (configurationMap.containsKey(Paths.get(url.toURI()).toFile().getAbsolutePath())) {
+            refresh(500);
+        }
+    }
+
+    @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
+    public void registerClassListeners(Class<?> clazz) {
+        if (ConfigurationProxy.isMybatisEntity(clazz) || SpringMybatisConfigurationProxy.isMybatisEntity(clazz)) {
+            LOGGER.trace("Scheduling Mybatis reload for class '{}' in classLoader {}", clazz, appClassLoader);
             refresh(500);
         }
     }
