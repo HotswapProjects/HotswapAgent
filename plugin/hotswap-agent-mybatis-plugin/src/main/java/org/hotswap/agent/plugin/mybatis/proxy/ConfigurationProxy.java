@@ -28,6 +28,7 @@ import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.mybatis.transformers.ConfigurationCaller;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -51,7 +52,7 @@ public class ConfigurationProxy {
             LOGGER.debug("MyBatis runs in MyBatis-Spring mode, so there is no need to cache configuration-related data");
             return new ConfigurationProxy(configBuilder);
         }
-        
+
         if (!proxiedConfigurations.containsKey(configBuilder)) {
             proxiedConfigurations.put(configBuilder, new ConfigurationProxy(configBuilder));
         }
@@ -101,5 +102,15 @@ public class ConfigurationProxy {
             }
         }
         return proxyInstance;
+    }
+
+    public static boolean isMybatisEntity(Class<?> clazz) {
+        for (ConfigurationProxy configurationProxy : proxiedConfigurations.values()) {
+            if (ConfigurationCaller.isMybatisObj(configurationProxy.configuration, clazz)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
