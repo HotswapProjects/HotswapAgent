@@ -26,8 +26,12 @@ public class ConfigurationCaller {
         // is Mybatis result obj
         Object resultMapsObj = ReflectionHelper.get(configuration, "resultMaps");
         if (resultMapsObj != null) {
-            Map<String, ResultMap> resultMaps = (Map<String, ResultMap>) resultMapsObj;
-            for (ResultMap resultMap : resultMaps.values()) {
+            Map resultMaps = (Map) resultMapsObj;
+            for (Object resultMapObj : resultMaps.values()) {
+                if (!(resultMapObj instanceof ResultMap)) {
+                    continue;
+                }
+                ResultMap resultMap = (ResultMap) resultMapObj;
                 if (clazz.getName().equals(resultMap.getType().getName())) {
                     return true;
                 }
@@ -37,8 +41,12 @@ public class ConfigurationCaller {
         // is Mybatis parameter obj
         Object parameterMapsObj = ReflectionHelper.get(configuration, "parameterMaps");
         if (parameterMapsObj != null) {
-            Map<String, ParameterMap> parameterMaps = (Map<String, ParameterMap>) parameterMapsObj;
-            for (ParameterMap parameterMap : parameterMaps.values()) {
+            Map parameterMaps = (Map) parameterMapsObj;
+            for (Object parameterMapObj : parameterMaps.values()) {
+                if (!(parameterMapObj instanceof ParameterMap)) {
+                    continue;
+                }
+                ParameterMap parameterMap = (ParameterMap) parameterMapObj;
                 if (clazz.getName().equals(parameterMap.getType().getName())) {
                     return true;
                 }

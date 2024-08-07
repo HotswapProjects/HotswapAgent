@@ -252,12 +252,24 @@ public class MyBatisTransformers {
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.reflection.DefaultReflectorFactory")
     public static void patchDefaultReflectorFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
         CtMethod findForClass = ctClass.getDeclaredMethod("findForClass");
-        findForClass.insertBefore("{ " +
+        findForClass.insertBefore("{" +
                 "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {" +
                 "    $0.reflectorMap.remove($1);" +
                 "}" +
-                " }");
+                "}");
 
         LOGGER.debug("org.apache.ibatis.reflection.DefaultReflectorFactory patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.binding.MapperRegistry")
+    public static void patchMapperRegistry(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod hasMapperM = ctClass.getDeclaredMethod("hasMapper", new CtClass[]{classPool.get(Class.class.getName())});
+        hasMapperM.insertBefore("{" +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    knownMappers.remove($1);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("org.apache.ibatis.binding.MapperRegistry patched.");
     }
 }
