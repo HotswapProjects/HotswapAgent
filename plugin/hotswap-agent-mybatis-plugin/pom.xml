@@ -47,6 +47,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-spring-plugin</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>${org.springframework.version}</version>
