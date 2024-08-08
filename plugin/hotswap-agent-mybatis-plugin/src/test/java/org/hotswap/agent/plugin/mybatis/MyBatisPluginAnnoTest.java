@@ -91,7 +91,7 @@ public class MyBatisPluginAnnoTest {
         }
     }
 
-    private void swapClasses(Class original, String swap) throws Exception {
+    public static void swapClasses(Class original, String swap) throws Exception {
         HotSwapper.swapClasses(original, swap);
         MyBatisRefreshCommands.reloadFlag = true;
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
