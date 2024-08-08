@@ -18,13 +18,15 @@
  */
 package org.hotswap.agent;
 
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.util.Version;
-
 import java.lang.instrument.Instrumentation;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.logging.AgentLogger.Level;
+import org.hotswap.agent.util.Version;
+import org.hotswap.agent.config.LogConfigurationHelper;
 
 /**
  * Register the agent and initialize plugin manager singleton instance.
@@ -63,8 +65,8 @@ public class HotswapAgent {
 
     public static void premain(String args, Instrumentation inst) {
 
-        LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         parseArgs(args);
+        LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         fixJboss7Modules();
         PluginManager.getInstance().init(inst);
         LOGGER.debug("Hotswap agent initialized.");
@@ -90,6 +92,9 @@ public class HotswapAgent {
                 autoHotswap = Boolean.valueOf(optionValue);
             } else if ("propertiesFilePath".equals(option)) {
                 propertiesFilePath = optionValue;
+            } else if ("LOGGER".equals(option)) {
+            	AgentLogger.Level level = LogConfigurationHelper.getLevel(option, optionValue);
+            	AgentLogger.setLevel(level);
             } else {
                 LOGGER.warning("Invalid javaagent option '{}'. Argument '{}' is ignored.", option, arg);
             }
