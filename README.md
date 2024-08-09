@@ -180,7 +180,7 @@ uses HA services to:
 
 * [CXF-JAXRS](plugin/hotswap-agent-cxf-plugin/README.md) (3.x) - redefine JAXRS resource after resource class redefinition, reinject instance if integrated with Spring and CDI (Weld/OWB).
 * [Deltaspike](plugin/hotswap-agent-deltaspike-plugin/README.md) (1.x,2.x) - messages, ViewConfig, repository, proxy reloading. Deltaspike scoped CDI beans reinjection.
-* [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) 2.2 (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
+* [ELResolver](plugin/hotswap-agent-el-resolver-plugin/README.md) (2.x-5.x) (JuelEL, Appache Commons EL, Oracle EL 3.0)- clear ELResolver cache on class change. Support hotswap for #{...} expressions.
 * [FreeMarker](plugin/hotswap-agent-freemarker-plugin/README.md) - clear the Apache Freemarker beans class-introspection cache on class definition change.
 * [Hibernate](plugin/hotswap-agent-hibernate-plugin/README.md) (3.x,4.x,5.x,6.x) - Reload Hibernate configuration after entity create/change.
 * [iBatis](plugin/hotswap-agent-ibatis-plugin/README.md) - iBatis configuration reload.
