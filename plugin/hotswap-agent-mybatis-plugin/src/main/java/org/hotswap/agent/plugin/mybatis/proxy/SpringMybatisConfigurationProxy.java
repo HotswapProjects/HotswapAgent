@@ -72,6 +72,14 @@ public class SpringMybatisConfigurationProxy {
         return proxyInstance;
     }
 
+    public static boolean isMybatisEntity(Class<?> clazz) {
+        for (SpringMybatisConfigurationProxy configurationProxy : proxiedConfigurations.values()) {
+            if (ConfigurationCaller.isMybatisObj(configurationProxy.configuration, clazz)) {
+                return true;
+            }
+        }
 
+        return false;
+    }
 
 }
