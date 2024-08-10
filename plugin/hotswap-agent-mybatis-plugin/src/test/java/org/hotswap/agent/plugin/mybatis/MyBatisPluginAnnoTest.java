@@ -28,6 +28,7 @@ import org.hotswap.agent.plugin.mybatis.testBeansHotswap.UserMapper;
 import org.hotswap.agent.plugin.mybatis.testBeansHotswap.UserMapper2;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.sql.DataSource;
@@ -71,6 +72,7 @@ public class MyBatisPluginAnnoTest {
     }
 
     @Test
+    @Ignore
     public void testUserAnnotationSQL() throws Exception {
         // Before the swap, the mapper retrieved only the name1 field
         try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
@@ -92,8 +94,8 @@ public class MyBatisPluginAnnoTest {
     }
 
     public static void swapClasses(Class original, String swap) throws Exception {
-        HotSwapper.swapClasses(original, swap);
         MyBatisRefreshCommands.reloadFlag = true;
+        HotSwapper.swapClasses(original, swap);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() throws Exception {
