@@ -37,14 +37,13 @@ public class MybatisSpringBootTest {
     @BeforeClass
     public static void setup() throws Exception {
         File f = Resources.getResourceAsFile("swapXML/BootUserMapper1.xml");
-        System.out.println(f.toPath().getParent().getParent());
-        Files.copy(f.toPath(), f.toPath().getParent().resolve("BootUserMapper.xml"));
+        Files.copy(f.toPath(), f.toPath().getParent().resolve("BootUserMapper.xml"), StandardCopyOption.REPLACE_EXISTING);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        File tmp = Resources.getResourceAsFile("swapXML/BootUserMapper.xml");
-        tmp.delete();
+        File f = Resources.getResourceAsFile("swapXML/BootUserMapper1.xml");
+        Files.copy(f.toPath(), f.toPath().getParent().resolve("BootUserMapper.xml"), StandardCopyOption.REPLACE_EXISTING);
     }
 
     @Test
@@ -56,7 +55,6 @@ public class MybatisSpringBootTest {
         bootUser = bootUserMapper.getUserXML("jim");
         assertNull(bootUser.getName());
         assertNotNull(bootUser.getEmail());
-        LOGGER.info("swapMapper: {}", bootUser);
     }
 
 
