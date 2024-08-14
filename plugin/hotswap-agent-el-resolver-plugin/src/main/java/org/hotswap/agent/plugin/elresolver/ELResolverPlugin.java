@@ -204,6 +204,9 @@ public class ELResolverPlugin {
                     "this.cache = new " + rootPackage + " .el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
                 "}"
             );
+            CtField ctCacheField = ctClass.getDeclaredField("cache");
+            int modifiers = ctCacheField.getModifiers();
+            ctCacheField.setModifiers(modifiers & ~Modifier.FINAL);
             return true;
         } catch(NotFoundException e1) {
         } catch (CannotCompileException e2) {
