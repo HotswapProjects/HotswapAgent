@@ -82,6 +82,6 @@ public class MyBatisPluginAnnoTest {
             public boolean result() throws Exception {
                 return !MyBatisRefreshCommands.reloadFlag;
             }
-        }));
+        }, 4000));
     }
 }
