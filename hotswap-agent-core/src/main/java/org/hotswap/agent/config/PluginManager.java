@@ -19,14 +19,18 @@
 package org.hotswap.agent.config;
 
 import java.io.IOException;
-import java.lang.instrument.ClassDefinition;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
+import java.lang.instrument.UnmodifiableClassException;
 import java.security.ProtectionDomain;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.command.impl.SchedulerImpl;
@@ -50,6 +54,9 @@ public class PluginManager {
 
     // singleton instance
     private static PluginManager INSTANCE = new PluginManager();
+
+    // for reTransformClasses
+    private WeakHashMap<Class<?>, byte[]> classToByteCodeMap = new WeakHashMap<>();
 
     /**
      * Get the singleton instance of the plugin manager.
@@ -123,7 +130,7 @@ public class PluginManager {
      */
     public void init(Instrumentation instrumentation) {
         this.instrumentation = instrumentation;
-
+        initUpdateByteCodeTransformer();
         // create default configuration from this classloader
         ClassLoader classLoader = getClass().getClassLoader();
         classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
@@ -145,7 +152,29 @@ public class PluginManager {
         pluginRegistry.scanPlugins(getClass().getClassLoader(), PLUGIN_PACKAGE);
 
         LOGGER.debug("Registering transformer ");
-        instrumentation.addTransformer(hotswapTransformer);
+        instrumentation.addTransformer(hotswapTransformer, true);
+    }
+
+    private void initUpdateByteCodeTransformer() {
+        instrumentation.addTransformer(new ClassFileTransformer() {
+
+            @Override
+            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
+                    ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+                if (classBeingRedefined != null) {
+                    synchronized (classToByteCodeMap) {
+                        for (Map.Entry<Class<?>, byte[]> entry : classToByteCodeMap.entrySet()) {
+                            if (entry.getKey() == classBeingRedefined) {
+                                LOGGER.trace("update bytecode for " + className);
+                                return entry.getValue();
+                            }
+                        }
+                    }
+                }
+                return classfileBuffer;
+            }
+
+        }, true);
     }
 
     ClassLoaderDefineClassPatcher classLoaderPatcher = new ClassLoaderDefineClassPatcher();
@@ -266,35 +295,35 @@ public class PluginManager {
     }
 
     /**
-     * Redefine the supplied set of classes using the supplied bytecode.
+     * Retransform the supplied set of classes using the supplied bytecode.
      *
      * This method operates on a set in order to allow interdependent changes to more than one class at the same time
      * (a redefinition of class A can require a redefinition of class B).
      *
      * @param reloadMap class -> new bytecode
-     * @see java.lang.instrument.Instrumentation#redefineClasses(java.lang.instrument.ClassDefinition...)
+     * @see java.lang.instrument.Instrumentation#retransformClasses(Class...)
      */
     public void hotswap(Map<Class<?>, byte[]> reloadMap) {
         if (instrumentation == null) {
             throw new IllegalStateException("Plugin manager is not correctly initialized - no instrumentation available.");
         }
 
-        synchronized (reloadMap) {
-            ClassDefinition[] definitions = new ClassDefinition[reloadMap.size()];
-            String[] classNames = new String[reloadMap.size()];
-            int i = 0;
+        synchronized (classToByteCodeMap) {
+            List<String> classNames = new ArrayList<>();
+            List<Class<?>> classesToReload = new ArrayList<>();
             for (Map.Entry<Class<?>, byte[]> entry : reloadMap.entrySet()) {
-                classNames[i] = entry.getKey().getName();
-                definitions[i++] = new ClassDefinition(entry.getKey(), entry.getValue());
+                classToByteCodeMap.put(entry.getKey(), entry.getValue());
+                classNames.add(entry.getKey().getName());
+                classesToReload.add(entry.getKey());
             }
+            Class<?>[] classes = classesToReload.toArray(new Class[0]);
+            String names = classNames.toString();
             try {
-                LOGGER.reload("Reloading classes {} (autoHotswap)", Arrays.toString(classNames));
-                synchronized (hotswapLock) {
-                    instrumentation.redefineClasses(definitions);
-                }
-                LOGGER.debug("... reloaded classes {} (autoHotswap)", Arrays.toString(classNames));
-            } catch (Exception e) {
-                LOGGER.debug("... Fail to reload classes {} (autoHotswap), msg is {}", Arrays.toString(classNames), e);
+                LOGGER.reload("Reloading classes {} (autoHotswap)", names);
+                instrumentation.retransformClasses(classes);
+                LOGGER.debug("... reloaded classes {} (autoHotswap)", names);
+            } catch (UnmodifiableClassException e) {
+                LOGGER.debug("... Fail to reload classes {} (autoHotswap), msg is {}", names, e);
                 throw new IllegalStateException("Unable to redefine classes", e);
             }
             reloadMap.clear();
