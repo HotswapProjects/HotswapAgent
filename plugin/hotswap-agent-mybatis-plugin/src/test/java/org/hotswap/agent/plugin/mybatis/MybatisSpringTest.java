@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "classpath:spring-mybatis.xml" })
-public class MybatisSpringTest {
+public class MybatisSpringTest extends BaseTest {
 
     @Autowired
     ApplicationContext applicationContext;
@@ -52,7 +52,7 @@ public class MybatisSpringTest {
         User user = mapper.getUserXML("User1");
         assertEquals("User1", user.getName1());
 
-        MyBatisPluginTest.swapMapper("org/hotswap/agent/plugin/mybatis/Mapper2.xml");
+        swapMapper("org/hotswap/agent/plugin/mybatis/Mapper2.xml");
         user = mapper.getUserXML("User1");
         assertEquals("User2", user.getName1());
     }
