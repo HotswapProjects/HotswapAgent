@@ -34,11 +34,13 @@ public class PurgeBeanELResolverCacheCommand extends MergeableCommand {
 
     private ClassLoader appClassLoader;
 
+    private final String rootPackage;
     private Set<Object> registeredBeanELResolvers;
 
-    public PurgeBeanELResolverCacheCommand(ClassLoader appClassLoader, Set<Object> registeredBeanELResolvers)
+    public PurgeBeanELResolverCacheCommand(ClassLoader appClassLoader, String rootPackage, Set<Object> registeredBeanELResolvers)
     {
         this.appClassLoader = appClassLoader;
+        this.rootPackage = rootPackage;
         this.registeredBeanELResolvers = registeredBeanELResolvers;
     }
 
@@ -46,7 +48,7 @@ public class PurgeBeanELResolverCacheCommand extends MergeableCommand {
     public void executeCommand() {
         LOGGER.debug("Purging BeanELResolver cache.");
         try {
-            Class<?> beanElResolverClass = Class.forName("javax.el.BeanELResolver", true, appClassLoader);
+            Class<?> beanElResolverClass = Class.forName(rootPackage + ".el.BeanELResolver", true, appClassLoader);
             Method beanElResolverMethod = beanElResolverClass.getDeclaredMethod(ELResolverPlugin.PURGE_CLASS_CACHE_METHOD_NAME, ClassLoader.class);
             for (Object registeredBeanELResolver : registeredBeanELResolvers) {
                 beanElResolverMethod.invoke(registeredBeanELResolver, appClassLoader);

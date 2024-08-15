@@ -243,7 +243,8 @@ public class WeldPluginTest {
         assertEquals("ProxyHello1.hello()", proxyHosting.hello());
     }
 
-    // @Test
+    @Test
+    @Ignore
     public void sessionBeanTest() throws Exception {
         SessionBean1 sessionBean = getBeanInstance(SessionBean1.class);
         assertEquals("SessionBean1.hello():ProxyHello1.hello()", sessionBean.hello());

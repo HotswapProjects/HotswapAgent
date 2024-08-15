@@ -54,7 +54,7 @@ public class BeanDeploymentArchiveTransformer {
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldJakartaPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(WeldJakartaPlugin.class, "init"));
-        src.append("org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent.registerArchive(getClass().getClassLoader(), this, null);");
+        src.append("org.hotswap.agent.plugin.weld_jakarta.command.BeanClassRefreshAgent.registerArchive(getClass().getClassLoader(), this, null);");
         src.append("}");
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
@@ -81,7 +81,7 @@ public class BeanDeploymentArchiveTransformer {
         src.append("if (beansXml!=null && beanArchiveType!=null && (\"EXPLICIT\".equals(beanArchiveType.toString()) || \"IMPLICIT\".equals(beanArchiveType.toString()))){");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldJakartaPlugin.class, "module.getClassLoader()"));
         src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldJakartaPlugin.class, "initInJBossAS"));
-        src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent\", true, module.getClassLoader());");
+        src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld_jakarta.command.BeanClassRefreshAgent\", true, module.getClassLoader());");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
         src.append("    agM.invoke(null, new Object[] { module.getClassLoader(),this, beanArchiveType.toString()});");
         src.append("}}");
@@ -109,7 +109,7 @@ public class BeanDeploymentArchiveTransformer {
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldJakartaPlugin.class, "this.moduleClassLoaderForBDA"));
         src.append(PluginManagerInvoker.buildCallPluginMethod("this.moduleClassLoaderForBDA", WeldJakartaPlugin.class, "initInGlassFish"));
-        src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent\", true, this.moduleClassLoaderForBDA);");
+        src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld_jakarta.command.BeanClassRefreshAgent\", true, this.moduleClassLoaderForBDA);");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
         src.append("    agM.invoke(null, new Object[] { this.moduleClassLoaderForBDA, this, null});");
         src.append("}");

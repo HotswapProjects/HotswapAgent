@@ -55,14 +55,14 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
 /**
- * OwbPlugin (OpenWebBeans)
+ * OwbJakartaPlugin (OpenWebBeans)
  *
  * @author Vladimir Dvorak
  */
 @Plugin(name = "OwbJakarta",
         description = "OpenWebBeans Jakarta framework(http://openwebbeans.apache.org/). Reload, reinject bean, redefine proxy class after bean class definition/redefinition.",
-        testedVersions = {"2.0.27"},
-        expectedVersions = {"All between 2.0.27"},
+        testedVersions = {"4.0.2"},
+        expectedVersions = {"4.x"},
         supportClass = { BeansDeployerTransformer.class, CdiContextsTransformer.class, ProxyFactoryTransformer.class, AbstractProducerTransformer.class })
 public class OwbJakartaPlugin {
 
@@ -110,7 +110,7 @@ public class OwbJakartaPlugin {
      */
     public void init() {
         if (!initialized) {
-            LOGGER.info("OpenWebBeans plugin initialized.");
+            LOGGER.info("OwbJakarta plugin initialized.");
             initialized = true;
             beanReloadStrategy = setBeanReloadStrategy(pluginConfiguration.getProperty("owb.beanReloadStrategy"));
             waitOnCreate = Integer.valueOf(pluginConfiguration.getProperty("owb.waitOnCreate", String.valueOf(WAIT_ON_CREATE)));

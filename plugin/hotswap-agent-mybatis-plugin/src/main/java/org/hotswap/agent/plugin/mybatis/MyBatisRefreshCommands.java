@@ -42,9 +42,18 @@ public class MyBatisRefreshCommands {
 
     public static void reloadConfiguration() {
         LOGGER.debug("Refreshing MyBatis configuration.");
-        ConfigurationProxy.refreshProxiedConfigurations();
-        SpringMybatisConfigurationProxy.refreshProxiedConfigurations();
-        LOGGER.reload("MyBatis configuration refreshed.");
+        /**
+         * If running in MyBatis-Spring mode, then during reload, we only need to use SpringMybatisConfigurationProxy
+         * for reloading. Refreshing the ConfigurationProxy is not meaningful.The same applies in the opposite case.
+         */
+        reloadFlag = true;
+        if (SpringMybatisConfigurationProxy.runningBySpringMybatis()) {
+            SpringMybatisConfigurationProxy.refreshProxiedConfigurations();
+            LOGGER.debug("MyBatis Spring configuration refreshed.");
+        } else {
+            ConfigurationProxy.refreshProxiedConfigurations();
+            LOGGER.reload("MyBatis configuration refreshed.");
+        }
         reloadFlag = false;
     }
 }

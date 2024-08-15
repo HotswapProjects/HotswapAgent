@@ -20,18 +20,14 @@ package org.hotswap.agent.plugin.mybatis.transformers;
 
 import org.apache.ibatis.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.expr.ExprEditor;
+import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
@@ -46,6 +42,7 @@ public class MyBatisTransformers {
     public static final String SRC_FILE_NAME_FIELD = "$$ha$srcFileName";
     public static final String REFRESH_DOCUMENT_METHOD = "$$ha$refreshDocument";
     public static final String REFRESH_METHOD = "$$ha$refresh";
+    public static final String IN_RELOAD_FIELD = "$$ha$inReload";
 
     private static final String INITIALIZED_FIELD = "$$ha$initialized";
     private static final String FACTORYBEAN_FIELD = "$$ha$factoryBean";
@@ -61,16 +58,16 @@ public class MyBatisTransformers {
         CtMethod method = ctClass.getDeclaredMethod("createDocument");
         method.insertBefore("{" +
                 "this." + SRC_FILE_NAME_FIELD + " = " + org.hotswap.agent.util.IOUtils.class.getName() + ".extractFileNameFromInputSource($1);" +
-            "}"
+                "}"
         );
         CtMethod newMethod = CtNewMethod.make(
-            "public boolean " + REFRESH_DOCUMENT_METHOD + "() {" +
-                "if(this." + SRC_FILE_NAME_FIELD + "!=null) {" +
-                    "this.document=createDocument(new org.xml.sax.InputSource(new java.io.FileReader(this." + SRC_FILE_NAME_FIELD + ")));" +
-                    "return true;" +
-                "}" +
-                "return false;" +
-            "}", ctClass);
+                "public boolean " + REFRESH_DOCUMENT_METHOD + "() {" +
+                        "if(this." + SRC_FILE_NAME_FIELD + "!=null) {" +
+                        "this.document=createDocument(new org.xml.sax.InputSource(new java.io.FileReader(this." + SRC_FILE_NAME_FIELD + ")));" +
+                        "return true;" +
+                        "}" +
+                        "return false;" +
+                        "}", ctClass);
         ctClass.addMethod(newMethod);
         LOGGER.debug("org.apache.ibatis.parsing.XPathParser patched.");
     }
@@ -92,20 +89,14 @@ public class MyBatisTransformers {
         src.append("this.configuration = " + ConfigurationProxy.class.getName() + ".getWrapper(this).proxy(this.configuration);");
         src.append("}");
 
-        CtClass[] constructorParams = new CtClass[] {
-            classPool.get("org.apache.ibatis.parsing.XPathParser"),
-            classPool.get("java.lang.String"),
-            classPool.get("java.util.Properties")
-        };
-
-        ctClass.getDeclaredConstructor(constructorParams).insertAfter(src.toString());
+        XMLConfigBuilderUtils.getBuilderInstrumentConstructor(ctClass, classPool).insertAfter(src.toString());
         CtMethod newMethod = CtNewMethod.make(
-            "public void " + REFRESH_METHOD + "() {" +
-                "if(" + XPathParserCaller.class.getName() + ".refreshDocument(this.parser)) {" +
-                    "this.parsed=false;" +
-                    "parse();" +
-                "}" +
-            "}", ctClass);
+                "public void " + REFRESH_METHOD + "() {" +
+                        "if(" + XPathParserCaller.class.getName() + ".refreshDocument(this.parser)) {" +
+                        "this.parsed=false;" +
+                        "parse();" +
+                        "}" +
+                        "}", ctClass);
         ctClass.addMethod(newMethod);
         LOGGER.debug("org.apache.ibatis.builder.xml.XMLConfigBuilder patched.");
     }
@@ -119,10 +110,10 @@ public class MyBatisTransformers {
         src.append("}");
 
         CtClass[] constructorParams = new CtClass[] {
-            classPool.get("org.apache.ibatis.parsing.XPathParser"),
-            classPool.get("org.apache.ibatis.session.Configuration"),
-            classPool.get("java.lang.String"),
-            classPool.get("java.util.Map")
+                classPool.get("org.apache.ibatis.parsing.XPathParser"),
+                classPool.get("org.apache.ibatis.session.Configuration"),
+                classPool.get("java.lang.String"),
+                classPool.get("java.util.Map")
         };
 
         CtConstructor constructor = ctClass.getDeclaredConstructor(constructorParams);
@@ -182,5 +173,98 @@ public class MyBatisTransformers {
                         "}", ctClass);
         ctClass.addMethod(proxyMethod);
         LOGGER.debug("org.mybatis.spring.SqlSessionFactoryBean patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.mapper.MapperScannerConfigurer")
+    public static void patchMapperScannerConfigurer(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+        /*
+         * In org.mybatis.spring.mapper.MapperScannerConfigurer#processPropertyPlaceHolders,
+         * a BeanFactory is created using new DefaultListableBeanFactory() that contains only
+         * this mapper scanner and processes the factory. This is not needed;
+         * it should be removed from SpringChangedAgent after processing.
+         */
+        CtMethod processPropertyPlaceHolderM = ctClass.getDeclaredMethod("processPropertyPlaceHolders");
+        processPropertyPlaceHolderM.addLocalVariable("tmpFactoryList", classPool.get("java.util.List"));
+        processPropertyPlaceHolderM.insertBefore("{ tmpFactoryList = new java.util.ArrayList(); }");
+
+        // Add the instance of DefaultListableBeanFactory to a list after its creation so that it can be removed later
+        processPropertyPlaceHolderM.instrument(new ExprEditor() {
+            @Override
+            public void edit(NewExpr e) throws CannotCompileException {
+                if (e.getClassName().equals("org.springframework.beans.factory.support.DefaultListableBeanFactory")) {
+                    e.replace("{ $_ = $proceed($$); tmpFactoryList.add($_); }");
+                }
+            }
+        });
+
+        String defaultListableBeanFactoryPath = "org.springframework.beans.factory.support.DefaultListableBeanFactory";
+        processPropertyPlaceHolderM.insertAfter("{ " +
+                "    for (java.util.Iterator it = tmpFactoryList.iterator(); it.hasNext(); ) {\n" +
+                defaultListableBeanFactoryPath + " factory = (" + defaultListableBeanFactoryPath + ") it.next();\n" +
+                "        org.hotswap.agent.plugin.spring.reload.SpringChangedAgent.destroyBeanFactory(factory);\n" +
+                "    }\n" +
+                " }");
+
+        LOGGER.debug("org.mybatis.spring.mapper.MapperScannerConfigurer patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.session.Configuration")
+    public static void patchConfiguration(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+        CtClass booleanClass = classPool.get(boolean.class.getName());
+        CtField onReloadField = new CtField(booleanClass, IN_RELOAD_FIELD, ctClass);
+        onReloadField.setModifiers(Modifier.PUBLIC);
+        ctClass.addField(onReloadField);
+
+        // If $$ha$inReload is true, then we need to remove the old entry.
+        CtMethod isResourceLoadedMethod = ctClass.getDeclaredMethod("isResourceLoaded", new CtClass[]{
+                classPool.get(String.class.getName())
+        });
+
+        isResourceLoadedMethod.insertBefore("{\n" +
+                "if(" + IN_RELOAD_FIELD + "){\n" +
+                "this.loadedResources.remove($1);" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("org.apache.ibatis.session.Configuration patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.session.Configuration\\$StrictMap")
+    public static void patchStrictMap(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+
+        // To avoid xxx collection already contains value for xxx.
+        CtMethod method = ctClass.getDeclaredMethod("put", new CtClass[]{
+                classPool.get(String.class.getName()), classPool.get(Object.class.getName())
+        });
+        method.insertBefore("if(containsKey($1)){remove($1);}");
+
+        LOGGER.debug("org.apache.ibatis.session.Configuration$StrictMap patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.reflection.DefaultReflectorFactory")
+    public static void patchDefaultReflectorFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod findForClass = ctClass.getDeclaredMethod("findForClass");
+        findForClass.insertBefore("{" +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {" +
+                "    $0.reflectorMap.remove($1);" +
+                "}" +
+                "}");
+
+        LOGGER.debug("org.apache.ibatis.reflection.DefaultReflectorFactory patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.binding.MapperRegistry")
+    public static void patchMapperRegistry(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod hasMapperM = ctClass.getDeclaredMethod("hasMapper", new CtClass[]{classPool.get(Class.class.getName())});
+        hasMapperM.insertBefore("{" +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    knownMappers.remove($1);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("org.apache.ibatis.binding.MapperRegistry patched.");
     }
 }

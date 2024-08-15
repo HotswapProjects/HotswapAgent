@@ -27,6 +27,8 @@ import org.apache.ibatis.builder.xml.XMLConfigBuilder;
 import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.mybatis.transformers.ConfigurationCaller;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -36,9 +38,21 @@ import org.hotswap.agent.util.ReflectionHelper;
  * @author Vladimir Dvorak
  */
 public class ConfigurationProxy {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(ConfigurationProxy.class);
+
     private static Map<XMLConfigBuilder, ConfigurationProxy> proxiedConfigurations = new HashMap<>();
 
     public static ConfigurationProxy getWrapper(XMLConfigBuilder configBuilder) {
+        /*
+         * MyBatis runs in MyBatis-Spring mode, so there is no need to cache configuration-related data.
+         * The related reload operations are handled by SpringMybatisConfigurationProxy
+         */
+        if (SpringMybatisConfigurationProxy.runningBySpringMybatis()) {
+            LOGGER.debug("MyBatis runs in MyBatis-Spring mode, so there is no need to cache configuration-related data");
+            return new ConfigurationProxy(configBuilder);
+        }
+
         if (!proxiedConfigurations.containsKey(configBuilder)) {
             proxiedConfigurations.put(configBuilder, new ConfigurationProxy(configBuilder));
         }
@@ -88,5 +102,15 @@ public class ConfigurationProxy {
             }
         }
         return proxyInstance;
+    }
+
+    public static boolean isMybatisEntity(Class<?> clazz) {
+        for (ConfigurationProxy configurationProxy : proxiedConfigurations.values()) {
+            if (ConfigurationCaller.isMybatisObj(configurationProxy.configuration, clazz)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
