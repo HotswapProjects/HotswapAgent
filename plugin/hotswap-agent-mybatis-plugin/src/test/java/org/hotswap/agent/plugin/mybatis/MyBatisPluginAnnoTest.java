@@ -5,12 +5,9 @@ import org.apache.ibatis.jdbc.ScriptRunner;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
-import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.mybatis.testBeansHotswap.UserMapper;
 import org.hotswap.agent.plugin.mybatis.testBeansHotswap.UserMapper2;
-import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.sql.DataSource;
@@ -21,7 +18,7 @@ import java.sql.SQLException;
 
 import static org.junit.Assert.*;
 
-public class MyBatisPluginAnnoTest {
+public class MyBatisPluginAnnoTest extends BaseTest {
 
     private static SqlSessionFactory sqlSessionFactory;
 
@@ -72,16 +69,5 @@ public class MyBatisPluginAnnoTest {
             assertEquals("User1", user.getName1());
             assertNotNull(user.getName2());
         }
-    }
-
-    public static void swapClasses(Class original, String swap) throws Exception {
-        MyBatisRefreshCommands.reloadFlag = true;
-        HotSwapper.swapClasses(original, swap);
-        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !MyBatisRefreshCommands.reloadFlag;
-            }
-        }));
     }
 }

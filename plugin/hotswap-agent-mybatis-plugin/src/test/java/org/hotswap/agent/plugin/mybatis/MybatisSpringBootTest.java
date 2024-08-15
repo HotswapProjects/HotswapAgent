@@ -6,7 +6,6 @@ import org.hotswap.agent.plugin.mybatis.springboot.Application;
 import org.hotswap.agent.plugin.mybatis.springboot.BootUser;
 import org.hotswap.agent.plugin.mybatis.springboot.BootUserMapper;
 import org.hotswap.agent.plugin.mybatis.springboot.BootUserMapper2;
-import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,7 +23,7 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class)
-public class MybatisSpringBootTest {
+public class MybatisSpringBootTest extends BaseTest {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(MybatisSpringBootTest.class);
 
@@ -51,7 +50,7 @@ public class MybatisSpringBootTest {
         BootUser bootUser = bootUserMapper.getUserXML("jim");
         assertEquals("jim", bootUser.getName());
 
-        swapMapper("swapXML/BootUserMapper2.xml");
+        swapMapper("swapXML/BootUserMapper2.xml", "BootUserMapper.xml");
         bootUser = bootUserMapper.getUserXML("jim");
         assertNull(bootUser.getName());
         assertNotNull(bootUser.getEmail());
@@ -71,20 +70,5 @@ public class MybatisSpringBootTest {
         assertNull(bootUserAfterSwap.getName());
         assertNull(bootUserAfterSwap.getEmail());
         assertNotNull(bootUserAfterSwap.getPhone());
-    }
-
-
-    protected static void swapMapper(String mapperNew) throws Exception {
-        LOGGER.info("swapMapper: {}", mapperNew);
-        MyBatisRefreshCommands.reloadFlag = true;
-        File f = Resources.getResourceAsFile(mapperNew);
-        Files.copy(f.toPath(),  f.toPath().getParent().resolve("BootUserMapper.xml"), StandardCopyOption.REPLACE_EXISTING);
-        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !MyBatisRefreshCommands.reloadFlag;
-            }
-        }, 4000 )); // Repository is regenerated within 2*DeltaSpikePlugin.WAIT_ON_REDEFINE
-
     }
 }

@@ -18,30 +18,21 @@
  */
 package org.hotswap.agent.plugin.mybatis;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.sql.Connection;
-import java.sql.SQLException;
-
-import javax.sql.DataSource;
-
 import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.jdbc.ScriptRunner;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
-import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class MyBatisPluginTest {
+import java.io.File;
+import java.io.Reader;
+import java.nio.file.Files;
+
+import static org.junit.Assert.assertEquals;
+
+public class MyBatisPluginTest extends BaseTest {
 
   private static SqlSessionFactory sqlSessionFactory;
 
@@ -65,24 +56,6 @@ public class MyBatisPluginTest {
         tmp.delete();
     }
 
-    protected static void runScript(DataSource ds, String resource) throws IOException, SQLException {
-        try (Connection connection = ds.getConnection()) {
-            ScriptRunner runner = new ScriptRunner(connection);
-            runner.setAutoCommit(true);
-            runner.setStopOnError(false);
-            runner.setLogWriter(null);
-            runner.setErrorLogWriter(null);
-            runScript(runner, resource);
-        }
-    }
-
-    private static void runScript(ScriptRunner runner, String resource)
-            throws IOException, SQLException {
-        try (Reader reader = Resources.getResourceAsReader(resource)) {
-            runner.runScript(reader);
-        }
-    }
-
     @Test
     public void testUserFromAnnotation() throws Exception {
       try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
@@ -98,18 +71,4 @@ public class MyBatisPluginTest {
       }
     }
 
-    protected static void swapMapper(String mapperNew) throws Exception {
-        MyBatisRefreshCommands.reloadFlag = true;
-        File f = Resources.getResourceAsFile(mapperNew);
-        Files.copy(f.toPath(), f.toPath().getParent().resolve("Mapper.xml"), StandardCopyOption.REPLACE_EXISTING);
-        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !MyBatisRefreshCommands.reloadFlag;
-            }
-        }, 4000 )); // Repository is regenerated within 2*DeltaSpikePlugin.WAIT_ON_REDEFINE
-
-        // TODO do not know why sleep is needed, maybe a separate thread in owb refresh?
-        Thread.sleep(100);
-    }
 }
