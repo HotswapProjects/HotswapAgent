@@ -27,6 +27,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
@@ -88,13 +89,7 @@ public class MyBatisTransformers {
         src.append("this.configuration = " + ConfigurationProxy.class.getName() + ".getWrapper(this).proxy(this.configuration);");
         src.append("}");
 
-        CtClass[] constructorParams = new CtClass[] {
-                classPool.get("org.apache.ibatis.parsing.XPathParser"),
-                classPool.get("java.lang.String"),
-                classPool.get("java.util.Properties")
-        };
-
-        ctClass.getDeclaredConstructor(constructorParams).insertAfter(src.toString());
+        XMLConfigBuilderUtils.getBuilderInstrumentConstructor(ctClass, classPool).insertAfter(src.toString());
         CtMethod newMethod = CtNewMethod.make(
                 "public void " + REFRESH_METHOD + "() {" +
                         "if(" + XPathParserCaller.class.getName() + ".refreshDocument(this.parser)) {" +

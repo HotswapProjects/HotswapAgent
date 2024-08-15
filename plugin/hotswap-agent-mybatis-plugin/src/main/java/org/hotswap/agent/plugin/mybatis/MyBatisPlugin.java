@@ -41,8 +41,8 @@ import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
  */
 @Plugin(name = "MyBatis",
         description = "Reload MyBatis configuration after configuration create/change.",
-        testedVersions = {"All between 3.5.9"},
-        expectedVersions = {"3.5.9"},
+        testedVersions = {"All between 3.5.16"},
+        expectedVersions = {"3.5.16"},
         supportClass = {MyBatisTransformers.class})
 public class MyBatisPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisPlugin.class);
