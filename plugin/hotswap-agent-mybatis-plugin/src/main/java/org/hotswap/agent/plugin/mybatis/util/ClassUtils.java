@@ -17,4 +17,12 @@ public class ClassUtils {
             return false;
         }
     }
+
+    public static boolean methodExists(CtClass ctClass, String fieldName) {
+        try {
+            return ctClass.getDeclaredField(fieldName) != null;
+        } catch (NotFoundException e) {
+            return false;
+        }
+    }
 }

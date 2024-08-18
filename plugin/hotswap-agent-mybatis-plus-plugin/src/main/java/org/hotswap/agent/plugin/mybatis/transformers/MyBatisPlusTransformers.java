@@ -1,14 +1,16 @@
 package org.hotswap.agent.plugin.mybatis.transformers;
 
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.expr.ExprEditor;
+import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
+import org.hotswap.agent.plugin.mybatis.MyBatisPlusPlugin;
+import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationPlusProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.util.ClassUtils;
 import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
-import org.hotswap.agent.plugin.mybatis.MyBatisPlusPlugin;
-import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationPlusProxy;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 import static org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers.*;
@@ -23,6 +25,7 @@ public class MyBatisPlusTransformers {
     private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisPlusTransformers.class);
 
     private static boolean isMybatisPlusFlag = false;
+    public static final String HA_SQLSESSIONFACTORY_BUILDER_FIELD = "$$ha$sqlSessionFactoryBuilder";
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.xml.XMLMapperBuilder")
     public static void patchXMLMapperBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
@@ -116,10 +119,11 @@ public class MyBatisPlusTransformers {
                 new CtClass[]{classPool.get("org.apache.ibatis.session.Configuration")});
         buildMethod.insertBefore("{" +
                 "if (this." + FACTORYBEAN_FIELD + " != null) {" +
-                "configuration = " + PlusSqlSessionFactoryBeanCaller.class.getName() + ".proxyPlusConfiguration(this." + FACTORYBEAN_FIELD + ", configuration);" +
+                "$1 = " + PlusSqlSessionFactoryBeanCaller.class.getName() + ".proxyPlusConfiguration(this." + FACTORYBEAN_FIELD + ", $1);" +
                 "}" +
                 "}"
         );
+
         LOGGER.debug("com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder patched.");
     }
 
@@ -130,16 +134,35 @@ public class MyBatisPlusTransformers {
         CtField sourceFileField = new CtField(booleanClass, INITIALIZED_FIELD, ctClass);
         ctClass.addField(sourceFileField);
 
-        CtMethod method = ctClass.getDeclaredMethod("afterPropertiesSet");
-        method.insertAfter("{" +
+        CtField buildField = new CtField(classPool.get(SqlSessionFactoryBuilder.class.getName()),
+                HA_SQLSESSIONFACTORY_BUILDER_FIELD, ctClass);
+        ctClass.addField(buildField);
+
+        CtMethod afterPropertiesMethod = ctClass.getDeclaredMethod("afterPropertiesSet");
+        afterPropertiesMethod.insertAfter("{" +
                 "this." + INITIALIZED_FIELD + " = true;" +
                 "}"
         );
 
-        CtConstructor constructor = ctClass.getDeclaredConstructor(new CtClass[]{});
-        constructor.insertAfter("{" +
-                PlusSqlSessionFactoryBeanCaller.class.getName() + ".setPlusFactoryBean(this.sqlSessionFactoryBuilder, this);" +
-                "}");
+        if (ClassUtils.fieldExists(ctClass, "sqlSessionFactoryBuilder")) {
+            CtConstructor constructor = ctClass.getDeclaredConstructor(new CtClass[]{});
+            constructor.insertAfter("{" +
+                    PlusSqlSessionFactoryBeanCaller.class.getName() + ".setPlusFactoryBean(this.sqlSessionFactoryBuilder, this);" +
+                    "}");
+        } else {
+            CtMethod buildSqlSessionFactoryM = ctClass.getDeclaredMethod("buildSqlSessionFactory");
+            buildSqlSessionFactoryM.instrument(new ExprEditor() {
+                @Override
+                public void edit(NewExpr e) throws CannotCompileException {
+                    if (e.getClassName().equals("com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder")) {
+                        e.replace("{ $_ = $proceed($$); " +
+                                HA_SQLSESSIONFACTORY_BUILDER_FIELD + "=$_;" +
+                                PlusSqlSessionFactoryBeanCaller.class.getName() + ".setPlusFactoryBean(this." + HA_SQLSESSIONFACTORY_BUILDER_FIELD + ", this);" +
+                                " }");
+                    }
+                }
+            });
+        }
 
         CtMethod proxyMethod = CtNewMethod.make(
                 "public org.apache.ibatis.session.Configuration " + CONFIGURATION_PROXY_METHOD + "(org.apache.ibatis.session.Configuration configuration) {" +
@@ -150,7 +173,7 @@ public class MyBatisPlusTransformers {
                         "}" +
                         "}", ctClass);
         ctClass.addMethod(proxyMethod);
-        LOGGER.debug("org.mybatis.spring.SqlSessionFactoryBean patched.");
+        LOGGER.debug("com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean patched.");
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisConfiguration\\$StrictMap")
@@ -168,6 +191,7 @@ public class MyBatisPlusTransformers {
     @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisConfiguration")
     public static void patchPlusConfiguration(CtClass ctClass, ClassPool classPool)
             throws NotFoundException, CannotCompileException {
+        isMybatisPlusFlag = true;
         CtMethod removeMappedStatementMethod = CtNewMethod.make("public void $$removeMappedStatement(String statementName){" +
                 "mappedStatements.remove(statementName);" +
                 "}", ctClass);
@@ -203,6 +227,7 @@ public class MyBatisPlusTransformers {
 
     @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisMapperRegistry")
     public static void patchMapperRegistry(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        isMybatisPlusFlag = true;
         CtMethod hasMapperM = ctClass.getDeclaredMethod("hasMapper", new CtClass[]{classPool.get(Class.class.getName())});
         hasMapperM.insertBefore("{" +
                 "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
@@ -219,7 +244,6 @@ public class MyBatisPlusTransformers {
                 "public void inspectInject(org.apache.ibatis.builder.MapperBuilderAssistant builderAssistant, java.lang.Class mapperClass) {" +
                         "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
                         "com.baomidou.mybatisplus.core.toolkit.GlobalConfigUtils.getMapperRegistryCache(builderAssistant.getConfiguration()).remove($2.toString());\n" +
-                        "com.baomidou.mybatisplus.core.metadata.TableInfoHelper.remove(com.baomidou.mybatisplus.core.toolkit.ReflectionKit.getSuperClassGenericType($2, com.baomidou.mybatisplus.core.mapper.Mapper.class, 0));" +
                         "}\n" +
                         "super.inspectInject(builderAssistant, mapperClass);" +
                         "}", ctClass);
@@ -241,5 +265,21 @@ public class MyBatisPlusTransformers {
                 "}");
 
         LOGGER.debug("com.baomidou.mybatisplus.core.toolkit.ReflectionKit patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.metadata.TableInfoHelper")
+    public static void patchPlusTableInfoHelper(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod initTableInfoM = ctClass.getDeclaredMethod("initTableInfo", new CtClass[]{
+                classPool.get("org.apache.ibatis.builder.MapperBuilderAssistant"),
+                classPool.get(Class.class.getName())
+        });
+
+        initTableInfoM.insertBefore("{ " +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    TABLE_INFO_CACHE.remove($2);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.metadata.TableInfoHelper patched.");
     }
 }

@@ -93,6 +93,7 @@ public class ConfigurationPlusProxy {
     }
 
     public static boolean isMybatisEntity(Class<?> clazz) {
+        LOGGER.debug("isMybatisEntity, clazz={}, configuration size={}", clazz, proxiedConfigurations.size());
         for (ConfigurationPlusProxy configurationProxy : proxiedConfigurations.values()) {
             if (MybatisPlusConfigurationCaller.isMybatisObj(configurationProxy.configuration, clazz)) {
                 return true;

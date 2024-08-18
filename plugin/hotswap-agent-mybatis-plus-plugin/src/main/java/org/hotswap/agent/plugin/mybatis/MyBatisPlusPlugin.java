@@ -33,6 +33,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationPlusProxy;
+import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisPlusConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisPlusTransformers;
 
 /**
@@ -41,9 +42,9 @@ import org.hotswap.agent.plugin.mybatis.transformers.MyBatisPlusTransformers;
  * @author Vladimir Dvorak
  */
 @Plugin(name = "MyBatisPlus",
-        description = "Reload MyBatis configuration after configuration create/change.",
-        testedVersions = {"All between 3.5.16"},
-        expectedVersions = {"3.5.16"},
+        description = "Reload MyBatis Plus configuration after configuration create/change.",
+        testedVersions = {"All versions between 3.4.0 and 3.5.7"},
+        expectedVersions = {"3.5.7"},
         supportClass = {MyBatisPlusTransformers.class})
 public class MyBatisPlusPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisPlusPlugin.class);
@@ -83,8 +84,8 @@ public class MyBatisPlusPlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
-        LOGGER.debug("Scheduling MybatisPlus reload for class '{}' in classLoader {}", clazz, appClassLoader);
-        if (ConfigurationProxy.isMybatisEntity(clazz) || ConfigurationPlusProxy.isMybatisEntity(clazz) || SpringMybatisConfigurationProxy.isMybatisEntity(clazz)) {
+        LOGGER.debug("Ready to schedule MybatisPlus reload for class '{}' in classLoader {}", clazz, appClassLoader);
+        if (ConfigurationPlusProxy.isMybatisEntity(clazz) || SpringMybatisPlusConfigurationProxy.isMybatisPlusEntity(clazz)) {
             LOGGER.debug("Scheduling MybatisPlus reload for class '{}' in classLoader {}", clazz, appClassLoader);
             refresh(500);
         }

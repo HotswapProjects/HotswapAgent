@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class SpringMybatisConfigurationProxy {
 
-    private static Map<Object, SpringMybatisConfigurationProxy> proxiedConfigurations = new HashMap<>();
+    protected static Map<Object, SpringMybatisConfigurationProxy> proxiedConfigurations = new HashMap<>();
 
     public SpringMybatisConfigurationProxy(Object sqlSessionFactoryBean) {
         this.sqlSessionFactoryBean = sqlSessionFactoryBean;
@@ -46,7 +46,7 @@ public class SpringMybatisConfigurationProxy {
     }
 
     private Object sqlSessionFactoryBean;
-    private Configuration configuration;
+    protected Configuration configuration;
     private Configuration proxyInstance;
 
     public Configuration proxy(Configuration origConfiguration) {
@@ -81,5 +81,6 @@ public class SpringMybatisConfigurationProxy {
 
         return false;
     }
+
 
 }
