@@ -1,0 +1,245 @@
+package org.hotswap.agent.plugin.mybatis.transformers;
+
+import org.hotswap.agent.annotation.OnClassLoadEvent;
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
+import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.util.ClassUtils;
+import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
+import org.hotswap.agent.plugin.mybatis.MyBatisPlusPlugin;
+import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationPlusProxy;
+import org.hotswap.agent.util.PluginManagerInvoker;
+
+import static org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers.*;
+
+/**
+ * Static transformers for MyBatis plugin-Mybatis-Plus.
+ *
+ * @author Vladimir Dvorak
+ */
+public class MyBatisPlusTransformers {
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisPlusTransformers.class);
+
+    private static boolean isMybatisPlusFlag = false;
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.xml.XMLMapperBuilder")
+    public static void patchXMLMapperBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtField isMybatisPlusField = new CtField(classPool.get(boolean.class.getName()), IS_MYBATIS_PLUS, ctClass);
+        ClassUtils.addFieldNotExists(ctClass, isMybatisPlusField);
+
+        StringBuilder src = new StringBuilder("{");
+        src.append("if(" + IS_MYBATIS_PLUS + "){");
+        src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlusPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlusPlugin.class, "registerConfigurationFile",
+                XPathParserCaller.class.getName() + ".getSrcFileName(this.parser)", "java.lang.String", "this", "java.lang.Object"));
+        src.append("} }");
+
+        CtClass[] constructorParams = new CtClass[]{
+                classPool.get("org.apache.ibatis.parsing.XPathParser"),
+                classPool.get("org.apache.ibatis.session.Configuration"),
+                classPool.get("java.lang.String"),
+                classPool.get("java.util.Map")
+        };
+
+        CtConstructor constructor = ctClass.getDeclaredConstructor(constructorParams);
+        if (isMybatisPlusFlag) {
+            constructor.insertBefore("{ " + IS_MYBATIS_PLUS + "=true; }");
+        }
+
+        constructor.insertAfter(src.toString());
+        LOGGER.debug("org.apache.ibatis.builder.xml.XMLMapperBuilder patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisXMLMapperBuilder")
+    public static void patchPlusXMLMapperBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlusPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlusPlugin.class, "registerConfigurationFile",
+                XPathParserCaller.class.getName() + ".getSrcFileName(this.parser)", "java.lang.String", "this", "java.lang.Object"));
+        src.append("}");
+
+        CtClass[] constructorParams = new CtClass[]{
+                classPool.get("org.apache.ibatis.parsing.XPathParser"),
+                classPool.get("org.apache.ibatis.session.Configuration"),
+                classPool.get("java.lang.String"),
+                classPool.get("java.util.Map")
+        };
+
+        CtConstructor constructor = ctClass.getDeclaredConstructor(constructorParams);
+        constructor.insertAfter(src.toString());
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.MybatisXMLMapperBuilder patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisXMLConfigBuilder")
+    public static void patchMybatisXMLConfigBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        StringBuilder src = new StringBuilder("{");
+        src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlusPlugin.class));
+        src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlusPlugin.class, "registerConfigurationFile",
+                XPathParserCaller.class.getName() + ".getSrcFileName(this.parser)", "java.lang.String", "this", "java.lang.Object"));
+        src.append("this.configuration = " + ConfigurationPlusProxy.class.getName() + ".getWrapper(this).proxy(this.configuration);");
+        src.append("}");
+
+
+        CtConstructor instrumentConstructor = XMLConfigBuilderUtils.getBuilderInstrumentConstructor(ctClass, classPool);
+        instrumentConstructor.insertAfter(src.toString());
+
+        CtMethod newMethod = CtNewMethod.make(
+                "public void " + REFRESH_METHOD + "() {" +
+                        "if(" + XPathParserCaller.class.getName() + ".refreshDocument(this.parser)) {" +
+                        "this.parsed=false;" +
+                        "parse();" +
+                        "}" +
+                        "}", ctClass);
+        ctClass.addMethod(newMethod);
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.MybatisXMLConfigBuilder patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder")
+    public static void patchPlusSqlSessionFactoryBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // add $$ha$factoryBean field
+        isMybatisPlusFlag = true;
+        CtClass objClass = classPool.get("java.lang.Object");
+        CtField factoryBeanField = new CtField(objClass, FACTORYBEAN_FIELD, ctClass);
+        ctClass.addField(factoryBeanField);
+
+        CtMethod setMethod = CtNewMethod.make(
+                "public void " + FACTORYBEAN_SET_METHOD + "(Object factoryBean) {" +
+                        "this." + FACTORYBEAN_FIELD + " = factoryBean;" +
+                        "}", ctClass);
+        ctClass.addMethod(setMethod);
+
+        CtMethod buildMethod = ctClass.getDeclaredMethod("build",
+                new CtClass[]{classPool.get("org.apache.ibatis.session.Configuration")});
+        buildMethod.insertBefore("{" +
+                "if (this." + FACTORYBEAN_FIELD + " != null) {" +
+                "configuration = " + PlusSqlSessionFactoryBeanCaller.class.getName() + ".proxyPlusConfiguration(this." + FACTORYBEAN_FIELD + ", configuration);" +
+                "}" +
+                "}"
+        );
+        LOGGER.debug("com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean")
+    public static void patchPlusSqlSessionFactoryBean(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // add $$ha$initialized field
+        CtClass booleanClass = classPool.get(boolean.class.getName());
+        CtField sourceFileField = new CtField(booleanClass, INITIALIZED_FIELD, ctClass);
+        ctClass.addField(sourceFileField);
+
+        CtMethod method = ctClass.getDeclaredMethod("afterPropertiesSet");
+        method.insertAfter("{" +
+                "this." + INITIALIZED_FIELD + " = true;" +
+                "}"
+        );
+
+        CtConstructor constructor = ctClass.getDeclaredConstructor(new CtClass[]{});
+        constructor.insertAfter("{" +
+                PlusSqlSessionFactoryBeanCaller.class.getName() + ".setPlusFactoryBean(this.sqlSessionFactoryBuilder, this);" +
+                "}");
+
+        CtMethod proxyMethod = CtNewMethod.make(
+                "public org.apache.ibatis.session.Configuration " + CONFIGURATION_PROXY_METHOD + "(org.apache.ibatis.session.Configuration configuration) {" +
+                        "if(this." + INITIALIZED_FIELD + ") {" +
+                        "return configuration;" +
+                        "} else {" +
+                        "return " + SpringMybatisConfigurationProxy.class.getName() + ".getWrapper(this).proxy(configuration);" +
+                        "}" +
+                        "}", ctClass);
+        ctClass.addMethod(proxyMethod);
+        LOGGER.debug("org.mybatis.spring.SqlSessionFactoryBean patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisConfiguration\\$StrictMap")
+    public static void patchPlusStrictMap(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+        // To avoid xxx collection already contains value for xxx.
+        CtMethod method = ctClass.getDeclaredMethod("put", new CtClass[]{
+                classPool.get(String.class.getName()), classPool.get(Object.class.getName())
+        });
+        method.insertBefore("if(containsKey($1)){remove($1);}");
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.MybatisConfiguration$StrictMap patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisConfiguration")
+    public static void patchPlusConfiguration(CtClass ctClass, ClassPool classPool)
+            throws NotFoundException, CannotCompileException {
+        CtMethod removeMappedStatementMethod = CtNewMethod.make("public void $$removeMappedStatement(String statementName){" +
+                "mappedStatements.remove(statementName);" +
+                "}", ctClass);
+        ctClass.addMethod(removeMappedStatementMethod);
+
+        ctClass.getDeclaredMethod("addMappedStatement", new CtClass[]{
+                classPool.get("org.apache.ibatis.mapping.MappedStatement")
+        }).insertBefore("$$removeMappedStatement($1.getId());");
+
+        CtMethod hasStatementM = ctClass.getDeclaredMethod("hasStatement", new CtClass[]{
+                classPool.get(String.class.getName()), classPool.get(boolean.class.getName())});
+        hasStatementM.insertBefore("{" +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "$$removeMappedStatement($1);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.MybatisConfiguration patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.reflection.DefaultReflectorFactory")
+    public static void patchDefaultReflectorFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod findForClass = ctClass.getDeclaredMethod("findForClass");
+        findForClass.insertBefore("{ " +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {" +
+                "    $0.reflectorMap.remove($1);" +
+                "}" +
+                " }");
+
+        LOGGER.debug("org.apache.ibatis.reflection.DefaultReflectorFactory patched.");
+    }
+
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.MybatisMapperRegistry")
+    public static void patchMapperRegistry(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod hasMapperM = ctClass.getDeclaredMethod("hasMapper", new CtClass[]{classPool.get(Class.class.getName())});
+        hasMapperM.insertBefore("{" +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    knownMappers.remove($1);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.MybatisMapperRegistry patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.injector.DefaultSqlInjector")
+    public static void patchDefaultSqlInjector(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod inspectInjectM = CtNewMethod.make(
+                "public void inspectInject(org.apache.ibatis.builder.MapperBuilderAssistant builderAssistant, java.lang.Class mapperClass) {" +
+                        "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                        "com.baomidou.mybatisplus.core.toolkit.GlobalConfigUtils.getMapperRegistryCache(builderAssistant.getConfiguration()).remove($2.toString());\n" +
+                        "com.baomidou.mybatisplus.core.metadata.TableInfoHelper.remove(com.baomidou.mybatisplus.core.toolkit.ReflectionKit.getSuperClassGenericType($2, com.baomidou.mybatisplus.core.mapper.Mapper.class, 0));" +
+                        "}\n" +
+                        "super.inspectInject(builderAssistant, mapperClass);" +
+                        "}", ctClass);
+
+        ctClass.addMethod(inspectInjectM);
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.injector.DefaultSqlInjector patched.");
+    }
+
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.core.toolkit.ReflectionKit")
+    public static void patchPlusReflectionKit(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod getFieldListM = ctClass.getDeclaredMethod("getFieldList", new CtClass[]{
+                classPool.get(Class.class.getName())});
+        getFieldListM.insertBefore("{ " +
+                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    CLASS_FIELD_CACHE.remove($1);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("com.baomidou.mybatisplus.core.toolkit.ReflectionKit patched.");
+    }
+}

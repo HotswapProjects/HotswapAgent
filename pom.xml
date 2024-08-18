@@ -59,6 +59,7 @@
         <module>plugin/hotswap-agent-velocity-plugin</module>
         <module>plugin/hotswap-agent-plugins</module>
         <module>plugin/hotswap-agent-sponge-plugin</module>
+        <module>plugin/hotswap-agent-mybatis-plus-plugin</module>
         <module>hotswap-agent</module>
     </modules>
 
