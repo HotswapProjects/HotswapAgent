@@ -22,7 +22,7 @@ import java.nio.file.StandardCopyOption;
 import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = Application.class)
+@SpringBootTest(classes = Application.class, properties = "spring.config.location=classpath:application.properties")
 public class MybatisSpringBootTest extends BaseTest {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(MybatisSpringBootTest.class);
@@ -64,7 +64,7 @@ public class MybatisSpringBootTest extends BaseTest {
         assertNotNull(bootUser.getEmail());
         assertNotNull(bootUser.getPhone());
 
-        MyBatisPluginAnnoTest.swapClasses(BootUserMapper.class, BootUserMapper2.class.getName());
+        swapClasses(BootUserMapper.class, BootUserMapper2.class.getName());
 
         BootUser bootUserAfterSwap = bootUserMapper.getUser("jim");
         assertNull(bootUserAfterSwap.getName());
