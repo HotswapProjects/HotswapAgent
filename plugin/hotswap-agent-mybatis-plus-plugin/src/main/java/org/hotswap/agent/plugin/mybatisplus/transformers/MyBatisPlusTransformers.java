@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.mybatis.transformers;
+package org.hotswap.agent.plugin.mybatisplus.transformers;
 
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -6,9 +6,10 @@ import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.mybatis.MyBatisPlusPlugin;
-import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationPlusProxy;
+import org.hotswap.agent.plugin.mybatisplus.MyBatisPlusPlugin;
+import org.hotswap.agent.plugin.mybatisplus.proxy.ConfigurationPlusProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.transformers.XPathParserCaller;
 import org.hotswap.agent.plugin.mybatis.util.ClassUtils;
 import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -208,7 +209,6 @@ public class MyBatisPlusTransformers {
                 "$$removeMappedStatement($1);\n" +
                 "}\n" +
                 "}");
-
         LOGGER.debug("com.baomidou.mybatisplus.core.MybatisConfiguration patched.");
     }
 

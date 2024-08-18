@@ -1,4 +1,4 @@
-package org.hotswap.agent.plugin.mybatis.proxy;
+package org.hotswap.agent.plugin.mybatisplus.proxy;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisXMLConfigBuilder;
@@ -6,8 +6,9 @@ import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
-import org.hotswap.agent.plugin.mybatis.transformers.MybatisPlusConfigurationCaller;
+import org.hotswap.agent.plugin.mybatisplus.transformers.MybatisPlusConfigurationCaller;
 import org.hotswap.agent.util.ReflectionHelper;
 
 import java.lang.reflect.InvocationTargetException;

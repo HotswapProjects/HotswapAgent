@@ -1,8 +1,8 @@
-package org.hotswap.agent.plugin.mybatis.proxy;
+package org.hotswap.agent.plugin.mybatisplus.proxy;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.mybatis.transformers.ConfigurationCaller;
-import org.hotswap.agent.plugin.mybatis.transformers.MybatisPlusConfigurationCaller;
+import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
+import org.hotswap.agent.plugin.mybatisplus.transformers.MybatisPlusConfigurationCaller;
 
 public class SpringMybatisPlusConfigurationProxy extends SpringMybatisConfigurationProxy {
 

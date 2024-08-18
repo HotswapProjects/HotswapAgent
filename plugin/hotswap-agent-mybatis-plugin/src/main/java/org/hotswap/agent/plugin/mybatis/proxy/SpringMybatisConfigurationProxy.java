@@ -46,7 +46,7 @@ public class SpringMybatisConfigurationProxy {
     }
 
     private Object sqlSessionFactoryBean;
-    protected Configuration configuration;
+    public Configuration configuration;
     private Configuration proxyInstance;
 
     public Configuration proxy(Configuration origConfiguration) {

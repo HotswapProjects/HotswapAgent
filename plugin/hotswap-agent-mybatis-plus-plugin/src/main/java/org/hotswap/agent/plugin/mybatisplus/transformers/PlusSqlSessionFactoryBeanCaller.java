@@ -1,9 +1,10 @@
-package org.hotswap.agent.plugin.mybatis.transformers;
+package org.hotswap.agent.plugin.mybatisplus.transformers;
 
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
 import org.hotswap.agent.util.ReflectionHelper;
 
 public class PlusSqlSessionFactoryBeanCaller {

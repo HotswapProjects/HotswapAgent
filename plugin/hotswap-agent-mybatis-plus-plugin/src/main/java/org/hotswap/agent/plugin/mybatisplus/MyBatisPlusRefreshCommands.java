@@ -16,12 +16,12 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.mybatis;
+package org.hotswap.agent.plugin.mybatisplus;
 
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
-import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationPlusProxy;
+import org.hotswap.agent.plugin.mybatisplus.proxy.ConfigurationPlusProxy;
 
 
 /**
