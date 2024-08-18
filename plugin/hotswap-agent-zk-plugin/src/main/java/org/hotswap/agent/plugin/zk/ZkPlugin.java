@@ -100,7 +100,7 @@ public class ZkPlugin {
         }
 
         ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
-                "   this.cache = new org.zkoss.zel.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                "   this.cache = new org.zkoss.zel.impl.util.ConcurrentCache(CACHE_SIZE); " +
                 "}", ctClass));
 
         LOGGER.debug("org.zkoss.zel.BeanELResolver - added method __resetCache().");
