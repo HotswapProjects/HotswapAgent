@@ -18,8 +18,6 @@ import static org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers.
 
 /**
  * Static transformers for MyBatis plugin-Mybatis-Plus.
- *
- * @author Vladimir Dvorak
  */
 public class MyBatisPlusTransformers {
 

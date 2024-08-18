@@ -28,8 +28,6 @@ import org.hotswap.agent.plugin.mybatisplus.proxy.ConfigurationPlusProxy;
  * Reload the MyBatis configuration.
  * <p/>
  * This class must run in App classloader.
- *
- * @author Vladimir Dvorak
  */
 public class MyBatisPlusRefreshCommands {
     private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisPlusRefreshCommands.class);
