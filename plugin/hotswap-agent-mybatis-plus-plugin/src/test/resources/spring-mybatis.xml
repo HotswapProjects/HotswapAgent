@@ -7,20 +7,20 @@
         <constructor-arg ref="sqlSessionFactory"/>
     </bean>
 
-    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
-        <property name="dataSource" ref="dataSource" />
-        <property name="mapperLocations" value="org/hotswap/agent/plugin/mybatis/Mapper.xml"/>
+    <bean id="sqlSessionFactory" class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="mapperLocations" value="org/hotswap/agent/plugin/mybatisplus/PlusMapperSpring.xml"/>
     </bean>
 
     <bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource" >
         <property name="username" value="sa" />
         <property name="driver" ref="hSqldriver" />
-        <property name="url" value="jdbc:hsqldb:mem:maptypehandler" />
+        <property name="url" value="jdbc:hsqldb:mem:plusdb" />
     </bean>
     <bean id="hSqldriver" class="org.hsqldb.jdbcDriver"/>
 
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer" >
-        <property name="basePackage" value="org.hotswap.agent.plugin.mybatis"/>
+        <property name="basePackage" value="org.hotswap.agent.plugin.mybatisplus.spring"/>
         <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
     </bean>
 </beans>

@@ -6,7 +6,7 @@
 <configuration>
 
     <typeHandlers>
-        <typeHandler handler="org.hotswap.agent.plugin.mybatis.LabelsTypeHandler" />
+        <typeHandler handler="org.hotswap.agent.plugin.mybatisplus.LabelsTypeHandler" />
     </typeHandlers>
 
     <environments default="development">
@@ -23,7 +23,7 @@
     </environments>
 
     <mappers>
-        <mapper resource="org/hotswap/agent/plugin/mybatis/PlusMapper.xml" />
+        <mapper resource="org/hotswap/agent/plugin/mybatisplus/PlusMapper.xml" />
     </mappers>
 
 

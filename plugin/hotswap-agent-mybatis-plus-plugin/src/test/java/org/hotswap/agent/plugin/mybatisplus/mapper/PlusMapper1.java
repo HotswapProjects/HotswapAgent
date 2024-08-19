@@ -16,14 +16,15 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.mybatis.plus;
+package org.hotswap.agent.plugin.mybatisplus.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser;
 
 @org.apache.ibatis.annotations.Mapper
-public interface PlusMapper extends BaseMapper<PlusUser> {
+public interface PlusMapper1 extends BaseMapper<PlusUser> {
 
   @Select("select * from users where name1 = #{name1}")
   PlusUser getUser(@Param("name1") String name1);
