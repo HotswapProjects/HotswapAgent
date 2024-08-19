@@ -3,10 +3,10 @@
     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="org.hotswap.agent.plugin.mybatis.plus.PlusMapper">
+<mapper namespace="org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper">
 
 
-    <select id="getUserXML" resultType="org.hotswap.agent.plugin.mybatis.plus.PlusUser">
+    <select id="getUserXML" resultType="org.hotswap.agent.plugin.mybatisplus.entity.PlusUser">
         select * from users where name2 = #{name}
     </select>
 

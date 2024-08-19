@@ -1,13 +1,14 @@
-package org.hotswap.agent.plugin.mybatis;
+package org.hotswap.agent.plugin.mybatisplus;
 
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.mybatis.plus.PlusApplication;
-import org.hotswap.agent.plugin.mybatis.plus.PlusMapper;
-import org.hotswap.agent.plugin.mybatis.plus.PlusUser;
-import org.hotswap.agent.plugin.mybatis.plus.PlusUser2;
+import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser;
+import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser2;
+import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper;
+import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper2;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.jupiter.api.Order;
@@ -24,14 +25,14 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = PlusApplication.class, properties = "spring.config.location=classpath:application-plus.properties")
-public class MybatisPlusSpringBootTest extends BaseTest {
+@SpringBootTest(classes = Application.class, properties = "spring.config.location=classpath:application-plus.properties")
+public class MyBatisPlusSpringBootTest extends BaseTest {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(MybatisPlusSpringBootTest.class);
+    private static AgentLogger LOGGER = AgentLogger.getLogger(MyBatisPlusSpringBootTest.class);
 
     @Autowired
     ApplicationContext applicationContext;
@@ -48,21 +49,10 @@ public class MybatisPlusSpringBootTest extends BaseTest {
     }
 
     private static void initMapper() throws IOException {
-        File f = Resources.getResourceAsFile("org/hotswap/agent/plugin/mybatis/PlusMapper1.xml");
+        File f = Resources.getResourceAsFile("org/hotswap/agent/plugin/mybatisplus/PlusMapper1.xml");
         Files.copy(f.toPath(), f.toPath().getParent().resolve("PlusMapper.xml"), StandardCopyOption.REPLACE_EXISTING);
     }
 
-
-    @Test
-    @Order(2)
-    public void testUserFromXML() throws Exception {
-        PlusUser user = plusMapper.getUserXML("User1");
-        assertEquals("User1", user.getName1());
-        swapMapper("org/hotswap/agent/plugin/mybatis/PlusMapper2.xml", "PlusMapper.xml");
-
-        PlusUser user2 = plusMapper.getUserXML("User1");
-        assertEquals("User2", user2.getName1());
-    }
 
     @Test
     @Order(1)
@@ -72,7 +62,7 @@ public class MybatisPlusSpringBootTest extends BaseTest {
 
         // add a column for
         SqlSessionFactory sqlSessionFactory = applicationContext.getBean(SqlSessionFactory.class);
-        runScript(dataSource,"org/hotswap/agent/plugin/mybatis/AddColumn.sql");
+        runScript(dataSource, "org/hotswap/agent/plugin/mybatisplus/AddColumn.sql");
         // noting change
         try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
             PlusMapper mapper = sqlSession.getMapper(PlusMapper.class);
@@ -96,5 +86,31 @@ public class MybatisPlusSpringBootTest extends BaseTest {
         Field gender = user2.getClass().getDeclaredField("gender");
         gender.setAccessible(true);
         assertEquals("male", gender.get(user2));
+    }
+
+    @Test
+    @Order(2)
+    public void testUserFromXML() throws Exception {
+        PlusUser user = plusMapper.getUserXML("User1");
+        assertEquals("User1", user.getName1());
+        swapMapper("org/hotswap/agent/plugin/mybatisplus/PlusMapper2.xml", "PlusMapper.xml");
+
+        PlusUser user2 = plusMapper.getUserXML("User1");
+        assertEquals("User2", user2.getName1());
+    }
+
+    @Test
+    public void testUserFromAnnotation() throws Exception {
+        PlusUser user = plusMapper.getUser("User1");
+        assertEquals("User2", user.getName2());
+        assertNotNull(user.getName1());
+        assertNotNull(user.getId());
+
+        swapClasses(PlusMapper.class, PlusMapper2.class.getName());
+
+        PlusUser userSwap = plusMapper.getUser("User1");
+        assertEquals("User2", userSwap.getName1());
+        assertNull(userSwap.getName2());
+        assertNull(userSwap.getId());
     }
 }

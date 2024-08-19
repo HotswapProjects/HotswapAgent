@@ -1,26 +1,24 @@
-package org.hotswap.agent.plugin.mybatis;
+package org.hotswap.agent.plugin.mybatisplus;
 
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.jdbc.ScriptRunner;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.hotswap.agent.plugin.mybatis.plus.*;
+import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser;
+import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser1;
+import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser2;
+import org.hotswap.agent.plugin.mybatisplus.mapper.*;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.jupiter.api.Order;
 
-import javax.sql.DataSource;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.sql.Connection;
-import java.sql.SQLException;
 
 import static org.junit.Assert.*;
 
@@ -31,15 +29,19 @@ public class MyBatisPlusPluginTest extends BaseTest {
     @BeforeClass
     public static void setup() throws Exception {
         // create an SqlSessionFactory
-        File f = Resources.getResourceAsFile("org/hotswap/agent/plugin/mybatis/PlusMapper1.xml");
+        File f = Resources.getResourceAsFile("org/hotswap/agent/plugin/mybatisplus/PlusMapper1.xml");
         Files.copy(f.toPath(), f.toPath().getParent().resolve("PlusMapper.xml"), StandardCopyOption.REPLACE_EXISTING);
-        try (Reader reader = Resources.getResourceAsReader("org/hotswap/agent/plugin/mybatis/mybatis-config.xml")) {
+        try (Reader reader = Resources.getResourceAsReader("org/hotswap/agent/plugin/mybatisplus/mybatis-config.xml")) {
             sqlSessionFactory = new MybatisSqlSessionFactoryBuilder().build(reader);
         }
+    }
+
+    @Before
+    public void init() throws Exception {
 
         // populate in-memory database
         runScript(sqlSessionFactory.getConfiguration().getEnvironment().getDataSource(),
-                "org/hotswap/agent/plugin/mybatis/CreateDB.sql");
+                "org/hotswap/agent/plugin/mybatisplus/CreateDB.sql");
     }
 
 
@@ -58,7 +60,7 @@ public class MyBatisPlusPluginTest extends BaseTest {
             PlusUser user = mapper.getUserXML("User1");
             assertEquals("User1", user.getName1());
         }
-        swapMapper("org/hotswap/agent/plugin/mybatis/PlusMapper2.xml", "PlusMapper.xml");
+        swapMapper("org/hotswap/agent/plugin/mybatisplus/PlusMapper2.xml", "PlusMapper.xml");
         try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
             PlusMapper mapper = sqlSession.getMapper(PlusMapper.class);
             PlusUser user = mapper.getUserXML("User1");
@@ -77,7 +79,7 @@ public class MyBatisPlusPluginTest extends BaseTest {
 
         // add a column for
         runScript(sqlSessionFactory.getConfiguration().getEnvironment().getDataSource(),
-                "org/hotswap/agent/plugin/mybatis/AddColumn.sql");
+                "org/hotswap/agent/plugin/mybatisplus/AddColumn.sql");
 
         // noting change
         try (SqlSession sqlSession = sqlSessionFactory.openSession()) {

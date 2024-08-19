@@ -1,8 +1,9 @@
-package org.hotswap.agent.plugin.mybatis;
+package org.hotswap.agent.plugin.mybatisplus;
 
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.jdbc.ScriptRunner;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands;
 import org.hotswap.agent.util.test.WaitHelper;
 
 import javax.sql.DataSource;

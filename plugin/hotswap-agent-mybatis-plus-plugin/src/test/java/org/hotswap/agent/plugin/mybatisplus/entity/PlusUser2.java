@@ -16,18 +16,28 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.mybatis.plus;
+package org.hotswap.agent.plugin.mybatisplus.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 @TableName("users")
-public class PlusUser1 {
+public class PlusUser2 {
 
   @TableId
   private Integer id;
   private String name1;
   private String name2;
+
+  private String gender;
+
+  public String getGender() {
+    return gender;
+  }
+
+  public void setGender(String gender) {
+    this.gender = gender;
+  }
 
   public Integer getId() {
     return id;
