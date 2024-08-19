@@ -16,40 +16,20 @@
  * You should have received a copy of the GNU General Public License along
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
-package org.hotswap.agent.plugin.mybatis.plus;
+package org.hotswap.agent.plugin.mybatisplus.mapper;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser;
 
-@TableName("users")
-public class PlusUser {
 
-  @TableId
-  private Integer id;
-  private String name1;
-  private String name2;
+@org.apache.ibatis.annotations.Mapper
+public interface PlusMapper2 extends BaseMapper<PlusUser> {
 
-  public Integer getId() {
-    return id;
-  }
+  @Select("select name1 from users where name2 = #{name1}")
+  PlusUser getUser(@Param("name1") String name1);
 
-  public void setId(Integer id) {
-    this.id = id;
-  }
+  PlusUser getUserXML(String name);
 
-  public String getName1() {
-    return name1;
-  }
-
-  public void setName1(String name1) {
-    this.name1 = name1;
-  }
-
-  public String getName2() {
-    return name2;
-  }
-
-  public void setName2(String name2) {
-    this.name2 = name2;
-  }
 }

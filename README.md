@@ -286,6 +286,7 @@ Hotswap agent:
 * Sinan Yumak - Mojarra, MyFaces plugins
 * smallfour - Mybatis plugin
 * @cvictory - Spring plugin, Spring Boot plugin
+* @homejim - MyBatis plugin, MyBatisPlus plugin
 
 DCEVM:
 
