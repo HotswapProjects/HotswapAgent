@@ -14,14 +14,12 @@ public class MybatisPlusConfigurationCaller {
 
         // is Mybatis Plus mapper obj
         Object mybatisMapperRegistryObj = ReflectionHelper.get(configuration, "mybatisMapperRegistry");
-        if (mybatisMapperRegistryObj == null) {
-           return false;
-        }
-
-        MybatisMapperRegistry mapperRegistry = (MybatisMapperRegistry) mybatisMapperRegistryObj;
-        for (Class<?> mapper : mapperRegistry.getMappers()) {
-            if (clazz.getName().equals(mapper.getName())) {
-                return true;
+        if (mybatisMapperRegistryObj != null) {
+            MybatisMapperRegistry mapperRegistry = (MybatisMapperRegistry) mybatisMapperRegistryObj;
+            for (Class<?> mapper : mapperRegistry.getMappers()) {
+                if (clazz.getName().equals(mapper.getName())) {
+                    return true;
+                }
             }
         }
 

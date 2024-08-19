@@ -7,6 +7,7 @@ import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.javassist.NotFoundException;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -99,9 +100,15 @@ public class ZkPlugin {
             constructor.insertAfter(registerThis);
         }
 
-        ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
-                "   this.cache = new org.zkoss.zel.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-                "}", ctClass));
+        try {
+            ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
+                    "   this.cache = new org.zkoss.zel.impl.util.ConcurrentCache(CACHE_SIZE); " +
+                    "}", ctClass));
+        } catch (CannotCompileException e) {
+            ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
+                    "   this.cache = new org.zkoss.zel.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                    "}", ctClass));
+        }
 
         LOGGER.debug("org.zkoss.zel.BeanELResolver - added method __resetCache().");
     }

@@ -36,8 +36,6 @@ import org.hotswap.agent.plugin.mybatisplus.transformers.MyBatisPlusTransformers
 
 /**
  * Reload MyBatis configuration after entity create/change.
- *
- * @author Vladimir Dvorak
  */
 @Plugin(name = "MyBatisPlus",
         description = "Reload MyBatis Plus configuration after configuration create/change.",

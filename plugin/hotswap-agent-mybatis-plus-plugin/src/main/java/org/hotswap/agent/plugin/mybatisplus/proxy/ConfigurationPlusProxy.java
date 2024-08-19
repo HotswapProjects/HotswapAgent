@@ -18,8 +18,6 @@ import java.util.Map;
 
 /**
  * The Class ConfigurationProxy.
- *
- * @author Vladimir Dvorak
  */
 public class ConfigurationPlusProxy {
 
