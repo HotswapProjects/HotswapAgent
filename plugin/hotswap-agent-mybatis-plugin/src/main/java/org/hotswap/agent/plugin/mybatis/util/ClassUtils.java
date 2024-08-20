@@ -18,9 +18,9 @@ public class ClassUtils {
         }
     }
 
-    public static boolean methodExists(CtClass ctClass, String fieldName) {
+    public static boolean methodExists(CtClass ctClass, String methodName, CtClass[] params) {
         try {
-            return ctClass.getDeclaredField(fieldName) != null;
+            return ctClass.getDeclaredMethod(methodName, params) != null;
         } catch (NotFoundException e) {
             return false;
         }

@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.mybatisplus.transformers;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.expr.Cast;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
@@ -13,6 +14,8 @@ import org.hotswap.agent.plugin.mybatis.transformers.XPathParserCaller;
 import org.hotswap.agent.plugin.mybatis.util.ClassUtils;
 import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers.*;
 
@@ -116,12 +119,38 @@ public class MyBatisPlusTransformers {
 
         CtMethod buildMethod = ctClass.getDeclaredMethod("build",
                 new CtClass[]{classPool.get("org.apache.ibatis.session.Configuration")});
-        buildMethod.insertBefore("{" +
+
+        String wrapperCode = "{" +
                 "if (this." + FACTORYBEAN_FIELD + " != null) {" +
                 "$1 = " + PlusSqlSessionFactoryBeanCaller.class.getName() + ".proxyPlusConfiguration(this." + FACTORYBEAN_FIELD + ", $1);" +
                 "}" +
-                "}"
-        );
+                "}";
+        AtomicBoolean  existCast = new AtomicBoolean(false);
+        buildMethod.instrument(new ExprEditor() {
+            @Override
+            public void edit(Cast c) throws CannotCompileException {
+                // 判断是否是 MybatisConfiguration 的强制转换
+                try {
+                    String name = c.getType().getName();
+                    LOGGER.info("cast: {}", name);
+                    if (name.equals("com.baomidou.mybatisplus.core.MybatisConfiguration")) {
+                        existCast.set(true);
+                        c.replace("{ " +
+                                "$_ = $proceed($$); " +
+                                "if (this." + FACTORYBEAN_FIELD + " != null) {" +
+                                "$1 = " + PlusSqlSessionFactoryBeanCaller.class.getName() + ".proxyPlusConfiguration(this." + FACTORYBEAN_FIELD + ", $_);" +
+                                "}" +
+                                "}");
+                    }
+                } catch (NotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        if (!existCast.get()) {
+            buildMethod.insertBefore(wrapperCode);
+        }
 
         LOGGER.debug("com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder patched.");
     }
@@ -200,26 +229,27 @@ public class MyBatisPlusTransformers {
                 classPool.get("org.apache.ibatis.mapping.MappedStatement")
         }).insertBefore("$$removeMappedStatement($1.getId());");
 
-        CtMethod hasStatementM = ctClass.getDeclaredMethod("hasStatement", new CtClass[]{
-                classPool.get(String.class.getName()), classPool.get(boolean.class.getName())});
-        hasStatementM.insertBefore("{" +
-                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
-                "$$removeMappedStatement($1);\n" +
-                "}\n" +
-                "}");
+        CtClass[] params = {
+                classPool.get(String.class.getName()), classPool.get(boolean.class.getName())};
+        if (ClassUtils.methodExists(ctClass, "hasStatement", params)) {
+            CtMethod hasStatementM = ctClass.getDeclaredMethod("hasStatement", params);
+            hasStatementM.insertBefore("{" +
+                    "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                    "$$removeMappedStatement($1);\n" +
+                    "}\n" +
+                    "}");
+        }else {
+            CtMethod hasStatementM = CtNewMethod.make("public boolean hasStatement(String statementName, boolean validateIncompleteStatements) {" +
+                    "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                    "$$removeMappedStatement($1);\n" +
+                    "}\n" +
+                    "return super.hasStatement($1, $2);" +
+                    "}", ctClass);
+            ctClass.addMethod(hasStatementM);
+
+       }
+
         LOGGER.debug("com.baomidou.mybatisplus.core.MybatisConfiguration patched.");
-    }
-
-    @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.reflection.DefaultReflectorFactory")
-    public static void patchDefaultReflectorFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-        CtMethod findForClass = ctClass.getDeclaredMethod("findForClass");
-        findForClass.insertBefore("{ " +
-                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {" +
-                "    $0.reflectorMap.remove($1);" +
-                "}" +
-                " }");
-
-        LOGGER.debug("org.apache.ibatis.reflection.DefaultReflectorFactory patched.");
     }
 
 

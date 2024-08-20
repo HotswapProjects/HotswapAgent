@@ -253,9 +253,7 @@ public class MyBatisTransformers {
     public static void patchDefaultReflectorFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
         CtMethod findForClass = ctClass.getDeclaredMethod("findForClass");
         findForClass.insertBefore("{" +
-                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {" +
                 "    $0.reflectorMap.remove($1);" +
-                "}" +
                 "}");
 
         LOGGER.debug("org.apache.ibatis.reflection.DefaultReflectorFactory patched.");
