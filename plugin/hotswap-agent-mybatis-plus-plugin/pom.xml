@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-mybatis-plus-plugin</artifactId>
 
     <properties>
-        <org.mybatis.plus.version>3.5.7</org.mybatis.plus.version>
+        <org.mybatis.plus.version>3.3.0</org.mybatis.plus.version>
         <org.mybatis-spring.version>2.0.7</org.mybatis-spring.version>
         <org.springframework.version>5.3.30</org.springframework.version>
     </properties>

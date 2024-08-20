@@ -66,6 +66,6 @@ public class BaseTest {
             public boolean result() throws Exception {
                 return !MyBatisRefreshCommands.reloadFlag;
             }
-        }));
+        }, 4000));
     }
 }
