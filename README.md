@@ -128,6 +128,12 @@ None needed :) Really! All changes are transparent and all you need to do is to 
 setup your application/application server. Because we use standard java hotswap behaviour, your IDE will
 work as expected. However, we work on IDE plugins to help with download & configuration.
 
+Some plugins are already available: 
+#### [IntelliJ HotSwapHelper](https://plugins.jetbrains.com/plugin/25171-hotswaphelper) 
+1. Add two action next to the "Debug" button in intellij, Run with hotswap, Debug with hotswap.
+2. When click the action,will set vm parameters for you,no need to set vm parameters manually.
+3. Source code and documentation: https://github.com/gejun123456/HotSwapHelper.
+
 Configuration
 =============
 The basic configuration is set to reload classes and resources from the classpath known to the running application
