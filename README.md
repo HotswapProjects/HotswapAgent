@@ -198,6 +198,7 @@ uses HA services to:
 * [Log4j2](plugin/hotswap-agent-log4j2-plugin/README.md) - Log4j2 configuration reload.
 * [Mojarra](plugin/hotswap-agent-mojarra-plugin/README.md) (2.x) - support for application resource bundle changes (properties file). Support for ViewScoped beans reinjection/reloading.
 * [MyBatis](plugin/hotswap-agent-mybatis-plugin/README.md) (5.3) - reload configuration after mapper file changes
+* [MyBatisPlus](plugin/hotswap-agent-mybatis-plus-plugin/README.md)(3.2)
 * [MyFaces](plugin/hotswap-agent-myfaces-plugin/README.md) (2.x-4.x) - support for application resource bundle changes (properties files). Support for ViewScoped beans reinjection/reloading.
 * [OmniFaces](plugin/hotswap-agent-owb-plugin/README.md) - support for ViewScoped beans reinjection/reloading.
 * [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.x-4.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
