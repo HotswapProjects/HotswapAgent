@@ -1,5 +1,6 @@
 package org.hotswap.agent.plugin.mybatis.proxy;
 
+import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
@@ -7,8 +8,7 @@ import org.hotswap.agent.plugin.mybatis.transformers.ConfigurationCaller;
 import org.hotswap.agent.util.ReflectionHelper;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class SpringMybatisConfigurationProxy {
 
@@ -41,8 +41,19 @@ public class SpringMybatisConfigurationProxy {
     }
 
     public void refreshProxiedConfiguration() {
+        List<Interceptor> interceptors = this.configuration.getInterceptors();
         Object newSqlSessionFactory = ReflectionHelper.invoke(this.sqlSessionFactoryBean, "buildSqlSessionFactory");
         this.configuration = (Configuration) ReflectionHelper.get(newSqlSessionFactory, "configuration");
+        List<Interceptor> interceptors1 = this.configuration.getInterceptors();
+        Set<String> allInterceporNames = new HashSet<String>();
+        for (Interceptor interceptor : interceptors1) {
+            allInterceporNames.add(interceptor.getClass().getName());
+        }
+        for (Interceptor interceptor : interceptors) {
+            if(!allInterceporNames.contains(interceptor.getClass().getName())){
+                this.configuration.addInterceptor(interceptor);
+            }
+        }
     }
 
     private Object sqlSessionFactoryBean;
