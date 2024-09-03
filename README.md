@@ -26,31 +26,33 @@ This is an overview page, please visit [hotswapagent.org](http://hotswapagent.or
 
 Java unlimited runtime class and resource redefinition.
 
-Originally, the main purpose of this project was to avoid the infamous **change code** -> **restart and wait...** -> **check development** lifecycle. 
-Lately, this schema evolved into a new paradigm in the Java world, based on the development of software in running application,
-that approach can be used even in a closed environment like Docker.
+The primary goal of this project was to eliminate the need for the traditional "change code -> restart and wait... -> check" development cycle. Over time, this concept 
+has evolved into a new paradigm within the Java ecosystem, allowing for real-time software development within a running application. This approach is even feasible 
+in restricted environments, such as Docker containers.
 
 ### Easy to start
-1.Download and install:
 
-* For Java17/21: [latest JBR17,21](https://github.com/JetBrains/JetBrainsRuntime/releases) and since **JBR17,21** does not include a built-in Hotswap Agent, 
-  copy `hotswap-agent.jar` to the `lib/hotswap` folder. The latest Hotswap Agent can be found [here](https://github.com/HotswapProjects/HotswapAgent/releases).  When using the agent, it's important 
-  to note that the file name in `lib/hotswap` folder should not contain the version name, and should instead use the plain `hotswap-agent.jar` filename.
-* For Java11: [jdk11-dcevm with integrated HotswapAgent](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases) and install it as an alternative JDK. TravaJDK already contains embedded HotswapAgent.
-* For Java8: [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) + [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases)
+1. **Download and Install:**
 
-2.HotswapAgent modes
+    - **For Java 17/21:** Download the [latest JBR17 or JBR21](https://github.com/JetBrains/JetBrainsRuntime/releases). Since these versions do not include a built-in
+      Hotswap Agent, you will need to manually copy `hotswap-agent.jar` to the `lib/hotswap` folder. You can find the latest Hotswap Agent [here](https://github.com/HotswapProjects/HotswapAgent/releases).
+      Ensure that the file in the `lib/hotswap` folder is named `hotswap-agent.jar` without any version numbers in the filename.
+    
+    - **For Java 11:** Use [TravaJDK](https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases), which has an integrated HotswapAgent, and install it as an alternative JDK.
+      Alternatively, TravaJDK includes an embedded HotswapAgent.
+    
+    - **For Java 8:** Use [jdk8-dcevm](https://github.com/dcevm/dcevm/releases) along with the [HotswapAgent](https://github.com/HotswapProjects/HotswapAgent/releases).
 
-Starting with dcevm-11.0.9, the HotswapAgent is disabled by default. Support for HotswapAgent can now be enabled by JVM options 
-in three different modes:
-- `XX:HotswapAgent=fatjar` activates the internal fatjar HotswapAgent.
-- `XX:HotswapAgent=core` activates the internal core HotswapAgent.
-- `XX:HotswapAgent=external` configures JVM support for HotswapAgent and defers the settings of an external HotswapAgent to the user. 
-  The user must supply `hotswap-agent.jar` using `-javaagent:<path>/hotswap-agent.jar`.
+2. **HotswapAgent Modes:**
 
-The `HotswapAgent=core` mode operates without plugins, except for core JVM plugins. This mode is faster because it requires 
-fewer scanning tasks and less class copying. Additional plugins must be configured as Maven dependencies in the pom.xml file. In contrast, 
-the `HotswapAgent=fatjar` mode includes all plugins from the start, which slightly slows down the application startup.
+   Starting with `dcevm-11.0.9`, the HotswapAgent is disabled by default. You can enable support for HotswapAgent using JVM options in one of three modes:
+
+    - `-XX:HotswapAgent=fatjar` activates the internal fatjar HotswapAgent.
+    - `-XX:HotswapAgent=core` activates the internal core HotswapAgent.
+    - `-XX:HotswapAgent=external` configures JVM support for HotswapAgent and allows the user to supply an external `hotswap-agent.jar` using the `-javaagent:<path>/hotswap-agent.jar` option.
+
+   The `HotswapAgent=core` mode operates without additional plugins, except for core JVM plugins, resulting in faster performance due to reduced scanning and class copying tasks.
+   To use additional plugins, you need to configure them as Maven dependencies in your `pom.xml` file. On the other hand, the `HotswapAgent=fatjar` mode includes all plugins by default, which may slightly slow down application startup.
 
 3.Launching:
 
@@ -127,6 +129,12 @@ General setups will be merged into the master.
 None needed :) Really! All changes are transparent and all you need to do is to download patch+agent and
 setup your application/application server. Because we use standard java hotswap behaviour, your IDE will
 work as expected. However, we work on IDE plugins to help with download & configuration.
+
+Some plugins are already available: 
+#### [IntelliJ HotSwapHelper](https://plugins.jetbrains.com/plugin/25171-hotswaphelper) 
+1. Add two action next to the "Debug" button in intellij, Run with hotswap, Debug with hotswap.
+2. When click the action,will set vm parameters for you,no need to set vm parameters manually.
+3. Source code and documentation: https://github.com/gejun123456/HotSwapHelper.
 
 Configuration
 =============
@@ -286,6 +294,7 @@ Hotswap agent:
 * Sinan Yumak - Mojarra, MyFaces plugins
 * smallfour - Mybatis plugin
 * @cvictory - Spring plugin, Spring Boot plugin
+* @homejim - MyBatis plugin, MyBatisPlus plugin
 
 DCEVM:
 

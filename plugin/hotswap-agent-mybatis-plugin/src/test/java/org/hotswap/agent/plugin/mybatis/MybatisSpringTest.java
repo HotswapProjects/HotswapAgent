@@ -44,7 +44,7 @@ public class MybatisSpringTest extends BaseTest {
 
     @Before
     public void init() throws Exception {
-        MyBatisPluginTest.runScript(dataSource, "org/hotswap/agent/plugin/mybatis/CreateDB.sql");
+        runScript(dataSource, "org/hotswap/agent/plugin/mybatis/CreateDB.sql");
     }
 
     @Test

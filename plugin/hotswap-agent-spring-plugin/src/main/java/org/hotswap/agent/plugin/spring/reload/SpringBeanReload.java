@@ -95,9 +95,9 @@ public class SpringBeanReload {
         synchronized (classes) {
             if (classes.add(clazz)) {
                 if (sameClass) {
-                    LOGGER.info("try to add changed class '{}' into {}", clazz.getName(), ObjectUtils.identityToString(beanFactory));
+                    LOGGER.debug("try to add changed class '{}' into {}", clazz.getName(), ObjectUtils.identityToString(beanFactory));
                 } else {
-                    LOGGER.info("try to add changed class '{}({})' into {}", clazz.getName(), userClassSimpleName, ObjectUtils.identityToString(beanFactory));
+                    LOGGER.debug("try to add changed class '{}({})' into {}", clazz.getName(), userClassSimpleName, ObjectUtils.identityToString(beanFactory));
                 }
             } else {
                 if (sameClass) {
@@ -252,7 +252,7 @@ public class SpringBeanReload {
         try {
             origContextClassLoader = ClassUtils.overrideThreadContextClassLoader(beanFactory.getBeanClassLoader());
             beanFactoryAssistant.setReload(true);
-            LOGGER.info("##### start reloading '{}' with timestamp '{}'", ObjectUtils.identityToString(beanFactory), changeTimeStamps);
+            LOGGER.debug("##### start reloading '{}' with timestamp '{}'", ObjectUtils.identityToString(beanFactory), changeTimeStamps);
             LOGGER.trace("SpringReload:{},  beanFactory:{}", this, beanFactory);
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, true);
             do {
@@ -263,7 +263,7 @@ public class SpringBeanReload {
             ClassUtils.overrideThreadContextClassLoader(origContextClassLoader);
             beanFactoryAssistant.increaseReloadTimes();
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, allowBeanDefinitionOverriding);
-            LOGGER.info("##### [{}th] finish reloading '{}', it cost {}ms", beanFactoryAssistant.getReloadTimes(),
+            LOGGER.debug("##### [{}th] finish reloading '{}', it cost {}ms", beanFactoryAssistant.getReloadTimes(),
                     ObjectUtils.identityToString(beanFactory), System.currentTimeMillis() - now);
         }
     }
