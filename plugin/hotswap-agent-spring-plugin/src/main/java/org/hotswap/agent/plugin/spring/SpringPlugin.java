@@ -48,15 +48,7 @@ import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.plugin.spring.reload.XmlsChangedCommand;
 import org.hotswap.agent.plugin.spring.reload.YamlChangedCommand;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
-import org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer;
-import org.hotswap.agent.plugin.spring.transformers.ClassPathBeanDefinitionScannerTransformer;
-import org.hotswap.agent.plugin.spring.transformers.ConfigurationClassPostProcessorTransformer;
-import org.hotswap.agent.plugin.spring.transformers.InitDestroyAnnotationBeanPostProcessorTransformer;
-import org.hotswap.agent.plugin.spring.transformers.PlaceholderConfigurerSupportTransformer;
-import org.hotswap.agent.plugin.spring.transformers.PostProcessorRegistrationDelegateTransformer;
-import org.hotswap.agent.plugin.spring.transformers.ProxyReplacerTransformer;
-import org.hotswap.agent.plugin.spring.transformers.ResourcePropertySourceTransformer;
-import org.hotswap.agent.plugin.spring.transformers.XmlBeanDefinitionScannerTransformer;
+import org.hotswap.agent.plugin.spring.transformers.*;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -78,7 +70,8 @@ import org.hotswap.agent.watch.Watcher;
                 XmlBeanDefinitionScannerTransformer.class,
                 PostProcessorRegistrationDelegateTransformer.class,
                 BeanFactoryTransformer.class,
-                InitDestroyAnnotationBeanPostProcessorTransformer.class})
+                InitDestroyAnnotationBeanPostProcessorTransformer.class,
+                BeanMetaDataTransformer.class})
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
