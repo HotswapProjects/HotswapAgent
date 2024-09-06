@@ -4,6 +4,7 @@ import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.transformers.ConfigurationCaller;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -11,6 +12,9 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class SpringMybatisConfigurationProxy {
+
+
+    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringMybatisConfigurationProxy.class);
 
     protected static Map<Object, SpringMybatisConfigurationProxy> proxiedConfigurations = new HashMap<>();
 
@@ -52,6 +56,7 @@ public class SpringMybatisConfigurationProxy {
         for (Interceptor interceptor : interceptors) {
             if(!allInterceporNames.contains(interceptor.getClass().getName())){
                 this.configuration.addInterceptor(interceptor);
+                LOGGER.info("Add interceptor: " + interceptor.getClass().getName());
             }
         }
     }
