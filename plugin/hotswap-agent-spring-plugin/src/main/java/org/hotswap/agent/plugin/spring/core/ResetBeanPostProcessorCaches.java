@@ -20,6 +20,14 @@ package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.springframework.aop.Advisor;
+import org.springframework.aop.Pointcut;
+import org.springframework.aop.PointcutAdvisor;
+import org.springframework.aop.aspectj.AspectJExpressionPointcut;
+import org.springframework.aop.aspectj.InstantiationModelAwarePointcutAdvisor;
+import org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator;
+import org.springframework.aop.aspectj.annotation.BeanFactoryAspectJAdvisorsBuilder;
+import org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.annotation.InjectionMetadata;
@@ -30,6 +38,7 @@ import org.springframework.context.annotation.CommonAnnotationBeanPostProcessor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -83,6 +92,41 @@ public class ResetBeanPostProcessorCaches {
                 resetAnnotationBeanPostProcessorCache(bpp, CommonAnnotationBeanPostProcessor.class);
             } else if (bpp instanceof InitDestroyAnnotationBeanPostProcessor) {
                 resetInitDestroyAnnotationBeanPostProcessorCache((InitDestroyAnnotationBeanPostProcessor) bpp);
+            } else if(bpp instanceof AbstractAutoProxyCreator){
+                try {
+                    Field field = AbstractAutoProxyCreator.class.getDeclaredField("advisedBeans");
+                    field.setAccessible(true);
+                    Map lifecycleMetadataCache = (Map) field.get(bpp);
+                    lifecycleMetadataCache.clear();
+
+                }catch (Exception e){
+                    LOGGER.warning("Unable to clear AbstractAutoProxyCreator.advisedBeans", e);
+                }
+
+                if(bpp instanceof AnnotationAwareAspectJAutoProxyCreator){
+                    try {
+                        Field field = AnnotationAwareAspectJAutoProxyCreator.class.getDeclaredField("aspectJAdvisorsBuilder");
+                        field.setAccessible(true);
+                        BeanFactoryAspectJAdvisorsBuilder lifecycleMetadataCache = (BeanFactoryAspectJAdvisorsBuilder) field.get(bpp);
+                        List<Advisor> advisors = lifecycleMetadataCache.buildAspectJAdvisors();
+                        for (Advisor advisor : advisors) {
+                            if(advisor instanceof PointcutAdvisor){
+                                PointcutAdvisor advisor1 = (PointcutAdvisor) advisor;
+                                Pointcut pointcut = advisor1.getPointcut();
+                                if(pointcut instanceof AspectJExpressionPointcut){
+                                    AspectJExpressionPointcut aspectJExpressionPointcut = (AspectJExpressionPointcut) pointcut;
+                                    //
+                                    Field field1 = AspectJExpressionPointcut.class.getDeclaredField("shadowMatchCache");
+                                    field1.setAccessible(true);
+                                    Map shadowMatchCache = (Map) field1.get(aspectJExpressionPointcut);
+                                    shadowMatchCache.clear();
+                                }
+                            }
+                        }
+                        LOGGER.trace("Cache cleared: AnnotationAwareAspectJAutoProxyCreator.aspectJAdvisedBeans");
+                    } catch (Exception e) {
+                    }
+                }
             }
         }
     }
