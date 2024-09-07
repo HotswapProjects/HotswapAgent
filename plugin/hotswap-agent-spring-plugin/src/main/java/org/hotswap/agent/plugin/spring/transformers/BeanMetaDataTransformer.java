@@ -2,6 +2,8 @@ package org.hotswap.agent.plugin.spring.transformers;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.BeanFactoryProcessor;
 
 import java.util.HashSet;
@@ -11,6 +13,9 @@ import java.util.Set;
  * @author bruce ge 2024/9/6
  */
 public class BeanMetaDataTransformer {
+
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(BeanMetaDataTransformer.class);
+
 
     public static Set<Object> metaDataTransformers = new HashSet<>();
 
@@ -26,27 +31,70 @@ public class BeanMetaDataTransformer {
             src.append("}");
             constructor.insertAfter(src.toString());
         }
-//        clazz.addField(
-//                CtField.make("private java.util.Set hotSwapAgent$reloadedClasses = new java.util.HashSet();", clazz));
-//        CtClass[] params = {
-//                classPool.get(Class.class.getName())};
-//        CtMethod getBeanMetaData = clazz.getDeclaredMethod("getBeanMetaData", params);
-//        getBeanMetaData.insertBefore();
-//        clazz.addInterface(classPool.get("org.hotswap.agent.plugin.spring.transformers.api.BeanFactoryLifecycle"));
-//        clazz.addMethod(CtNewMethod.make(
-//                "public boolean hotswapAgent$isDestroyedBean(String beanName) { return hotswapAgent$destroyBean.contains"
-//                + "(beanName); }",
-//                clazz));
-//        clazz.addMethod(CtNewMethod.make(
-//                "public void hotswapAgent$destroyBean(String beanName) { hotswapAgent$destroyBean.add(beanName); }",
-//                clazz));
-//        clazz.addMethod(
-//                CtNewMethod.make("public void hotswapAgent$clearDestroyBean() { hotswapAgent$destroyBean.clear(); }",
-//                        clazz));
-//
-//        CtMethod destroySingletonMethod = clazz.getDeclaredMethod("destroySingleton",
-//                new CtClass[] {classPool.get(String.class.getName())});
-//        destroySingletonMethod.insertAfter(
-//                BeanFactoryProcessor.class.getName() + ".postProcessDestroySingleton($0, $1);");
     }
+
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.web.method.annotation.AbstractNamedValueArgumentResolver")
+    public static void registerRemoveNamedValueInfoCache(ClassLoader appClassLoader, CtClass clazz,
+                                                       ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // after construct BeanMetaDataManagerImpl, we need to the set.
+        CtMethod getNamedValueInfo = clazz.getDeclaredMethod("getNamedValueInfo");
+        if(getNamedValueInfo!=null) {
+            StringBuilder src = new StringBuilder("{");
+            src.append("this.namedValueInfoCache.remove($1);");
+            src.append("}");
+            getNamedValueInfo.insertBefore(src.toString());
+            LOGGER.info("registerRemoveNamedValueInfoCache");
+        }
+    }
+
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.web.servlet.mvc.method.annotation.*ArgumentResolver")
+    public static void registerRemovePathVariableInfoCache(ClassLoader appClassLoader, CtClass clazz,
+                                                         ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // after construct BeanMetaDataManagerImpl, we need to the set.
+        clearCacheForMethodAnnotation(clazz, classPool);
+    }
+
+    private static void clearCacheForMethodAnnotation(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        try {
+            CtClass ctClass = classPool.get("org.springframework.web.method.annotation.AbstractNamedValueMethodArgumentResolver$NamedValueInfo");
+            CtClass ctClass2 = classPool.get("org.springframework.core.MethodParameter");
+            CtClass[] paramTypes = {ctClass2};
+            String desc = Descriptor.ofMethod(ctClass, paramTypes);
+            CtMethod getNamedValueInfo = clazz.getMethod("getNamedValueInfo", desc);
+            if (getNamedValueInfo != null) {
+                StringBuilder src = new StringBuilder("{");
+                src.append("this.namedValueInfoCache.remove($1);");
+                src.append("}");
+                getNamedValueInfo.insertBefore(src.toString());
+                LOGGER.info("registerRemoveNamedValueInfoCache for " + clazz.getName());
+            }
+        }catch (NotFoundException e){
+            //ignore.
+        }
+    }
+
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.web.method.annotation.*ArgumentResolver")
+    public static void registerRemoveResolverCache(ClassLoader appClassLoader, CtClass clazz,
+                                                           ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // after construct BeanMetaDataManagerImpl, we need to the set.
+        clearCacheForMethodAnnotation(clazz, classPool);
+    }
+
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.web.method.support.HandlerMethodArgumentResolverComposite")
+    public static void registerHandlerMethodArgumentResolverCompositeRemoveCache(ClassLoader appClassLoader, CtClass clazz,
+                                                   ClassPool classPool) throws NotFoundException, CannotCompileException {
+        // after construct BeanMetaDataManagerImpl, we need to the set.
+        CtMethod getNamedValueInfo = clazz.getDeclaredMethod("getArgumentResolver");
+        StringBuilder src = new StringBuilder("{");
+        src.append("this.argumentResolverCache.remove($1);");
+        src.append("}");
+        getNamedValueInfo.insertBefore(src.toString());
+        LOGGER.info("register Remove argumentResolverCache for " + clazz.getName());
+    }
+
+
 }

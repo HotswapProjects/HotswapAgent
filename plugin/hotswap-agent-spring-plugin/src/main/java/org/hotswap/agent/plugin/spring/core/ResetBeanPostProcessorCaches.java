@@ -124,7 +124,8 @@ public class ResetBeanPostProcessorCaches {
                             }
                         }
                         LOGGER.trace("Cache cleared: AnnotationAwareAspectJAutoProxyCreator.aspectJAdvisedBeans");
-                    } catch (Exception e) {
+                    } catch (Exception | Error e) {
+                        LOGGER.warning("unable to clear cache in AnnotationAwareAspectJAutoProxyCreator",e);
                     }
                 }
             }
