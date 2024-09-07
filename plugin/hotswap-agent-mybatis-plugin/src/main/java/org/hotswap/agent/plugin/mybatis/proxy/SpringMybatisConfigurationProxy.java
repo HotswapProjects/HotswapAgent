@@ -46,9 +46,12 @@ public class SpringMybatisConfigurationProxy {
 
     public void refreshProxiedConfiguration() {
         List<Interceptor> interceptors = this.configuration.getInterceptors();
+        //interceptor added twice?
         Object newSqlSessionFactory = ReflectionHelper.invoke(this.sqlSessionFactoryBean, "buildSqlSessionFactory");
         this.configuration = (Configuration) ReflectionHelper.get(newSqlSessionFactory, "configuration");
         List<Interceptor> interceptors1 = this.configuration.getInterceptors();
+        //remove duplicate interceptor.
+
         Set<String> allInterceporNames = new HashSet<String>();
         for (Interceptor interceptor : interceptors1) {
             allInterceporNames.add(interceptor.getClass().getName());

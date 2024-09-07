@@ -233,6 +233,18 @@ public class MyBatisTransformers {
                 "}\n" +
                 "}");
 
+        CtMethod[] addInterceptors = ctClass.getDeclaredMethods("addInterceptor");
+        if(addInterceptors.length>0){
+            CtMethod addInterceptor = addInterceptors[0];
+            addInterceptor.insertBefore("{" +
+                    "if(" + IN_RELOAD_FIELD + "){\n" +
+                                     "if(getInterceptors().contains($1)){\n" +
+                                        "      return;\n" +
+                                        "    }"+
+                    "}\n" +
+                    "}");
+        }
+
         LOGGER.debug("org.apache.ibatis.session.Configuration patched.");
     }
 
