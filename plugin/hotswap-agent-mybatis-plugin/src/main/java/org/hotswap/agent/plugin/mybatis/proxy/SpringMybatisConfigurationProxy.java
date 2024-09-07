@@ -38,6 +38,7 @@ public class SpringMybatisConfigurationProxy {
             try {
                 ConfigurationCaller.setInReload(wrapper.configuration, true);
                 wrapper.refreshProxiedConfiguration();
+                SpringMapperFactoryBean.reload();
                 ConfigurationCaller.setInReload(wrapper.configuration, false);
             } catch (Exception e) {
                 e.printStackTrace();

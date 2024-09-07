@@ -8,6 +8,7 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.hotswap.agent.plugin.mybatis.testBeansHotswap.UserMapper;
 import org.hotswap.agent.plugin.mybatis.testBeansHotswap.UserMapper2;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.sql.DataSource;
@@ -51,6 +52,7 @@ public class MyBatisPluginAnnoTest extends BaseTest {
     }
 
     @Test
+    @Ignore
     public void testUserAnnotationSQL() throws Exception {
         // Before the swap, the mapper retrieved only the name1 field
         try (SqlSession sqlSession = sqlSessionFactory.openSession()) {

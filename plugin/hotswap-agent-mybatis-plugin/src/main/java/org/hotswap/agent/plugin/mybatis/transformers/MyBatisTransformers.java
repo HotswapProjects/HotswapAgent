@@ -282,4 +282,16 @@ public class MyBatisTransformers {
 
         LOGGER.debug("org.apache.ibatis.binding.MapperRegistry patched.");
     }
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.mapper.MapperFactoryBean")
+    public static void patchMapperFactoryBean(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod checkDaoConfigM = ctClass.getDeclaredMethod("checkDaoConfig");
+        checkDaoConfigM.insertBefore("{" +
+                "if (!org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    org.hotswap.agent.plugin.mybatis.proxy.SpringMapperFactoryBean.registerMapperFactoryBean(this);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("org.mybatis.spring.mapper.MapperFactoryBean patched.");
+    }
 }
