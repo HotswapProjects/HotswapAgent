@@ -294,4 +294,14 @@ public class MyBatisTransformers {
 
         LOGGER.debug("org.mybatis.spring.mapper.MapperFactoryBean patched.");
     }
+
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration")
+    public static void patchMybatisPlusAutoConfiguration(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod sqlSessionFactory = ctClass.getDeclaredMethod("applyConfiguration");
+        StringBuilder src = new StringBuilder("{");
+        src.append("org.hotswap.agent.plugin.mybatis.MyBatisPlugin.mybatisSessionBeanToProperties.put($1,this.properties);");
+        src.append("}");
+        sqlSessionFactory.insertBefore(src.toString());
+    }
 }

@@ -5,6 +5,7 @@ import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.javassist.expr.Cast;
 import org.hotswap.agent.javassist.expr.ExprEditor;
+import org.hotswap.agent.javassist.expr.MethodCall;
 import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatisplus.MyBatisPlusPlugin;
@@ -310,4 +311,15 @@ public class MyBatisPlusTransformers {
 
         LOGGER.debug("com.baomidou.mybatisplus.core.metadata.TableInfoHelper patched.");
     }
+
+    @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration")
+    public static void patchMybatisPlusAutoConfiguration(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod sqlSessionFactory = ctClass.getDeclaredMethod("applyConfiguration");
+        StringBuilder src = new StringBuilder("{");
+        src.append("org.hotswap.agent.plugin.mybatis.MyBatisPlugin.mybatisSessionBeanToProperties.put($1,this.properties);");
+        src.append("}");
+        sqlSessionFactory.insertBefore(src.toString());
+    }
+
+
 }

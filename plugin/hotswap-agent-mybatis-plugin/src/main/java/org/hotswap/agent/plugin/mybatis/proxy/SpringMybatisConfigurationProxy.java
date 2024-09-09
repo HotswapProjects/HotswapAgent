@@ -5,9 +5,14 @@ import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.transformers.ConfigurationCaller;
 import org.hotswap.agent.util.ReflectionHelper;
+import org.springframework.core.io.Resource;
+import sun.security.util.Resources_es;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -48,6 +53,28 @@ public class SpringMybatisConfigurationProxy {
     public void refreshProxiedConfiguration() {
         List<Interceptor> interceptors = this.configuration.getInterceptors();
         //interceptor added twice?
+        try {
+            Object mybatisPlusProperty = MyBatisPlugin.mybatisSessionBeanToProperties.get(this.sqlSessionFactoryBean);
+            if (mybatisPlusProperty != null) {
+                Class<?> aClass = this.sqlSessionFactoryBean.getClass();
+                Class resourceClass = Class.forName("org.springframework.core.io.Resource");
+                //to array type.
+                Field mapperLocations = aClass.getDeclaredField("mapperLocations");
+                mapperLocations.setAccessible(true);
+                Object o = mapperLocations.get(this.sqlSessionFactoryBean);
+                Method setMapperLocations = aClass.getDeclaredMethod("setMapperLocations", Resource[].class);
+                setMapperLocations.setAccessible(true);
+                Method resolveMapperLocations = mybatisPlusProperty.getClass().getMethod("resolveMapperLocations");
+                resolveMapperLocations.setAccessible(true);
+                if (resolveMapperLocations != null) {
+                    Object invoke = resolveMapperLocations.invoke(mybatisPlusProperty);
+                    //check if contains?
+                    setMapperLocations.invoke(this.sqlSessionFactoryBean, invoke);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.info("reset mapper location catch exption", e);
+        }
         Object newSqlSessionFactory = ReflectionHelper.invoke(this.sqlSessionFactoryBean, "buildSqlSessionFactory");
         this.configuration = (Configuration) ReflectionHelper.get(newSqlSessionFactory, "configuration");
         List<Interceptor> interceptors1 = this.configuration.getInterceptors();
@@ -58,7 +85,7 @@ public class SpringMybatisConfigurationProxy {
             allInterceporNames.add(interceptor.getClass().getName());
         }
         for (Interceptor interceptor : interceptors) {
-            if(!allInterceporNames.contains(interceptor.getClass().getName())){
+            if (!allInterceporNames.contains(interceptor.getClass().getName())) {
                 this.configuration.addInterceptor(interceptor);
                 LOGGER.info("Add interceptor: " + interceptor.getClass().getName());
             }
