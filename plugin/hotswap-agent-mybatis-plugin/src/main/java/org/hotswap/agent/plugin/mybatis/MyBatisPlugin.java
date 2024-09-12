@@ -85,7 +85,7 @@ public class MyBatisPlugin {
             String absolutePath = file.getParentFile().getAbsolutePath();
             configurationFolder.put(absolutePath, configObject);
         }catch (Exception eee){
-            LOGGER.info("Register mybatis configuration file folder error",eee);
+            LOGGER.info("Register mybatis configuration file folder error config file is:"+configFile,eee);
         }
     }
 
