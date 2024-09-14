@@ -314,11 +314,15 @@ public class MyBatisPlusTransformers {
 
     @OnClassLoadEvent(classNameRegexp = "com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration")
     public static void patchMybatisPlusAutoConfiguration(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-        CtMethod sqlSessionFactory = ctClass.getDeclaredMethod("applyConfiguration");
-        StringBuilder src = new StringBuilder("{");
-        src.append("org.hotswap.agent.plugin.mybatis.MyBatisPlugin.mybatisSessionBeanToProperties.put($1,this.properties);");
-        src.append("}");
-        sqlSessionFactory.insertBefore(src.toString());
+        try {
+            CtMethod sqlSessionFactory = ctClass.getDeclaredMethod("applyConfiguration");
+            StringBuilder src = new StringBuilder("{");
+            src.append("org.hotswap.agent.plugin.mybatis.MyBatisPlugin.mybatisSessionBeanToProperties.put($1,this.properties);");
+            src.append("}");
+            sqlSessionFactory.insertBefore(src.toString());
+        }catch (Exception e){
+            LOGGER.info("applyConfiguration method not found in MybatisPlusAutoConfiguration");
+        }
     }
 
 
