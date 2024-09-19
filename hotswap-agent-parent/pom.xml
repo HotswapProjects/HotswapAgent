@@ -5,7 +5,7 @@
     <groupId>org.hotswapagent</groupId>
     <artifactId>hotswap-agent-parent</artifactId>
     <packaging>pom</packaging>
-    <version>2.0.0</version>
+    <version>${revision}</version>
 
     <name>HotswapAgent</name>
     <description>Java unlimited runtime class and resource redefinition.</description>
@@ -164,6 +164,31 @@
                     <jvm>${java.home}/bin/java</jvm>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.2.2</version>
+                <configuration>
+                    <flattenMode>minimum</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -296,6 +321,7 @@
     </dependencyManagement>
 
     <properties>
+        <revision>2.0.1-SNAPSHOT</revision>
         <dcevm>dcevm</dcevm>
         <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external
             --add-opens=java.base/sun.nio.ch=ALL-UNNAMED</dcevm.test.arguments>
