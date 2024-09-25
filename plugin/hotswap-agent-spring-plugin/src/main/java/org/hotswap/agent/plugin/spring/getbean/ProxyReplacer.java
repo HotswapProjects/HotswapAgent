@@ -101,6 +101,8 @@ public class ProxyReplacer {
                 return bean;
             }
 
+            //todo provide configuration for user to config, ignore delegating class names.
+
             if(beanClassName.contains("DynamicDataSourceAutoConfiguration")||beanClassName.contains("DynamicDataSourceCreatorAutoConfiguration") ){
                 return bean;
             }
