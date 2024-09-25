@@ -88,15 +88,23 @@ public class ProxyReplacer {
             } catch (ClassNotFoundException e) {
                 LOGGER.error("error adding org.springframework.core.InfrastructureProxy to proxy class", e);
             }
+
+            LOGGER.debug("jdk interface proxy for spring bean class:"+bean.getClass().getName());
             // fix: it should be the classloader of the bean,
             // or org.springframework.beans.factory.support.AbstractBeanFactory.getBeanClassLoader,
             // but not the classLoader of the beanFactry
             return Proxy.newProxyInstance(bean.getClass().getClassLoader(), interfaces, handler);
         } else if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
             // already a proxy, skip..
-            if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {
+            String beanClassName = bean.getClass().getName();
+            if (beanClassName.contains("$HOTSWAPAGENT_")) {
                 return bean;
             }
+
+            if(beanClassName.contains("DynamicDataSourceAutoConfiguration")||beanClassName.contains("DynamicDataSourceCreatorAutoConfiguration") ){
+                return bean;
+            }
+            LOGGER.debug("cglib proxy for spring bean class:"+bean.getClass().getName());
 
             return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
         }

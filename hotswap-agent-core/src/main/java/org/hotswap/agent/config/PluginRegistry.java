@@ -119,7 +119,7 @@ public class PluginRegistry {
                 String pluginName = pluginAnnotation.name();
 
                 if (HotswapAgent.isPluginDisabled(pluginName)) {
-                    LOGGER.debug("Plugin {} is disabled, skipping...", pluginName);
+                    LOGGER.info("Plugin {} is disabled, skipping...", pluginName);
                     continue;
                 }
 

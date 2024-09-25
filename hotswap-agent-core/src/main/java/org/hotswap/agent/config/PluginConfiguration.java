@@ -22,12 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Properties;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import org.hotswap.agent.HotswapAgent;
@@ -351,7 +346,9 @@ public class PluginConfiguration {
      */
     public List<String> getDisabledPlugins() {
         List<String> ret = new ArrayList<>();
-        for (String disabledPlugin : getProperty("disabledPlugins", "").split(",")) {
+        String property = getProperty("disabledPlugins", "");
+        LOGGER.debug("disabled plugins are:"+property);
+        for (String disabledPlugin : property.split(",")) {
             ret.add(disabledPlugin.trim());
         }
         return ret;
