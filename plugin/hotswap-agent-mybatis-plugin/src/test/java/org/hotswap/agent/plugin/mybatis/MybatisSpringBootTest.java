@@ -2,10 +2,7 @@ package org.hotswap.agent.plugin.mybatis;
 
 import org.apache.ibatis.io.Resources;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.mybatis.springboot.Application;
-import org.hotswap.agent.plugin.mybatis.springboot.BootUser;
-import org.hotswap.agent.plugin.mybatis.springboot.BootUserMapper;
-import org.hotswap.agent.plugin.mybatis.springboot.BootUserMapper2;
+import org.hotswap.agent.plugin.mybatis.springboot.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -22,7 +19,7 @@ import java.nio.file.StandardCopyOption;
 import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = Application.class)
+@SpringBootTest(classes = Application.class, properties = "spring.config.location=classpath:application.properties")
 public class MybatisSpringBootTest extends BaseTest {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(MybatisSpringBootTest.class);
@@ -32,6 +29,8 @@ public class MybatisSpringBootTest extends BaseTest {
 
     @Autowired
     BootUserMapper bootUserMapper;
+    @Autowired
+    BootUserNotXmlMapper bootUserNotXmlMapper;
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -64,9 +63,24 @@ public class MybatisSpringBootTest extends BaseTest {
         assertNotNull(bootUser.getEmail());
         assertNotNull(bootUser.getPhone());
 
-        MyBatisPluginAnnoTest.swapClasses(BootUserMapper.class, BootUserMapper2.class.getName());
+        swapClasses(BootUserMapper.class, BootUserMapper2.class.getName());
 
         BootUser bootUserAfterSwap = bootUserMapper.getUser("jim");
+        assertNull(bootUserAfterSwap.getName());
+        assertNull(bootUserAfterSwap.getEmail());
+        assertNotNull(bootUserAfterSwap.getPhone());
+    }
+
+    @Test
+    public void testUserFromAnnotationNotXml() throws Exception {
+        BootUser bootUser = bootUserNotXmlMapper.getUser("jim");
+        assertEquals("jim", bootUser.getName());
+        assertNotNull(bootUser.getEmail());
+        assertNotNull(bootUser.getPhone());
+
+        swapClasses(BootUserNotXmlMapper.class, BootUserNotXmlMapper2.class.getName());
+
+        BootUser bootUserAfterSwap = bootUserNotXmlMapper.getUser("jim");
         assertNull(bootUserAfterSwap.getName());
         assertNull(bootUserAfterSwap.getEmail());
         assertNotNull(bootUserAfterSwap.getPhone());

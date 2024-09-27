@@ -27,6 +27,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
+import org.hotswap.agent.plugin.mybatis.util.ClassUtils;
 import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -44,10 +45,11 @@ public class MyBatisTransformers {
     public static final String REFRESH_METHOD = "$$ha$refresh";
     public static final String IN_RELOAD_FIELD = "$$ha$inReload";
 
-    private static final String INITIALIZED_FIELD = "$$ha$initialized";
-    private static final String FACTORYBEAN_FIELD = "$$ha$factoryBean";
+    public static final String INITIALIZED_FIELD = "$$ha$initialized";
+    public static final String FACTORYBEAN_FIELD = "$$ha$factoryBean";
     public static final String FACTORYBEAN_SET_METHOD = "$$ha$setFactoryBean";
     public static final String CONFIGURATION_PROXY_METHOD = "$$ha$proxySqlSessionFactoryConfiguration";
+    public static final String IS_MYBATIS_PLUS = "$$ha$isMybatisPlus";
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.parsing.XPathParser")
     public static void patchXPathParser(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
@@ -81,7 +83,6 @@ public class MyBatisTransformers {
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.xml.XMLConfigBuilder")
     public static void patchXMLConfigBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlugin.class, "registerConfigurationFile",
@@ -103,13 +104,17 @@ public class MyBatisTransformers {
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.builder.xml.XMLMapperBuilder")
     public static void patchXMLMapperBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtField isMybatisPlusField = new CtField(classPool.get(boolean.class.getName()), IS_MYBATIS_PLUS, ctClass);
+        ClassUtils.addFieldNotExists(ctClass, isMybatisPlusField);
+
         StringBuilder src = new StringBuilder("{");
+        src.append("if(!" + IS_MYBATIS_PLUS + "){");
         src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlugin.class, "registerConfigurationFile",
                 XPathParserCaller.class.getName() + ".getSrcFileName(this.parser)", "java.lang.String", "this", "java.lang.Object"));
-        src.append("}");
+        src.append("} }");
 
-        CtClass[] constructorParams = new CtClass[] {
+        CtClass[] constructorParams = new CtClass[]{
                 classPool.get("org.apache.ibatis.parsing.XPathParser"),
                 classPool.get("org.apache.ibatis.session.Configuration"),
                 classPool.get("java.lang.String"),
@@ -248,9 +253,7 @@ public class MyBatisTransformers {
     public static void patchDefaultReflectorFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
         CtMethod findForClass = ctClass.getDeclaredMethod("findForClass");
         findForClass.insertBefore("{" +
-                "if (org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {" +
                 "    $0.reflectorMap.remove($1);" +
-                "}" +
                 "}");
 
         LOGGER.debug("org.apache.ibatis.reflection.DefaultReflectorFactory patched.");
@@ -266,5 +269,17 @@ public class MyBatisTransformers {
                 "}");
 
         LOGGER.debug("org.apache.ibatis.binding.MapperRegistry patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.mapper.MapperFactoryBean")
+    public static void patchMapperFactoryBean(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod checkDaoConfigM = ctClass.getDeclaredMethod("checkDaoConfig");
+        checkDaoConfigM.insertBefore("{" +
+                "if (!org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    org.hotswap.agent.plugin.mybatis.proxy.SpringMapperFactoryBean.registerMapperFactoryBean(this);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("org.mybatis.spring.mapper.MapperFactoryBean patched.");
     }
 }
