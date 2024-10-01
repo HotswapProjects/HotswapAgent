@@ -22,6 +22,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
 import org.hotswap.agent.plugin.mybatisplus.proxy.ConfigurationPlusProxy;
+import org.hotswap.agent.plugin.mybatisplus.proxy.SpringMybatisPlusConfigurationProxy;
 
 
 /**
@@ -45,8 +46,9 @@ public class MyBatisPlusRefreshCommands {
          * for reloading. Refreshing the ConfigurationProxy is not meaningful.The same applies in the opposite case.
          */
         MyBatisRefreshCommands.reloadFlag = true;
+
         if (SpringMybatisConfigurationProxy.runningBySpringMybatis()) {
-            SpringMybatisConfigurationProxy.refreshProxiedConfigurations();
+            SpringMybatisPlusConfigurationProxy.refreshProxiedConfigurations();
             LOGGER.debug("MybatisPlus Spring configuration refreshed.");
         } else {
             ConfigurationPlusProxy.refreshProxiedConfigurations();

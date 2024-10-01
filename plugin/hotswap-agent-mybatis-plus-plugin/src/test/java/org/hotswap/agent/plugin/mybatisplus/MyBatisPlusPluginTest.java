@@ -1,9 +1,9 @@
 package org.hotswap.agent.plugin.mybatisplus;
 
-import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser;
 import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser1;
 import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser2;
@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Order;
 
 import java.io.File;
 import java.io.Reader;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -32,7 +33,20 @@ public class MyBatisPlusPluginTest extends BaseTest {
         File f = Resources.getResourceAsFile("org/hotswap/agent/plugin/mybatisplus/PlusMapper1.xml");
         Files.copy(f.toPath(), f.toPath().getParent().resolve("PlusMapper.xml"), StandardCopyOption.REPLACE_EXISTING);
         try (Reader reader = Resources.getResourceAsReader("org/hotswap/agent/plugin/mybatisplus/mybatis-config.xml")) {
-            sqlSessionFactory = new MybatisSqlSessionFactoryBuilder().build(reader);
+
+            ClassLoader threadContextClassLoader = Thread.currentThread().getContextClassLoader();
+            try {
+                Class clazz = threadContextClassLoader.loadClass("com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder");
+                Constructor constructor = clazz.getConstructor();
+                SqlSessionFactoryBuilder builder = (SqlSessionFactoryBuilder)constructor.newInstance();
+                sqlSessionFactory = builder.build(reader);
+            } catch (Exception e) {
+
+            }
+
+            if (sqlSessionFactory == null) {
+                sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader);
+            }
         }
     }
 

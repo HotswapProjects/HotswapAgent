@@ -1,9 +1,7 @@
 package org.hotswap.agent.plugin.mybatisplus.transformers;
 
-import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.session.Configuration;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.hotswap.agent.plugin.mybatis.transformers.MyBatisTransformers;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -14,8 +12,8 @@ public class PlusSqlSessionFactoryBeanCaller {
                 MyBatisTransformers.CONFIGURATION_PROXY_METHOD, new Class[] {Configuration.class}, configuration);
     }
 
-    public static void setPlusFactoryBean(SqlSessionFactoryBuilder builder, Object factoryBean) {
-        ReflectionHelper.invoke(builder, MybatisSqlSessionFactoryBuilder.class,
+    public static void setPlusFactoryBean(Object builder, Object factoryBean) {
+        ReflectionHelper.invoke(builder, builder.getClass(),
                 MyBatisTransformers.FACTORYBEAN_SET_METHOD, new Class[] {Object.class}, factoryBean);
     }
 }

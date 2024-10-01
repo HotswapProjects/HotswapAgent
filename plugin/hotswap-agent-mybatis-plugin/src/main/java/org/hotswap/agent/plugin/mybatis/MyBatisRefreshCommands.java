@@ -39,6 +39,7 @@ public class MyBatisRefreshCommands {
      * in the test class and wait until the flag is false again.
      */
     public static boolean reloadFlag = false;
+    public static boolean isMybatisPlus = false;
 
     public static void reloadConfiguration() {
         LOGGER.debug("Refreshing MyBatis configuration.");
