@@ -39,7 +39,7 @@ import org.hotswap.agent.plugin.mybatisplus.transformers.MyBatisPlusTransformers
  */
 @Plugin(name = "MyBatisPlus",
         description = "Reload MyBatis Plus configuration after configuration create/change.",
-        testedVersions = {"All versions between 3.4.0 and 3.5.7"},
+        testedVersions = {"All versions between 3.2.0 and 3.5.7"},
         expectedVersions = {"3.5.7"},
         supportClass = {MyBatisPlusTransformers.class})
 public class MyBatisPlusPlugin {

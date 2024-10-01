@@ -265,7 +265,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
         // reset key and remove from set if directory no longer accessible
         boolean valid = key.reset();
         if (!valid) {
-            LOGGER.warning("Watcher on {} not valid, removing path=", keys.get(key));
+            LOGGER.debug("Watcher on {} not valid, removing path=", keys.get(key));
             keys.remove(key);
             // all directories are inaccessible
             if (keys.isEmpty()) {

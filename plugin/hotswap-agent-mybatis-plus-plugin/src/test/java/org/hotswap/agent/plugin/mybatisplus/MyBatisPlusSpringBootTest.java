@@ -8,7 +8,6 @@ import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser;
 import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser2;
 import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper;
 import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper2;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.jupiter.api.Order;
@@ -26,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertNull;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, properties = "spring.config.location=classpath:application-plus.properties")
@@ -82,6 +80,7 @@ public class MyBatisPlusSpringBootTest extends BaseTest {
         // after swap, the user should have gender field. and selectById should have gender column
         swapClasses(PlusUser.class, PlusUser2.class.getName());
         PlusUser user2 = plusMapper.selectById(1);
+
         assertEquals("User1", user2.getName1());
         Field gender = user2.getClass().getDeclaredField("gender");
         gender.setAccessible(true);

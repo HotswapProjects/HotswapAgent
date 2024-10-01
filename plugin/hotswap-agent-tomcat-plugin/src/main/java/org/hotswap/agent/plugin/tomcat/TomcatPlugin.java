@@ -47,7 +47,7 @@ import java.util.Set;
  */
 @Plugin(name = "Tomcat", description = "Catalina based servlet containers.",
         testedVersions = {"7.0.50"},
-        expectedVersions = {"6x","7x", "8x", "9.x"},
+        expectedVersions = {"6x","7x", "8x", "9.x", "10.x"},
         supportClass = {WebappLoaderTransformer.class}
 )
 public class TomcatPlugin {
@@ -316,7 +316,7 @@ public class TomcatPlugin {
      */
     private static int resolveTomcatMajorVersion(String version) {
         try {
-            return Integer.valueOf(version.substring(0, 1));
+            return Integer.valueOf(version.split("\\.")[0]);
         } catch (Exception e) {
             LOGGER.debug("Unable to resolve server main version from version string {}", e, version);
             // assume latest known version

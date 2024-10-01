@@ -9,3 +9,5 @@
 *.idea
 *.iml
 pom.xml.releaseBackup
+
+.flattened-pom.xml

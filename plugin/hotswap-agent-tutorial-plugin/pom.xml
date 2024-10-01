@@ -7,7 +7,7 @@
 
     <groupId>org.hotswap.plugin.examples</groupId>
     <artifactId>hotswap-agent-tutorial-plugin</artifactId>
-    <version>1.4.2-SNAPSHOT</version>
+    <version>${revision}</version>
 
     <dependencies>
         <dependency>

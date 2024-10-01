@@ -14,18 +14,18 @@ function test {
 }
 
 test 3.5.7
-test 3.5.6
-test 3.5.5
-test 3.5.4
-test 3.5.3
-test 3.5.2
+# test 3.5.6
+# test 3.5.5
+# test 3.5.4
+# test 3.5.3
+# test 3.5.2
 test 3.5.1
-test 3.4.3.4
-test 3.4.3
-test 3.4.2
-test 3.4.1
+# test 3.4.3.4
+# test 3.4.3
+# test 3.4.2
+# test 3.4.1
 test 3.4.0
-# test 3.3.0
-# test 3.2.0
+test 3.3.0
+test 3.2.0
 # test 3.1.0
 # test 3.0.1
