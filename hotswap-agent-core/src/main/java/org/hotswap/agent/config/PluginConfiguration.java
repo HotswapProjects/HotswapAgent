@@ -98,6 +98,7 @@ public class PluginConfiguration {
             if (externalPropertiesFile != null) {
                 configurationURL = resourceNameToURL(externalPropertiesFile);
                 properties.load(configurationURL.openStream());
+                System.getProperties().forEach((key, value) -> properties.put(key, value));
                 return;
             }
 
@@ -172,8 +173,10 @@ public class PluginConfiguration {
                 containsPropertyFileDirectly = true;
             }
             try {
-                if (configurationURL != null)
+                if (configurationURL != null) {
                     properties.load(configurationURL.openStream());
+                    System.getProperties().forEach((key, value) -> properties.put(key, value));
+                }
             } catch (Exception e) {
                 LOGGER.error("Error while loading 'hotswap-agent.properties' from URL " + configurationURL, e);
             }
