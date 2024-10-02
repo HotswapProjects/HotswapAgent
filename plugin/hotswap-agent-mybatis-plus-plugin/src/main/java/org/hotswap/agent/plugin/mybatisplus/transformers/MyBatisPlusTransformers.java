@@ -7,9 +7,7 @@ import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
 import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
 import org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands;
-import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.transformers.XPathParserCaller;
 import org.hotswap.agent.plugin.mybatis.util.ClassUtils;
 import org.hotswap.agent.plugin.mybatis.util.XMLConfigBuilderUtils;
@@ -168,7 +166,6 @@ public class MyBatisPlusTransformers {
             buildMethod.instrument(new ExprEditor() {
                 @Override
                 public void edit(Cast c) throws CannotCompileException {
-                    // 判断是否是 MybatisConfiguration 的强制转换
                     try {
                         String name = c.getType().getName();
                         if (name.equals("com.baomidou.mybatisplus.core.MybatisConfiguration")) {
