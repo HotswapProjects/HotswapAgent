@@ -233,6 +233,18 @@ public class MyBatisTransformers {
                 "}\n" +
                 "}");
 
+        CtMethod[] addInterceptors = ctClass.getDeclaredMethods("addInterceptor");
+        if(addInterceptors.length>0){
+            CtMethod addInterceptor = addInterceptors[0];
+            addInterceptor.insertBefore("{" +
+                    "if(" + IN_RELOAD_FIELD + "){\n" +
+                                     "if(getInterceptors().contains($1)){\n" +
+                                        "      return;\n" +
+                                        "    }"+
+                    "}\n" +
+                    "}");
+        }
+
         LOGGER.debug("org.apache.ibatis.session.Configuration patched.");
     }
 
@@ -281,5 +293,20 @@ public class MyBatisTransformers {
                 "}");
 
         LOGGER.debug("org.mybatis.spring.mapper.MapperFactoryBean patched.");
+    }
+
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration")
+    public static void patchMybatisPlusAutoConfiguration(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        try {
+            CtMethod sqlSessionFactory = ctClass.getDeclaredMethod("applyConfiguration");
+            StringBuilder src = new StringBuilder("{");
+            src.append("org.hotswap.agent.plugin.mybatis.MyBatisPlugin.mybatisSessionBeanToProperties.put($1,this.properties);");
+            src.append("}");
+            sqlSessionFactory.insertBefore(src.toString());
+        }catch (Exception e){
+            //ignore this.
+            LOGGER.info("Apply configuration method not found in Mybatis AutoConfiguration");
+        }
     }
 }

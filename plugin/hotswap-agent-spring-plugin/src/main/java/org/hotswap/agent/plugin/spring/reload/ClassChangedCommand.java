@@ -21,11 +21,14 @@ package org.hotswap.agent.plugin.spring.reload;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.transformers.BeanMetaDataTransformer;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -59,6 +62,15 @@ public class ClassChangedCommand extends MergeableCommand {
             Class<?> targetClass = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
             Method targetMethod = targetClass.getDeclaredMethod("addChangedClass", Class.class);
             targetMethod.invoke(null, clazz);
+            Set<Object> metaDataTransformers = BeanMetaDataTransformer.metaDataTransformers;
+            for (Object metaDataTransformer : metaDataTransformers) {
+                Field beanMetaDataCache = metaDataTransformer.getClass().getDeclaredField("beanMetaDataCache");
+                beanMetaDataCache.setAccessible(true);
+                Object o = beanMetaDataCache.get(metaDataTransformer);
+                if(o instanceof Map){
+                    ((Map<?, ?>) o).remove(clazz);
+                }
+            }
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
         } catch (InvocationTargetException e) {
@@ -67,6 +79,9 @@ public class ClassChangedCommand extends MergeableCommand {
             throw new IllegalStateException("Plugin error, illegal access", e);
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
+        } catch (NoSuchFieldException e) {
+            //ignore this.
+            LOGGER.error("Field not exist", e);
         }
     }
 }

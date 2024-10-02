@@ -18,12 +18,16 @@
  */
 package org.hotswap.agent.plugin.mybatisplus;
 
+import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.ibatis.logging.Log;
 import org.hotswap.agent.annotation.*;
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.ReflectionCommand;
@@ -53,6 +57,10 @@ public class MyBatisPlusPlugin {
 
     Map<String, Object> configurationMap = new HashMap<>();
 
+    Map<String, Object> configurationFolder = new HashMap<>();
+
+
+
     Command reloadConfigurationCommand =
             new ReflectionCommand(this, MyBatisPlusRefreshCommands.class.getName(), "reloadConfiguration");
 
@@ -65,6 +73,13 @@ public class MyBatisPlusPlugin {
         if (configFile != null && !configurationMap.containsKey(configFile)) {
             LOGGER.debug("MyBatisPlugin - configuration file registered : {}", configFile);
             configurationMap.put(configFile, configObject);
+            try {
+                File file = new File(configFile);
+                String absolutePath = file.getParentFile().getAbsolutePath();
+                configurationFolder.put(absolutePath, configObject);
+            }catch (Exception eee){
+                LOGGER.info("Register mybatis configuration file folder error");
+            }
         }
     }
 
@@ -73,8 +88,14 @@ public class MyBatisPlusPlugin {
         for (String s : configurationMap.keySet()) {
             LOGGER.trace(s);
         }
-        if (configurationMap.containsKey(Paths.get(url.toURI()).toFile().getAbsolutePath())) {
+        File file = Paths.get(url.toURI()).toFile();
+        if (configurationMap.containsKey(file.getAbsolutePath())) {
             refresh(500);
+        } else {
+            File parentFile = file.getParentFile();
+            if(configurationFolder.containsKey(parentFile.getAbsolutePath())){
+                refresh(500);
+            }
         }
     }
 

@@ -35,8 +35,11 @@ import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefiniti
 import org.springframework.beans.factory.config.*;
 import org.springframework.beans.factory.support.*;
 import org.springframework.context.annotation.AnnotationBeanNameGenerator;
+import org.springframework.security.web.FilterChainProxy;
+import org.springframework.security.web.SecurityFilterChain;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -76,6 +79,8 @@ public class SpringBeanReload {
     private Set<String> beansToProcess = new HashSet<>();
     private final BeanNameGenerator beanNameGenerator;
     private final BeanFactoryAssistant beanFactoryAssistant;
+
+    private static Object origiFilter;
 
 
     public SpringBeanReload(DefaultListableBeanFactory beanFactory) {
@@ -269,7 +274,27 @@ public class SpringBeanReload {
     }
 
     private void doReload() {
+        boolean checkIfSecurityExist = false;
+        try {
+            Class<?> aClass = Class.forName("org.springframework.security.web.FilterChainProxy");
+            checkIfSecurityExist = true;
+        } catch (ClassNotFoundException e) {
+            //ignore
+        }
         // when there are changes, it will rerun the while loop
+        Object filterChain = null;
+        if(checkIfSecurityExist) {
+            try {
+                //do with security filter.
+                FilterChainProxy bean = beanFactory.getBean(FilterChainProxy.class);
+                if(origiFilter==null){
+                    origiFilter = bean;
+                }
+                filterChain = bean;
+            } catch (Exception e) {
+                //ignore
+            }
+        }
         while (true) {
             // 1. clear cache
             clearSpringCache();
@@ -279,6 +304,8 @@ public class SpringBeanReload {
             reloadXmlBeanDefinitions(propertiesChanged);
             // 4. add changed classes and changed beans into recreate beans
             refreshChangedClassesAndBeans();
+
+
 
             // 5. load new beans from scanning. The newBeanNames is used to print the suitable log.
             refreshNewBean();
@@ -295,6 +322,7 @@ public class SpringBeanReload {
             // 7.1 invoke BeanFactoryPostProcessor
             invokeBeanFactoryPostProcessors(beanFactory);
             addBeanPostProcessors(beanFactory);
+
             // 7.2 process @Value and @Autowired of singleton beans excluding destroyed beans
             processAutowiredAnnotationBeans();
             // 7.3 process @Configuration
@@ -303,12 +331,32 @@ public class SpringBeanReload {
             if (!checkHasChange()) {
                 break;
             }
+
         }
 
         // 9 invoke getBean to instantiate singleton beans
         preInstantiateSingleton();
         // 10 reset mvc initialized, it will update the mapping of url and handler
         refreshRequestMapping();
+
+
+        try {
+            if (filterChain != null) {
+                FilterChainProxy bean = beanFactory.getBean(FilterChainProxy.class);
+                if (filterChain != bean) {
+                    //deal with the data.
+                    FilterChainProxy theChine = (FilterChainProxy) origiFilter;
+                    Field field = FilterChainProxy.class.getDeclaredField("filterChains");
+                    field.setAccessible(true);
+                    List<SecurityFilterChain> filterChains = (List<SecurityFilterChain>) field.get(theChine);
+                    filterChains.clear();
+                    List<SecurityFilterChain> filterChains1 = bean.getFilterChains();
+                    filterChains.addAll(filterChains1);
+                }
+            }
+        }catch (Exception e){
+            //ignore this.
+        }
         // 11 clear all process cache
         clearLocalCache();
     }

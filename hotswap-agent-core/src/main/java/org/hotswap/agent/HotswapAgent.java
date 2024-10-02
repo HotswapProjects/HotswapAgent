@@ -72,9 +72,16 @@ public class HotswapAgent {
     }
 
     public static void parseArgs(String args) {
+        String property = System.getProperty("disablePlugin");
+        if (property != null) {
+            LOGGER.info("disable plugin from system properties are "+property);
+            String[] values = property.split(",");
+            for (String value : values) {
+                disabledPlugins.add(value.toLowerCase());
+            }
+        }
         if (args == null)
             return;
-
         for (String arg : args.split(",")) {
             String[] val = arg.split("=");
             if (val.length != 2) {
@@ -83,9 +90,9 @@ public class HotswapAgent {
 
             String option = val[0];
             String optionValue = val[1];
-
             if ("disablePlugin".equals(option)) {
-                disabledPlugins.add(optionValue.toLowerCase());
+                String lowerCase = optionValue.toLowerCase();
+                disabledPlugins.add(lowerCase);
             } else if ("autoHotswap".equals(option)) {
                 autoHotswap = Boolean.valueOf(optionValue);
             } else if ("propertiesFilePath".equals(option)) {
@@ -94,6 +101,7 @@ public class HotswapAgent {
                 LOGGER.warning("Invalid javaagent option '{}'. Argument '{}' is ignored.", option, arg);
             }
         }
+
     }
 
     /**
