@@ -48,7 +48,7 @@ public class JacksonPlugin {
                 for (Object obj : copy) {
                     invokeClearCacheMethod(obj);
                 }
-                LOGGER.info("Reloaded Jackson.");
+                LOGGER.debug("Reloaded Jackson.");
             } catch (Exception e) {
                 LOGGER.error("Error reloading Jackson.", e);
             } finally {
