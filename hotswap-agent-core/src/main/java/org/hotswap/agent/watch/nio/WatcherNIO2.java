@@ -67,7 +67,9 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path entry : stream) {
                 if (Files.isRegularFile(entry)) {
-                    HotswapAgentWatchEvent<Path> ev = new HotswapAgentWatchEvent(ENTRY_CREATE, entry);
+                    String name = entry.getFileName().toString();
+                    HotswapAgentWatchEvent<Path> ev = new HotswapAgentWatchEvent(ENTRY_CREATE, name);
+                    LOGGER.debug("Fake watch event '{}' on '{}' --> {}", ev.kind().name(), entry, name);
                     dispatcher.add(ev, entry);
                 }
             }
