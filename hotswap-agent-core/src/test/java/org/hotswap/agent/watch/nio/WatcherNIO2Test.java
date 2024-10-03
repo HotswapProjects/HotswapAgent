@@ -64,7 +64,7 @@ public class WatcherNIO2Test {
     @Test
     public void createFile() throws IOException {
         final ResultHolder resultHolder = new ResultHolder();
-        watcher.addEventListener(null, temp.toUri(), new WatchEventListener() {
+        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), temp.toUri(), new WatchEventListener() {
             @Override
             public void onEvent(WatchFileEvent event) {
                 assertEquals("New file event type", FileEvent.CREATE, event.getEventType());
@@ -88,10 +88,9 @@ public class WatcherNIO2Test {
         File testFile = new File(testDir.toFile(), TEST_FILE);
         testFile.createNewFile();
 
-        watcher.addEventListener(null, temp.toUri(), new WatchEventListener() {
+        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), temp.toUri(), new WatchEventListener() {
             @Override
             public void onEvent(WatchFileEvent event) {
-                System.out.println(event.toString());
                 if (event.getEventType() == FileEvent.CREATE && event.getURI().toString().endsWith(TEST_FILE)) {
                     resultHolder.result = true;
                 }
@@ -120,7 +119,7 @@ public class WatcherNIO2Test {
     public void testTargetClasses() throws Exception {
         URI uri = new URI("file:/" + temp);
         final ResultHolder resultHolder = new ResultHolder();
-        watcher.addEventListener(null, uri, new WatchEventListener() {
+        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), uri, new WatchEventListener() {
             @Override
             public void onEvent(WatchFileEvent event) {
                 assertTrue("File name", event.getURI().toString().endsWith("test.class"));
