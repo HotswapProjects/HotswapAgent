@@ -56,7 +56,9 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         Files.walkFileTree(dir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                sendFakeCreateEvents(dir);
+                if (fromCreateEvent) {
+                    sendFakeCreateEvents(dir);
+                }
                 register(dir);
                 return FileVisitResult.CONTINUE;
             }
