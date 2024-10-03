@@ -18,16 +18,14 @@
  */
 package org.hotswap.agent.watch.nio;
 
+import org.hotswap.agent.watch.HotswapAgentWatchEvent;
+
 import java.io.IOException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
+
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 
 /**
  * NIO2 watcher implementation.
@@ -51,17 +49,31 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
     }
 
     @Override
-    protected void registerAll(final Path dir) throws IOException {
+    protected void registerAll(final Path dir, boolean fromCreateEvent) throws IOException {
         // register directory and sub-directories
         LOGGER.debug("Registering directory  {}", dir);
 
         Files.walkFileTree(dir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                sendFakeCreateEvents(dir);
                 register(dir);
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    private void sendFakeCreateEvents(Path dir) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path entry : stream) {
+                if (Files.isRegularFile(entry)) {
+                    HotswapAgentWatchEvent<Path> ev = new HotswapAgentWatchEvent(ENTRY_CREATE, entry);
+                    dispatcher.add(ev, entry);
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.warning("Unable to send fake create events for directory {}", e, dir);
+        }
     }
 
     /**
