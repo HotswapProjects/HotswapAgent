@@ -1,7 +1,7 @@
 package org.hotswap.agent.plugin.mybatisplus.proxy;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.MybatisXMLConfigBuilder;
+import org.apache.ibatis.builder.BaseBuilder;
 import org.apache.ibatis.session.Configuration;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
@@ -23,9 +23,9 @@ public class ConfigurationPlusProxy {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ConfigurationPlusProxy.class);
 
-    private static Map<MybatisXMLConfigBuilder, ConfigurationPlusProxy> proxiedConfigurations = new HashMap<>();
+    private static Map<BaseBuilder, ConfigurationPlusProxy> proxiedConfigurations = new HashMap<>();
 
-    public static ConfigurationPlusProxy getWrapper(MybatisXMLConfigBuilder configBuilder) {
+    public static ConfigurationPlusProxy getWrapper(BaseBuilder configBuilder) {
         /*
          * MyBatis runs in MyBatis-Spring mode, so there is no need to cache configuration-related data.
          * The related reload operations are handled by SpringMybatisConfigurationProxy
@@ -52,7 +52,7 @@ public class ConfigurationPlusProxy {
             }
     }
 
-    private ConfigurationPlusProxy(MybatisXMLConfigBuilder configBuilder) {
+    private ConfigurationPlusProxy(BaseBuilder configBuilder) {
         this.configBuilder = configBuilder;
     }
 
@@ -61,18 +61,18 @@ public class ConfigurationPlusProxy {
         ReflectionHelper.invoke(configBuilder, MyBatisTransformers.REFRESH_METHOD);
     }
 
-    private MybatisXMLConfigBuilder configBuilder;
-    private MybatisConfiguration configuration;
-    private MybatisConfiguration proxyInstance;
+    private BaseBuilder configBuilder;
+    private Configuration configuration;
+    private Configuration proxyInstance;
 
     public Configuration proxy(Configuration origConfiguration) {
         if (origConfiguration == null) {
             return null;
         }
-        this.configuration = (MybatisConfiguration) origConfiguration;
+        this.configuration = origConfiguration;
         if (proxyInstance == null) {
             ProxyFactory factory = new ProxyFactory();
-            factory.setSuperclass(MybatisConfiguration.class);
+            factory.setSuperclass(origConfiguration.getClass());
 
             MethodHandler handler = new MethodHandler() {
                 @Override
@@ -83,7 +83,7 @@ public class ConfigurationPlusProxy {
             };
 
             try {
-                proxyInstance = (MybatisConfiguration) factory.create(new Class[0], null, handler);
+                proxyInstance = (Configuration) factory.create(new Class[0], null, handler);
             } catch (Exception e) {
                 throw new Error("Unable instantiate Configuration proxy", e);
             }
