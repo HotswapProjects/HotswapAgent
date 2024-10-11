@@ -28,9 +28,12 @@ import java.util.List;
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.Manifest;
+import org.hotswap.agent.annotation.Name;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.Versions;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
@@ -79,6 +82,9 @@ import org.hotswap.agent.watch.Watcher;
                 PostProcessorRegistrationDelegateTransformer.class,
                 BeanFactoryTransformer.class,
                 InitDestroyAnnotationBeanPostProcessorTransformer.class})
+@Versions(manifest = {@Manifest(value = "[3.0,6.0)", versionName= Name.ImplementationVersion, names={
+        @Name(key=Name.ImplementationTitle,value="spring-core"),
+})})
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
