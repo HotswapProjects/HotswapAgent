@@ -157,6 +157,9 @@ Hotswap agent accepts the following options:
     (opposite to disablePlugin option in hotswap-agent.properties, which will only disable the plugin for a classloader.
     You can repeat this option for every plugin to disable.
 
+### Disable some plugins by vm option.
+* Add vm option -DdisablePlugin=Spring,SpringBoot to disable plugins, works same as agent option disablePlugin in previous section.
+
 
 How does it work?
 =================
