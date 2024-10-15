@@ -72,7 +72,7 @@ import org.hotswap.agent.watch.Watcher;
  * @author Jiri Bubnik
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
-        testedVersions = {"All between 3.0.1 - 5.2.2"}, expectedVersions = {"3x", "4x", "5x"},
+        testedVersions = {"All between 3.1.0 - 5.3.30"}, expectedVersions = {"3x", "4x", "5x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class,
                 ProxyReplacerTransformer.class,
                 ConfigurationClassPostProcessorTransformer.class,
@@ -82,9 +82,8 @@ import org.hotswap.agent.watch.Watcher;
                 PostProcessorRegistrationDelegateTransformer.class,
                 BeanFactoryTransformer.class,
                 InitDestroyAnnotationBeanPostProcessorTransformer.class})
-@Versions(manifest = {@Manifest(value = "[3.0,6.0)", versionName= Name.ImplementationVersion, names={
-        @Name(key=Name.ImplementationTitle,value="spring-core"),
-})})
+@Versions(manifest = {@Manifest(value = "[3.1.0,)", versionName= Name.ImplementationVersion, names={
+        @Name(key=Name.ImplementationTitle,value="spring-core")})})
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 
