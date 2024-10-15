@@ -158,7 +158,7 @@ Hotswap agent accepts the following options:
     You can repeat this option for every plugin to disable.
 
 ### Disable some plugins by vm option.
-* Add vm option -DdisablePlugin=Spring,SpringBoot to disable plugins, works same as agent option disablePlugin in previous section.
+* Add vm option -Dhotswapagent.disablePlugin=Spring,SpringBoot to disable plugins, works same as agent option disablePlugin in previous section.
 
 
 How does it work?
