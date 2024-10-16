@@ -30,6 +30,12 @@ The primary goal of this project was to eliminate the need for the traditional "
 has evolved into a new paradigm within the Java ecosystem, allowing for real-time software development within a running application. This approach is even feasible 
 in restricted environments, such as Docker containers.
 
+
+### IntelliJ - try HotswapHelper
+If you're an IntelliJ user, you can simplify setup of HA and DCEVM by using the [IntelliJ HotSwapHelper](https://plugins.jetbrains.com/plugin/25171-hotswaphelper)
+plugin.
+
+
 ### Easy to start
 
 1. **Download and Install:**
