@@ -87,8 +87,8 @@ example/integration test. There is always a need for documentation improvement :
 
 
 ### What is available?
-* Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
-  is hierarchy change (change the superclass or remove an interface).
+* Enhanced Java Hotswap - change method body, add/rename a method, field, ...The only unsupported operation is changing 
+  the superclass. 
     * You can use standard Java Hotswap from IDE in debug mode to reload changed class
     * or set autoHotswap property `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar=autoHotswap=true` to reload
     changed classes after compilation. This setup allows even reload on a production system without a restart.
