@@ -321,7 +321,7 @@
     </dependencyManagement>
 
     <properties>
-        <revision>2.0.1</revision>
+        <revision>2.0.2-SNAPSHOT</revision>
         <dcevm>dcevm</dcevm>
         <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external
             --add-opens=java.base/sun.nio.ch=ALL-UNNAMED</dcevm.test.arguments>

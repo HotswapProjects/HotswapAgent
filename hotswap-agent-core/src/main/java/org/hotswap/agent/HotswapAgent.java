@@ -71,6 +71,14 @@ public class HotswapAgent {
     }
 
     public static void parseArgs(String args) {
+        String property = System.getProperty("hotswapagent.disablePlugin");
+        if (property != null) {
+            LOGGER.info("disable plugin from system properties are "+property);
+            String[] values = property.split(",");
+            for (String value : values) {
+                disabledPlugins.add(value.toLowerCase());
+            }
+        }
         if (args == null)
             return;
 

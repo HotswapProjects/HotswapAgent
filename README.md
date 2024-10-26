@@ -30,6 +30,12 @@ The primary goal of this project was to eliminate the need for the traditional "
 has evolved into a new paradigm within the Java ecosystem, allowing for real-time software development within a running application. This approach is even feasible 
 in restricted environments, such as Docker containers.
 
+
+### IntelliJ - try HotswapHelper
+If you're an IntelliJ user, you can simplify setup of HA and DCEVM by using the [IntelliJ HotSwapHelper](https://plugins.jetbrains.com/plugin/25171-hotswaphelper)
+plugin.
+
+
 ### Easy to start
 
 1. **Download and Install:**
@@ -87,8 +93,8 @@ example/integration test. There is always a need for documentation improvement :
 
 
 ### What is available?
-* Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
-  is hierarchy change (change the superclass or remove an interface).
+* Enhanced Java Hotswap - change method body, add/rename a method, field, ...The only unsupported operation is changing 
+  the superclass. 
     * You can use standard Java Hotswap from IDE in debug mode to reload changed class
     * or set autoHotswap property `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar=autoHotswap=true` to reload
     changed classes after compilation. This setup allows even reload on a production system without a restart.
@@ -156,6 +162,9 @@ Hotswap agent accepts the following options:
 * disablePlugin=[pluginName] - disable a plugin. Note that this will completely forbid the plugin to load
     (opposite to disablePlugin option in hotswap-agent.properties, which will only disable the plugin for a classloader.
     You can repeat this option for every plugin to disable.
+
+### Disable some plugins by vm option.
+* Add vm option -Dhotswapagent.disablePlugin=Spring,SpringBoot to disable plugins, works same as agent option disablePlugin in previous section.
 
 
 How does it work?
