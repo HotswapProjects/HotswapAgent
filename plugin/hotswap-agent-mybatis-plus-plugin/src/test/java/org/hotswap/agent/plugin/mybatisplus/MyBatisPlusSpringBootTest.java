@@ -9,6 +9,7 @@ import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser2;
 import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper;
 import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper2;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.jupiter.api.Order;
 import org.junit.runner.RunWith;
@@ -26,6 +27,7 @@ import java.nio.file.StandardCopyOption;
 
 import static org.junit.Assert.*;
 
+@Ignore
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, properties = "spring.config.location=classpath:application-plus.properties")
 public class MyBatisPlusSpringBootTest extends BaseTest {

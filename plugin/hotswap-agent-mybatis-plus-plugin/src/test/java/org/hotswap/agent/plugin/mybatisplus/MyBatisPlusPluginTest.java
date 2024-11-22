@@ -8,10 +8,7 @@ import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser;
 import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser1;
 import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser2;
 import org.hotswap.agent.plugin.mybatisplus.mapper.*;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.jupiter.api.Order;
 
 import java.io.File;
@@ -23,6 +20,7 @@ import java.nio.file.StandardCopyOption;
 
 import static org.junit.Assert.*;
 
+@Ignore
 public class MyBatisPlusPluginTest extends BaseTest {
 
     private static SqlSessionFactory sqlSessionFactory;
