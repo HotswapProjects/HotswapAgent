@@ -527,6 +527,7 @@ public class SpringBeanReload {
 //        ResetBeanFactoryCaches.reset(beanFactory);
         ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).resetConfigurationClassPostProcessor(beanFactory);
         ResetAnnotationCache.resetAnnotationScanner(beanFactory);
+        ResetRequestParameterCaches.reset(beanFactory, classes);
     }
 
     private void clearLocalCache() {
