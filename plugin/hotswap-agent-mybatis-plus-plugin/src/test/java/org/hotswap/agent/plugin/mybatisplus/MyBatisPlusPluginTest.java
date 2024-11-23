@@ -20,7 +20,6 @@ import java.nio.file.StandardCopyOption;
 
 import static org.junit.Assert.*;
 
-@Ignore
 public class MyBatisPlusPluginTest extends BaseTest {
 
     private static SqlSessionFactory sqlSessionFactory;
