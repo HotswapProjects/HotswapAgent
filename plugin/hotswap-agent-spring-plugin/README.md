@@ -9,6 +9,9 @@ Currently component scan and annotation config is supported (as it is the most c
 and XML-based bean definition is available (basePackagePrefix attribute is needed to improve performance).
 For more complex configuration reload any help is warmly welcomed :-).
 
+The parameter `-DSpringReloadDelayMillis=` can be used to specify the delay time after redefinition. The default value 
+is 1600, but according to tests, a value of approximately 500 is reliable.
+
 > Note
 >
 > Instances of non-singleton bean with no default constructor created before class file change won't be rewired with new props. It just cost too much pain too implement that with so little in return.
