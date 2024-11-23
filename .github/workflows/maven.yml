@@ -1,0 +1,34 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "for_action","master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: master
+
+    - name: Set up JBR17
+      run: |
+        curl -L -o jdk.tar.gz https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases/download/dcevm-11.0.15%2B1/Openjdk11u-dcevm-linux-x64.tar.gz
+        tar -xzf jdk.tar.gz
+        export JAVA_HOME=$PWD/dcevm-11.0.15+1
+        export PATH=$JAVA_HOME/bin:$PATH
+        java -version
+      shell: bash
+
+    - name: Maven install
+      run: |
+        export JAVA_HOME=$PWD/dcevm-11.0.15+1
+        export PATH=$JAVA_HOME/bin:$PATH
+        java -version
+        mvn install
+      shell: bash
