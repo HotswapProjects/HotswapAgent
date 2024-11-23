@@ -27,7 +27,6 @@ import java.nio.file.StandardCopyOption;
 
 import static org.junit.Assert.*;
 
-@Ignore
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, properties = "spring.config.location=classpath:application-plus.properties")
 public class MyBatisPlusSpringBootTest extends BaseTest {
