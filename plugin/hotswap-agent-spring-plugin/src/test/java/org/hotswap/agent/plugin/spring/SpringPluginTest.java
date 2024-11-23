@@ -20,6 +20,7 @@ package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanService;
 import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanServiceImplNoAspect;
@@ -216,7 +217,7 @@ public class SpringPluginTest {
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
         // no reload happens
         HotSwapper.swapClasses(Pojo.class, Pojo2.class.getName());
-        Thread.sleep(8000);
+        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
     }
 

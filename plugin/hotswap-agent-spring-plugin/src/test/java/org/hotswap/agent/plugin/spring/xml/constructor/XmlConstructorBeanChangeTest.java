@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.spring.xml.constructor;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorFactoryBean2;
@@ -66,7 +67,7 @@ public class XmlConstructorBeanChangeTest {
         HotSwapper.swapClasses(XmlConstructorBean3.class, BakConstructorBean3.class.getName());
         HotSwapper.swapClasses(XmlConstructorBean4.class, BakConstructorBean4.class.getName());
         HotSwapper.swapClasses(XmlConstructorFactoryBean2.class, BakConstructorFactoryBean2.class.getName());
-        Thread.sleep(8000);
+        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
         // check
         XmlConstructorBean1 xmlConstructorBeanNew1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBeanNew2 = applicationContext.getBean(XmlConstructorBean2.class);
@@ -123,7 +124,7 @@ public class XmlConstructorBeanChangeTest {
         HotSwapper.swapClasses(XmlConstructorFactoryBean2.class, BakConstructorFactoryBean2V2.class.getName());
         HotSwapper.swapClasses(XmlConstructorParentBeanMul1.class, BakConstructorParentBeanMul1.class.getName());
         HotSwapper.swapClasses(XmlConstructorParentBeanMul2.class, BakConstructorParentBeanMul2.class.getName());
-        Thread.sleep(8000);
+        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
         // check
         XmlConstructorBean1 xmlConstructorBeanV2_1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBeanV2_2 = applicationContext.getBean(XmlConstructorBean2.class);
