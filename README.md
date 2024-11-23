@@ -214,7 +214,7 @@ uses HA services to:
 * [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.x-4.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
-* [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3.2.x+, 4.x, 5.x) - Reload Spring configuration after class definition/change. Redefinition time can be shortened with -DSpringReloadDelayMillis=. Default is 1600, but ~500 is usually reliable.
+* [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3.2.x+, 4.x, 5.x) - Reload Spring configuration after class definition/change. Redefinition time can be shortened with `-DSpringReloadDelayMillis=`. Default is 1600, but ~500 is usually reliable.
 * [Spring Boot](plugin/hotswap-agent-spring-boot-plugin/README.md) (1.5.x+, 2.0.x) - Dynamic reloading of Spring Boot configuration files in real-time.
 * [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (23.x, 24.x) - Update routes, template models and in practice, anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
