@@ -96,8 +96,8 @@ public class XmlBeanDefinitionScannerAgent {
      */
     public static void registerXmlBeanDefinitionScannerAgent(XmlBeanDefinitionReader reader, Resource resource) {
         LOGGER.trace("registerXmlBeanDefinitionScannerAgent, reader: {}, resource: {}, beanFactory:{}", reader,
-                resource, ObjectUtils.identityToString(reader.getBeanFactory()));
-        BeanDefinitionRegistry beanDefinitionRegistry = reader.getBeanFactory();
+                resource, ObjectUtils.identityToString(reader.getRegistry()));
+        BeanDefinitionRegistry beanDefinitionRegistry = reader.getRegistry();
         if (beanDefinitionRegistry instanceof DefaultListableBeanFactory) {
             DefaultListableBeanFactory defaultListableBeanFactory = (DefaultListableBeanFactory) beanDefinitionRegistry;
             Map<String, XmlBeanDefinitionScannerAgent> agentMap = beanFactoryToAgentMap.computeIfAbsent(defaultListableBeanFactory, k -> new HashMap<>());

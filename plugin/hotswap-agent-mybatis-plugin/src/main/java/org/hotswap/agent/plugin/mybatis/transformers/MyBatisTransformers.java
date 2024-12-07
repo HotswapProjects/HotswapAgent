@@ -25,6 +25,7 @@ import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mybatis.MyBatisPlugin;
+import org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands;
 import org.hotswap.agent.plugin.mybatis.proxy.ConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.proxy.SpringMybatisConfigurationProxy;
 import org.hotswap.agent.plugin.mybatis.util.ClassUtils;
@@ -128,6 +129,9 @@ public class MyBatisTransformers {
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.ibatis.session.SqlSessionFactoryBuilder")
     public static void patchSqlSessionFactoryBuilder(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        if (MyBatisRefreshCommands.isMybatisPlus) {
+            return;
+        }
         // add $$ha$factoryBean field
         CtClass objClass = classPool.get("java.lang.Object");
         CtField factoryBeanField = new CtField(objClass, FACTORYBEAN_FIELD, ctClass);
@@ -140,7 +144,7 @@ public class MyBatisTransformers {
         ctClass.addMethod(setMethod);
 
         CtMethod buildMethod = ctClass.getDeclaredMethod("build",
-                new CtClass[] {classPool.get("org.apache.ibatis.session.Configuration")});
+                new CtClass[]{classPool.get("org.apache.ibatis.session.Configuration")});
         buildMethod.insertBefore("{" +
                 "if (this." + FACTORYBEAN_FIELD + " != null) {" +
                 "config = " + SqlSessionFactoryBeanCaller.class.getName() + ".proxyConfiguration(this." + FACTORYBEAN_FIELD + ", config);" +
@@ -269,5 +273,17 @@ public class MyBatisTransformers {
                 "}");
 
         LOGGER.debug("org.apache.ibatis.binding.MapperRegistry patched.");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.mybatis.spring.mapper.MapperFactoryBean")
+    public static void patchMapperFactoryBean(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        CtMethod checkDaoConfigM = ctClass.getDeclaredMethod("checkDaoConfig");
+        checkDaoConfigM.insertBefore("{" +
+                "if (!org.hotswap.agent.plugin.mybatis.MyBatisRefreshCommands.reloadFlag) {\n" +
+                "    org.hotswap.agent.plugin.mybatis.proxy.SpringMapperFactoryBean.registerMapperFactoryBean(this);\n" +
+                "}\n" +
+                "}");
+
+        LOGGER.debug("org.mybatis.spring.mapper.MapperFactoryBean patched.");
     }
 }

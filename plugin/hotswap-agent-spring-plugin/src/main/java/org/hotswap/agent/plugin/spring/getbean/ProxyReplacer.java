@@ -22,8 +22,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.SpringPlugin;
 
 /**
  * Proxies the beans. The beans inside these proxies can be cleared.
@@ -60,9 +60,19 @@ public class ProxyReplacer {
         if (bean == null) {
             return bean;
         }
-        if (SpringPlugin.basePackagePrefixes != null) {
+        String[] basePackagePrefixes;
+        try {
+            basePackagePrefixes = (String[]) PluginManager.getInstance().getPlugin("org.hotswap.agent.plugin.spring.SpringPlugin",
+                    ProxyReplacer.class.getClassLoader()).getClass().getDeclaredField("basePackagePrefixes").get(null);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            LOGGER.error("load org.hotswap.agent.plugin.spring.SpringPlugin failed, classLoader: {}, exception: {}",
+                    ProxyReplacer.class.getClassLoader(), e);
+            return bean;
+        }
+
+        if (basePackagePrefixes != null) {
             boolean hasMatch = false;
-            for (String basePackagePrefix : SpringPlugin.basePackagePrefixes) {
+            for (String basePackagePrefix : basePackagePrefixes) {
                 if (bean.getClass().getName().startsWith(basePackagePrefix)) {
                     hasMatch = true;
                     break;

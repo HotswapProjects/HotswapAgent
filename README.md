@@ -30,6 +30,12 @@ The primary goal of this project was to eliminate the need for the traditional "
 has evolved into a new paradigm within the Java ecosystem, allowing for real-time software development within a running application. This approach is even feasible 
 in restricted environments, such as Docker containers.
 
+
+### IntelliJ - try HotswapHelper
+If you're an IntelliJ user, you can simplify setup of HA and DCEVM by using the [IntelliJ HotSwapHelper](https://plugins.jetbrains.com/plugin/25171-hotswaphelper)
+plugin.
+
+
 ### Easy to start
 
 1. **Download and Install:**
@@ -87,8 +93,8 @@ example/integration test. There is always a need for documentation improvement :
 
 
 ### What is available?
-* Enhanced Java Hotswap - change method body, add/rename a method, field, ... The only unsupported operation
-  is hierarchy change (change the superclass or remove an interface).
+* Enhanced Java Hotswap - change method body, add/rename a method, field, ...The only unsupported operation is changing 
+  the superclass. 
     * You can use standard Java Hotswap from IDE in debug mode to reload changed class
     * or set autoHotswap property `-XXaltjvm=dcevm -javaagent:PATH_TO_AGENT\hotswap-agent.jar=autoHotswap=true` to reload
     changed classes after compilation. This setup allows even reload on a production system without a restart.
@@ -157,6 +163,9 @@ Hotswap agent accepts the following options:
     (opposite to disablePlugin option in hotswap-agent.properties, which will only disable the plugin for a classloader.
     You can repeat this option for every plugin to disable.
 
+### Disable some plugins by vm option.
+* Add vm option -Dhotswapagent.disablePlugin=Spring,SpringBoot to disable plugins, works same as agent option disablePlugin in previous section.
+
 
 How does it work?
 =================
@@ -205,7 +214,7 @@ uses HA services to:
 * [OpenWebBeans](plugin/hotswap-agent-owb-plugin/README.md) - (CDI) (1.x-4.x) - reload bean class definition after class definition/change. Beans can be reloaded according strategy defined in property file.
 * [OsgiEquinox](plugin/hotswap-agent-osgiequinox-plugin/README.md) - Hotswap support for Eclipse plugin or Eclipse platform development.
 * [RestEasy](plugin/hotswap-agent-resteasy-registry-plugin/README.md) (2.x, 3.x) - Cleanups and registers class redefinitions.
-* [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3.2.x+, 4.x, 5.x) - Reload Spring configuration after class definition/change.
+* [Spring](plugin/hotswap-agent-spring-plugin/README.md) (3.2.x+, 4.x, 5.x) - Reload Spring configuration after class definition/change. Redefinition time can be shortened with `-DSpringReloadDelayMillis=`. Default is 1600, but ~500 is usually reliable.
 * [Spring Boot](plugin/hotswap-agent-spring-boot-plugin/README.md) (1.5.x+, 2.0.x) - Dynamic reloading of Spring Boot configuration files in real-time.
 * [Vaadin](plugin/hotswap-agent-vaadin-plugin/README.md) (23.x, 24.x) - Update routes, template models and in practice, anything on the fly.
 * [WebObjects](plugin/hotswap-agent-webobjects-plugin/README.md) - Clear key value coding, component, action and validation caches after class change.
@@ -298,8 +307,8 @@ Hotswap agent:
 
 DCEVM:
 
-* Ivan Dubrov - current project coordinator, update to Java7+Java8, patches, build system (Gradle)
 * Thomas Würthinger - initial implementation.
+* Ivan Dubrov - former project coordinator, update to Java7+Java8, patches, build system (Gradle)
 * Kerstin Breitender - contributor.
 * Christoph Wimberger - contributor.
 * Vladimir Dvorak - java9,java11,jbr17,jbr21 migration, contributor

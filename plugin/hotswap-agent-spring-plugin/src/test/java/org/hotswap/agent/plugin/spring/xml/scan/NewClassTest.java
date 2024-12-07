@@ -3,6 +3,7 @@ package org.hotswap.agent.plugin.spring.xml.scan;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class NewClassTest {
         moveClass("org.hotswap.agent.plugin.spring.xml.scanbak.ScanBakItem2",
                 "org.hotswap.agent.plugin.spring.xml.scan.ScanBakItem2", ScanItem.class.getClassLoader());
 
-        Thread.sleep(12000);
+        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(12000));
         LOGGER.info("swap class finished");
         assertNotNull(applicationContext.getBean(ScanItem.class).getName());
         assertNotNull(applicationContext.getBean(ScanItem2.class).getName());

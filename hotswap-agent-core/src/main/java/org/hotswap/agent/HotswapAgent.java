@@ -62,7 +62,6 @@ public class HotswapAgent {
     }
 
     public static void premain(String args, Instrumentation inst) {
-
         LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         parseArgs(args);
         fixJboss7Modules();
@@ -72,6 +71,14 @@ public class HotswapAgent {
     }
 
     public static void parseArgs(String args) {
+        String property = System.getProperty("hotswapagent.disablePlugin");
+        if (property != null) {
+            LOGGER.info("disable plugin from system properties are "+property);
+            String[] values = property.split(",");
+            for (String value : values) {
+                disabledPlugins.add(value.toLowerCase());
+            }
+        }
         if (args == null)
             return;
 

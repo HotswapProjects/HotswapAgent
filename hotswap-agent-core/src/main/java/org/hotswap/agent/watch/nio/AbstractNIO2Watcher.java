@@ -206,10 +206,10 @@ public abstract class AbstractNIO2Watcher implements Watcher {
      * Registers the given directory
      */
     public void addDirectory(Path path) throws IOException {
-       registerAll(path);
+       registerAll(path, false);
     }
 
-    protected abstract void registerAll(final Path dir) throws IOException;
+    protected abstract void registerAll(final Path dir, boolean fromCreateEvent) throws IOException;
 
     /**
      * Process all events for keys queued to the watcher
@@ -254,7 +254,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             if (kind == ENTRY_CREATE) {
                 try {
                     if (Files.isDirectory(child, NOFOLLOW_LINKS)) {
-                        registerAll(child);
+                        registerAll(child, true);
                     }
                 } catch (IOException x) {
                     LOGGER.warning("Unable to register events for directory {}", x, child);
@@ -265,7 +265,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
         // reset key and remove from set if directory no longer accessible
         boolean valid = key.reset();
         if (!valid) {
-            LOGGER.warning("Watcher on {} not valid, removing path=", keys.get(key));
+            LOGGER.debug("Watcher on {} not valid, removing path=", keys.get(key));
             keys.remove(key);
             // all directories are inaccessible
             if (keys.isEmpty()) {

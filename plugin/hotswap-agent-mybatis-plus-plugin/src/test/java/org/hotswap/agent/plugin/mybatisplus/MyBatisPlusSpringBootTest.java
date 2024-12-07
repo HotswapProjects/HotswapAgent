@@ -9,6 +9,7 @@ import org.hotswap.agent.plugin.mybatisplus.entity.PlusUser2;
 import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper;
 import org.hotswap.agent.plugin.mybatisplus.mapper.PlusMapper2;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.jupiter.api.Order;
 import org.junit.runner.RunWith;

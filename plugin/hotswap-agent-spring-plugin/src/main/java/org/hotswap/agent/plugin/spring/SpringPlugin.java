@@ -28,9 +28,12 @@ import java.util.List;
 import org.hotswap.agent.annotation.FileEvent;
 import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
+import org.hotswap.agent.annotation.Manifest;
+import org.hotswap.agent.annotation.Name;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.annotation.Versions;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.javassist.CannotCompileException;
@@ -69,7 +72,7 @@ import org.hotswap.agent.watch.Watcher;
  * @author Jiri Bubnik
  */
 @Plugin(name = "Spring", description = "Reload Spring configuration after class definition/change.",
-        testedVersions = {"All between 3.0.1 - 5.2.2"}, expectedVersions = {"3x", "4x", "5x"},
+        testedVersions = {"All between 3.1.0 - 5.3.30"}, expectedVersions = {"3x", "4x", "5x"},
         supportClass = {ClassPathBeanDefinitionScannerTransformer.class,
                 ProxyReplacerTransformer.class,
                 ConfigurationClassPostProcessorTransformer.class,
@@ -79,6 +82,8 @@ import org.hotswap.agent.watch.Watcher;
                 PostProcessorRegistrationDelegateTransformer.class,
                 BeanFactoryTransformer.class,
                 InitDestroyAnnotationBeanPostProcessorTransformer.class})
+@Versions(manifest = {@Manifest(value = "[3.1.0,)", versionName= Name.ImplementationVersion, names={
+        @Name(key=Name.ImplementationTitle,value="spring-core")})})
 public class SpringPlugin {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
 

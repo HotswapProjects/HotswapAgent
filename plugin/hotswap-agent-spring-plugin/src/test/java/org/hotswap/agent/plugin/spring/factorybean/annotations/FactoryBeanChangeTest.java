@@ -10,6 +10,7 @@ import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationFactoryBean1;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationFactoryBean2;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -73,7 +74,7 @@ public class FactoryBeanChangeTest {
         HotSwapper.swapClasses(AnnotationBean4.class, BakAnnotationBean4.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean1.class, BakAnnotationFactoryBean1.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean2.class, BakAnnotationFactoryBean2.class.getName());
-        Thread.sleep(8000);
+        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
         // check
         AnnotationBean1 annotationBeanNew1 = applicationContext.getBean(AnnotationBean1.class);
         AnnotationBean2 annotationBeanNew2 = applicationContext.getBean(AnnotationBean2.class);
@@ -121,7 +122,7 @@ public class FactoryBeanChangeTest {
         HotSwapper.swapClasses(AnnotationBean4.class, V2BakAnnotationBean4.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean1.class, V2BakAnnotationFactoryBean1.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean2.class, V2BakAnnotationFactoryBean2.class.getName());
-        Thread.sleep(8000);
+        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
         // check
         AnnotationBean1 annotationBeanV2_1 = applicationContext.getBean(AnnotationBean1.class);
         AnnotationBean2 annotationBeanV2_2 = applicationContext.getBean(AnnotationBean2.class);

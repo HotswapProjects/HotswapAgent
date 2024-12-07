@@ -124,10 +124,6 @@ public class PluginManager {
     public void init(Instrumentation instrumentation) {
         this.instrumentation = instrumentation;
 
-        // create default configuration from this classloader
-        ClassLoader classLoader = getClass().getClassLoader();
-        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
-
         if (watcher == null) {
             try {
                 watcher = new WatcherFactory().getWatcher();
@@ -141,6 +137,11 @@ public class PluginManager {
             scheduler = new SchedulerImpl();
         }
         scheduler.run();
+
+        // create default configuration from this classloader
+        ClassLoader classLoader = getClass().getClassLoader();
+
+        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
 
         pluginRegistry.scanPlugins(getClass().getClassLoader(), PLUGIN_PACKAGE);
 
