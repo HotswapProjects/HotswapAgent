@@ -16,14 +16,10 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Map;
-
 import org.hotswap.agent.javassist.CannotCompileException;
+
+import java.io.*;
+import java.util.Map;
 
 /**
  * <code>stack_map</code> attribute.
@@ -204,8 +200,11 @@ public class StackMapTable extends AttributeInfo {
             }
             else if (type < 128)
                 pos = sameLocals(pos, type);
-            else if (type < 247)
-                throw new BadBytecode("bad frame_type in StackMapTable");
+            else if (type < 247) {
+                throw new BadBytecode(
+                    "bad frame_type " + type + " in StackMapTable (pos: "
+                        + pos + ", frame no.:" + nth + ")");
+            }
             else if (type == 247)   // SAME_LOCALS_1_STACK_ITEM_EXTENDED
                 pos = sameLocals(pos, type);
             else if (type < 251) {
@@ -716,7 +715,7 @@ public class StackMapTable extends AttributeInfo {
      * @param ps    a print stream such as <code>System.out</code>.
      */
     public void println(java.io.PrintStream ps) {
-        Printer.print(this, new java.io.PrintWriter(ps, true));
+        Printer.print(this, new PrintWriter(ps, true));
     }
 
     static class Printer extends Walker {
@@ -881,16 +880,21 @@ public class StackMapTable extends AttributeInfo {
             position = oldPos + offsetDelta + (oldPos == 0 ? 0 : 1);
             boolean match;
             if (exclusive)
-                match = oldPos < where  && where <= position;
+                // We optimize this expression by hand:
+                //   match = (oldPos == 0 && where == 0 && (0 < position || 0 == position))
+                //           || oldPos < where  && where <= position;
+                match = (oldPos == 0 && where == 0)
+                        || oldPos < where  && where <= position;
             else
                 match = oldPos <= where  && where < position;
 
             if (match) {
+                int current = info[pos] & 0xff;
                 int newDelta = offsetDelta + gap;
                 position += gap;
                 if (newDelta < 64)
                     info[pos] = (byte)(newDelta + base);
-                else if (offsetDelta < 64) {
+                else if (offsetDelta < 64 && current != entry) {
                     byte[] newinfo = insertGap(info, pos, 2);
                     newinfo[pos] = (byte)entry;
                     ByteArray.write16bit(newDelta, newinfo, pos + 1);
@@ -904,9 +908,15 @@ public class StackMapTable extends AttributeInfo {
         static byte[] insertGap(byte[] info, int where, int gap) {
             int len = info.length;
             byte[] newinfo = new byte[len + gap];
-            for (int i = 0; i < len; i++)
-                newinfo[i + (i < where ? 0 : gap)] = info[i];
-
+            if (where <= 0) {
+                System.arraycopy(info, 0, newinfo, gap, len);
+            } else if (where >= len) {
+                System.arraycopy(info, 0, newinfo, 0, len);
+            } else {
+                assert (where > 0 && where < len);
+                System.arraycopy(info, 0, newinfo, 0, where);
+                System.arraycopy(info, where, newinfo, where + gap, len - where);
+            }
             return newinfo;
         }
 
@@ -931,7 +941,8 @@ public class StackMapTable extends AttributeInfo {
             position = oldPos + offsetDelta + (oldPos == 0 ? 0 : 1);
             boolean match;
             if (exclusive)
-                match = oldPos < where  && where <= position;
+                match = (oldPos == 0 && where == 0)
+                        || oldPos < where  && where <= position;
             else
                 match = oldPos <= where  && where < position;
 

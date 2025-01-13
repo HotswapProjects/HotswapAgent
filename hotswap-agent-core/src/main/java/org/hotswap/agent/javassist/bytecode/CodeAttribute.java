@@ -185,7 +185,7 @@ public class CodeAttribute extends AttributeInfo implements Opcode {
     /**
      * This method is not available.
      *
-     * @throws java.lang.UnsupportedOperationException  always thrown.
+     * @throws UnsupportedOperationException  always thrown.
      */
     @Override
     public byte[] get() {
@@ -195,7 +195,7 @@ public class CodeAttribute extends AttributeInfo implements Opcode {
     /**
      * This method is not available.
      *
-     * @throws java.lang.UnsupportedOperationException  always thrown.
+     * @throws UnsupportedOperationException  always thrown.
      */
     @Override
     public void set(byte[] newinfo) {

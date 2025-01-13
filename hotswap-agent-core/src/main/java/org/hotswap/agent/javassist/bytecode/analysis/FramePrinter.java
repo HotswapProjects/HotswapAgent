@@ -15,19 +15,13 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
-import java.io.PrintStream;
-
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.InstructionPrinter;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.*;
+
+import java.io.PrintStream;
 
 /**
  * A utility class for printing a merged view of the frame state and the

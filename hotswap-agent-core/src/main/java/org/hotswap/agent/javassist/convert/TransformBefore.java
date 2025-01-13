@@ -19,12 +19,7 @@ package org.hotswap.agent.javassist.convert;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.Bytecode;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.*;
 
 public class TransformBefore extends TransformCall {
     protected CtClass[] parameterTypes;

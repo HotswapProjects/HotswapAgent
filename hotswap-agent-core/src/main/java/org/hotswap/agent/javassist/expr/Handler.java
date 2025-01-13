@@ -20,13 +20,7 @@ import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtBehavior;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.Bytecode;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.ExceptionTable;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.compiler.CompileError;
 import org.hotswap.agent.javassist.compiler.Javac;
 

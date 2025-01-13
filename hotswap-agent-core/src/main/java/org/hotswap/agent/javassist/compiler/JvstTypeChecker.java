@@ -20,13 +20,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtPrimitiveType;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.compiler.ast.ASTList;
-import org.hotswap.agent.javassist.compiler.ast.ASTree;
-import org.hotswap.agent.javassist.compiler.ast.CallExpr;
-import org.hotswap.agent.javassist.compiler.ast.CastExpr;
-import org.hotswap.agent.javassist.compiler.ast.Expr;
-import org.hotswap.agent.javassist.compiler.ast.Member;
-import org.hotswap.agent.javassist.compiler.ast.Symbol;
+import org.hotswap.agent.javassist.compiler.ast.*;
 
 /* Type checker accepting extended Java syntax for Javassist.
  */

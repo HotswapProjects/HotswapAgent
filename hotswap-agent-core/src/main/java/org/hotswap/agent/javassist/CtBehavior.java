@@ -16,32 +16,14 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.bytecode.AccessFlag;
-import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute;
-import org.hotswap.agent.javassist.bytecode.AttributeInfo;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.Bytecode;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.ExceptionsAttribute;
-import org.hotswap.agent.javassist.bytecode.LineNumberAttribute;
-import org.hotswap.agent.javassist.bytecode.LocalVariableAttribute;
-import org.hotswap.agent.javassist.bytecode.LocalVariableTypeAttribute;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.bytecode.ParameterAnnotationsAttribute;
-import org.hotswap.agent.javassist.bytecode.SignatureAttribute;
-import org.hotswap.agent.javassist.bytecode.StackMap;
-import org.hotswap.agent.javassist.bytecode.StackMapTable;
+import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.compiler.CompileError;
 import org.hotswap.agent.javassist.compiler.Javac;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 
 /**
  * <code>CtBehavior</code> represents a method, a constructor,
- * or a static constructor (class initializer).
+ * or a static constructor (class initializer). 
  * It is the abstract super class of
  * <code>CtMethod</code> and <code>CtConstructor</code>.
  *
@@ -100,7 +82,7 @@ public abstract class CtBehavior extends CtMember {
     }
 
     @Override
-    protected void extendToString(StringBuffer buffer) {
+    protected void extendToString(StringBuilder buffer) {
         buffer.append(' ');
         buffer.append(getName());
         buffer.append(' ');
@@ -191,9 +173,9 @@ public abstract class CtBehavior extends CtMember {
     public boolean hasAnnotation(String typeName) {
        MethodInfo mi = getMethodInfo2();
        AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.invisibleTag);
+                   mi.getAttribute(AnnotationsAttribute.invisibleTag);  
        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.visibleTag);
+                   mi.getAttribute(AnnotationsAttribute.visibleTag);  
        return CtClassType.hasAnnotationType(typeName,
                                             getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2);
@@ -214,9 +196,9 @@ public abstract class CtBehavior extends CtMember {
     public Object getAnnotation(Class<?> clz) throws ClassNotFoundException {
        MethodInfo mi = getMethodInfo2();
        AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.invisibleTag);
+                   mi.getAttribute(AnnotationsAttribute.invisibleTag);  
        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.visibleTag);
+                   mi.getAttribute(AnnotationsAttribute.visibleTag);  
        return CtClassType.getAnnotationType(clz,
                                             getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2);
@@ -238,7 +220,7 @@ public abstract class CtBehavior extends CtMember {
      * Returns the annotations associated with this method or constructor.
      * If any annotations are not on the classpath, they are not included
      * in the returned array.
-     *
+     * 
      * @return an array of annotation-type objects.
      * @see #getAnnotations()
      * @since 3.3
@@ -258,9 +240,9 @@ public abstract class CtBehavior extends CtMember {
     {
        MethodInfo mi = getMethodInfo2();
        AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.invisibleTag);
+                   mi.getAttribute(AnnotationsAttribute.invisibleTag);  
        AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                   mi.getAttribute(AnnotationsAttribute.visibleTag);
+                   mi.getAttribute(AnnotationsAttribute.visibleTag);  
        return CtClassType.toAnnotationType(ignoreNotFound,
                                            getDeclaringClass().getClassPool(),
                                            ainfo, ainfo2);
@@ -285,7 +267,7 @@ public abstract class CtBehavior extends CtMember {
      * Returns the parameter annotations associated with this method or constructor.
      * If any annotations are not on the classpath, they are not included in the
      * returned array.
-     *
+     * 
      * @return an array of annotation-type objects.  The length of the returned array is
      * equal to the number of the formal parameters.  If each parameter has no
      * annotation, the elements of the returned array are empty arrays.
@@ -308,9 +290,9 @@ public abstract class CtBehavior extends CtMember {
     {
         MethodInfo mi = getMethodInfo2();
         ParameterAnnotationsAttribute ainfo = (ParameterAnnotationsAttribute)
-                    mi.getAttribute(ParameterAnnotationsAttribute.invisibleTag);
+                    mi.getAttribute(ParameterAnnotationsAttribute.invisibleTag);  
         ParameterAnnotationsAttribute ainfo2 = (ParameterAnnotationsAttribute)
-                    mi.getAttribute(ParameterAnnotationsAttribute.visibleTag);
+                    mi.getAttribute(ParameterAnnotationsAttribute.visibleTag);  
         return CtClassType.toAnnotationType(ignoreNotFound,
                                             getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2, mi);
@@ -375,7 +357,7 @@ public abstract class CtBehavior extends CtMember {
      * for a code sample.
      *
      * @param sig       a new generic signature.
-     * @see javassist.bytecode.SignatureAttribute.MethodSignature#encode()
+     * @see SignatureAttribute.MethodSignature#encode()
      * @since 3.17
      */
     @Override
@@ -513,7 +495,7 @@ public abstract class CtBehavior extends CtMember {
      *
      * <p>Note that an attribute is a data block specified by
      * the class file format.  It is not an annotation.
-     * See {@link javassist.bytecode.AttributeInfo}.
+     * See {@link AttributeInfo}.
      *
      * @param name              attribute name
      */
@@ -531,7 +513,7 @@ public abstract class CtBehavior extends CtMember {
      *
      * <p>Note that an attribute is a data block specified by
      * the class file format.  It is not an annotation.
-     * See {@link javassist.bytecode.AttributeInfo}.
+     * See {@link AttributeInfo}.
      *
      * @param name      attribute name
      * @param data      attribute value
@@ -580,7 +562,7 @@ public abstract class CtBehavior extends CtMember {
 
         pool.recordCflow(name, declaringClass.getName(), fname);
         try {
-            CtClass type = pool.get("org.hotswap.agent.javassist.runtime.Cflow");
+            CtClass type = pool.get("javassist.runtime.Cflow");
             CtField field = new CtField(type, fname, cc);
             field.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
             cc.addField(field, CtField.Initializer.byNew(type));
@@ -727,7 +709,7 @@ public abstract class CtBehavior extends CtMember {
      * in <code>Expr</code> is available for bytecode modification.
      * Other methods such as <code>insertBefore()</code> may collapse
      * the bytecode because the <code>ExprEditor</code> loses
-     * its current position.
+     * its current position.  
      *
      * @param editor            specifies how to modify.
      * @see javassist.expr.Expr#replace(String)
@@ -782,7 +764,7 @@ public abstract class CtBehavior extends CtMember {
                                         Modifier.isStatic(getModifiers()));
             jv.recordParamNames(ca, nvars);
             jv.recordLocalVariables(ca, 0);
-            jv.recordType(getReturnType0());
+            jv.recordReturnType(getReturnType0(), false);
             jv.compileStmnt(src);
             Bytecode b = jv.getBytecode();
             int stack = b.getMaxStack();
@@ -812,7 +794,7 @@ public abstract class CtBehavior extends CtMember {
 
     /**
      * Inserts bytecode at the end of the body.
-     * The bytecode is inserted just before every return insturction.
+     * The bytecode is inserted just before every return instruction.
      * It is not executed when an exception is thrown.
      *
      * @param src       the source code representing the inserted bytecode.
@@ -821,12 +803,12 @@ public abstract class CtBehavior extends CtMember {
     public void insertAfter(String src)
         throws CannotCompileException
     {
-        insertAfter(src, false);
+        insertAfter(src, false, false);
     }
 
     /**
      * Inserts bytecode at the end of the body.
-     * The bytecode is inserted just before every return insturction.
+     * The bytecode is inserted just before every return instruction.
      *
      * @param src       the source code representing the inserted bytecode.
      *                  It must be a single statement or block.
@@ -837,6 +819,35 @@ public abstract class CtBehavior extends CtMember {
      *                  access local variables.
      */
     public void insertAfter(String src, boolean asFinally)
+        throws CannotCompileException
+    {
+        insertAfter(src, asFinally, false);
+    }
+
+    /**
+     * Inserts bytecode at the end of the body.
+     * The bytecode is inserted just before every return instruction.
+     *
+     * @param src       the source code representing the inserted bytecode.
+     *                  It must be a single statement or block.
+     * @param asFinally         true if the inserted bytecode is executed
+     *                  not only when the control normally returns
+     *                  but also when an exception is thrown.
+     *                  If this parameter is true, the inserted code cannot
+     *                  access local variables.
+     * @param redundant if true, redundant bytecode will be generated.
+     *                  the redundancy is necessary when some compilers (Kotlin?)
+     *                  generate the original bytecode.
+     *                  The other <code>insertAfter</code> methods calls this method
+     *                  with <code>false</code> for this parameter.
+     *                  A tip is to pass <code>this.getDeclaringClass().isKotlin()</code>
+     *                  to this parameter.
+     *
+     * @see CtClass#isKotlin()
+     * @see #getDeclaringClass()
+     * @since 3.26
+     */
+    public void insertAfter(String src, boolean asFinally, boolean redundant)
         throws CannotCompileException
     {
         CtClass cc = declaringClass;
@@ -864,7 +875,7 @@ public abstract class CtBehavior extends CtMember {
                                                 jv, src);
             int handlerPos = iterator.getCodeLength();
             if (asFinally)
-                ca.getExceptionTable().add(getStartPosOfBody(ca), handlerPos, handlerPos, 0);
+                ca.getExceptionTable().add(getStartPosOfBody(ca), handlerPos, handlerPos, 0); 
 
             int adviceLen = 0;
             int advicePos = 0;
@@ -878,18 +889,50 @@ public abstract class CtBehavior extends CtMember {
                 if (c == Opcode.ARETURN || c == Opcode.IRETURN
                     || c == Opcode.FRETURN || c == Opcode.LRETURN
                     || c == Opcode.DRETURN || c == Opcode.RETURN) {
-                    if (noReturn) {
-                        // finally clause for normal termination
-                        adviceLen = insertAfterAdvice(b, jv, src, pool, rtype, varNo);
-                        handlerPos = iterator.append(b.get());
-                        iterator.append(b.getExceptionTable(), handlerPos);
-                        advicePos = iterator.getCodeLength() - adviceLen;
-                        handlerLen = advicePos - handlerPos;
-                        noReturn = false;
+                    if (redundant) {
+                        iterator.setMark2(handlerPos);
+                        Bytecode bcode;
+                        Javac jvc;
+                        int retVarNo;
+                        if (noReturn) {
+                            noReturn = false;
+                            bcode = b;
+                            jvc = jv;
+                            retVarNo = varNo;
+                        }
+                        else {
+                            bcode = new Bytecode(pool, 0, retAddr + 1);
+                            bcode.setStackDepth(ca.getMaxStack() + 1);
+                            jvc = new Javac(bcode, cc);
+                            int nvars2 = jvc.recordParams(getParameterTypes(),
+                                                          Modifier.isStatic(getModifiers()));
+                            jvc.recordParamNames(ca, nvars2);
+                            retVarNo = jvc.recordReturnType(rtype, true);
+                            jvc.recordLocalVariables(ca, 0);
+                        }
+
+                        int adviceLen2 = insertAfterAdvice(bcode, jvc, src, pool, rtype, retVarNo);
+                        int offset = iterator.append(bcode.get());
+                        iterator.append(bcode.getExceptionTable(), offset);
+                        int advicePos2 = iterator.getCodeLength() - adviceLen2;
+                        insertGoto(iterator, advicePos2, pos);
+                        handlerPos = iterator.getMark2();
                     }
-                    insertGoto(iterator, advicePos, pos);
-                    advicePos = iterator.getCodeLength() - adviceLen;
-                    handlerPos = advicePos - handlerLen;
+                    else {
+                        if (noReturn) {
+                            // finally clause for normal termination
+                            adviceLen = insertAfterAdvice(b, jv, src, pool, rtype, varNo);
+                            handlerPos = iterator.append(b.get());
+                            iterator.append(b.getExceptionTable(), handlerPos);
+                            advicePos = iterator.getCodeLength() - adviceLen;
+                            handlerLen = advicePos - handlerPos;
+                            noReturn = false;
+                        }
+
+                        insertGoto(iterator, advicePos, pos);
+                        advicePos = iterator.getCodeLength() - adviceLen;
+                        handlerPos = advicePos - handlerLen;
+                    }
                 }
             }
 
@@ -964,7 +1007,7 @@ public abstract class CtBehavior extends CtMember {
         else {
             if (gap.length < 4) {
                 CodeIterator.Gap gap2 =  iterator.insertGapAt(gap.position, 2, false);
-                pos = gap2.position + gap2.length + gap.length - 4;
+                pos = gap2.position + gap2.length + gap.length - 4; 
             }
 
             iterator.writeByte(Opcode.GOTO_W, pos);
@@ -1181,7 +1224,7 @@ public abstract class CtBehavior extends CtMember {
      * For example, if there is only a closing brace at that line, the
      * bytecode would be inserted at another line below.
      * To know exactly where the bytecode will be inserted, call with
-     * <code>modify</code> set to <code>false</code>.
+     * <code>modify</code> set to <code>false</code>. 
      *
      * @param lineNum   the line number.  The bytecode is inserted at the
      *                  beginning of the code at the line specified by this

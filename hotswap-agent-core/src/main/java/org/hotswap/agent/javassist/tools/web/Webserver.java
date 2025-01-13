@@ -16,23 +16,12 @@
 
 package org.hotswap.agent.javassist.tools.web;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import org.hotswap.agent.javassist.*;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
-
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.Translator;
 
 /**
  * A web server for running sample programs.
@@ -222,7 +211,7 @@ public class Webserver {
     }
 
     private String readLine(InputStream in) throws IOException {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         int c;
         while ((c = in.read()) >= 0 && c != 0x0d)
             buf.append((char)c);

@@ -16,9 +16,9 @@
 
 package org.hotswap.agent.javassist;
 
-import java.util.HashMap;
-
 import org.hotswap.agent.javassist.bytecode.Descriptor;
+
+import java.util.HashMap;
 
 /**
  * A hash table associating class names with different names.

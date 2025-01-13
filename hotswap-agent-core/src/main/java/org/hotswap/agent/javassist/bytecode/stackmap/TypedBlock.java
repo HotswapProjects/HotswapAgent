@@ -16,11 +16,7 @@
 
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
-import org.hotswap.agent.javassist.bytecode.AccessFlag;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.*;
 
 public class TypedBlock extends BasicBlock {
     public int stackTop, numLocals;
@@ -59,7 +55,7 @@ public class TypedBlock extends BasicBlock {
     }
 
     @Override
-    protected void toString2(StringBuffer sbuf) {
+    protected void toString2(StringBuilder sbuf) {
         super.toString2(sbuf);
         sbuf.append(",\n stack={");
         printTypes(sbuf, stackTop, stackTypes);
@@ -68,7 +64,7 @@ public class TypedBlock extends BasicBlock {
         sbuf.append('}');
     }
 
-    private void printTypes(StringBuffer sbuf, int size,
+    private void printTypes(StringBuilder sbuf, int size,
                             TypeData[] types) {
         if (types == null)
             return;

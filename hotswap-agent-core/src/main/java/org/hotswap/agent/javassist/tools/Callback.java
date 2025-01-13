@@ -16,12 +16,12 @@
 
 package org.hotswap.agent.javassist.tools;
 
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtBehavior;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtBehavior;
 
 /**
  * Creates bytecode that when executed calls back to the instance's result method.
