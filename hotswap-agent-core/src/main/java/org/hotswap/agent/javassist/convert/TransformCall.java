@@ -16,11 +16,7 @@
 
 package org.hotswap.agent.javassist.convert;
 
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.Modifier;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.CodeAttribute;
 import org.hotswap.agent.javassist.bytecode.CodeIterator;

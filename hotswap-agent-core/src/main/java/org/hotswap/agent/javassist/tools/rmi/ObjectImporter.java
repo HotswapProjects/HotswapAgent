@@ -16,13 +16,7 @@
 
 package org.hotswap.agent.javassist.tools.rmi;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.net.Socket;
 import java.net.URL;

@@ -16,12 +16,12 @@
 
 package org.hotswap.agent.javassist.tools;
 
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.ClassFilePrinter;
+
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.PrintWriter;
-
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-import org.hotswap.agent.javassist.bytecode.ClassFilePrinter;
 
 /**
  * Dump is a tool for viewing the class definition in the given

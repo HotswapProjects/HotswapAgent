@@ -16,28 +16,12 @@
 
 package org.hotswap.agent.javassist.expr;
 
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.compiler.Javac;
+
 import java.util.LinkedList;
 import java.util.List;
-
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtBehavior;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtPrimitiveType;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.AccessFlag;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.Bytecode;
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.ExceptionTable;
-import org.hotswap.agent.javassist.bytecode.ExceptionsAttribute;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.compiler.Javac;
 
 /**
  * Expression.

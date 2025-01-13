@@ -16,9 +16,9 @@
 
 package org.hotswap.agent.javassist.compiler.ast;
 
-import java.io.Serializable;
-
 import org.hotswap.agent.javassist.compiler.CompileError;
+
+import java.io.Serializable;
 
 /**
  * Abstract Syntax Tree.  An ASTree object represents a node of
@@ -46,7 +46,7 @@ public abstract class ASTree implements Serializable {
 
     @Override
     public String toString() {
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         sbuf.append('<');
         sbuf.append(getTag());
         sbuf.append('>');

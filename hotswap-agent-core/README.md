@@ -18,7 +18,7 @@ although it is usually better to use plugin custom "dependency injection" via @I
     classloading issues.
 * Watcher - service to register filesystem events (create/modify/delete a resource).
 * Transformer - service to register hotwap transformation (define or reload a class definition).
-* Javaassist - source code for 3.17.1-GA official javaasist release repackaged to custom location to avoid conflicts.
+* Javaassist - source code for 3.30.2-GA official javaasist release repackaged to custom location to avoid conflicts.
 * Logger - Simple logging mechanism. Custom logging is use instead of library to avoid conflicts with frameworks / app servers.
 
 Classloading issues

@@ -16,16 +16,11 @@
 
 package org.hotswap.agent.javassist.util.proxy;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.security.ProtectionDomain;
-
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.bytecode.ClassFile;
+
+import java.io.*;
+import java.security.ProtectionDomain;
 
 /**
  * A helper class for implementing <code>ProxyFactory</code>.
@@ -111,6 +106,24 @@ public class FactoryHelper {
         throws CannotCompileException
     {
         return toClass(cf, null, loader, null);
+    }
+
+    /**
+     * Loads a class file by a given class loader.
+     *
+     * @param loader        The class loader.  It can be null if {@code neighbor}
+     *                      is not null.
+     *
+     * @param domain        if it is null, a default domain is used.
+     * @since 3.3
+     *
+     * @see #toClass(ClassFile,Class,ClassLoader,ProtectionDomain)
+     * @deprecated
+     */
+    public static Class<?> toClass(ClassFile cf, ClassLoader loader, ProtectionDomain domain)
+        throws CannotCompileException
+    {
+        return toClass(cf, null, loader, domain);
     }
 
     /**

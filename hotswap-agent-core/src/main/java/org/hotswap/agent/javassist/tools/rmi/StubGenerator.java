@@ -16,22 +16,12 @@
 
 package org.hotswap.agent.javassist.tools.rmi;
 
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.CtMethod.ConstParameter;
+
 import java.lang.reflect.Method;
 import java.util.Hashtable;
 import java.util.Map;
-
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.CtMethod.ConstParameter;
-import org.hotswap.agent.javassist.CtNewConstructor;
-import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.javassist.Modifier;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.Translator;
 
 /**
  * A stub-code generator.  It is used for producing a proxy class.
@@ -56,7 +46,7 @@ public class StubGenerator implements Translator {
     private static final String fieldImporter = "importer";
     private static final String fieldObjectId = "objectId";
     private static final String accessorObjectId = "_getObjectId";
-    private static final String sampleClass = "org.hotswap.agent.javassist.tools.rmi.Sample";
+    private static final String sampleClass = "javassist.tools.rmi.Sample";
 
     private ClassPool classPool;
     private Map<String,CtClass> proxyClasses;
@@ -88,13 +78,13 @@ public class StubGenerator implements Translator {
         forwardStaticMethod = c.getDeclaredMethod("forwardStatic");
 
         proxyConstructorParamTypes
-            = pool.get(new String[] { "org.hotswap.agent.javassist.tools.rmi.ObjectImporter",
+            = pool.get(new String[] { "javassist.tools.rmi.ObjectImporter",
                                          "int" });
         interfacesForProxy
             = pool.get(new String[] { "java.io.Serializable",
-                                         "org.hotswap.agent.javassist.tools.rmi.Proxy" });
+                                         "javassist.tools.rmi.Proxy" });
         exceptionForProxy
-            = new CtClass[] { pool.get("org.hotswap.agent.javassist.tools.rmi.RemoteException") };
+            = new CtClass[] { pool.get("javassist.tools.rmi.RemoteException") };
     }
 
     /**
@@ -152,14 +142,14 @@ public class StubGenerator implements Translator {
         proxy.setInterfaces(interfacesForProxy);
 
         CtField f
-            = new CtField(classPool.get("org.hotswap.agent.javassist.tools.rmi.ObjectImporter"),
+            = new CtField(classPool.get("javassist.tools.rmi.ObjectImporter"),
                           fieldImporter, proxy);
         f.setModifiers(Modifier.PRIVATE);
         proxy.addField(f, CtField.Initializer.byParameter(0));
 
         f = new CtField(CtClass.intType, fieldObjectId, proxy);
         f.setModifiers(Modifier.PRIVATE);
-        proxy.addField(f, CtField.Initializer.byParameter(1));
+        proxy.addField(f, CtField.Initializer.byParameter(1)); 
 
         proxy.addMethod(CtNewMethod.getter(accessorObjectId, f));
 
@@ -183,7 +173,7 @@ public class StubGenerator implements Translator {
         if (!rtclass.isArray())
             name = rtclass.getName();
         else {
-            StringBuffer sbuf = new StringBuffer();
+            StringBuilder sbuf = new StringBuilder();
             do {
                 sbuf.append("[]");
                 rtclass = rtclass.getComponentType();

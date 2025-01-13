@@ -18,12 +18,7 @@ package org.hotswap.agent.javassist.bytecode.analysis;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.bytecode.*;
 
 /**
  * Executor is responsible for modeling the effects of a JVM instruction on a frame.

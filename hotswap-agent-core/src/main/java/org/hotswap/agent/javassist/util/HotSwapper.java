@@ -16,25 +16,21 @@
 
 package org.hotswap.agent.javassist.util;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.EventIterator;
-import com.sun.jdi.event.EventQueue;
-import com.sun.jdi.event.EventSet;
-import com.sun.jdi.event.MethodEntryEvent;
+import com.sun.jdi.event.*;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 import com.sun.jdi.request.MethodEntryRequest;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 class Trigger {
     void doSwap() {}

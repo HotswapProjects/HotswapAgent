@@ -16,34 +16,11 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.Modifier;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.javassist.bytecode.FieldInfo;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.compiler.ast.ASTList;
-import org.hotswap.agent.javassist.compiler.ast.ASTree;
-import org.hotswap.agent.javassist.compiler.ast.ArrayInit;
-import org.hotswap.agent.javassist.compiler.ast.AssignExpr;
-import org.hotswap.agent.javassist.compiler.ast.BinExpr;
-import org.hotswap.agent.javassist.compiler.ast.CallExpr;
-import org.hotswap.agent.javassist.compiler.ast.CastExpr;
-import org.hotswap.agent.javassist.compiler.ast.CondExpr;
-import org.hotswap.agent.javassist.compiler.ast.Declarator;
-import org.hotswap.agent.javassist.compiler.ast.DoubleConst;
-import org.hotswap.agent.javassist.compiler.ast.Expr;
-import org.hotswap.agent.javassist.compiler.ast.InstanceOfExpr;
-import org.hotswap.agent.javassist.compiler.ast.IntConst;
-import org.hotswap.agent.javassist.compiler.ast.Keyword;
-import org.hotswap.agent.javassist.compiler.ast.Member;
-import org.hotswap.agent.javassist.compiler.ast.NewExpr;
-import org.hotswap.agent.javassist.compiler.ast.StringL;
-import org.hotswap.agent.javassist.compiler.ast.Symbol;
-import org.hotswap.agent.javassist.compiler.ast.Variable;
-import org.hotswap.agent.javassist.compiler.ast.Visitor;
+import org.hotswap.agent.javassist.compiler.ast.*;
 
 public class TypeChecker extends Visitor implements Opcode, TokenId {
     static final String javaLangObject = "java.lang.Object";
@@ -74,7 +51,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
      */
     protected static String argTypesToString(int[] types, int[] dims,
                                              String[] cnames) {
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         sbuf.append('(');
         int n = types.length;
         if (n > 0) {
@@ -96,7 +73,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
      * Converts a tuple of exprType, arrayDim, and className
      * into a String object.
      */
-    protected static StringBuffer typeToString(StringBuffer sbuf,
+    protected static StringBuilder typeToString(StringBuilder sbuf,
                                         int type, int dim, String cname) {
         String s;
         if (type == CLASS)
@@ -933,7 +910,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
             }
         }
 
-        throw new CompileError("bad filed access");
+        throw new CompileError("bad field access");
     }
 
     private CtField fieldAccess2(Expr e, String jvmClassName) throws CompileError {

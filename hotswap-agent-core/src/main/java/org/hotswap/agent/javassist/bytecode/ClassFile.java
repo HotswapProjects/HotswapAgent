@@ -16,16 +16,12 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.CannotCompileException;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-
-import org.hotswap.agent.javassist.CannotCompileException;
+import java.util.*;
 
 /**
  * <code>ClassFile</code> represents a Java <code>.class</code> file, which
@@ -137,42 +133,6 @@ public final class ClassFile {
     public static final int JAVA_11 = 55;
 
     /**
-     * The major version number of class files
-     * for JDK 12.
-     */
-    public static final int JAVA_12 = 56;
-
-    /**
-     * The major version number of class files
-     * for JDK 13.
-     */
-    public static final int JAVA_13 = 57;
-
-    /**
-     * The major version number of class files
-     * for JDK 14.
-     */
-    public static final int JAVA_14 = 58;
-
-    /**
-     * The major version number of class files
-     * for JDK 15.
-     */
-    public static final int JAVA_15 = 59;
-
-    /**
-     * The major version number of class files
-     * for JDK 16.
-     */
-    public static final int JAVA_16 = 60;
-
-    /**
-     * The major version number of class files
-     * for JDK 17.
-     */
-    public static final int JAVA_17 = 61;
-
-    /**
      * The major version number of class files created
      * from scratch.  The default value is 47 (JDK 1.3).
      * It is 49 (JDK 1.5)
@@ -189,20 +149,8 @@ public final class ClassFile {
      * if the JVM supports <code>java.util.List.copyOf(Collection)</code>.
      * It is 55 (JDK 11)
      * if the JVM supports <code>java.util.Optional.isEmpty()</code>.
-     * It is 56 (JDK 12)
-     * if the JVM supports <code>com.sun.source.tree.CaseTree.getExpressions()</code>.
-     * It is 57 (JDK 13)
-     * if the JVM supports <code>com.sun.source.tree.YieldTree</code>.
-     * It is 58 (JDK 14)
-     * if the JVM supports <code>com.sun.management.OperatingSystemMXBean.getFreeMemorySize()</code>.
-     * It is 59 (JDK 15)
-     * if the JVM supports <code>java.security.interfaces.EdECPublicKey</code>.
-     * It is 60 (JDK 16)
-     * if the JVM supports <code>com.sun.source.tree.PatternTree</code>.
-     * It is 61 (JDK 17)
-     * if the JVM supports <code>java.util.random.RandomGenerator</code>.
      */
-    public static int MAJOR_VERSION;
+    public static final int MAJOR_VERSION;
 
     static {
         int ver = JAVA_3;
@@ -221,19 +169,8 @@ public final class ClassFile {
             ver = JAVA_10;
             Class.forName("java.util.Optional").getMethod("isEmpty");
             ver = JAVA_11;
-            Class.forName("com.sun.source.tree.CaseTree").getMethod("getExpressions");
-            ver = JAVA_12;
-            Class.forName("com.sun.source.tree.YieldTree");
-            ver = JAVA_13;
-            Class.forName("com.sun.management.OperatingSystemMXBean").getMethod("getFreeMemorySize");
-            ver = JAVA_14;
-            Class.forName("java.security.interfaces.EdECPublicKey");
-            ver = JAVA_15;
-            Class.forName("com.sun.source.tree.PatternTree");
-            ver = JAVA_16;
-            Class.forName("java.util.random.RandomGenerator");
-            ver = JAVA_17;
-        } catch (Throwable t) {}
+        }
+        catch (Throwable t) {}
         MAJOR_VERSION = ver;
     }
 
@@ -246,7 +183,7 @@ public final class ClassFile {
 
     /**
      * Constructs a class file including no members.
-     *
+     * 
      * @param isInterface
      *            true if this is an interface. false if this is a class.
      * @param classname
@@ -392,7 +329,7 @@ public final class ClassFile {
 
     /**
      * Returns access flags.
-     *
+     * 
      * @see javassist.bytecode.AccessFlag
      */
     public int getAccessFlags() {
@@ -401,7 +338,7 @@ public final class ClassFile {
 
     /**
      * Changes access flags.
-     *
+     * 
      * @see javassist.bytecode.AccessFlag
      */
     public void setAccessFlags(int acc) {
@@ -413,11 +350,11 @@ public final class ClassFile {
 
     /**
      * Returns access and property flags of this nested class.
-     * This method returns -1 if the class is not a nested class.
+     * This method returns -1 if the class is not a nested class. 
      *
      * <p>The returned value is obtained from <code>inner_class_access_flags</code>
      * of the entry representing this nested class itself
-     * in <code>InnerClasses_attribute</code>.
+     * in <code>InnerClasses_attribute</code>. 
      */
     public int getInnerAccessFlags() {
         InnerClassesAttribute ica
@@ -469,7 +406,7 @@ public final class ClassFile {
 
     /**
      * Sets the super class.
-     *
+     * 
      * <p>
      * The new super class should inherit from the old super class.
      * This method modifies constructors so that they call constructors declared
@@ -492,13 +429,13 @@ public final class ClassFile {
 
     /**
      * Replaces all occurrences of a class name in the class file.
-     *
+     * 
      * <p>
      * If class X is substituted for class Y in the class file, X and Y must
      * have the same signature. If Y provides a method m(), X must provide it
      * even if X inherits m() from the super class. If this fact is not
      * guaranteed, the bytecode verifier may cause an error.
-     *
+     * 
      * @param oldname
      *            the replaced class name
      * @param newname
@@ -531,7 +468,7 @@ public final class ClassFile {
 
     /**
      * Replaces all occurrences of several class names in the class file.
-     *
+     * 
      * @param classnames
      *            specifies which class name is replaced with which new name.
      *            Class names must be described with the JVM-internal
@@ -562,7 +499,7 @@ public final class ClassFile {
 
     /**
      * Internal-use only.
-     * <code>CtClass.getRefClasses()</code> calls this method.
+     * <code>CtClass.getRefClasses()</code> calls this method. 
      */
     public final void getRefClasses(Map<String,String> classnames) {
         constPool.renameClass(classnames);
@@ -606,7 +543,7 @@ public final class ClassFile {
 
     /**
      * Sets the interfaces.
-     *
+     * 
      * @param nameList
      *            the names of the interfaces.
      */
@@ -640,7 +577,7 @@ public final class ClassFile {
 
     /**
      * Returns all the fields declared in the class.
-     *
+     * 
      * @return a list of <code>FieldInfo</code>.
      * @see FieldInfo
      */
@@ -679,7 +616,7 @@ public final class ClassFile {
 
     /**
      * Returns all the methods declared in the class.
-     *
+     * 
      * @return a list of <code>MethodInfo</code>.
      * @see MethodInfo
      */
@@ -690,7 +627,7 @@ public final class ClassFile {
     /**
      * Returns the method with the specified name. If there are multiple methods
      * with that name, this method returns one of them.
-     *
+     * 
      * @return null if no such method is found.
      */
     public MethodInfo getMethod(String name) {
@@ -758,12 +695,12 @@ public final class ClassFile {
         if (desc.equals(newDesc)) {
             if (notBridgeMethod(minfo))
                 return true;
-                // if the bridge method with the same signature
-                // already exists, replace it.
+            	// if the bridge method with the same signature
+            	// already exists, replace it.
             it.remove();
             return false;
         }
-            return false;
+        	return false;
            // return notBridgeMethod(minfo) && notBridgeMethod(newMethod);
     }
 
@@ -779,7 +716,7 @@ public final class ClassFile {
      * the attribute is also added to the classs file represented by this
      * object.  If you remove an attribute from the list, it is also removed
      * from the class file.
-     *
+     * 
      * @return a list of <code>AttributeInfo</code> objects.
      * @see AttributeInfo
      */
@@ -794,7 +731,7 @@ public final class ClassFile {
      *
      * <p>An attribute name can be obtained by, for example,
      * {@link AnnotationsAttribute#visibleTag} or
-     * {@link AnnotationsAttribute#invisibleTag}.
+     * {@link AnnotationsAttribute#invisibleTag}. 
      * </p>
      *
      * @param name          attribute name
@@ -831,7 +768,7 @@ public final class ClassFile {
 
     /**
      * Returns the source file containing this class.
-     *
+     * 
      * @return null if this information is not available.
      */
     public String getSourceFile() {
@@ -923,7 +860,7 @@ public final class ClassFile {
 
     /**
      * Get the Major version.
-     *
+     * 
      * @return the major version
      */
     public int getMajorVersion() {
@@ -932,7 +869,7 @@ public final class ClassFile {
 
     /**
      * Set the major version.
-     *
+     * 
      * @param major
      *            the major version
      */
@@ -942,7 +879,7 @@ public final class ClassFile {
 
     /**
      * Get the minor version.
-     *
+     * 
      * @return the minor version
      */
     public int getMinorVersion() {
@@ -951,7 +888,7 @@ public final class ClassFile {
 
     /**
      * Set the minor version.
-     *
+     * 
      * @param minor
      *            the minor version
      */

@@ -18,12 +18,7 @@ package org.hotswap.agent.javassist.convert;
 
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.StackMap;
-import org.hotswap.agent.javassist.bytecode.StackMapTable;
+import org.hotswap.agent.javassist.bytecode.*;
 
 final public class TransformNew extends Transformer {
     private int nested;

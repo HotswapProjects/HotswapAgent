@@ -27,7 +27,7 @@ import org.hotswap.agent.javassist.CtClass;
  *
  * @author Brett Randall
  * @see javassist.tools.reflect.Reflection#makeReflective(CtClass,CtClass,CtClass)
- * @see javassist.CannotCompileException
+ * @see CannotCompileException
  */
 public class CannotReflectException extends CannotCompileException {
     /** default serialVersionUID */

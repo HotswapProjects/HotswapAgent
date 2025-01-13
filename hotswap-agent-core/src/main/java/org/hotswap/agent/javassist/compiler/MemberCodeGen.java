@@ -16,36 +16,12 @@
 
 package org.hotswap.agent.javassist.compiler;
 
+import org.hotswap.agent.javassist.*;
+import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.compiler.ast.*;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.Modifier;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.AccessFlag;
-import org.hotswap.agent.javassist.bytecode.Bytecode;
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.FieldInfo;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.compiler.ast.ASTList;
-import org.hotswap.agent.javassist.compiler.ast.ASTree;
-import org.hotswap.agent.javassist.compiler.ast.ArrayInit;
-import org.hotswap.agent.javassist.compiler.ast.CallExpr;
-import org.hotswap.agent.javassist.compiler.ast.Declarator;
-import org.hotswap.agent.javassist.compiler.ast.Expr;
-import org.hotswap.agent.javassist.compiler.ast.Keyword;
-import org.hotswap.agent.javassist.compiler.ast.Member;
-import org.hotswap.agent.javassist.compiler.ast.MethodDecl;
-import org.hotswap.agent.javassist.compiler.ast.NewExpr;
-import org.hotswap.agent.javassist.compiler.ast.Pair;
-import org.hotswap.agent.javassist.compiler.ast.Stmnt;
-import org.hotswap.agent.javassist.compiler.ast.Symbol;
 
 /* Code generator methods depending on javassist.* classes.
  */
@@ -365,7 +341,7 @@ public class MemberCodeGen extends CodeGen {
                 sizeExpr.accept(this);
         else
             if (sizeExpr == null) {
-                int s = init.length();
+                int s = init.size();
                 bytecode.addIconst(s);
             }
             else
@@ -414,7 +390,7 @@ public class MemberCodeGen extends CodeGen {
         }
 
         if (init != null) {
-            int s = init.length();
+            int s = init.size();
             ASTList list = init;
             for (int i = 0; i < s; i++) {
                 bytecode.addOpcode(DUP);
@@ -619,6 +595,18 @@ public class MemberCodeGen extends CodeGen {
                           aload0pos, found);
     }
 
+    private boolean isFromSameDeclaringClass(CtClass outer, CtClass inner) {
+        try {
+            while (outer != null) {
+                if (isEnclosing(outer, inner))
+                    return true;
+                outer = outer.getDeclaringClass();
+            }
+        }
+        catch (NotFoundException e) {}
+        return false;
+    }
+
     private void atMethodCallCore2(CtClass targetClass, String mname,
                                    boolean isStatic, boolean isSpecial,
                                    int aload0pos,
@@ -636,8 +624,11 @@ public class MemberCodeGen extends CodeGen {
                 throw new CompileError("no such constructor: " + targetClass.getName());
 
             if (declClass != thisClass && AccessFlag.isPrivate(acc)) {
-                desc = getAccessibleConstructor(desc, declClass, minfo);
-                bytecode.addOpcode(Opcode.ACONST_NULL); // the last parameter
+                if (declClass.getClassFile().getMajorVersion() < ClassFile.JAVA_8
+                        || !isFromSameDeclaringClass(declClass, thisClass)) {
+                    desc = getAccessibleConstructor(desc, declClass, minfo);
+                    bytecode.addOpcode(Opcode.ACONST_NULL); // the last parameter
+                }
             }
         }
         else if (AccessFlag.isPrivate(acc))

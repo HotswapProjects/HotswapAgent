@@ -16,17 +16,17 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.Copier;
 import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.Parser;
 import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute.Renamer;
 import org.hotswap.agent.javassist.bytecode.annotation.Annotation;
 import org.hotswap.agent.javassist.bytecode.annotation.AnnotationsWriter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A class representing <code>RuntimeVisibleAnnotations_attribute</code> and
@@ -201,7 +201,7 @@ public class ParameterAnnotationsAttribute extends AttributeInfo {
         StringBuilder sbuf = new StringBuilder();
         for (Annotation[] a : aa) {
             for (Annotation i : a)
-                sbuf.append(i.toString()).append(" ");
+                sbuf.append(i.toString()).append(' ');
 
             sbuf.append(", ");
         }

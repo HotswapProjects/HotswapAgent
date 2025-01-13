@@ -16,28 +16,16 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtField;
-import org.hotswap.agent.javassist.Modifier;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.javassist.bytecode.ClassFile;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.compiler.ast.ASTList;
-import org.hotswap.agent.javassist.compiler.ast.ASTree;
-import org.hotswap.agent.javassist.compiler.ast.Declarator;
-import org.hotswap.agent.javassist.compiler.ast.Keyword;
-import org.hotswap.agent.javassist.compiler.ast.Symbol;
+import org.hotswap.agent.javassist.compiler.ast.*;
+
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
+import java.util.*;
 
 /* Code generator methods depending on javassist.* classes.
  */
@@ -130,9 +118,7 @@ public class MemberResolver implements TokenId {
 
         if (onlyExact)
             maybe = null;
-        else
-            if (maybe != null)
-                return maybe;
+        //else maybe super class has more precise match
 
         int mod = clazz.getModifiers();
         boolean isIntf = Modifier.isInterface(mod);
@@ -143,8 +129,11 @@ public class MemberResolver implements TokenId {
                 if (pclazz != null) {
                     Method r = lookupMethod(pclazz, methodName, argTypes,
                                             argDims, argClassNames, onlyExact);
-                    if (r != null)
-                        return r;
+                    if (r != null) {
+                        if (maybe == null || maybe.notmatch > r.notmatch) {
+                            maybe = r;
+                        }
+                    }
                 }
             }
         }
@@ -156,8 +145,11 @@ public class MemberResolver implements TokenId {
                 Method r = lookupMethod(intf, methodName,
                         argTypes, argDims, argClassNames,
                         onlyExact);
-                if (r != null)
-                    return r;
+                if (r != null) {
+                    if (maybe == null || maybe.notmatch > r.notmatch) {
+                        maybe = r;
+                    }
+                }
             }
 
             if (isIntf) {
@@ -166,8 +158,11 @@ public class MemberResolver implements TokenId {
                 if (pclazz != null) {
                     Method r = lookupMethod(pclazz, methodName, argTypes,
                                             argDims, argClassNames, onlyExact);
-                    if (r != null)
-                        return r;
+                    if (r != null) {
+                        if (maybe == null || maybe.notmatch > r.notmatch) {
+                            maybe = r;
+                        }
+                    }
                 }
             }
         }
@@ -491,7 +486,7 @@ public class MemberResolver implements TokenId {
                 int i = classname.lastIndexOf('.');
                 if (notCheckInner || i < 0)
                     throw e;
-                StringBuffer sbuf = new StringBuffer(classname);
+                StringBuilder sbuf = new StringBuilder(classname);
                 sbuf.setCharAt(i, '$');
                 classname = sbuf.toString();
             }
@@ -539,7 +534,7 @@ public class MemberResolver implements TokenId {
                 if (intfs[i].getName().equals(interfaceName))
                     return intfs[i];
         } catch (NotFoundException e) {}
-        throw new CompileError("cannot find the super inetrface " + interfaceName
+        throw new CompileError("cannot find the super interface " + interfaceName
                                + " of " + c.getName());
     }
 

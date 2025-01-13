@@ -17,11 +17,7 @@
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
 import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.ByteArray;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.bytecode.*;
 
 /*
  * A class for performing abstract interpretation.
@@ -263,6 +259,10 @@ public abstract class Tracer implements TypeTag {
         }
         else if (tag == ConstPool.CONST_Class)
             stackTypes[stackTop++] = new TypeData.ClassName("java.lang.Class");
+        else if (tag == ConstPool.CONST_Dynamic) {
+            String desc = cpool.getDynamicType(index);
+            pushMemberType(desc);
+        }
         else
             throw new RuntimeException("bad LDC: " + tag);
     }

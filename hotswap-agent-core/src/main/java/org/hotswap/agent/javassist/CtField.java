@@ -16,17 +16,7 @@
 
 package org.hotswap.agent.javassist;
 
-import java.util.List;
-
-import org.hotswap.agent.javassist.bytecode.AccessFlag;
-import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute;
-import org.hotswap.agent.javassist.bytecode.AttributeInfo;
-import org.hotswap.agent.javassist.bytecode.Bytecode;
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.FieldInfo;
-import org.hotswap.agent.javassist.bytecode.SignatureAttribute;
+import org.hotswap.agent.javassist.bytecode.*;
 import org.hotswap.agent.javassist.compiler.CompileError;
 import org.hotswap.agent.javassist.compiler.Javac;
 import org.hotswap.agent.javassist.compiler.SymbolTable;
@@ -34,6 +24,8 @@ import org.hotswap.agent.javassist.compiler.ast.ASTree;
 import org.hotswap.agent.javassist.compiler.ast.DoubleConst;
 import org.hotswap.agent.javassist.compiler.ast.IntConst;
 import org.hotswap.agent.javassist.compiler.ast.StringL;
+
+import java.util.List;
 
 /**
  * An instance of CtField represents a field.
@@ -63,7 +55,7 @@ public class CtField extends CtMember {
      * @see CtClass#addField(CtField)
      * @see CtNewMethod#getter(String,CtField)
      * @see CtNewMethod#setter(String,CtField)
-     * @see CtField.Initializer
+     * @see Initializer
      */
     public CtField(CtClass type, String name, CtClass declaring)
         throws CannotCompileException
@@ -86,7 +78,7 @@ public class CtField extends CtMember {
      * @param declaring         the class to which the field will be added.
      * @see CtNewMethod#getter(String,CtField)
      * @see CtNewMethod#setter(String,CtField)
-     * @see CtField.Initializer
+     * @see Initializer
      */
     public CtField(CtField src, CtClass declaring)
         throws CannotCompileException
@@ -128,7 +120,7 @@ public class CtField extends CtMember {
     }
 
     @Override
-    protected void extendToString(StringBuffer buffer) {
+    protected void extendToString(StringBuilder buffer) {
         buffer.append(' ');
         buffer.append(getName());
         buffer.append(' ');
@@ -372,7 +364,7 @@ public class CtField extends CtMember {
      * for a code sample.
      *
      * @param sig       a new generic signature.
-     * @see javassist.bytecode.SignatureAttribute.ObjectType#encode()
+     * @see SignatureAttribute.ObjectType#encode()
      * @since 3.17
      */
     @Override
@@ -459,7 +451,7 @@ public class CtField extends CtMember {
      *
      * <p>Note that an attribute is a data block specified by
      * the class file format.
-     * See {@link javassist.bytecode.AttributeInfo}.
+     * See {@link AttributeInfo}.
      *
      * @param name              attribute name
      */
@@ -476,7 +468,7 @@ public class CtField extends CtMember {
      *
      * <p>Note that an attribute is a data block specified by
      * the class file format.
-     * See {@link javassist.bytecode.AttributeInfo}.
+     * See {@link AttributeInfo}.
      *
      * @param name      attribute name
      * @param data      attribute value
@@ -501,7 +493,7 @@ public class CtField extends CtMember {
      * must be used for the instantiation.  They create a new instance with
      * the given parameters and return it.
      *
-     * @see CtClass#addField(CtField,CtField.Initializer)
+     * @see CtClass#addField(CtField, Initializer)
      */
     public static abstract class Initializer {
         /**

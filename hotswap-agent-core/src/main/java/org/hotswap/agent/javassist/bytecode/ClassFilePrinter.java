@@ -16,10 +16,10 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.Modifier;
+
 import java.io.PrintWriter;
 import java.util.List;
-
-import org.hotswap.agent.javassist.Modifier;
 
 /**
  * A utility class for priting the contents of a class file.

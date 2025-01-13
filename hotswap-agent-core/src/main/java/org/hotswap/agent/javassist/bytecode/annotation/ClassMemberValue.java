@@ -16,14 +16,15 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.javassist.bytecode.SignatureAttribute;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * Class value.
@@ -93,6 +94,20 @@ public class ClassMemberValue extends MemberValue {
     @Override
     Class<?> getType(ClassLoader cl) throws ClassNotFoundException {
         return loadClass(cl, "java.lang.Class");
+    }
+
+    @Override
+    public void renameClass(String oldname, String newname) {
+        String value = cp.getUtf8Info(valueIndex);
+        String newValue = Descriptor.rename(value, oldname, newname);
+        setValue(Descriptor.toClassName(newValue));
+    }
+
+    @Override
+    public void renameClass(Map<String, String> classnames) {
+        String value = cp.getUtf8Info(valueIndex);
+        String newValue = Descriptor.rename(value, classnames);
+        setValue(Descriptor.toClassName(newValue));
     }
 
     /**

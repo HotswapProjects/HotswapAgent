@@ -16,14 +16,10 @@
 
 package org.hotswap.agent.javassist.scopedpool;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.LoaderClassPath;
+
+import java.util.*;
 
 /**
  * An implementation of <code>ScopedClassPoolRepository</code>.
@@ -43,7 +39,7 @@ public class ScopedClassPoolRepositoryImpl implements ScopedClassPoolRepository 
     boolean pruneWhenCached;
 
     /** The registered classloaders */
-    protected Map<ClassLoader,ScopedClassPool> registeredCLs = Collections
+    protected Map<ClassLoader, ScopedClassPool> registeredCLs = Collections
             .synchronizedMap(new WeakHashMap<ClassLoader,ScopedClassPool>());
 
     /** The default class pool */

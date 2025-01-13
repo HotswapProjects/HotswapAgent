@@ -1,11 +1,11 @@
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.bytecode.annotation.TypeAnnotationsWriter;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.hotswap.agent.javassist.bytecode.annotation.TypeAnnotationsWriter;
 
 /**
  * A class representing

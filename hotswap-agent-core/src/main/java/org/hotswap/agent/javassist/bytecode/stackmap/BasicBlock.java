@@ -16,18 +16,9 @@
 
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.hotswap.agent.javassist.bytecode.*;
 
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.CodeAttribute;
-import org.hotswap.agent.javassist.bytecode.CodeIterator;
-import org.hotswap.agent.javassist.bytecode.ExceptionTable;
-import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.bytecode.Opcode;
+import java.util.*;
 
 /**
  * A basic block is a sequence of bytecode that does not contain jump/branch
@@ -78,33 +69,33 @@ public class BasicBlock {
 
     @Override
     public String toString() {
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         String cname = this.getClass().getName();
         int i = cname.lastIndexOf('.');
         sbuf.append(i < 0 ? cname : cname.substring(i + 1));
-        sbuf.append("[");
+        sbuf.append('[');
         toString2(sbuf);
-        sbuf.append("]");
+        sbuf.append(']');
         return sbuf.toString();
     }
 
-    protected void toString2(StringBuffer sbuf) {
+    protected void toString2(StringBuilder sbuf) {
         sbuf.append("pos=").append(position).append(", len=")
             .append(length).append(", in=").append(incoming)
             .append(", exit{");
         if (exit != null)
             for (BasicBlock b:exit)
-                sbuf.append(b.position).append(",");
+                sbuf.append(b.position).append(',');
 
         sbuf.append("}, {");
         Catch th = toCatch;
         while (th != null) {
-            sbuf.append("(").append(th.body.position).append(", ")
+            sbuf.append('(').append(th.body.position).append(", ")
                 .append(th.typeIndex).append("), ");
             th = th.next;
         }
 
-        sbuf.append("}");
+        sbuf.append('}');
     }
 
     /**
