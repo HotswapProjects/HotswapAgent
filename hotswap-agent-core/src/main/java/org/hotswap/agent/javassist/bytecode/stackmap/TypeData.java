@@ -16,6 +16,12 @@
 
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
@@ -23,8 +29,6 @@ import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.javassist.bytecode.StackMapTable;
-
-import java.util.*;
 
 public abstract class TypeData {
     /* Memo:
@@ -202,12 +206,7 @@ public abstract class TypeData {
         }
 
         @Override
-        public boolean eq(TypeData d) {
-            if (d.isUninit())
-                return d.eq(this);
-            else
-                return getName().equals(d.getName());
-        }
+        public boolean eq(TypeData d) { return getName().equals(d.getName()); }
     }
 
     /* a type variable representing a class type or a basic type.
@@ -430,7 +429,7 @@ public abstract class TypeData {
 
         private String fixTypes2(List<TypeData> scc, Set<String> lowersSet, ClassPool cp) throws NotFoundException {
             Iterator<String> it = lowersSet.iterator();
-            if (lowersSet.isEmpty())
+            if (lowersSet.size() == 0)
                 return null;      // only NullType
             else if (lowersSet.size() == 1)
                 return it.next();
@@ -854,12 +853,7 @@ public abstract class TypeData {
         }
 
         @Override
-        public boolean eq(TypeData d) {
-            if (d.isUninit())
-                return d.eq(this);
-            else
-                return name.equals(d.getName());
-        }
+        public boolean eq(TypeData d) { return name.equals(d.getName()); }
 
         @Override
         public void setType(String typeName, ClassPool cp) throws BadBytecode {}

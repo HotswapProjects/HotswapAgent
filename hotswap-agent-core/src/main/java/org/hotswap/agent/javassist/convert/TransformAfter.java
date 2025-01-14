@@ -23,7 +23,7 @@ import org.hotswap.agent.javassist.bytecode.CodeIterator;
 
 public class TransformAfter extends TransformBefore {
     public TransformAfter(Transformer next,
-                          CtMethod origMethod, CtMethod afterMethod)
+                           CtMethod origMethod, CtMethod afterMethod)
         throws NotFoundException
     {
         super(next, origMethod, afterMethod);

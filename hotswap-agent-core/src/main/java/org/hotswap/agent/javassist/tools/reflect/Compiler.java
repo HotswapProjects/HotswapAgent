@@ -16,10 +16,10 @@
 
 package org.hotswap.agent.javassist.tools.reflect;
 
+import java.io.PrintStream;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
-
-import java.io.PrintStream;
 
 class CompiledClass {
     public String classname;
@@ -49,7 +49,7 @@ class CompiledClass {
  *
  * <p>If a class name is not followed by any options, the class indicated
  * by that class name is not reflective.
- * 
+ *
  * <p>For example,
  * <pre>% java Compiler Dog -m MetaDog -c CMetaDog Cat -m MetaCat Cow
  * </pre>
@@ -102,12 +102,12 @@ public class Compiler {
                 String metaobj, classobj;
 
                 if (entries[i].metaobject == null)
-                    metaobj = "javassist.tools.reflect.Metaobject";
+                    metaobj = "org.hotswap.agent.javassist.tools.reflect.Metaobject";
                 else
                     metaobj = entries[i].metaobject;
 
                 if (entries[i].classobject == null)
-                    classobj = "javassist.tools.reflect.ClassMetaobject";
+                    classobj = "org.hotswap.agent.javassist.tools.reflect.ClassMetaobject";
                 else
                     classobj = entries[i].classobject;
 

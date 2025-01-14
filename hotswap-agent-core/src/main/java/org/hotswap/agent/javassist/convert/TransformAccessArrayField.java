@@ -19,7 +19,11 @@ import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CodeConverter.ArrayAccessReplacementMethodNames;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.javassist.bytecode.analysis.Analyzer;
 import org.hotswap.agent.javassist.bytecode.analysis.Frame;
 
@@ -214,7 +218,7 @@ public final class TransformAccessArrayField extends Transformer {
             break;
         }
 
-        if ("".equals(methodName))
+        if (methodName.equals(""))
             methodName = null;
 
         return methodName;

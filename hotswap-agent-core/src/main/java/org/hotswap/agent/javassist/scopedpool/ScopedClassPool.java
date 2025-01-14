@@ -16,12 +16,15 @@
 
 package org.hotswap.agent.javassist.scopedpool;
 
-import org.hotswap.agent.javassist.*;
-
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.security.ProtectionDomain;
 import java.util.Map;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.LoaderClassPath;
+import org.hotswap.agent.javassist.NotFoundException;
 
 /**
  * A scoped class pool.

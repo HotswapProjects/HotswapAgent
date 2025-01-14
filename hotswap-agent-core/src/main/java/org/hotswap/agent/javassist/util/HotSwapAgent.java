@@ -15,12 +15,6 @@
  */
 package org.hotswap.agent.javassist.util;
 
-import com.sun.tools.attach.VirtualMachine;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.NotFoundException;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -32,6 +26,13 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+
+import com.sun.tools.attach.VirtualMachine;
+
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
 
 /**
  * A utility class for dynamically adding a new method

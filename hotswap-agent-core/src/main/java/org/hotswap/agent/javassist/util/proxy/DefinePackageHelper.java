@@ -16,14 +16,14 @@
 
 package org.hotswap.agent.javassist.util.proxy;
 
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 
 /**
  * Helper class for invoking {@link ClassLoader#defineClass(String,byte[],int,int)}.
@@ -127,6 +127,9 @@ public class DefinePackageHelper
                         throw (IllegalArgumentException) t;
                 }
                 if (e instanceof RuntimeException) throw (RuntimeException) e;
+            }
+            finally {
+                definePackage.setAccessible(false);
             }
             return null;
         }

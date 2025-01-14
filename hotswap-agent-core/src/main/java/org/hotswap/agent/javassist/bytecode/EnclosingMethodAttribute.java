@@ -99,7 +99,7 @@ public class EnclosingMethodAttribute extends AttributeInfo {
     /**
      * Returns the method name specified by <code>method_index</code>.
      * If the method is a class initializer (static constructor),
-     * {@link MethodInfo#nameClinit} is returned.
+     * {@link MethodInfo#nameClinit} is returned. 
      */
     public String methodName() {
         ConstPool cp = getConstPool();

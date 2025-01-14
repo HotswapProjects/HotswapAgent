@@ -213,9 +213,9 @@ public class ClassMetaobject implements Serializable {
             if (allmethods[i].getName().startsWith(head)) {
                 try {
                     return allmethods[i].invoke(target, args);
-                } catch (InvocationTargetException e) {
+                } catch (java.lang.reflect.InvocationTargetException e) {
                     throw e.getTargetException();
-                } catch (IllegalAccessException e) {
+                } catch (java.lang.IllegalAccessException e) {
                     throw new CannotInvokeException(e);
                 }
             }
@@ -238,10 +238,10 @@ public class ClassMetaobject implements Serializable {
             Method[] m = getReflectiveMethods();
             return m[identifier].invoke(null, args);
         }
-        catch (InvocationTargetException e) {
+        catch (java.lang.reflect.InvocationTargetException e) {
             throw e.getTargetException();
         }
-        catch (IllegalAccessException e) {
+        catch (java.lang.IllegalAccessException e) {
             throw new CannotInvokeException(e);
         }
     }

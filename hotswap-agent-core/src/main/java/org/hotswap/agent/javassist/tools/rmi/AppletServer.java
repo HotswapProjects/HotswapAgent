@@ -16,18 +16,25 @@
 
 package org.hotswap.agent.javassist.tools.rmi;
 
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.tools.web.BadHttpRequest;
-import org.hotswap.agent.javassist.tools.web.Webserver;
-
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InvalidClassException;
+import java.io.NotSerializableException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.tools.web.BadHttpRequest;
+import org.hotswap.agent.javassist.tools.web.Webserver;
 
 /**
  * An AppletServer object is a web server that an ObjectImporter

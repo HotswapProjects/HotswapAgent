@@ -16,9 +16,9 @@
 
 package org.hotswap.agent.javassist.scopedpool;
 
-import org.hotswap.agent.javassist.ClassPool;
-
 import java.util.Map;
+
+import org.hotswap.agent.javassist.ClassPool;
 
 /**
  * An interface to <code>ScopedClassPoolRepositoryImpl</code>.

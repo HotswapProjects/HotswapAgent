@@ -16,17 +16,17 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
-
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * The <code>annotation</code> structure.
@@ -210,18 +210,17 @@ public class Annotation {
      */
     @Override
     public String toString() {
-        StringBuilder buf = new StringBuilder();
-        buf.append('@');
+        StringBuffer buf = new StringBuffer("@");
         buf.append(getTypeName());
         if (members != null) {
-            buf.append('(');
+            buf.append("(");
             for (String name:members.keySet()) {
-                buf.append(name).append('=')
+                buf.append(name).append("=")
                    .append(getMemberValue(name))
                    .append(", ");
             }
             buf.setLength(buf.length()-2);
-            buf.append(')');
+            buf.append(")");
         }
 
         return buf.toString();

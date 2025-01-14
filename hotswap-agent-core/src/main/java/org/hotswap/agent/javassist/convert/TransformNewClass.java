@@ -56,6 +56,9 @@ final public class TransformNewClass extends Transformer {
         if (c == NEW) {
             index = iterator.u16bitAt(pos + 1);
             if (cp.getClassInfo(index).equals(classname)) {
+                if (iterator.byteAt(pos + 3) != DUP)
+                    throw new CannotCompileException(
+                                "NEW followed by no DUP was found");
 
                 if (newClassIndex == 0)
                     newClassIndex = cp.addClassInfo(newClassName);

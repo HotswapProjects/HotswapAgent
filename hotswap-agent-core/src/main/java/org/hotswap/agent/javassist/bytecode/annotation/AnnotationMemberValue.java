@@ -15,11 +15,11 @@
  */
 package org.hotswap.agent.javassist.bytecode.annotation;
 
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
+
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 
 /**
  * Nested annotation.

@@ -16,9 +16,23 @@
 
 package org.hotswap.agent.javassist.expr;
 
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.Javac;
+import org.hotswap.agent.javassist.compiler.JvstCodeGen;
+import org.hotswap.agent.javassist.compiler.JvstTypeChecker;
+import org.hotswap.agent.javassist.compiler.ProceedHandler;
 import org.hotswap.agent.javassist.compiler.ast.ASTList;
 
 /**

@@ -15,11 +15,13 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.NotFoundException;
-
-import java.util.*;
 
 /**
  * Represents a JVM type in data-flow analysis. This abstraction is necessary since
@@ -494,26 +496,24 @@ public class Type {
         if (typeMap == null||typeMap.isEmpty())
             alterMap.clear();
 
-        Iterator<String> it = alterMap.keySet().iterator();
-        while (it.hasNext()) {
-            String name = it.next();
+        for (String name:alterMap.keySet())
             if (!typeMap.containsKey(name))
-                it.remove();
-        }
+                alterMap.remove(name);
 
         // Reduce to subinterfaces
         // This does not need to be recursive since we make a copy,
         // and that copy contains all super types for the whole hierarchy
-        Collection<CtClass> interfaces = new ArrayList<>();
-        for (CtClass intf : alterMap.values()) {
+        for (CtClass intf:alterMap.values()) {
+            CtClass[] interfaces;
             try {
-                interfaces.addAll(Arrays.asList(intf.getInterfaces()));
+                interfaces = intf.getInterfaces();
             } catch (NotFoundException e) {
                 throw new RuntimeException(e);
             }
+
+            for (CtClass c:interfaces)
+                alterMap.remove(c.getName());
         }
-        for (CtClass c : interfaces)
-            alterMap.remove(c.getName());
 
         return alterMap;
     }

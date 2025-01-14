@@ -16,14 +16,14 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.bytecode.annotation.AnnotationsWriter;
-import org.hotswap.agent.javassist.bytecode.annotation.MemberValue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Map;
+
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.bytecode.annotation.AnnotationsWriter;
+import org.hotswap.agent.javassist.bytecode.annotation.MemberValue;
 
 /**
  * A class representing <code>AnnotationDefault_attribute</code>.
@@ -114,28 +114,6 @@ public class AnnotationDefaultAttribute extends AttributeInfo {
         }
         catch (Exception e) {
             throw new RuntimeException(e.toString());
-        }
-    }
-
-    @Override
-    void renameClass(String oldname, String newname) {
-        try {
-            MemberValue defaultValue = getDefaultValue();
-            defaultValue.renameClass(oldname, newname);
-            setDefaultValue(defaultValue);
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
-    @Override
-    void renameClass(Map<String, String> classnames) {
-        try {
-            MemberValue defaultValue = getDefaultValue();
-            defaultValue.renameClass(classnames);
-            setDefaultValue(defaultValue);
-        } catch (Exception e) {
-            // ignore
         }
     }
 

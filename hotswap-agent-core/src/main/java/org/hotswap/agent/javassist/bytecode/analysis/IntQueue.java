@@ -19,18 +19,18 @@ import java.util.NoSuchElementException;
 
 class IntQueue {
     private static class Entry {
-        private Entry next;
+        private IntQueue.Entry next;
         private int value;
         private Entry(int value) {
             this.value = value;
         }
     }
-    private Entry head;
+    private IntQueue.Entry head;
 
-    private Entry tail;
+    private IntQueue.Entry tail;
 
     void add(int value) {
-        Entry entry = new Entry(value);
+        IntQueue.Entry entry = new Entry(value);
         if (tail != null)
             tail.next = entry;
         tail = entry;

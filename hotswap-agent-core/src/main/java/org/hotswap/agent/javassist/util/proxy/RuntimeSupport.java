@@ -48,11 +48,11 @@ public class RuntimeSupport {
      * into the given array.
      *
      * @throws RuntimeException     if the methods are not found.
-     * @see ProxyFactory
+     * @see javassist.util.proxy.ProxyFactory
      */
     public static void find2Methods(Class<?> clazz, String superMethod,
                                     String thisMethod, int index,
-                                    String desc, Method[] methods)
+                                    String desc, java.lang.reflect.Method[] methods)
     {
         methods[index + 1] = thisMethod == null ? null
                                                 : findMethod(clazz, thisMethod, desc);
@@ -66,13 +66,13 @@ public class RuntimeSupport {
      * <p>Added back for JBoss Seam.  See JASSIST-206.</p>
      *
      * @throws RuntimeException     if the methods are not found.
-     * @see ProxyFactory
+     * @see javassist.util.proxy.ProxyFactory
      * @deprecated replaced by {@link #find2Methods(Class, String, String, int, String, Method[])}
      */
     @Deprecated
     public static void find2Methods(Object self, String superMethod,
                                     String thisMethod, int index,
-                                    String desc, Method[] methods)
+                                    String desc, java.lang.reflect.Method[] methods)
     {
         methods[index + 1] = thisMethod == null ? null
                                                 : findMethod(self, thisMethod, desc);
@@ -198,7 +198,7 @@ public class RuntimeSupport {
      * @param retType   return type.
      */
     public static String makeDescriptor(Class<?>[] params, Class<?> retType) {
-        StringBuilder sbuf = new StringBuilder();
+        StringBuffer sbuf = new StringBuffer();
         sbuf.append('(');
         for (int i = 0; i < params.length; i++)
             makeDesc(sbuf, params[i]);
@@ -217,12 +217,12 @@ public class RuntimeSupport {
      * @param retType   return type.
      */
     public static String makeDescriptor(String params, Class<?> retType) {
-        StringBuilder sbuf = new StringBuilder(params);
+        StringBuffer sbuf = new StringBuffer(params);
         makeDesc(sbuf, retType);
         return sbuf.toString();
     }
 
-    private static void makeDesc(StringBuilder sbuf, Class<?> type) {
+    private static void makeDesc(StringBuffer sbuf, Class<?> type) {
         if (type.isArray()) {
             sbuf.append('[');
             makeDesc(sbuf, type.getComponentType());

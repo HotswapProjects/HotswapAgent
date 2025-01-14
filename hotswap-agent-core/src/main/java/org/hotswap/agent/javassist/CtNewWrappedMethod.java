@@ -16,11 +16,16 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.CtMethod.ConstParameter;
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.JvstCodeGen;
-
 import java.util.Map;
+
+import org.hotswap.agent.javassist.CtMethod.ConstParameter;
+import org.hotswap.agent.javassist.bytecode.AccessFlag;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.SyntheticAttribute;
+import org.hotswap.agent.javassist.compiler.JvstCodeGen;
 
 class CtNewWrappedMethod {
 

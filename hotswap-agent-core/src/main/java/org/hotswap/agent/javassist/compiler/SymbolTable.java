@@ -16,9 +16,9 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.compiler.ast.Declarator;
-
 import java.util.HashMap;
+
+import org.hotswap.agent.javassist.compiler.ast.Declarator;
 
 public final class SymbolTable extends HashMap<String,Declarator> {
     /** default serialVersionUID */

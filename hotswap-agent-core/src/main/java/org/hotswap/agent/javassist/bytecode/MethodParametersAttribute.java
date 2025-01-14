@@ -32,8 +32,7 @@ public class MethodParametersAttribute extends AttributeInfo {
         byte[] data = new byte[names.length * 4 + 1];
         data[0] = (byte)names.length;
         for (int i = 0; i < names.length; i++) {
-            String name = names[i];
-            ByteArray.write16bit(name == null ? 0 : cp.addUtf8Info(name), data, i * 4 + 1);
+            ByteArray.write16bit(cp.addUtf8Info(names[i]), data, i * 4 + 1);
             ByteArray.write16bit(flags[i], data, i * 4 + 3);
         }
 
@@ -55,15 +54,6 @@ public class MethodParametersAttribute extends AttributeInfo {
      */
     public int name(int i) {
         return ByteArray.readU16bit(info, i * 4 + 1);
-    }
-
-    /**
-     * Returns the name of the i-th element of <code>parameters</code>.
-     * @param i         the position of the parameter.
-     */
-    public String parameterName(int i) {
-        int index = name(i);
-        return index == 0 ? null : getConstPool().getUtf8Info(index);
     }
 
     /**
@@ -89,8 +79,7 @@ public class MethodParametersAttribute extends AttributeInfo {
         String[] names = new String[s];
         int[] flags = new int[s];
         for (int i = 0; i < s; i++) {
-            int index = name(i);
-            names[i] = index == 0 ? null : cp.getUtf8Info(index);
+            names[i] = cp.getUtf8Info(name(i));
             flags[i] = accessFlags(i);
         }
 

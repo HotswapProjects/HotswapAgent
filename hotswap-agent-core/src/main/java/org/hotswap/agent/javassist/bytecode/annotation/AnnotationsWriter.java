@@ -16,11 +16,11 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
-import org.hotswap.agent.javassist.bytecode.ByteArray;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-
 import java.io.IOException;
 import java.io.OutputStream;
+
+import org.hotswap.agent.javassist.bytecode.ByteArray;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
 
 /**
  * A convenience class for constructing a

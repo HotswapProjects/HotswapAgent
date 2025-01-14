@@ -16,13 +16,12 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
-
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.Map;
 
 /**
  * The value of a member declared in an annotation.
@@ -65,23 +64,15 @@ public abstract class MemberValue {
         int index = classname.indexOf("[]");
         if (index != -1) {
             String rawType = classname.substring(0, index);
-            StringBuilder sb = new StringBuilder(Descriptor.of(rawType));
+            StringBuffer sb = new StringBuffer(Descriptor.of(rawType));
             while (index != -1) {
-                sb.insert(0, '[');
+                sb.insert(0, "[");
                 index = classname.indexOf("[]", index + 1);
             }
             return sb.toString().replace('/', '.');
         }
         return classname;
     }
-
-    /* The following two methods are used to implement
-     * ClassFile.renameClass().
-     * Only ArrayMemberValue, ClassMemberValue, EnumMemberValue
-     * override these methods.
-     */
-    public void renameClass(String oldname, String newname) {}
-    public void renameClass(Map<String, String> classnames) {}
 
     /**
      * Accepts a visitor.

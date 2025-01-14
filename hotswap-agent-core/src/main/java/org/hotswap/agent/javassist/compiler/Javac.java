@@ -16,9 +16,31 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.*;
-import org.hotswap.agent.javassist.bytecode.*;
-import org.hotswap.agent.javassist.compiler.ast.*;
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.CtMember;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.CtPrimitiveType;
+import org.hotswap.agent.javassist.Modifier;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.LocalVariableAttribute;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.compiler.ast.ASTList;
+import org.hotswap.agent.javassist.compiler.ast.ASTree;
+import org.hotswap.agent.javassist.compiler.ast.CallExpr;
+import org.hotswap.agent.javassist.compiler.ast.Declarator;
+import org.hotswap.agent.javassist.compiler.ast.Expr;
+import org.hotswap.agent.javassist.compiler.ast.FieldDecl;
+import org.hotswap.agent.javassist.compiler.ast.Member;
+import org.hotswap.agent.javassist.compiler.ast.MethodDecl;
+import org.hotswap.agent.javassist.compiler.ast.Stmnt;
+import org.hotswap.agent.javassist.compiler.ast.Symbol;
 
 public class Javac {
     JvstCodeGen gen;

@@ -15,7 +15,11 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Represents a nested method subroutine (marked by JSR and RET).

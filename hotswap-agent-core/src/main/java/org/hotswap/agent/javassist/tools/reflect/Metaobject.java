@@ -234,7 +234,7 @@ public class Metaobject implements Serializable {
         catch (java.lang.reflect.InvocationTargetException e) {
             throw e.getTargetException();
         }
-        catch (IllegalAccessException e) {
+        catch (java.lang.IllegalAccessException e) {
             throw new CannotInvokeException(e);
         }
     }

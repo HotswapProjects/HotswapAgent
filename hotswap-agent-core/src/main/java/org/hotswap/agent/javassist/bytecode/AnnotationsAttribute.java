@@ -16,13 +16,28 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import org.hotswap.agent.javassist.bytecode.annotation.*;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.hotswap.agent.javassist.bytecode.annotation.Annotation;
+import org.hotswap.agent.javassist.bytecode.annotation.AnnotationMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.AnnotationsWriter;
+import org.hotswap.agent.javassist.bytecode.annotation.ArrayMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.BooleanMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.ByteMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.CharMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.ClassMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.DoubleMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.EnumMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.FloatMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.IntegerMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.LongMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.MemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.ShortMemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.StringMemberValue;
 
 /**
  * A class representing

@@ -15,8 +15,6 @@
  */
 package org.hotswap.agent.javassist.util.proxy;
 
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AccessibleObject;
@@ -27,7 +25,13 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 
 class SecurityActions extends SecurityManager
 {
@@ -209,6 +213,7 @@ class SecurityActions extends SecurityManager
             if (e.getCause() instanceof NoSuchFieldException)
                 throw new ClassNotFoundException("No such instance.", e.getCause());
             if (e.getCause() instanceof IllegalAccessException
+                    || e.getCause() instanceof IllegalAccessException
                     || e.getCause() instanceof SecurityException)
                 throw new ClassNotFoundException("Security denied access.", e.getCause());
             throw new RuntimeException(e.getCause());

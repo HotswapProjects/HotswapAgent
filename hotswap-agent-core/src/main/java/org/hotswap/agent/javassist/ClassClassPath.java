@@ -68,7 +68,7 @@ public class ClassClassPath implements ClassPath {
          * class paths if javassist.jar is put in jre/lib/ext/
          * (with JDK1.4).
          */
-        this(Object.class);
+        this(java.lang.Object.class);
     }
 
     /**

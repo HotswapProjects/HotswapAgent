@@ -22,7 +22,15 @@ import org.hotswap.agent.javassist.CtPrimitiveType;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.bytecode.Bytecode;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.compiler.ast.*;
+import org.hotswap.agent.javassist.compiler.ast.ASTList;
+import org.hotswap.agent.javassist.compiler.ast.ASTree;
+import org.hotswap.agent.javassist.compiler.ast.CallExpr;
+import org.hotswap.agent.javassist.compiler.ast.CastExpr;
+import org.hotswap.agent.javassist.compiler.ast.Declarator;
+import org.hotswap.agent.javassist.compiler.ast.Expr;
+import org.hotswap.agent.javassist.compiler.ast.Member;
+import org.hotswap.agent.javassist.compiler.ast.Stmnt;
+import org.hotswap.agent.javassist.compiler.ast.Symbol;
 
 /* Code generator accepting extended Java syntax for Javassist.
  */
@@ -94,7 +102,7 @@ public class JvstCodeGen extends MemberCodeGen {
         }
         else if (name.equals(sigName)) {
             bytecode.addLdc(Descriptor.ofMethod(returnType, paramTypeList));
-            bytecode.addInvokestatic("javassist/runtime/Desc", "getParams",
+            bytecode.addInvokestatic("org/hotswap/agent/javassist/runtime/Desc", "getParams",
                                 "(Ljava/lang/String;)[Ljava/lang/Class;");
             exprType = CLASS;
             arrayDim = 1;
@@ -119,7 +127,7 @@ public class JvstCodeGen extends MemberCodeGen {
     }
 
     private void callGetType(String method) {
-        bytecode.addInvokestatic("javassist/runtime/Desc", method,
+        bytecode.addInvokestatic("org/hotswap/agent/javassist/runtime/Desc", method,
                                 "(Ljava/lang/String;)Ljava/lang/Class;");
         exprType = CLASS;
         arrayDim = 0;
@@ -256,7 +264,7 @@ public class JvstCodeGen extends MemberCodeGen {
     /* To support $cflow().
      */
     protected void atCflow(ASTList cname) throws CompileError {
-        StringBuilder sbuf = new StringBuilder();
+        StringBuffer sbuf = new StringBuffer();
         if (cname == null || cname.tail() != null)
             throw new CompileError("bad " + cflowName);
 
@@ -267,8 +275,8 @@ public class JvstCodeGen extends MemberCodeGen {
             throw new CompileError("no such " + cflowName + ": " + name);
 
         bytecode.addGetstatic((String)names[0], (String)names[1],
-                              "Ljavassist/runtime/Cflow;");
-        bytecode.addInvokevirtual("javassist.runtime.Cflow",
+                              "Lorg/hotswap/agent/javassist/runtime/Cflow;");
+        bytecode.addInvokevirtual("org.hotswap.agent.javassist.runtime.Cflow",
                                   "value", "()I");
         exprType = INT;
         arrayDim = 0;
@@ -280,7 +288,7 @@ public class JvstCodeGen extends MemberCodeGen {
      * <cflow> : $cflow '(' <cflow name> ')'
      * <cflow name> : <identifier> ('.' <identifier>)*
      */
-    private static void makeCflowName(StringBuilder sbuf, ASTree name)
+    private static void makeCflowName(StringBuffer sbuf, ASTree name)
         throws CompileError
     {
         if (name instanceof Symbol) {

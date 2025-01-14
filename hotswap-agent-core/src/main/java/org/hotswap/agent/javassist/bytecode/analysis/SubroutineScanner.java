@@ -15,12 +15,17 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
-import org.hotswap.agent.javassist.bytecode.*;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ExceptionTable;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
 
 /**
  * Discovers the subroutines in a method, and tracks all callers.

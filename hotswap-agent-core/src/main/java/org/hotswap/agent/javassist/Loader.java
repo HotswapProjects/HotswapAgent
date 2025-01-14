@@ -16,8 +16,6 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -25,6 +23,8 @@ import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Vector;
+
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 
 /**
  * The class loader for Javassist.
@@ -184,7 +184,7 @@ public class Loader extends ClassLoader {
     private Vector<String> notDefinedPackages; // must be atomic.
     private ClassPool source;
     private Translator translator;
-    private ProtectionDomain domain; 
+    private ProtectionDomain domain;
 
     /**
      * Specifies the algorithm of class loading.
@@ -233,7 +233,7 @@ public class Loader extends ClassLoader {
         source = cp;
         translator = null;
         domain = null;
-        delegateLoadingOf("javassist.Loader");
+        delegateLoadingOf("org.hotswap.agent.javassist.Loader");
     }
 
     /**
@@ -444,7 +444,6 @@ public class Loader extends ClassLoader {
         if (doDelegation)
             if (name.startsWith("java.")
                 || name.startsWith("javax.")
-                || name.startsWith("jdk.internal.")
                 || name.startsWith("sun.")
                 || name.startsWith("com.sun.")
                 || name.startsWith("org.w3c.")

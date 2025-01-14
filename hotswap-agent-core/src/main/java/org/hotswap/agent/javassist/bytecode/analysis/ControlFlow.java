@@ -16,14 +16,14 @@
 
 package org.hotswap.agent.javassist.bytecode.analysis;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.javassist.bytecode.stackmap.BasicBlock;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Represents the control flow graph of a given method.
@@ -93,7 +93,7 @@ public class ControlFlow {
                 e.entrances[counters[e.index]++] = b;
             }
 
-            Catcher[] catchers = b.catchers();
+            ControlFlow.Catcher[] catchers = b.catchers();
             for (int k = 0; k < catchers.length; k++) {
                 Block catchBlock = catchers[k].node;
                 catchBlock.entrances[counters[catchBlock.index]++] = b;
@@ -261,13 +261,13 @@ public class ControlFlow {
         }
 
         @Override
-        protected void toString2(StringBuilder sbuf) {
+        protected void toString2(StringBuffer sbuf) {
             super.toString2(sbuf);
             sbuf.append(", incoming{");
             for (int i = 0; i < entrances.length; i++)
                     sbuf.append(entrances[i].position).append(", ");
 
-            sbuf.append('}');
+            sbuf.append("}");
         }
 
         BasicBlock[] getExit() { return exit; }
@@ -324,7 +324,7 @@ public class ControlFlow {
          */
         public Catcher[] catchers() {
             List<Catcher> catchers = new ArrayList<Catcher>();
-            Catch c = toCatch;
+            BasicBlock.Catch c = toCatch;
             while (c != null) {
                 catchers.add(new Catcher(c));
                 c = c.next;
@@ -360,7 +360,7 @@ public class ControlFlow {
          */
         @Override
         public String toString() {
-            StringBuilder sbuf = new StringBuilder();
+            StringBuffer sbuf = new StringBuffer();
             sbuf.append("Node[pos=").append(block().position());
             sbuf.append(", parent=");
             sbuf.append(parent == null ? "*" : Integer.toString(parent.block().position()));

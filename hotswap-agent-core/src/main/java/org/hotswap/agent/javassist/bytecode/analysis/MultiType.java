@@ -15,10 +15,10 @@
  */
 package org.hotswap.agent.javassist.bytecode.analysis;
 
-import org.hotswap.agent.javassist.CtClass;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.hotswap.agent.javassist.CtClass;
 
 /**
  * MultiType represents an unresolved type. Whenever two {@code Type}
@@ -312,15 +312,14 @@ public class MultiType extends Type {
         if (resolved != null)
             return resolved.toString();
 
-        StringBuilder buffer = new StringBuilder();
-        buffer.append('{');
+        StringBuffer buffer = new StringBuffer("{");
         for (String key:interfaces.keySet())
             buffer.append(key).append(", ");
         if (potentialClass != null)
-            buffer.append('*').append(potentialClass.toString());
+            buffer.append("*").append(potentialClass.toString());
         else
             buffer.setLength(buffer.length() - 2);
-        buffer.append('}');
+        buffer.append("}");
         return buffer.toString();
     }
 }

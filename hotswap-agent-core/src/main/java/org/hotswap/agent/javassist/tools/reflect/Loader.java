@@ -33,7 +33,7 @@ import org.hotswap.agent.javassist.NotFoundException;
  *     javassist.tools.reflect.Loader cl
  *         = (javassist.tools.reflect.Loader)Main.class.getClassLoader();
  *     cl.makeReflective("Person", "MyMetaobject",
- *                       "javassist.tools.reflect.ClassMetaobject");
+ *                       "org.hotswap.agent.javassist.tools.reflect.ClassMetaobject");
  *     cl.run("MyApp", args);
  *   }
  * }
@@ -57,7 +57,7 @@ import org.hotswap.agent.javassist.NotFoundException;
  *   public static void main(String[] args) throws Throwable {
  *     javassist.tools.reflect.Loader cl = new javassist.tools.reflect.Loader();
  *     cl.makeReflective("Person", "MyMetaobject",
- *                       "javassist.tools.reflect.ClassMetaobject");
+ *                       "org.hotswap.agent.javassist.tools.reflect.ClassMetaobject");
  *     cl.run("MyApp", args);
  *   }
  * }
@@ -85,7 +85,7 @@ import org.hotswap.agent.javassist.NotFoundException;
  *     javassist.Loader cl
  *         = new javassist.Loader(ClassPool.getDefault(reflection));
  *     reflection.makeReflective("Person", "MyMetaobject",
- *                               "javassist.tools.reflect.ClassMetaobject");
+ *                               "org.hotswap.agent.javassist.tools.reflect.ClassMetaobject");
  *     cl.run("MyApp", args);
  *   }
  * }
@@ -129,7 +129,7 @@ public class Loader extends org.hotswap.agent.javassist.Loader {
      */
     public Loader() throws CannotCompileException, NotFoundException {
         super();
-        delegateLoadingOf("javassist.tools.reflect.Loader");
+        delegateLoadingOf("org.hotswap.agent.javassist.tools.reflect.Loader");
 
         reflection = new Reflection();
         ClassPool pool = ClassPool.getDefault();

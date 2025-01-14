@@ -19,7 +19,12 @@ package org.hotswap.agent.javassist.scopedpool;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -52,7 +57,7 @@ public class SoftValueHashMap<K,V> implements Map<K,V> {
      * Returns a set of the mappings contained in this hash table.
      */
     @Override
-    public Set<Entry<K, V>> entrySet() {
+    public Set<Map.Entry<K, V>> entrySet() {
         processQueue();
         Set<Entry<K,V>> ret = new HashSet<Entry<K,V>>();
         for (Entry<K,SoftValueRef<K,V>> e:hash.entrySet()) 

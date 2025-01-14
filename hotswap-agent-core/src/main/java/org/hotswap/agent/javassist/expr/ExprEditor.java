@@ -18,7 +18,12 @@ package org.hotswap.agent.javassist.expr;
 
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.bytecode.*;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.CodeIterator;
+import org.hotswap.agent.javassist.bytecode.ExceptionTable;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.Opcode;
 
 /**
  * A translator of method bodies.

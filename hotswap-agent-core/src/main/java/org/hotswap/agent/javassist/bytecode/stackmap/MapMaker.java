@@ -16,12 +16,19 @@
 
 package org.hotswap.agent.javassist.bytecode.stackmap;
 
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.NotFoundException;
-import org.hotswap.agent.javassist.bytecode.*;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.ByteArray;
+import org.hotswap.agent.javassist.bytecode.Bytecode;
+import org.hotswap.agent.javassist.bytecode.CodeAttribute;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.MethodInfo;
+import org.hotswap.agent.javassist.bytecode.StackMap;
+import org.hotswap.agent.javassist.bytecode.StackMapTable;
 
 /**
  * Stack map maker.
@@ -302,7 +309,8 @@ public class MapMaker extends Tracer {
     }
 
     protected static void copyTypeData(int n, TypeData[] srcTypes, TypeData[] destTypes) {
-        System.arraycopy(srcTypes, 0, destTypes, 0, n);
+        for (int i = 0; i < n; i++)
+            destTypes[i] = srcTypes[i];
     }
 
     private static TypeData validateTypeData(TypeData[] data, int length, int index) {
