@@ -328,6 +328,11 @@ public class SpringBeanReload {
                     if ((names == null || names.length == 0) && !isFactoryMethod(clazz)) {
                         LOGGER.trace("the class '{}' is not spring bean or factory class", clazz.getName());
                         iterator.remove();
+
+                        // The class might still be cached if it was created using createBean
+                        if (ResetBeanPostProcessorCaches.isCached(clazz, beanFactory)) {
+                            clearSpringCache();
+                        }
                     } else {
                         LOGGER.debug("the class '{}' is spring bean or factory class", clazz.getName());
                     }

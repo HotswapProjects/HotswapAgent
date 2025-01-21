@@ -99,23 +99,44 @@ public class ResetBeanPostProcessorCaches {
         }
     }
 
+    public static boolean isCached(Class<?> clazz, DefaultListableBeanFactory beanFactory) {
+        for (BeanPostProcessor bpp : beanFactory.getBeanPostProcessors()) {
+            if (bpp instanceof AutowiredAnnotationBeanPostProcessor) {
+                if (isCached(clazz, (AutowiredAnnotationBeanPostProcessor) bpp)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isCached(Class<?> clazz, AutowiredAnnotationBeanPostProcessor bpp) {
+        return getAutowiredAnnotationBeanPostProcessorConstructorCache(bpp).containsKey(clazz);
+    }
+
     // @Autowired cache
     public static void resetAutowiredAnnotationBeanPostProcessorCache(AutowiredAnnotationBeanPostProcessor bpp) {
+        getAutowiredAnnotationBeanPostProcessorConstructorCache(bpp).clear();
+        LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache");
+        resetAnnotationBeanPostProcessorCache(bpp, AutowiredAnnotationBeanPostProcessor.class);
+    }
+
+    private static Map<Class<?>, Constructor<?>[]> getAutowiredAnnotationBeanPostProcessorConstructorCache(
+            AutowiredAnnotationBeanPostProcessor bpp) {
         try {
             Field field = AutowiredAnnotationBeanPostProcessor.class.getDeclaredField("candidateConstructorsCache");
             field.setAccessible(true);
             // noinspection unchecked
-            Map<Class<?>, Constructor<?>[]> candidateConstructorsCache = (Map<Class<?>, Constructor<?>[]>) field.get(bpp);
-            candidateConstructorsCache.clear();
-            LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache");
+            return (Map<Class<?>, Constructor<?>[]>) field.get(bpp);
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to clear AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache", e);
+            throw new IllegalStateException(
+                    "Unable to access AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache", e);
         }
-        resetAnnotationBeanPostProcessorCache(bpp, AutowiredAnnotationBeanPostProcessor.class);
     }
 
     /**
      * deal injectionMetadataCache field of
+     * 
      * @see org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
      * @see org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
      */
