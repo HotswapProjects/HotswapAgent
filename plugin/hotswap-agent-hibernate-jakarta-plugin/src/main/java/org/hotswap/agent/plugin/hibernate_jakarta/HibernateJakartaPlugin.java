@@ -40,24 +40,24 @@ import org.hotswap.agent.util.AnnotationHelper;
         group = "groupHibernate",
         fallback = true,
         description = "Reload Hibernate configuration after entity create/change.",
-        testedVersions = {"All between 5.5.- - 6.0.0"},
-        expectedVersions = {"5.5.x", "5.6.0", "6.0.0" },
+        testedVersions = {"All between 5.5.- - 6.2.0"},
+        expectedVersions = {"5.5.x", "5.6.0", "6.0.0", "6.1.0", "6.2.0", "6.3.0", "6.4.0", "6.5.0", "6.6.0" },
         supportClass = { HibernateTransformers.class})
 @Versions(
         maven = {
-            @Maven(value = "[5.5,6.0)", artifactId = "hibernate-core-jakarta", groupId = "org.hibernate"),
+            @Maven(value = "[5.5,6.6)", artifactId = "hibernate-core-jakarta", groupId = "org.hibernate"),
         },
         manifest= {
-                @Manifest(value="[5.5,6.0)", names= {
+                @Manifest(value="[5.5,6.6)", names= {
                         @Name(key=Name.BundleSymbolicName, value="org.hibernate.validator")
                 }),
-                @Manifest(value="[5.5,6.0)", names= {
+                @Manifest(value="[5.5,6.6)", names= {
                         @Name(key=Name.BundleSymbolicName, value="org.hibernate.entitymanager")
                 }),
-                @Manifest(value="[5.5,6.0)", names= {
+                @Manifest(value="[5.5,6.6)", names= {
                         @Name(key=Name.BundleSymbolicName, value="org.hibernate.core")
                 }),
-                @Manifest(value="[5.5,6.0)", names= {
+                @Manifest(value="[5.5,6.6)", names= {
                         @Name(key=Name.ImplementationUrl, value="http://hibernate.org"),
                         @Name(key=Name.ImplementationVendorId, value="org.hibernate")
                 }),
