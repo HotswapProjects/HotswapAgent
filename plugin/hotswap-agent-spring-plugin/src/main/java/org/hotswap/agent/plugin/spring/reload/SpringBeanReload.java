@@ -507,7 +507,7 @@ public class SpringBeanReload {
     private void refreshRequestMapping() {
         // reset mvc initialized, it will update the mapping of url and handler
         LOGGER.debug("refreshRequestMapping of {}", ObjectUtils.identityToString(beanFactory));
-        ResetRequestMappingCaches.reset(beanFactory);
+        ResetRequestMappingCaches.reset(beanFactory, beansToProcess, newBeanNames);
     }
 
     private void processAutowiredAnnotationBeans() {
