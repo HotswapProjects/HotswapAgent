@@ -30,6 +30,7 @@ import org.hotswap.agent.annotation.Init;
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.Manifest;
 import org.hotswap.agent.annotation.Name;
+import org.hotswap.agent.annotation.OnClassFileEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.annotation.OnResourceFileEvent;
 import org.hotswap.agent.annotation.Plugin;
@@ -60,6 +61,7 @@ import org.hotswap.agent.plugin.spring.transformers.PostProcessorRegistrationDel
 import org.hotswap.agent.plugin.spring.transformers.ProxyReplacerTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ResourcePropertySourceTransformer;
 import org.hotswap.agent.plugin.spring.transformers.XmlBeanDefinitionScannerTransformer;
+import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -102,6 +104,7 @@ public class SpringPlugin {
     ClassLoader appClassLoader;
 
     private Class springChangeHubClass;
+    private static CtClass repositoryClass;
 
     public void init() throws ClassNotFoundException {
         LOGGER.info("Spring plugin initialized");
@@ -159,6 +162,31 @@ public class SpringPlugin {
         scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
         LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", clazz, appClassLoader);
         scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.data.repository.Repository")
+    public static void repositoryClass(CtClass ctClass) throws NotFoundException, CannotCompileException {
+        repositoryClass = ctClass;
+    }
+
+    /**
+     * New entity or repository class - not covered by reloading mechanism.
+     */
+    @OnClassFileEvent(classNameRegexp = ".*", events = { FileEvent.CREATE })
+    public void newEntity(CtClass ctClass) throws Exception {
+        boolean entity = AnnotationHelper.hasAnnotation(ctClass, "jakarta.persistence.Entity");
+        boolean repository = repositoryClass != null && ctClass.subtypeOf(repositoryClass);
+        if (entity || repository) {
+            Class<?> clazz = appClassLoader.loadClass(ctClass.getName());
+            if (entity) {
+                LOGGER.trace("New @Entity annotated class '{}' loaded", clazz.getName());
+            } else {
+                LOGGER.trace("New JPA Repository class '{}' loaded", clazz.getName());
+            }
+            scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
+            scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader),
+                    SpringReloadConfig.reloadDelayMillis);
+        }
     }
 
     /**
@@ -296,5 +324,25 @@ public class SpringPlugin {
                 "}");
 
         LOGGER.debug("org.springframework.aop.framework.CglibAopProxy - cglib Enhancer cache disabled");
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.data.repository.config.RepositoryConfigurationDelegate")
+    public static void repositoryConfigurationDelegate(CtClass ctClass)
+            throws NotFoundException, CannotCompileException {
+        LOGGER.trace("Setting up code for storing reference to RepositoryConfigurationDelegate");
+        CtMethod method = ctClass.getDeclaredMethod("registerRepositoriesIn");
+        method.insertBefore(
+                "org.hotswap.agent.plugin.spring.reload.ReloadRepositories.storeReferences(this, registry, extension);");
+
+    }
+
+    @OnClassLoadEvent(classNameRegexp = "org.springframework.orm.jpa.persistenceunit.PersistenceManagedTypesScanner")
+    public static void storePersistenceManagedTypesScannerReference(CtClass ctClass)
+            throws NotFoundException, CannotCompileException {
+        LOGGER.trace("Setting up code for storing reference to PersistenceManagedTypesScanner");
+        CtMethod method = ctClass.getDeclaredMethod("scan");
+        method.insertBefore(
+                "org.hotswap.agent.plugin.spring.reload.ScanNewEntities.storeScanner(this, packagesToScan);");
+
     }
 }

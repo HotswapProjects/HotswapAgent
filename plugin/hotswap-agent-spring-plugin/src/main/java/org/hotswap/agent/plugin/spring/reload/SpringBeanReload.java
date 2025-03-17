@@ -65,6 +65,8 @@ public class SpringBeanReload {
     private Set<URL> xmls = Collections.newSetFromMap(new ConcurrentHashMap<>());
     // it is synchronized set because it is used synchronized block
     private Set<BeanDefinitionHolder> newScanBeanDefinitions = new HashSet<>();
+    private Set<Class<?>> newEntities = new HashSet<>();
+    private Set<Class<?>> newRepositories = new HashSet<>();
     private Set<String> changedBeanNames = new HashSet<>();
     Set<String> newBeanNames = new HashSet<>();
 
@@ -77,12 +79,25 @@ public class SpringBeanReload {
     private final BeanNameGenerator beanNameGenerator;
     private final BeanFactoryAssistant beanFactoryAssistant;
 
+    private Class<?> repositoryClass;
+    private Class<?> localContainerEntityManagerFactoryBeanClass;
 
     public SpringBeanReload(DefaultListableBeanFactory beanFactory) {
         this.beanFactoryAssistant = new BeanFactoryAssistant(beanFactory);
         beanNameGenerator = new AnnotationBeanNameGenerator();
         this.beanFactory = beanFactory;
         this.dependentBeanMap = (Map<String, Set<String>>) get(beanFactory, "dependentBeanMap");
+        try {
+            this.repositoryClass = Class.forName("org.springframework.data.repository.Repository");
+        } catch (Exception e) {
+            // Spring data not available
+        }
+        try {
+            this.localContainerEntityManagerFactoryBeanClass = Class
+                    .forName("org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean");
+        } catch (Exception e) {
+            // Spring JPA not available
+        }
     }
 
     public void addClass(Class clazz) {
@@ -92,8 +107,13 @@ public class SpringBeanReload {
         String simpleName = clazz.getSimpleName();
         String userClassSimpleName = ClassUtils.getUserClass(clazz).getSimpleName();
         boolean sameClass = simpleName.equals(userClassSimpleName);
+        boolean entity = AnnotationHelper.hasAnnotation(clazz, "jakarta.persistence.Entity");
+        boolean repository = isSpringDataRepository(clazz);
         synchronized (classes) {
-            if (classes.add(clazz)) {
+            if (entity) {
+                LOGGER.debug("Adding new entity '{}' ", clazz.getName());
+                this.newEntities.add(clazz);
+            } else if (classes.add(clazz)) {
                 if (sameClass) {
                     LOGGER.debug("try to add changed class '{}' into {}", clazz.getName(), ObjectUtils.identityToString(beanFactory));
                 } else {
@@ -107,6 +127,14 @@ public class SpringBeanReload {
                 }
             }
         }
+        if (repository) {
+            LOGGER.debug("Registering new Spring Data repository '{}' ", clazz.getName());
+            this.newRepositories.add(clazz);
+        }
+    }
+
+    private boolean isSpringDataRepository(Class<?> clazz) {
+        return repositoryClass != null && repositoryClass.isAssignableFrom(clazz);
     }
 
     public void addProperty(URL property) {
@@ -280,6 +308,9 @@ public class SpringBeanReload {
             // 4. add changed classes and changed beans into recreate beans
             refreshChangedClassesAndBeans();
 
+            processNewEntities();
+            processNewRepositories();
+
             // 5. load new beans from scanning. The newBeanNames is used to print the suitable log.
             refreshNewBean();
             // 6. destroy bean including factory bean
@@ -324,8 +355,10 @@ public class SpringBeanReload {
                 while (iterator.hasNext()) {
                     Class<?> clazz = iterator.next();
                     String[] names = beanFactory.getBeanNamesForType(clazz);
+                    boolean repository = isSpringDataRepository(clazz);
+
                     // if the class is not spring bean or Factory Class, remove it
-                    if ((names == null || names.length == 0) && !isFactoryMethod(clazz)) {
+                    if ((names == null || names.length == 0) && !isFactoryMethod(clazz) && !repository) {
                         LOGGER.trace("the class '{}' is not spring bean or factory class", clazz.getName());
                         iterator.remove();
 
@@ -360,8 +393,8 @@ public class SpringBeanReload {
 
     private boolean checkHasChange() {
         if (properties.isEmpty() && classes.isEmpty() && xmls.isEmpty() && newScanBeanDefinitions.isEmpty()
-                && yamls.isEmpty() && changedBeanNames.isEmpty()) {
-            LOGGER.trace("no change, ignore reloading '{}'", ObjectUtils.identityToString(beanFactory));
+                && yamls.isEmpty() && changedBeanNames.isEmpty() && newEntities.isEmpty()) {
+            LOGGER.info("no change, ignore reloading '{}'", ObjectUtils.identityToString(beanFactory));
             return false;
         }
         LOGGER.trace("has change, start reloading '{}', {}", ObjectUtils.identityToString(beanFactory), this);
@@ -518,6 +551,25 @@ public class SpringBeanReload {
     private void processConfigBeanDefinitions() {
         LOGGER.debug("process @Configuration of {}", ObjectUtils.identityToString(beanFactory));
         ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).postProcess(beanFactory);
+    }
+
+    private void processNewRepositories() {
+        if (newRepositories.isEmpty()) {
+            return;
+        }
+        newRepositories.clear();
+        ReloadRepositories.reloadAllRepositories();
+    }
+
+    private void processNewEntities() {
+        if (newEntities.isEmpty()) {
+            return;
+        }
+        newEntities.clear();
+
+        Object localContainerEntityManagerFactoryBean = beanFactory
+                .getBean(localContainerEntityManagerFactoryBeanClass);
+        ScanNewEntities.scanNewEntities(localContainerEntityManagerFactoryBean);
     }
 
     private void clearSpringCache() {
