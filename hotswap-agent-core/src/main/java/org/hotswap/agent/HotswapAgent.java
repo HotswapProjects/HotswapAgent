@@ -62,8 +62,8 @@ public class HotswapAgent {
     }
 
     public static void premain(String args, Instrumentation inst) {
-        LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         parseArgs(args);
+        LOGGER.info("Loading Hotswap agent {{}} - unlimited runtime class redefinition.", Version.version());
         fixJboss7Modules();
         PluginManager.getInstance().init(inst);
         LOGGER.debug("Hotswap agent initialized.");
@@ -97,6 +97,15 @@ public class HotswapAgent {
                 autoHotswap = Boolean.valueOf(optionValue);
             } else if ("propertiesFilePath".equals(option)) {
                 propertiesFilePath = optionValue;
+            } else if ("LOGGER".equals(option)) {
+                AgentLogger.Level level;
+                try {
+                    level = AgentLogger.Level.valueOf(optionValue.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    LOGGER.warning("Invalid javaagent option '{}'. Argument '{}' is ignored as log level '{}' is invalid.", option, arg, optionValue);
+                    continue;
+                }
+                AgentLogger.setLevel(level);
             } else {
                 LOGGER.warning("Invalid javaagent option '{}'. Argument '{}' is ignored.", option, arg);
             }
