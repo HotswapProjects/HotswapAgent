@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -25,6 +25,7 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.weld.WeldPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -40,14 +41,16 @@ public class BeanDeploymentArchiveTransformer {
     /**
      * Basic WeldBeanDeploymentArchive transformation.
      *
-     * @param clazz
-     * @param classPool
-     * @throws NotFoundException
-     * @throws CannotCompileException
+     * @param classPool the class pool
+     * @param clazz     the clazz
+     * @throws NotFoundException      the not found exception
+     * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.environment.deployment.WeldBeanDeploymentArchive")
-    public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
+    public static void transform(ClassPool classPool, CtClass clazz) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(WeldPlugin.class, "init"));
@@ -70,7 +73,10 @@ public class BeanDeploymentArchiveTransformer {
      * @throws CannotCompileException
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.as.weld.deployment.BeanDeploymentArchiveImpl")
-    public static void transformJbossBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+    public static void transformJbossBda(ClassPool classPool, CtClass clazz) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         StringBuilder src = new StringBuilder("{");
         src.append("if (beansXml!=null && beanArchiveType!=null && (\"EXPLICIT\".equals(beanArchiveType.toString()) || \"IMPLICIT\".equals(beanArchiveType.toString()))){");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
@@ -90,13 +96,16 @@ public class BeanDeploymentArchiveTransformer {
     /**
      * GlassFish BeanDeploymentArchiveImpl transformation.
      *
-     * @param clazz
-     * @param classPool
-     * @throws NotFoundException
-     * @throws CannotCompileException
+     * @param classPool the class pool
+     * @param clazz     the clazz
+     * @throws NotFoundException      the not found exception
+     * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.glassfish.weld.BeanDeploymentArchiveImpl")
-    public static void transformGlassFishBda(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
+    public static void transformGlassFishBda(ClassPool classPool, CtClass clazz) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "this.moduleClassLoaderForBDA"));
         src.append(PluginManagerInvoker.buildCallPluginMethod("this.moduleClassLoaderForBDA", WeldPlugin.class, "initInGlassFish"));

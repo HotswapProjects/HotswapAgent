@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -29,6 +29,7 @@ import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 
 /**
  * Hook into AbstractProxyFactory constructors to register proxy factory into OwbPlugin. If OwbPlugin is not initialized in proxy factory
@@ -51,7 +52,9 @@ public class ProxyFactoryTransformer {
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.proxy.AbstractProxyFactory")
     public static void patchProxyFactory(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtMethod getProxyClassMethod = ctClass.getDeclaredMethod("getUnusedProxyClassName");
         getProxyClassMethod.instrument(
                 new ExprEditor() {

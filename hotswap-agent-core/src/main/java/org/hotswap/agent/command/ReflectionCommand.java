@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -112,9 +112,9 @@ public class ReflectionCommand extends MergeableCommand {
     }
 
     public String getClassName() {
-        if (className == null && target != null)
-            className = target.getClass().getName();
-
+        if (className == null && target != null) {
+            return target.getClass().getName();
+        }
         return className;
     }
 
@@ -128,12 +128,11 @@ public class ReflectionCommand extends MergeableCommand {
 
     public ClassLoader getTargetClassLoader() {
         if (targetClassLoader == null) {
-            if (target != null)
-                targetClassLoader = target.getClass().getClassLoader();
-            else
-                targetClassLoader = PluginManager.getInstance().getPluginRegistry().getAppClassLoader(plugin);
+            if (target != null) {
+                return target.getClass().getClassLoader();
+            }
+            return PluginManager.getInstance().getPluginRegistry().getAppClassLoader(plugin);
         }
-
         return targetClassLoader;
     }
 
@@ -154,8 +153,9 @@ public class ReflectionCommand extends MergeableCommand {
      */
     public void executeCommand() {
         // replace context classloader with application classloader
-        if (getTargetClassLoader() != null)
+        if (getTargetClassLoader() != null) {
             Thread.currentThread().setContextClassLoader(getTargetClassLoader());
+        }
 
         ClassLoader targetClassLoader = Thread.currentThread().getContextClassLoader();
 

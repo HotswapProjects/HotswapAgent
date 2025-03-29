@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -72,6 +72,5 @@ public class HotSwapper {
             throw new RuntimeException(ex);
         }
     }
-
 
 }

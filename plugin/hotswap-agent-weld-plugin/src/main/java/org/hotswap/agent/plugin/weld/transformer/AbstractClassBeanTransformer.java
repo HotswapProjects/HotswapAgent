@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -25,6 +25,7 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 
 public class AbstractClassBeanTransformer {
 
@@ -39,6 +40,9 @@ public class AbstractClassBeanTransformer {
      */
     @OnClassLoadEvent(classNameRegexp = "org.jboss.weld.bean.AbstractClassBean")
     public static void transformAbstractClassBean(CtClass ctClass, ClassPool classPool) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtMethod method = ctClass.getDeclaredMethod("cleanupAfterBoot");
         method.setBody("{ }");
         LOGGER.debug("AbstractClassBean.cleanupAfterBoot patched");

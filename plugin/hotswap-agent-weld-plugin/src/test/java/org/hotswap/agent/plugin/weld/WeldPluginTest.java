@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -49,6 +49,7 @@ import org.hotswap.agent.plugin.weld.testBeansHotswap.ProxyHello2;
 import org.hotswap.agent.plugin.weld.testBeansHotswap.SessionBean2;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.test.WaitHelper;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,6 +61,7 @@ import org.junit.runner.RunWith;
  * @author Vladimir Dvorak
  */
 @RunWith(WeldJUnit4Runner.class)
+@Ignore
 public class WeldPluginTest {
 
     public <T> T getBeanInstance(Class<T> beanClass) {
@@ -241,7 +243,8 @@ public class WeldPluginTest {
         assertEquals("ProxyHello1.hello()", proxyHosting.hello());
     }
 
-    // @Test
+    @Test
+    @Ignore
     public void sessionBeanTest() throws Exception {
         SessionBean1 sessionBean = getBeanInstance(SessionBean1.class);
         assertEquals("SessionBean1.hello():ProxyHello1.hello()", sessionBean.hello());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -22,14 +22,13 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 
+import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.SpringPlugin;
 
 /**
  * Proxies the beans. The beans inside these proxies can be cleared.
  *
  * @author Erki Ehtla
- *
  */
 public class ProxyReplacer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyReplacer.class);
@@ -49,25 +48,31 @@ public class ProxyReplacer {
     /**
      * Creates a proxied Spring bean. Called from within WebApp code by modification of Spring classes
      *
-     * @param beanFactry
-     *            Spring beanFactory
-     * @param bean
-     *            Spring bean
-     * @param paramClasses
-     *            Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
-     * @param paramValues
-     *            Parameter values of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
+     * @param beanFactry   Spring beanFactory
+     * @param bean         Spring bean
+     * @param paramClasses Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
+     *                     ProxyReplacer.FACTORY_METHOD_NAME
+     * @param paramValues  Parameter values of the Spring beanFactory method which returned the bean. The method is named
+     *                     ProxyReplacer.FACTORY_METHOD_NAME
      * @return Proxied bean
      */
     public static Object register(Object beanFactry, Object bean, Class<?>[] paramClasses, Object[] paramValues) {
         if (bean == null) {
             return bean;
         }
-        if (SpringPlugin.basePackagePrefixes != null) {
+        String[] basePackagePrefixes;
+        try {
+            basePackagePrefixes = (String[]) PluginManager.getInstance().getPlugin("org.hotswap.agent.plugin.spring.SpringPlugin",
+                    ProxyReplacer.class.getClassLoader()).getClass().getDeclaredField("basePackagePrefixes").get(null);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            LOGGER.error("load org.hotswap.agent.plugin.spring.SpringPlugin failed, classLoader: {}, exception: {}",
+                    ProxyReplacer.class.getClassLoader(), e);
+            return bean;
+        }
+
+        if (basePackagePrefixes != null) {
             boolean hasMatch = false;
-            for (String basePackagePrefix : SpringPlugin.basePackagePrefixes) {
+            for (String basePackagePrefix : basePackagePrefixes) {
                 if (bean.getClass().getName().startsWith(basePackagePrefix)) {
                     hasMatch = true;
                     break;
@@ -93,7 +98,10 @@ public class ProxyReplacer {
             } catch (ClassNotFoundException e) {
                 LOGGER.error("error adding org.springframework.core.InfrastructureProxy to proxy class", e);
             }
-            return Proxy.newProxyInstance(beanFactry.getClass().getClassLoader(), interfaces, handler);
+            // fix: it should be the classloader of the bean,
+            // or org.springframework.beans.factory.support.AbstractBeanFactory.getBeanClassLoader,
+            // but not the classLoader of the beanFactry
+            return Proxy.newProxyInstance(bean.getClass().getClassLoader(), interfaces, handler);
         } else if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
             // already a proxy, skip..
             if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -28,6 +28,7 @@ import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.NewExpr;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.deltaspike.DeltaSpikePlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -45,16 +46,19 @@ public class ViewConfigTransformer {
     /**
      * Register DeltaspikePlugin and add reinitialization method to RepositoryComponent
      *
-     * @param ctClass
      * @param classPool the class pool
+     * @param ctClass   the ct class
      * @throws CannotCompileException the cannot compile exception
-     * @throws NotFoundException the not found exception
+     * @throws NotFoundException      the not found exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.jsf.impl.config.view.ViewConfigExtension")
-    public static void patchViewConfigExtension(CtClass ctClass, ClassPool classPool) throws CannotCompileException, NotFoundException {
+    public static void patchViewConfigExtension(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtMethod init = ctClass.getDeclaredMethod("init");
         init.insertAfter(
-            "{" +
+       "{" +
                 "if (this.isActivated) {" +
                     PluginManagerInvoker.buildInitializePlugin(DeltaSpikePlugin.class)+
                 "}" +
@@ -68,7 +72,7 @@ public class ViewConfigTransformer {
 
         CtMethod generateProxyClassMethod = ctClass.getDeclaredMethod("transformMetaDataTree");
 
-        generateProxyClassMethod.instrument(
+       generateProxyClassMethod.instrument(
             new ExprEditor() {
                 public void edit(NewExpr e) throws CannotCompileException {
                     if (e.getClassName().equals("org.apache.deltaspike.jsf.impl.config.view.DefaultViewConfigResolver"))

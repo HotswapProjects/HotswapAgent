@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.plugin.proxy.MultistepProxyTransformer;
-import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
-import org.hotswap.agent.plugin.proxy.ProxyBytecodeTransformer;
-import org.hotswap.agent.plugin.proxy.TransformationState;
+import org.hotswap.agent.plugin.proxy.api.MultistepProxyTransformer;
+import org.hotswap.agent.plugin.proxy.api.ProxyBytecodeGenerator;
+import org.hotswap.agent.plugin.proxy.api.ProxyBytecodeTransformer;
+import org.hotswap.agent.plugin.proxy.api.TransformationState;
 
 /**
  * Redefines Cglib proxy classes. Uses several redefinition events

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -18,6 +18,14 @@
  */
 package org.hotswap.agent.plugin.tomcat;
 
+import org.hotswap.agent.annotation.Plugin;
+import org.hotswap.agent.config.PluginConfiguration;
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.util.PluginManagerInvoker;
+import org.hotswap.agent.util.ReflectionHelper;
+import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,14 +35,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.hotswap.agent.annotation.Plugin;
-import org.hotswap.agent.config.PluginConfiguration;
-import org.hotswap.agent.config.PluginManager;
-import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.util.PluginManagerInvoker;
-import org.hotswap.agent.util.ReflectionHelper;
-import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
 
 /**
  * Catalina servlet container support.
@@ -47,7 +47,7 @@ import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
  */
 @Plugin(name = "Tomcat", description = "Catalina based servlet containers.",
         testedVersions = {"7.0.50"},
-        expectedVersions = {"6x","7x", "8x", "9.x"},
+        expectedVersions = {"6x","7x", "8x", "9.x", "10.x"},
         supportClass = {WebappLoaderTransformer.class}
 )
 public class TomcatPlugin {
@@ -69,7 +69,8 @@ public class TomcatPlugin {
         supportedClassLoaders.add(GLASSFISH_WEBAPP_CLASS_LOADER);
         supportedClassLoaders.add(TOMEE_WEBAPP_CLASS_LOADER);
         supportedClassLoaders.add(TOMCAT_EMBEDDED_WEBAPP_CLASS_LOADER);
-    };
+    }
+
     private static final String WEB_INF_CLASSES = "/WEB-INF/classes/";
 
     // resolved tomcat version (6/7/8).
@@ -87,33 +88,42 @@ public class TomcatPlugin {
      * @param resource tomcat resource associated to the classloader.
      */
     public static void init(ClassLoader appClassLoader, Object resource) {
-
         String version = resolveTomcatVersion(appClassLoader);
         int majorVersion = resolveTomcatMajorVersion(version);
+
+        Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
+        if (plugin != null) {
+            ReflectionHelper.invoke(plugin, plugin.getClass(), "init", new Class[]{String.class, ClassLoader.class},
+                    version, appClassLoader);
+        } else {
+            LOGGER.debug("TomcatPlugin is disabled in {}", appClassLoader);
+            return;
+        }
 
         if (supportedClassLoaders.contains(appClassLoader.getClass().getName())) {
             registeredResourcesMap.put(resource, appClassLoader);
 
-            // create plugin configuration in advance to get extraClasspath and watchResources properties
-            PluginConfiguration pluginConfiguration = new PluginConfiguration(appClassLoader);
+            // find plugin configuration in advance to get extraClasspath and watchResources properties
+            PluginConfiguration pluginConfiguration = PluginManager.getInstance().getPluginConfiguration(appClassLoader);
 
             WatchResourcesClassLoader watchResourcesClassLoader = new WatchResourcesClassLoader(false);
 
             URL[] extraClasspath = pluginConfiguration.getExtraClasspath();
             if (extraClasspath.length > 0) {
-                if (majorVersion >= 7)
+                if (majorVersion > 7) {
                     watchResourcesClassLoader.initExtraPath(extraClasspath);
-                else
+                } else {
                     addRepositoriesAtStart(appClassLoader, extraClasspath, false);
-
+                }
             }
 
             URL[] watchResources = pluginConfiguration.getWatchResources();
             if (watchResources.length > 0) {
-                if (majorVersion >= 7)
+                if (majorVersion > 7) {
                     watchResourcesClassLoader.initWatchResources(watchResources, PluginManager.getInstance().getWatcher());
-                else
+                } else {
                     addRepositoriesAtStart(appClassLoader, watchResources, true);
+                }
             }
 
             // register special repo
@@ -130,13 +140,6 @@ public class TomcatPlugin {
                 getExtraRepositories(appClassLoader).put("/", webappDirClassLoader);
             }
         }
-
-        Object plugin = PluginManagerInvoker.callInitializePlugin(TomcatPlugin.class, appClassLoader);
-        if (plugin != null) {
-            ReflectionHelper.invoke(plugin, plugin.getClass(), "init", new Class[]{String.class, ClassLoader.class}, version, appClassLoader);
-        } else {
-            LOGGER.debug("TomcatPlugin is disabled in {}", appClassLoader);
-        }
     }
 
     /**
@@ -145,7 +148,7 @@ public class TomcatPlugin {
      * @param version tomcat version string
      * @param classLoader the class loader
      */
-    private void init(String version, ClassLoader appClassLoader ) {
+    private void init(String version, ClassLoader appClassLoader) {
         if (appClassLoader.getClass().getName().equals(GLASSFISH_WEBAPP_CLASS_LOADER)) {
             LOGGER.info("Tomcat plugin initialized - GlassFish embedded Tomcat version '{}'", version);
         } else {
@@ -168,17 +171,19 @@ public class TomcatPlugin {
         String[] currentRepositories = (String[]) ReflectionHelper.get(appClassLoader, "repositories");
         String[] repositories = new String[currentRepositories.length + newRepositories.length];
 
-        for (int i=0; i < newRepositories.length; i++) {
+        for (int i = 0; i < newRepositories.length; i++) {
             repositories[i] = "extraClasspath:" + newRepositories[i].toString();
         }
         for (int i = 0; i < currentRepositories.length; i++) {
-            repositories[i+newRepositories.length] = currentRepositories[i];
+            repositories[i + newRepositories.length] = currentRepositories[i];
         }
-        ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "repositories", repositories);
+
+        // since 7.0.65, repositories and files are moved to super class.
+        ReflectionHelper.set(appClassLoader, "repositories", repositories);
 
         File[] files = (File[]) ReflectionHelper.get(appClassLoader, "files");
         File[] result2 = new File[files.length + newRepositories.length];
-        for (int i=0; i < newRepositories.length; i++) {
+        for (int i = 0; i < newRepositories.length; i++) {
             try {
                 WatchResourcesClassLoader watchResourcesClassLoader = new WatchResourcesClassLoader();
 
@@ -195,9 +200,9 @@ public class TomcatPlugin {
             }
         }
         for (int i = 0; i < files.length; i++) {
-            result2[i+newRepositories.length] = files[i];
+            result2[i + newRepositories.length] = files[i];
         }
-        ReflectionHelper.set(appClassLoader, appClassLoader.getClass(), "files", result2);
+        ReflectionHelper.set(appClassLoader, "files", result2);
     }
 
     private static Map<String, ClassLoader> getExtraRepositories(ClassLoader appClassLoader) {
@@ -273,6 +278,11 @@ public class TomcatPlugin {
         for (Map.Entry<String, ClassLoader> repo : getExtraRepositories(appClassLoader).entrySet()) {
             if (name.startsWith(repo.getKey())) {
                 String resourceName = name.substring(repo.getKey().length());
+                // since 7.0.65, the resource name is always starting with "/", trim it otherwise
+                // WatchResourcesClassLoader doesn't work
+                if (resourceName.startsWith("/")) {
+                    resourceName = resourceName.substring(1);
+                }
                 // return from associated classloader
                 return repo.getValue().getResource(resourceName);
             }
@@ -284,6 +294,7 @@ public class TomcatPlugin {
 
     /**
      * Resolve the server version from ServerInfo class.
+     *
      * @param appClassLoader application classloader
      * @return the server info String
      */
@@ -305,7 +316,7 @@ public class TomcatPlugin {
      */
     private static int resolveTomcatMajorVersion(String version) {
         try {
-            return Integer.valueOf(version.substring(0, 1));
+            return Integer.valueOf(version.split("\\.")[0]);
         } catch (Exception e) {
             LOGGER.debug("Unable to resolve server main version from version string {}", e, version);
             // assume latest known version

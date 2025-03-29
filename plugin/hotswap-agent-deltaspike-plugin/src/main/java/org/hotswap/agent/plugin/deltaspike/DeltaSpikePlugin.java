@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -72,10 +72,14 @@ public class DeltaSpikePlugin {
 
     @Init
     Scheduler scheduler;
+    @Init
+    PluginConfiguration pluginConfiguration;
+
+    boolean initialized = false;
+    int waitOnRedefine = WAIT_ON_REDEFINE;
 
     Map<Object, String> registeredPartialBeans = new WeakHashMap<>();
     Map<Object, List<String>> registeredViewConfExtRootClasses = new WeakHashMap<>();
-    Set<Object> registeredWindowContexts = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
     // ds<1.9
     Map<Object, String> registeredRepoComponents = new WeakHashMap<>();
     // ds>=1.9
@@ -84,7 +88,11 @@ public class DeltaSpikePlugin {
 
     @Init
     public void init(PluginConfiguration pluginConfiguration) {
-        LOGGER.info("Deltaspike plugin initialized.");
+        if (!initialized) {
+            LOGGER.info("Deltaspike plugin initialized.");
+            initialized = true;
+            waitOnRedefine = Integer.valueOf(pluginConfiguration.getProperty("deltaspike.waitOnRedefine", String.valueOf(WAIT_ON_REDEFINE)));
+        }
     }
 
     // ds<1.9
@@ -123,13 +131,6 @@ public class DeltaSpikePlugin {
         LOGGER.debug("Partial bean '{}' registered", partialBeanClass.getName());
     }
 
-    public void registerWindowContext(Object windowContext) {
-        if (windowContext != null && !registeredWindowContexts.contains(windowContext)) {
-            registeredWindowContexts.add(windowContext);
-            LOGGER.debug("Window context '{}' registered.", windowContext.getClass().getName());
-        }
-    }
-
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(CtClass clazz, Class original, ClassPool classPool) throws NotFoundException {
         checkRefreshViewConfigExtension(clazz, original);
@@ -145,7 +146,7 @@ public class DeltaSpikePlugin {
         if (partialBean != null) {
             String oldSignForProxyCheck = DeltaspikeClassSignatureHelper.getSignaturePartialBeanClass(original);
             cmd = new PartialBeanClassRefreshCommand(appClassLoader, partialBean, clazz.getName(), oldSignForProxyCheck, scheduler);
-            scheduler.scheduleCommand(cmd, WAIT_ON_REDEFINE);
+            scheduler.scheduleCommand(cmd, waitOnRedefine);
         }
         return cmd;
     }
@@ -211,7 +212,7 @@ public class DeltaSpikePlugin {
             List<String> rootClassNameList = entry.getValue();
             for (String viewConfigClassName: rootClassNameList) {
                 if (viewConfigClassName.equals(rootClassName)) {
-                    scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), entry.getValue()), WAIT_ON_REDEFINE);
+                    scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), entry.getValue()), waitOnRedefine);
                     return;
                 }
             }

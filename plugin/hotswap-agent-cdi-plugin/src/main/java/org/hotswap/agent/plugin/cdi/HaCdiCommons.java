@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -25,9 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.inject.spi.Bean;
-
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -42,14 +39,36 @@ import org.hotswap.agent.util.ReflectionHelper;
  */
 public class HaCdiCommons {
 
-    private static AgentLogger LOGGER = AgentLogger.getLogger(HaCdiCommons.class);
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(HaCdiCommons.class);
 
     private static final String BEAN_REGISTRY_FIELD = "$$ha$beanRegistry";
-    private static final Map<Class<? extends Annotation>, Class<? extends Context>> scopeToContextMap = new HashMap<>();
-    private static Map<HaCdiExtraContext, Boolean> extraContexts = new HashMap<>();
+    private static final Map<Class<? extends Annotation>, Class<?>> scopeToContextMap = new HashMap<>();
+    private static final Map<HaCdiExtraContext, Boolean> extraContexts = new HashMap<>();
 
-    public static boolean isInExtraScope(Bean<?> bean) {
-        Class<?> beanClass = bean.getBeanClass();
+    private static Boolean isJakarta;
+
+    public static boolean isJakarta(ClassPool classPool) {
+        if (isJakarta == null) {
+            try {
+                classPool.get("jakarta.enterprise.context.spi.Contextual");
+                isJakarta = true;
+            } catch (NotFoundException e) {
+                isJakarta = false;
+            }
+        }
+        return isJakarta;
+    }
+
+    public static Class<?> getBeanClass(Object bean) {
+        return (Class<?>) ReflectionHelper.invoke(bean, bean.getClass(), "getBeanClass", null);
+    }
+
+    public static Class<? extends Annotation> getBeanScope(Object bean) {
+        return (Class<? extends Annotation>) ReflectionHelper.invoke(bean, bean.getClass(), "getScope", null);
+    }
+
+    public static boolean isInExtraScope(Object bean) {
+        Class<?> beanClass = getBeanClass(bean);
         for (HaCdiExtraContext extraContext: extraContexts.keySet()) {
             if (extraContext.containsBeanInstances(beanClass)) {
                 return true;
@@ -62,9 +81,9 @@ public class HaCdiCommons {
      * Add bean registry field to context, register bean instances in get(...) methods
      *
      * @param classPool the class pool
-     * @param ctClass the ct class
-     * @throws CannotCompileException the cannot compile exception
-     * @throws NotFoundException the not found exception
+     * @param ctClass   the ct class
+     * @throws CannotCompileException cannot compile exception
+     * @throws NotFoundException      the not found exception
      */
     public static void transformContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
         addBeanRegistryToContext(classPool, ctClass);
@@ -77,60 +96,69 @@ public class HaCdiCommons {
      * Adds the bean registry to context.
      *
      * @param classPool the class pool
-     * @param ctClass the ct class
-     * @throws CannotCompileException the cannot compile exception
-     * @throws NotFoundException the not found exception
+     * @param ctClass   the ct class
+     * @throws CannotCompileException cannot compile exception
      */
-    public static void addBeanRegistryToContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+    public static void addBeanRegistryToContext(ClassPool classPool, CtClass ctClass) throws CannotCompileException {
         CtField beanRegistryFld = CtField.make(
             "public static java.util.Map " + BEAN_REGISTRY_FIELD + ";" , ctClass
         );
         ctClass.addField(beanRegistryFld);
     }
 
-    /**
-     * Transform 1 argument get method :
-     *    <code>public <T> T get(Contextual<T> contextual);</code>
-     *
-     * @param classPool the class pool
-     * @param ctClass the ct class
-     * @throws CannotCompileException the cannot compile exception
-     * @throws NotFoundException the not found exception
-     */
-    public static void transformGet1(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
-        CtMethod methGet1 = ctClass.getDeclaredMethod("get", new CtClass[] {
-            classPool.get("javax.enterprise.context.spi.Contextual")
-        });
+    private static void transformGet1(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        CtMethod methGet1;
+        boolean isJakarta;
+        if (isJakarta(classPool)) {
+            methGet1 = ctClass.getDeclaredMethod("get", new CtClass[] {
+                    classPool.get("jakarta.enterprise.context.spi.Contextual")
+            });
+            isJakarta = true;
+        } else {
+            methGet1 = ctClass.getDeclaredMethod("get", new CtClass[] {
+                    classPool.get("javax.enterprise.context.spi.Contextual")
+            });
+            isJakarta = false;
+        }
 
-        methGet1.insertAfter(getRegistrationCode());
+        if (methGet1 != null) {
+            methGet1.insertAfter(getRegistrationCode(isJakarta));
+        }
     }
 
-    /**
-     * Transform  2 arguments get method :
-     *    <code>public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext);</code>
-     *
-     * @param classPool the class pool
-     * @param ctClass the ct class
-     * @throws CannotCompileException the cannot compile exception
-     * @throws NotFoundException the not found exception
-     */
-    public static void transformGet2(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
-        CtMethod methGet2 = ctClass.getDeclaredMethod("get", new CtClass[] {
-            classPool.get("javax.enterprise.context.spi.Contextual"),
-            classPool.get("javax.enterprise.context.spi.CreationalContext"),
-        });
-
-        methGet2.insertAfter(getRegistrationCode());
+    private static void transformGet2(ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        CtMethod methGet2;
+        boolean isJakarta;
+        if (isJakarta(classPool)) {
+            methGet2 = ctClass.getDeclaredMethod("get", new CtClass[]{
+                    classPool.get("jakarta.enterprise.context.spi.Contextual"),
+                    classPool.get("jakarta.enterprise.context.spi.CreationalContext"),
+            });
+            isJakarta = true;
+        } else {
+            methGet2 = ctClass.getDeclaredMethod("get", new CtClass[]{
+                    classPool.get("javax.enterprise.context.spi.Contextual"),
+                    classPool.get("javax.enterprise.context.spi.CreationalContext"),
+            });
+            isJakarta = false;
+        }
+        if (methGet2 != null) {
+            methGet2.insertAfter(getRegistrationCode(isJakarta));
+        }
     }
 
-    private static String getRegistrationCode() {
+    private static  String resolveJakartaPackage(boolean isJakarta) {
+       return isJakarta ? "jakarta" : "javax";
+    }
+
+    private static String getRegistrationCode(boolean isJakarta) {
         String result =
             "if(" + BEAN_REGISTRY_FIELD + "==null){" +
                 BEAN_REGISTRY_FIELD + "=new java.util.concurrent.ConcurrentHashMap();" +
             "}"+
             "org.hotswap.agent.plugin.cdi.HaCdiCommons.registerContextClass(this.getScope(),this.getClass());" +
-            "if($_!=null && $1 instanceof javax.enterprise.inject.spi.Bean){" +
-                "String key=((javax.enterprise.inject.spi.Bean) $1).getBeanClass().getName();" +
+            "if($_!=null && $1 instanceof " + resolveJakartaPackage(isJakarta) + ".enterprise.inject.spi.Bean){" +
+                "String key=((" + resolveJakartaPackage(isJakarta) + ".enterprise.inject.spi.Bean) $1).getBeanClass().getName();" +
                 "java.util.Map m=" + BEAN_REGISTRY_FIELD + ".get(key);" +
                 "if(m==null) {" +
                     "synchronized(" + BEAN_REGISTRY_FIELD + "){" +
@@ -152,25 +180,25 @@ public class HaCdiCommons {
      * @param bean the bean
      * @return the bean instances
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static List<Object> getBeanInstances(Bean<?> bean) {
+    @SuppressWarnings({ "rawtypes"})
+    public static List<Object> getBeanInstances(Object bean) {
         List<Object> result = new ArrayList<>();
-        Class<? extends Context> contextClass = getContextClass(bean.getScope());
+        Class<?> contextClass = getContextClass(getBeanScope(bean));
         if (contextClass != null) {
           Map beanRegistry = (Map) getBeanRegistry(contextClass);
           if (beanRegistry != null) {
-              Map m = (Map) beanRegistry.get(bean.getBeanClass().getName());
+              Map m = (Map) beanRegistry.get(getBeanClass(bean).getName());
               if (m != null) {
                   result.addAll(m.keySet());
               } else {
-                  LOGGER.debug("BeanRegistry is empty for bean class '{}'", bean.getBeanClass().getName());
+                  LOGGER.debug("BeanRegistry is empty for bean class '{}'", getBeanClass(bean).getName());
               }
           } else {
               LOGGER.error("BeanRegistry field not found in context class '{}'", contextClass.getName());
           }
         }
         for (HaCdiExtraContext extraContext: extraContexts.keySet()) {
-            List<Object> instances = extraContext.getBeanInstances(bean.getBeanClass());
+            List<Object> instances = extraContext.getBeanInstances(getBeanClass(bean));
             if (instances != null) {
                 result.addAll(instances);
             }
@@ -178,8 +206,7 @@ public class HaCdiCommons {
         return result;
     }
 
-    @SuppressWarnings("rawtypes")
-    private static Object getBeanRegistry(Class clazz) {
+    private static Object getBeanRegistry(Class<?> clazz) {
         while (clazz != null) {
             try {
                 Field field = clazz.getDeclaredField(BEAN_REGISTRY_FIELD);
@@ -198,9 +225,8 @@ public class HaCdiCommons {
      * @param scope the scope
      * @param contextClass the context class
      */
-    public static void registerContextClass(Class<? extends Annotation> scope, Class<? extends Context> contextClass) {
-
-        Map<Class<? extends Annotation>, Class<? extends Context>> currentScopeToContextMap = getCurrentScopeToContextMap();
+    public static void registerContextClass(Class<? extends Annotation> scope, Class<?> contextClass) {
+        Map<Class<? extends Annotation>, Class<?>> currentScopeToContextMap = getCurrentScopeToContextMap();
 
         if (!currentScopeToContextMap.containsKey(scope)) {
             LOGGER.debug("Registering scope '{}' to scopeToContextMap@{}", scope.getName(), System.identityHashCode(currentScopeToContextMap));
@@ -214,7 +240,7 @@ public class HaCdiCommons {
      * @param scope the scope
      * @return the context class
      */
-    public static Class<? extends Context> getContextClass(Class<? extends Annotation> scope) {
+    public static Class<?> getContextClass(Class<? extends Annotation> scope) {
         return getCurrentScopeToContextMap().get(scope);
     }
 
@@ -229,7 +255,7 @@ public class HaCdiCommons {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<Class<? extends Annotation>, Class<? extends Context>> getCurrentScopeToContextMap() {
+    private static Map<Class<? extends Annotation>, Class<?>> getCurrentScopeToContextMap() {
 
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 

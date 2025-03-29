@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -35,7 +35,6 @@ import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 
 import org.hotswap.agent.annotation.handler.PluginClassFileTransformer;
-import org.hotswap.agent.command.Command;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -76,9 +75,17 @@ public class HotswapTransformer implements ClassFileTransformer {
     // keep track about which classloader requested which transformer
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<>();
 
-    protected Map<ClassLoader, Object> seenClassLoaders = new WeakHashMap<>();
-
+    protected Map<ClassLoader, Boolean> seenClassLoaders = new WeakHashMap<>();
+    private List<Pattern> includedClassLoaderPatterns;
     private List<Pattern> excludedClassLoaderPatterns;
+    public List<Pattern> getIncludedClassLoaderPatterns() {
+        return includedClassLoaderPatterns;
+    }
+
+    public void setIncludedClassLoaderPatterns(List<Pattern> includedClassLoaderPatterns) {
+        this.includedClassLoaderPatterns = includedClassLoaderPatterns;
+    }
+
 
     /**
      * @param excludedClassLoaderPatterns
@@ -86,6 +93,10 @@ public class HotswapTransformer implements ClassFileTransformer {
      */
     public void setExcludedClassLoaderPatterns(List<Pattern> excludedClassLoaderPatterns) {
         this.excludedClassLoaderPatterns = excludedClassLoaderPatterns;
+    }
+
+    public List<Pattern> getExcludedClassLoaderPatterns() {
+        return excludedClassLoaderPatterns;
     }
 
     /**
@@ -112,7 +123,10 @@ public class HotswapTransformer implements ClassFileTransformer {
             transformerRecord.pattern = Pattern.compile(normalizeRegexp);
             transformersMap.put(normalizeRegexp, transformerRecord);
         }
-        transformerRecord.transformerList.add(transformer);
+
+        if (!transformerRecord.transformerList.contains(transformer)) {
+            transformerRecord.transformerList.add(transformer);
+        }
 
         // register classloader association to allow classloader unregistration
         if (classLoader != null) {
@@ -205,7 +219,7 @@ public class HotswapTransformer implements ClassFileTransformer {
                     }
                 }
             }
-            // 2. call transform method of redefining ttansformars
+            // 2. call transform method of redefining transformers
             if (redefiningClass != null && className != null) {
                 for (RegisteredTransformersRecord transformerRecord : new ArrayList<RegisteredTransformersRecord>(redefinitionTransformers.values())) {
                     if (transformerRecord.pattern.matcher(className).matches()) {
@@ -231,10 +245,14 @@ public class HotswapTransformer implements ClassFileTransformer {
         }
 
         // ensure classloader initialized
-       ensureClassLoaderInitialized(classLoader, protectionDomain);
+       if (!ensureClassLoaderInitialized(classLoader, protectionDomain)) {
+           // when classLoader is in excluded list, skip the transform
+           LOGGER.trace("Skipping className '{}' classloader '{}' transform", className, classLoader);
+           return bytes;
+       }
 
         if(toApply.isEmpty() && pluginTransformers.isEmpty()) {
-            LOGGER.trace("No transformers defing for {} ", className);
+            LOGGER.trace("No transformers define for {} ", className);
             return bytes;
         }
 
@@ -299,9 +317,8 @@ public class HotswapTransformer implements ClassFileTransformer {
      * @param classLoader the classloader to which this transformation is associated
      * @param protectionDomain associated protection domain (if any)
      */
-    protected void ensureClassLoaderInitialized(final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
+    protected boolean ensureClassLoaderInitialized(final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
         if (!seenClassLoaders.containsKey(classLoader)) {
-            seenClassLoaders.put(classLoader, null);
 
             if (classLoader == null) {
                 // directly init null (bootstrap) classloader
@@ -309,21 +326,15 @@ public class HotswapTransformer implements ClassFileTransformer {
             } else {
                 // ensure the classloader should not be excluded
                 if (shouldScheduleClassLoader(classLoader)) {
-                    // schedule the excecution
-                    PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
-                        @Override
-                        public void executeCommand() {
-                            PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
-                        }
-
-                        @Override
-                        public String toString() {
-                            return "executeCommand: initClassLoader(" + classLoader + ")";
-                        }
-                    }, 1000);
+                    PluginManager.getInstance().initClassLoader(classLoader, protectionDomain);
+                } else {
+                    seenClassLoaders.put(classLoader, false);
+                    return false;
                 }
             }
+            seenClassLoaders.put(classLoader, true);
         }
+        return seenClassLoaders.get(classLoader) != null && seenClassLoaders.get(classLoader);
     }
 
     private boolean shouldScheduleClassLoader(final ClassLoader classLoader) {
@@ -331,6 +342,16 @@ public class HotswapTransformer implements ClassFileTransformer {
         if (excludedClassLoaders.contains(name)) {
             return false;
         }
+
+        if (includedClassLoaderPatterns != null) {
+            for (Pattern pattern : includedClassLoaderPatterns) {
+                if (pattern.matcher(name).matches()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         if (excludedClassLoaderPatterns != null) {
             for (Pattern pattern : excludedClassLoaderPatterns) {
                 if (pattern.matcher(name).matches()) {

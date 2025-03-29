@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -238,6 +238,21 @@ public class WebappLoaderTransformer {
             } catch (NotFoundException e) {
                 LOGGER.trace("WebappClassLoader does not contain getResource(), getResourceAsStream method.");
             }
+        }
+    }
+
+    /**
+     * Make sure development mode is true so that JSP compilation will always be triggered, especially for embedded
+     * Tomcat running in Spring Boot.
+     */
+    @OnClassLoadEvent(classNameRegexp = "org.apache.catalina.core.StandardWrapper")
+    public static void patchStandardWrapper(ClassPool classPool, CtClass ctClass) {
+        try {
+            ctClass.getDeclaredMethod("getInitParameter", new CtClass[]{classPool.get("java.lang.String")}).insertBefore(
+                    "if ($1.equals(\"development\")) return \"true\";"
+            );
+        } catch (CannotCompileException | NotFoundException e) {
+            LOGGER.debug("org.apache.catalina.core.StandardWrapper does not contain getInitParameter method.");
         }
     }
 

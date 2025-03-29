@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -36,7 +35,7 @@ import org.hotswap.agent.annotation.Plugin;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapProperties;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
-import org.hotswap.agent.util.classloader.URLClassLoaderHelper;
+import org.hotswap.agent.util.classloader.URLClassPathHelper;
 
 /**
  * Plugin configuration.
@@ -50,7 +49,12 @@ public class PluginConfiguration {
 
     private static final String PLUGIN_CONFIGURATION = "hotswap-agent.properties";
 
-    /** The Constant EXCLUDED_CLASS_LOADERS_KEY. */
+    /**
+     * The Constant INCLUDED_CLASS_LOADERS_KEY. allowed list
+     */
+    private static final String INCLUDED_CLASS_LOADERS_KEY = "includedClassLoaderPatterns";
+
+    /** The Constant EXCLUDED_CLASS_LOADERS_KEY. blocked list */
     private static final String EXCLUDED_CLASS_LOADERS_KEY = "excludedClassLoaderPatterns";
 
     Properties properties = new HotswapProperties();
@@ -59,7 +63,7 @@ public class PluginConfiguration {
     PluginConfiguration parent;
 
     // this configuration adheres to this classloader
-    ClassLoader classLoader;
+    final ClassLoader classLoader;
 
     // the hotswap-agent.properties file (or null if not defined for this classloader)
     URL configurationURL;
@@ -73,11 +77,17 @@ public class PluginConfiguration {
     }
 
     public PluginConfiguration(PluginConfiguration parent, ClassLoader classLoader) {
+        this(parent, classLoader, true);
+    }
+
+    public PluginConfiguration(PluginConfiguration parent, ClassLoader classLoader, boolean init) {
         this.parent = parent;
         this.classLoader = classLoader;
 
         loadConfigurationFile();
-        init();
+        if (init) {
+            init();
+        }
     }
 
     private void loadConfigurationFile() {
@@ -106,7 +116,7 @@ public class PluginConfiguration {
                     properties.load(configurationURL.openStream());
 
                 }
-                
+
                 // Add logging properties defined in jvm argument like -DLOGGER=warning
                 System.getProperties().forEach((key, value) -> properties.put(key, value));
 
@@ -177,9 +187,10 @@ public class PluginConfiguration {
     protected void init() {
         LogConfigurationHelper.configureLog(properties);
         initPluginPackage();
-
-        initExtraClassPath();
+        checkProperties();
+        initIncludedClassLoaderPatterns();
         initExcludedClassLoaderPatterns();
+        initExtraClassPath();
     }
 
     private void initPluginPackage() {
@@ -193,18 +204,37 @@ public class PluginConfiguration {
         }
     }
 
+    private void checkProperties(){
+        if (properties != null && properties.containsKey(INCLUDED_CLASS_LOADERS_KEY) &&
+                properties.containsKey(EXCLUDED_CLASS_LOADERS_KEY)) {
+            throw new IllegalArgumentException("includedClassLoaderPatterns, excludedClassLoaderPatterns in" +
+                    "hotswap-agent.properties are exclusive to each other. You cannot configure both options");
+        }
+    }
+
     private void initExtraClassPath() {
         URL[] extraClassPath = getExtraClasspath();
-        if (extraClassPath.length > 0) {
-            if (classLoader instanceof URLClassLoader) {
-                URLClassLoaderHelper.prependClassPath((URLClassLoader) classLoader, extraClassPath);
-            } else if (classLoader instanceof HotswapAgentClassLoaderExt) {
+        if (extraClassPath.length > 0 && !checkExcluded()) {
+            if (classLoader instanceof HotswapAgentClassLoaderExt) {
                 ((HotswapAgentClassLoaderExt) classLoader).$$ha$setExtraClassPath(extraClassPath);
+            } else if (URLClassPathHelper.isApplicable(classLoader)) {
+                URLClassPathHelper.prependClassPath(classLoader, extraClassPath);
             } else {
-                LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. " +
-                        "Only URLClassLoader is supported.\n" +
-                        "*** extraClasspath configuration property will not be handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
+                LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. Only classLoader with 'ucp' " +
+                                "field present is supported.\n*** extraClasspath configuration property will not be " +
+                                "handled on JVM level ***", Arrays.toString(extraClassPath), classLoader);
             }
+        }
+    }
+
+    private void initIncludedClassLoaderPatterns() {
+        if (properties != null && properties.containsKey(INCLUDED_CLASS_LOADERS_KEY)) {
+            List<Pattern> includedClassLoaderPatterns = new ArrayList<>();
+            for (String pattern : properties.getProperty(INCLUDED_CLASS_LOADERS_KEY).split(",")) {
+                includedClassLoaderPatterns.add(Pattern.compile(pattern));
+            }
+            PluginManager.getInstance().getHotswapTransformer()
+                    .setIncludedClassLoaderPatterns(includedClassLoaderPatterns);
         }
     }
 
@@ -218,6 +248,26 @@ public class PluginConfiguration {
             PluginManager.getInstance().getHotswapTransformer()
                     .setExcludedClassLoaderPatterns(excludedClassLoaderPatterns);
         }
+    }
+
+    private boolean checkExcluded() {
+        if (PluginManager.getInstance().getHotswapTransformer().getIncludedClassLoaderPatterns() != null) {
+            for (Pattern pattern : PluginManager.getInstance().getHotswapTransformer().getIncludedClassLoaderPatterns()) {
+                if (pattern.matcher(classLoader.getClass().getName()).matches()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        if (PluginManager.getInstance().getHotswapTransformer().getExcludedClassLoaderPatterns() != null) {
+            for (Pattern pattern : PluginManager.getInstance().getHotswapTransformer().getExcludedClassLoaderPatterns()) {
+                if (pattern.matcher(classLoader.getClass().getName()).matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

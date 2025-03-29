@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.4.2-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>hotswap-agent-proxy-plugin</artifactId>
 
         <properties>
-                <org.springframework.version>5.1.2.RELEASE</org.springframework.version>
+                <org.springframework.version>5.3.30</org.springframework.version>
         </properties>
 
     <dependencies>

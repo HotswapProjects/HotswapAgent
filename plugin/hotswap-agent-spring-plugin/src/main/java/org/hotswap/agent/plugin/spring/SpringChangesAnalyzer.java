@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -22,14 +22,13 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.signature.ClassSignatureComparer;
+import org.hotswap.agent.plugin.spring.utils.ClassSignatureComparer;
 
 /**
  * Determines if a full Spring reload is needed. Changes to synthetic and known generated classes are ignored. For other
  * classes, changes to method bodies are ignored.
  *
  * @author Erki Ehtla
- *
  */
 public class SpringChangesAnalyzer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(SpringPlugin.class);
@@ -63,8 +62,9 @@ public class SpringChangesAnalyzer {
             LOGGER.error("Error analyzing class {} for reload necessity. Defaulting to yes.", e,
                     classBeingRedefined.getName());
         } finally {
-            if (makeClass != null)
+            if (makeClass != null) {
                 makeClass.detach();
+            }
         }
         return true;
     }
@@ -77,5 +77,4 @@ public class SpringChangesAnalyzer {
                 || classBeingRedefined.getSimpleName().contains("$HibernateProxy$")
                 ;
     }
-
 }

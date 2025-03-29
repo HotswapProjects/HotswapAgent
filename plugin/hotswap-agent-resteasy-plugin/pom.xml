@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.4.2-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
@@ -13,7 +13,7 @@
 
     <properties>
         <servlet-api.version>3.0.1</servlet-api.version>
-        <resteasy-jaxrs.version>3.0.14.Final</resteasy-jaxrs.version>
+        <resteasy-jaxrs.version>3.11.0.Final</resteasy-jaxrs.version>
     </properties>
 
     <dependencies>

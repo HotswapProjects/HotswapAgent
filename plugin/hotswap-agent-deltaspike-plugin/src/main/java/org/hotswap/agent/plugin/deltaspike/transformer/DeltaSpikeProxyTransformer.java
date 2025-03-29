@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -19,13 +19,11 @@
 package org.hotswap.agent.plugin.deltaspike.transformer;
 
 import org.hotswap.agent.annotation.OnClassLoadEvent;
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.*;
 import org.hotswap.agent.javassist.expr.ExprEditor;
 import org.hotswap.agent.javassist.expr.MethodCall;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 
 /**
  * Register proxy factory to DeltaSpikePlugin, patch AsmProxyClassGenerator
@@ -39,12 +37,16 @@ public class DeltaSpikeProxyTransformer {
     /**
      * Delegates ClassUtils.tryToLoadClassForName to org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate::tryToLoadClassForName
      *
-     * @param ctClass
-     * @throws NotFoundException the not found exception
+     * @param classPool the class pool
+     * @param ctClass   the ct class
+     * @throws NotFoundException      the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.api.DeltaSpikeProxyFactory")
-    public static void patchDeltaSpikeProxyFactory(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void patchDeltaSpikeProxyFactory(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         // Deltaspike 1.5
         instrumentTryToLoadClassForName(ctClass, "getProxyClass");
         instrumentTryToLoadClassForName(ctClass, "createProxyClass");
@@ -70,13 +72,16 @@ public class DeltaSpikeProxyTransformer {
     /**
      * Delegates loadClass to org.hotswap.agent.plugin.deltaspike.command.ProxyClassLoadingDelegate::loadClass
      *
-     * @param ctClass
-     * @throws NotFoundException the not found exception
+     * @param classPool the class pool
+     * @param ctClass   the ct class
+     * @throws NotFoundException      the not found exception
      * @throws CannotCompileException the cannot compile exception
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator")
-    public static void patchAsmProxyClassGenerator(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
+    public static void patchAsmProxyClassGenerator(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtMethod generateProxyClassMethod = ctClass.getDeclaredMethod("generateProxyClass");
         generateProxyClassMethod.instrument(
                 new ExprEditor() {
@@ -88,9 +93,19 @@ public class DeltaSpikeProxyTransformer {
         LOGGER.debug("org.apache.deltaspike.proxy.impl.AsmProxyClassGenerator patched.");
     }
 
+    /**
+     * Patch asm delta spike proxy class generator.
+     *
+     * @param classPool the class pool
+     * @param ctClass   the ct class
+     * @throws NotFoundException      the not found exception
+     * @throws CannotCompileException the cannot compile exception
+     */
     @OnClassLoadEvent(classNameRegexp = "org.apache.deltaspike.proxy.impl.AsmDeltaSpikeProxyClassGenerator")
-    public static void patchAsmDeltaSpikeProxyClassGenerator(CtClass ctClass) throws NotFoundException, CannotCompileException {
-
+    public static void patchAsmDeltaSpikeProxyClassGenerator(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         CtMethod generateProxyClassMethod = ctClass.getDeclaredMethod("generateProxyClass");
         generateProxyClassMethod.instrument(
                 new ExprEditor() {

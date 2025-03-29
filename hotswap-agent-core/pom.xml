@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.4.2-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
@@ -54,7 +54,7 @@
         <profile>
             <id>surefire-java11</id>
             <activation>
-                <jdk>(,17)</jdk>
+                <jdk>(,21)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -64,7 +64,21 @@
                       <configuration>
                           <!--This is to override argLine from surefire config in parent pom-->
                           <!-- HotswapAgent=external serves to open modules -->
-                          <argLine>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external -Xlog:redefine+class*=info -Dblank</argLine>
+                          <argLine>
+                              -XX:+AllowEnhancedClassRedefinition
+                              -XX:HotswapAgent=external
+                              -Xlog:redefine+class*=info
+                              -Dblank
+                              --add-opens java.base/java.lang=ALL-UNNAMED
+                              --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+                              --add-opens java.base/java.io=ALL-UNNAMED
+                              --add-opens java.desktop/java.beans=ALL-UNNAMED
+                              --add-opens java.desktop/com.sun.beans=ALL-UNNAMED
+                              --add-opens java.desktop/com.sun.beans.introspect=ALL-UNNAMED
+                              --add-opens java.desktop/com.sun.beans.util=ALL-UNNAMED
+                              --add-opens java.base/sun.security.action=ALL-UNNAMED
+                              --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                          </argLine>
                       </configuration>
                   </plugin>
                 </plugins>
@@ -72,7 +86,7 @@
         </profile>
         <profile>
             <activation>
-                <jdk>17</jdk>
+                <jdk>21</jdk>
             </activation>
             <build>
                 <plugins>
@@ -122,13 +136,6 @@
                     </archive>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
-            </plugin>
-
         </plugins>
     </build>
 

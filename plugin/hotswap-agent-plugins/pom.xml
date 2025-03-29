@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.4.2-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
@@ -30,6 +30,12 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-hibernate-jakarta-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-hibernate3-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -37,6 +43,12 @@
         <dependency>
             <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-spring-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-spring-boot-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -132,6 +144,12 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-owb-jakarta-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-proxy-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -150,6 +168,12 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-weld-jakarta-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-jbossmodules-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -163,6 +187,12 @@
         <dependency>
             <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-deltaspike-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-deltaspike-jakarta-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -213,7 +243,13 @@
             <artifactId>hotswap-agent-mybatis-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-mybatis-plus-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-ibatis-plugin</artifactId>
@@ -229,6 +265,24 @@
         <dependency>
             <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-idea-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-thymeleaf-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-velocity-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-sponge-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
 

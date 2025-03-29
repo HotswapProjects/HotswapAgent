@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -34,17 +34,12 @@ public class HotswapSpringInvocationHandler extends DetachableBeanHolder impleme
     private static final long serialVersionUID = 8037007940960065166L;
 
     /**
-     *
-     * @param beanFactry
-     *            Spring beanFactory
-     * @param bean
-     *            Spring bean
-     * @param paramClasses
-     *            Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
-     * @param paramValues
-     *            Parameter values of the Spring beanFactory method which returned the bean. The method is named
-     *            ProxyReplacer.FACTORY_METHOD_NAME
+     * @param beanFactry   Spring beanFactory
+     * @param bean         Spring bean
+     * @param paramClasses Parameter Classes of the Spring beanFactory method which returned the bean. The method is named
+     *                     ProxyReplacer.FACTORY_METHOD_NAME
+     * @param paramValues  Parameter values of the Spring beanFactory method which returned the bean. The method is named
+     *                     ProxyReplacer.FACTORY_METHOD_NAME
      */
     public HotswapSpringInvocationHandler(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
         super(bean, beanFactry, paramClasses, paramValues);

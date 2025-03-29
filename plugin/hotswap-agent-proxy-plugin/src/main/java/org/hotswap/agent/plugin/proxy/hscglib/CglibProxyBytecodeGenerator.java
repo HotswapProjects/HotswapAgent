@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -20,7 +20,7 @@ package org.hotswap.agent.plugin.proxy.hscglib;
 
 import java.lang.reflect.Method;
 
-import org.hotswap.agent.plugin.proxy.ProxyBytecodeGenerator;
+import org.hotswap.agent.plugin.proxy.api.ProxyBytecodeGenerator;
 
 /**
  * Creates new bytecode for a Cglib proxy. Changed Classes have to be loaded

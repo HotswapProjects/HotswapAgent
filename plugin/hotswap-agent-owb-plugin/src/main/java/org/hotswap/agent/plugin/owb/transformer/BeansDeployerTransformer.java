@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -25,6 +25,7 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.cdi.HaCdiCommons;
 import org.hotswap.agent.plugin.owb.OwbPlugin;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
@@ -47,7 +48,9 @@ public class BeansDeployerTransformer {
      */
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.config.BeansDeployer")
     public static void transform(CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
-
+        if (HaCdiCommons.isJakarta(classPool)) {
+            return;
+        }
         StringBuilder src = new StringBuilder(" if (deployed) {");
         src.append("ClassLoader curCl = Thread.currentThread().getContextClassLoader();");
         src.append(PluginManagerInvoker.buildInitializePlugin(OwbPlugin.class, "curCl"));

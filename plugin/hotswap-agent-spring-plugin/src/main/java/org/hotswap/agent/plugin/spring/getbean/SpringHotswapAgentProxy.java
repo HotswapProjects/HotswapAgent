@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -18,6 +18,9 @@
  */
 package org.hotswap.agent.plugin.spring.getbean;
 
+/**
+ * The interface Spring hotswap agent proxy.
+ */
 public interface SpringHotswapAgentProxy {
     Object $$ha$getTarget();
     void $$ha$setTarget(Object object);

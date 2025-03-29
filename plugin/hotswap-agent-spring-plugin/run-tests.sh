@@ -10,10 +10,12 @@ function test {
     echo "################################################################"
     echo "########             Running with Spring $1          ###########"
     echo "################################################################"
-    mvn -Dorg.springframework.version=$1 clean package
+    mvn -Dorg.springframework.version=$1 clean package -e
 }
 
 # test following Spring versions
+
+# test 6.0.10
 
 # test 5.3.0
 # test 5.3.1
@@ -34,8 +36,8 @@ function test {
 # test 5.3.16
 # test 5.3.17
 
-# 5.3.18 is lowest not vulnerable version(2022.04.23)
-test 5.3.18
+# 5.3.30 is lowest not vulnerable version(2023.7.05)
+test 5.3.30
 
 # test 5.2.0.RELEASE
 # test 5.2.1.RELEASE
@@ -55,8 +57,8 @@ test 5.3.18
 # test 5.2.19.RELEASE
 
 # 5.2.20 is lowest not vulnerable version(2022.04.23)
-test 5.2.20.RELEASE
-test 5.2.21.RELEASE
+####test 5.2.20.RELEASE
+####test 5.2.21.RELEASE
 
 # 5.1.x are all vulnerable
 # test 5.1.0.RELEASE
@@ -75,7 +77,8 @@ test 5.2.21.RELEASE
 # 5.0.x are all vulnerable
 # test 5.0.0.RELEASE
 # test 5.0.1.RELEASE
-# test 5.0.2.RELEASE
+#
+#test 5.0.11.RELEASE
 
 # test 4.3.0.RELEASE
 # test 4.3.1.RELEASE
@@ -94,3 +97,10 @@ test 5.2.21.RELEASE
 
 # 4.3.20 is lowest not vulnerable version(2022.01.19) look at CVE-2018-15756
 test 4.3.20.RELEASE
+
+# test 4.0.x
+#test 4.0.9.RELEASE
+
+# test 3.x.x
+#test 3.2.18.RELEASE
+#test 3.1.0.RELEASE

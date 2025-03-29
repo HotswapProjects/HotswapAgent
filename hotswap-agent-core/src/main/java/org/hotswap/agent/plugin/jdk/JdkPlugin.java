@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -79,41 +79,11 @@ public class JdkPlugin {
                     }
                 }
 
-                // java.beans.Introspector#declaredMethodCache was removed in j13
-                // https://github.com/openjdk/jdk13u/commit/921b46738e0c3aaa2bf8c62e0accb0a5056190d3
-                Object declaredMethodCache = ReflectionHelper.getNoException(null, introspectorClass, "declaredMethodCache");
-
-                if (declaredMethodCache != null) {
-                    LOGGER.info("Removing class from declaredMethodCache.");
-                    ReflectionHelper.invoke(declaredMethodCache, declaredMethodCache.getClass(), "put",
-                            new Class[] { Object.class, Object.class }, clazz, null);
-                }
+                ReflectionHelper.invoke(null, introspectorClass, "flushFromCaches",
+                    new Class[] { Class.class }, clazz);
             }
         } catch (Exception e) {
-            LOGGER.error("classReload() exception {}.", e.getMessage());
-        } finally {
-            reloadFlag = false;
-        }
-    }
-
-    @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
-    public static void flushIntrospectClassInfoCache(ClassLoader classLoader, CtClass ctClass) {
-        // com.sun.beans.introspect.ClassInfo was intruduced in j9
-        if (ClassFile.MAJOR_VERSION < ClassFile.JAVA_9) {
-            return;
-        }
-        try {
-            LOGGER.debug("Flushing {} from com.sun.beans.introspect.ClassInfo cache", ctClass.getName());
-
-            Class<?> clazz = classLoader.loadClass(ctClass.getName());
-            Class<?> classInfo = classLoader.loadClass("com.sun.beans.introspect.ClassInfo");
-
-            Object cache = ReflectionHelper.get(null, classInfo, "CACHE");
-            if (cache != null) {
-                ReflectionHelper.invoke(cache, cache.getClass(), "clear", new Class[] { }, null);
-            }
-        } catch (Exception e) {
-            LOGGER.error("flushClassInfoCache() exception {}.", e.getMessage());
+            LOGGER.error("flushBeanIntrospectorCaches() exception {}.", e.getMessage());
         } finally {
             reloadFlag = false;
         }
@@ -121,28 +91,42 @@ public class JdkPlugin {
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
     public static void flushObjectStreamCaches(ClassLoader classLoader, CtClass ctClass) {
+        Class<?> clazz;
+        Object localDescs;
+        Object reflectors;
         try {
             LOGGER.debug("Flushing {} from ObjectStreamClass caches", ctClass.getName());
 
-            Class<?> clazz = classLoader.loadClass(ctClass.getName());
+            clazz = classLoader.loadClass(ctClass.getName());
             Class<?> objectStreamClassCache = classLoader.loadClass("java.io.ObjectStreamClass$Caches");
 
-            Map localDescs = (Map) ReflectionHelper.get(null, objectStreamClassCache, "localDescs");
-
-            if (localDescs != null) {
-                localDescs.clear();
-            }
-
-            Map reflectors = (Map) ReflectionHelper.get(null, objectStreamClassCache, "reflectors");
-
-            if (reflectors != null) {
-                reflectors.clear();
-            }
+            localDescs = ReflectionHelper.get(null, objectStreamClassCache, "localDescs");
+            reflectors = ReflectionHelper.get(null, objectStreamClassCache, "reflectors");
 
         } catch (Exception e) {
-            LOGGER.error("classReload() exception {}.", e.getMessage());
-        } finally {
-            reloadFlag = false;
+            LOGGER.error("flushObjectStreamCaches() java.io.ObjectStreamClass$Caches not found.", e.getMessage());
+            return;
+        }
+
+        boolean java17;
+
+        try {
+            ((Map) localDescs).clear();
+            ((Map) reflectors).clear();
+            java17 = false;
+        } catch (Exception e) {
+            java17 = true;
+        }
+
+        if (java17) {
+            try {
+                Object localDescsMap = ReflectionHelper.get(localDescs, "map");
+                ReflectionHelper.invoke(localDescsMap, localDescsMap.getClass(), "remove", new Class[] { Class.class }, clazz);
+                Object reflectorsMap = ReflectionHelper.get(reflectors, "map");
+                ReflectionHelper.invoke(reflectorsMap, reflectorsMap.getClass(), "remove", new Class[] { Class.class }, clazz);
+            } catch (Exception e) {
+                LOGGER.error("flushObjectStreamCaches() exception {}.", e.getMessage());
+            }
         }
     }
 

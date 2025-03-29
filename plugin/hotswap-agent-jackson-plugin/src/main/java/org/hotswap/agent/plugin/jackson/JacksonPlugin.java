@@ -1,6 +1,5 @@
 package org.hotswap.agent.plugin.jackson;
 
-import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -16,7 +15,6 @@ import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
 import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.CtNewMethod;
-import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 import org.hotswap.agent.util.ReflectionHelper;
@@ -33,7 +31,7 @@ import org.hotswap.agent.util.ReflectionHelper;
         expectedVersions = {"2.13.0"}
 )
 public class JacksonPlugin {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(JacksonPlugin.class);
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(JacksonPlugin.class);
 
     private static final String CLEAR_CACHE_METHOD = "ha$$clearCache";
     public static boolean reloadFlag = false;
@@ -43,13 +41,18 @@ public class JacksonPlugin {
         public void executeCommand() {
             reloadFlag = true;
             try {
-                for (Object obj : needToClearCacheObjects) {
+                Set<Object> copy = Collections.newSetFromMap(new WeakHashMap<>());
+                synchronized (needToClearCacheObjects) {
+                    copy.addAll(needToClearCacheObjects);
+                }
+                for (Object obj : copy) {
                     invokeClearCacheMethod(obj);
                 }
-                LOGGER.info("Reloaded Jackson.");
-                reloadFlag = false;
+                LOGGER.debug("Reloaded Jackson.");
             } catch (Exception e) {
                 LOGGER.error("Error reloading Jackson.", e);
+            } finally {
+                reloadFlag = false;
             }
         }
     };
@@ -62,7 +65,7 @@ public class JacksonPlugin {
         scheduler.scheduleCommand(reloadJacksonCommand, 500);
     }
 
-    private static void insertRegisterCacheObjectInConstructor(CtClass ctClass) throws NotFoundException, CannotCompileException{
+    private static void insertRegisterCacheObjectInConstructor(CtClass ctClass) throws CannotCompileException{
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             StringBuilder src = new StringBuilder("{");
             src.append(PluginManagerInvoker.buildInitializePlugin(JacksonPlugin.class));
@@ -74,7 +77,7 @@ public class JacksonPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.fasterxml.jackson.databind.ObjectMapper", events = LoadEvent.DEFINE, skipSynthetic = false)
-    public static void patchObjectMapper(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void patchObjectMapper(CtClass ctClass) throws CannotCompileException {
         LOGGER.debug("Patch {}", ctClass);
         insertRegisterCacheObjectInConstructor(ctClass);
 
@@ -83,7 +86,7 @@ public class JacksonPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.fasterxml.jackson.databind.ser.SerializerCache", events = LoadEvent.DEFINE, skipSynthetic = false)
-    public static void patchSerializerCache(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void patchSerializerCache(CtClass ctClass) throws CannotCompileException {
         LOGGER.debug("Patch {}", ctClass);
         insertRegisterCacheObjectInConstructor(ctClass);
 
@@ -92,7 +95,7 @@ public class JacksonPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.fasterxml.jackson.databind.deser.DeserializerCache", events = LoadEvent.DEFINE, skipSynthetic = false)
-    public static void patchDeserializerCache(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void patchDeserializerCache(CtClass ctClass) throws CannotCompileException {
         LOGGER.debug("Patch {}", ctClass);
         insertRegisterCacheObjectInConstructor(ctClass);
 
@@ -101,7 +104,7 @@ public class JacksonPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.fasterxml.jackson.databind.ser.impl.ReadOnlyClassToSerializerMap", events = LoadEvent.DEFINE, skipSynthetic = false)
-    public static void patchReadOnlyClassToSerializerMap(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void patchReadOnlyClassToSerializerMap(CtClass ctClass) throws CannotCompileException {
         LOGGER.debug("Patch {}", ctClass);
         insertRegisterCacheObjectInConstructor(ctClass);
 
@@ -110,7 +113,7 @@ public class JacksonPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.fasterxml.jackson.databind.type.TypeFactory", events = LoadEvent.DEFINE, skipSynthetic = false)
-    public static void patchTypeFactory(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void patchTypeFactory(CtClass ctClass) throws CannotCompileException {
         LOGGER.debug("Patch {}", ctClass);
         insertRegisterCacheObjectInConstructor(ctClass);
 
@@ -119,7 +122,7 @@ public class JacksonPlugin {
     }
 
     @OnClassLoadEvent(classNameRegexp = "com.fasterxml.jackson.databind.util.LRUMap", events = LoadEvent.DEFINE, skipSynthetic = false)
-    public static void patch(CtClass ctClass) throws NotFoundException, CannotCompileException {
+    public static void patch(CtClass ctClass) throws CannotCompileException {
         LOGGER.debug("Patch {}", ctClass);
         insertRegisterCacheObjectInConstructor(ctClass);
 

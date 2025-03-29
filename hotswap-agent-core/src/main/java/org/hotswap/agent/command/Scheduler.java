@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -17,6 +17,8 @@
  * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
  */
 package org.hotswap.agent.command;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Schedule a command to run.

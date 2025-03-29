@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -48,7 +48,6 @@ import org.hotswap.agent.util.AnnotationHelper;
  */
 @Plugin(name = "Hibernate",
         group = "groupHibernate",
-        fallback = true,
         description = "Reload Hibernate configuration after entity create/change.",
         testedVersions = {"All between 4.0.1 - 4.3.11, 5.0.0 - 5.2.10"},
         expectedVersions = {"4.0.x", "4.1.x", "4.2.x", "5.0.[0-4,7-x]", "5.1.x", "5.2.x", "5.3.x", "5.4.x" },

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -67,9 +67,14 @@ import org.hotswap.agent.util.PluginManagerInvoker;
             // Seam jboss
             @Manifest(value="[1.0,)", versionName="JBoss-EL-Version", names ={@Name(key="JBoss-EL-Version", value=".*")}),
             // Tomcat bundled EL (6-9)
-            @Manifest(value="[2.0,)",versionName = Name.SpecificationVersion, names={
+            @Manifest(value="[2.0,5.0)",versionName = Name.SpecificationVersion, names={
                     @Name(key=Name.ImplementationTitle,value="javax.el"),
                     @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
+            }),
+            // Tomcat bundled EL (10)
+            @Manifest(value="[5.0,)",versionName = Name.SpecificationVersion, names={
+                @Name(key=Name.ImplementationTitle,value="jakarta.el"),
+                @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
             }),
             //Jetty 7,8
             @Manifest(value="[2.0,)", versionName={Name.BundleVersion}, names={@Name(key=Name.BundleSymbolicName,value="javax.el")}),
@@ -95,6 +100,7 @@ public class ELResolverPlugin {
     Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
 
     boolean jbossReflectionUtil = false;
+    String rootPackage = "javax";
 
     public void registerJBossReflectionUtil() {
         jbossReflectionUtil = true;
@@ -110,12 +116,14 @@ public class ELResolverPlugin {
      * - ensure plugin is initialized
      * - register instances using registerBeanELResolver() method
      */
-    @OnClassLoadEvent(classNameRegexp = "javax.el.BeanELResolver")
+    @OnClassLoadEvent(classNameRegexp = "(javax.el.BeanELResolver)|(jakarta.el.BeanELResolver)")
     public static void beanELResolverRegisterVariable(CtClass ctClass) throws CannotCompileException {
 
         String initPlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class);
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(ELResolverPlugin.class, "registerBeanELResolver",
                 "this", "java.lang.Object");
+
+        String rootPackage = ctClass.getName().startsWith("javax") ? "javax" : "jakarta";
 
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             constructor.insertAfter(initPlugin);
@@ -125,17 +133,17 @@ public class ELResolverPlugin {
         boolean found = false;
         if (checkJuelEL(ctClass)) {
             found = true;
-            LOGGER.debug("JuelEL - javax.el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
-        } else if (checkApacheEL(ctClass)) {
+            LOGGER.debug("JuelEL - " + rootPackage + ".el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+        } else if (checkApacheEL(rootPackage, ctClass)) {
             found = true;
-            LOGGER.debug("ApacheEL - javax.el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
-        } else if (checkJBoss_3_0_EL(ctClass)) {
+            LOGGER.debug("ApacheEL - " + rootPackage + ".el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+        } else if (checkJBoss_3_0_EL(rootPackage, ctClass)) {
             found = true;
-            LOGGER.debug("JBossEL 3.0 - javax.el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+            LOGGER.debug("JBossEL 3.0 - " + rootPackage + ".el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
 
         if (!found) {
-            LOGGER.warning("Unable to add javax.el.BeanELResolver." + PURGE_CLASS_CACHE_METHOD_NAME + "() method. Purging will not be available.");
+            LOGGER.warning("Unable to add " + rootPackage + ".el.BeanELResolver." + PURGE_CLASS_CACHE_METHOD_NAME + "() method. Purging will not be available.");
         }
     }
 
@@ -177,7 +185,7 @@ public class ELResolverPlugin {
 
     }
 
-    private static boolean checkApacheEL(CtClass ctClass)
+    private static boolean checkApacheEL(String rootPackage, CtClass ctClass)
     {
         try {
             // ApacheEL has field cache
@@ -193,9 +201,12 @@ public class ELResolverPlugin {
             mGetBeanProperty.insertBefore(
                 "if($$ha$purgeRequested) {" +
                     "$$ha$purgeRequested=false;" +
-                    "this.cache = new javax.el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
+                    "this.cache = new " + rootPackage + " .el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
                 "}"
             );
+            CtField ctCacheField = ctClass.getDeclaredField("cache");
+            int modifiers = ctCacheField.getModifiers();
+            ctCacheField.setModifiers(modifiers & ~Modifier.FINAL);
             return true;
         } catch(NotFoundException e1) {
         } catch (CannotCompileException e2) {
@@ -203,14 +214,14 @@ public class ELResolverPlugin {
         return false;
     }
 
-    private static boolean checkJBoss_3_0_EL(CtClass ctClass) {
+    private static boolean checkJBoss_3_0_EL(String rootPackage, CtClass ctClass) {
 
         // JBoss EL Resolver - is recognized by "javax.el.BeanELResolver.properties" property
         try {
             CtField field = ctClass.getField("properties");
             if ((field.getModifiers() & Modifier.STATIC) != 0) {
                 field.setModifiers(Modifier.STATIC);
-                patchJBossEl(ctClass);
+                patchJBossEl(rootPackage, ctClass);
             }
             return true;
         } catch (NotFoundException e1) {
@@ -224,7 +235,7 @@ public class ELResolverPlugin {
      * Therefore we must create request for cleanup cache in PURGE_CLASS_CACHE_METHOD and own cleanup is executed indirectly when
      * application calls getBeanProperty(...).
      */
-    private static void patchJBossEl(CtClass ctClass) {
+    private static void patchJBossEl(String rootPackage, CtClass ctClass) {
         try {
             ctClass.addField(new CtField(CtClass.booleanType, "$$ha$purgeRequested", ctClass), CtField.Initializer.constant(false));
 
@@ -237,8 +248,8 @@ public class ELResolverPlugin {
                 mGetBeanProperty.insertBefore(
                     "if($$ha$purgeRequested) {" +
                         "$$ha$purgeRequested=false;" +
-                        "java.lang.reflect.Method meth = javax.el.BeanELResolver.SoftConcurrentHashMap.class.getDeclaredMethod(\"$$ha$createNewInstance\", null);" +
-                        "properties = (javax.el.BeanELResolver.SoftConcurrentHashMap) meth.invoke(properties, null);" +
+                        "java.lang.reflect.Method meth = " + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap.class.getDeclaredMethod(\"$$ha$createNewInstance\", null);" +
+                        "properties = (" + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap) meth.invoke(properties, null);" +
                     "}");
             } catch (NotFoundException e) {
                 LOGGER.debug("FIXME : checkJBoss_3_0_EL() 'getBeanProperty(...)' not found in javax.el.BeanELResolver.");
@@ -249,12 +260,13 @@ public class ELResolverPlugin {
         }
     }
 
-    @OnClassLoadEvent(classNameRegexp = "javax.el.BeanELResolver\\$SoftConcurrentHashMap")
+    @OnClassLoadEvent(classNameRegexp = "(javax.el.BeanELResolver\\$SoftConcurrentHashMap)|(jakarta.el.BeanELResolver\\\\$SoftConcurrentHashMap)")
     public static void patchJbossElSoftConcurrentHashMap(CtClass ctClass) throws CannotCompileException {
         try {
+            String rootPackage = ctClass.getName().startsWith("javax") ? "javax" : "jakarta";
             ctClass.addMethod(CtNewMethod.make(
-                "public javax.el.BeanELResolver.SoftConcurrentHashMap $$ha$createNewInstance() {" +
-                    "return new javax.el.BeanELResolver.SoftConcurrentHashMap();" +
+                "public " + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap $$ha$createNewInstance() {" +
+                    "return new " + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap();" +
                 "}", ctClass));
         } catch (CannotCompileException e) {
             LOGGER.error("patchJbossElSoftConcurrentHashMap() exception {}", e.getMessage());
@@ -262,6 +274,7 @@ public class ELResolverPlugin {
     }
 
     public void registerBeanELResolver(Object beanELResolver) {
+        rootPackage = beanELResolver.getClass().getName().startsWith("javax") ? "javax" : "jakarta";
         registeredBeanELResolvers.add(beanELResolver);
         LOGGER.debug("ELResolverPlugin - BeanELResolver registered : " + beanELResolver.getClass().getName());
     }
@@ -272,7 +285,7 @@ public class ELResolverPlugin {
             PurgeJbossReflectionUtil jbossCleanCmd = new PurgeJbossReflectionUtil(appClassLoader);
             scheduler.scheduleCommand(jbossCleanCmd);
         }
-        PurgeBeanELResolverCacheCommand cmd = new PurgeBeanELResolverCacheCommand(appClassLoader, registeredBeanELResolvers);
+        PurgeBeanELResolverCacheCommand cmd = new PurgeBeanELResolverCacheCommand(appClassLoader, rootPackage, registeredBeanELResolvers);
         scheduler.scheduleCommand(cmd);
     }
 }

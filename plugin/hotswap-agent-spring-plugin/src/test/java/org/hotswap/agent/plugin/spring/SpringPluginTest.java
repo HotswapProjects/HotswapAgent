@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -18,63 +18,70 @@
  */
 package org.hotswap.agent.plugin.spring;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-
-import javax.inject.Inject;
-
-import org.hotswap.agent.plugin.spring.scanner.XmlBeanDefinitionScannerAgent;
-import org.hotswap.agent.plugin.spring.testBeans.BeanPrototype;
-import org.hotswap.agent.plugin.spring.testBeans.BeanRepository;
-import org.hotswap.agent.plugin.spring.testBeans.BeanService;
-import org.hotswap.agent.plugin.spring.testBeans.BeanServiceImpl;
-import org.hotswap.agent.plugin.spring.testBeans.Pojo;
+import org.hotswap.agent.plugin.hotswapper.HotSwapper;
+import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
+import org.hotswap.agent.plugin.spring.testBeans.*;
+import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanService;
+import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanServiceImplNoAspect;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
+import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2NoAspect;
 import org.hotswap.agent.plugin.spring.testBeansHotswap.Pojo2;
 import org.hotswap.agent.util.ReflectionHelper;
-import org.hotswap.agent.util.spring.io.resource.ClassPathResource;
-import org.hotswap.agent.util.spring.io.resource.Resource;
-import org.hotswap.agent.util.test.WaitHelper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.inject.Inject;
+
+import static org.junit.Assert.assertEquals;
+
 /**
  * Hotswap class files of spring beans.
- *
+ * <p>
  * See maven setup for javaagent and autohotswap settings.
  *
  * @author Jiri Bubnik
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "classpath:applicationContext.xml" })
+@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 public class SpringPluginTest {
 
     @Autowired
-    ApplicationContext applicationContext;
+    AbstractApplicationContext applicationContext;
 
     @Rule
     public ClassSwappingRule swappingRule = new ClassSwappingRule();
+
+    volatile int reloadTimes = 1;
+
+    @Before
+    public void before() {
+        BaseTestUtil.configMaxReloadTimes();
+        System.out.println("SpringPluginTest.before." + applicationContext.getBeanFactory());
+        swappingRule.setBeanFactory(applicationContext.getBeanFactory());
+        reloadTimes = 1;
+        BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).reset();
+//        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(false);
+    }
+
+    @After
+    public void after() {
+        System.out.println("SpringPluginTest.after." + applicationContext.getBeanFactory());
+//        SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory()).setPause(true);
+    }
 
     /**
      * Check correct setup.
      */
     @Test
     public void basicTest() {
-        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(BeanService.class).hello());
+        assertEquals("Hello from Repository ServiceWithAspect", applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).hello());
         assertEquals("Hello from Repository ServiceWithAspect Prototype",
                 applicationContext.getBean(BeanPrototype.class).hello());
     }
@@ -91,7 +98,9 @@ public class SpringPluginTest {
         assertEquals("Hello from ChangedRepository Service2WithAspect", bean.hello());
         // ensure that using interface is Ok as well
         assertEquals("Hello from ChangedRepository Service2WithAspect",
-                applicationContext.getBean(BeanService.class).hello());
+                applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).hello());
+        // recovery
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
     }
 
     /**
@@ -99,18 +108,22 @@ public class SpringPluginTest {
      */
     @Test
     public void hotswapServiceAddMethodTest() throws Exception {
+        printDetail();
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class);
+        printDetail();
 
         // get bean via interface
-        String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(applicationContext.getBean(BeanService.class),
-                BeanServiceImpl.class, "helloNewMethod", new Class[] {});
+        String helloNewMethodIfaceVal = (String) ReflectionHelper.invoke(applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class),
+                BeanServiceImpl.class, "helloNewMethod", new Class[]{});
         assertEquals("Hello from helloNewMethod Service2", helloNewMethodIfaceVal);
 
         // get bean via implementation
         String helloNewMethodImplVal = (String) ReflectionHelper.invoke(
                 applicationContext.getBean(BeanServiceImpl.class), BeanServiceImpl.class, "helloNewMethod",
-                new Class[] {});
+                new Class[]{});
         assertEquals("Hello from helloNewMethod Service2", helloNewMethodImplVal);
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
+        printDetail();
     }
 
     /**
@@ -118,9 +131,11 @@ public class SpringPluginTest {
      */
     @Test
     public void hotswapServiceAddFieldWithInject() throws Exception {
-        assertEquals("injected:true", applicationContext.getBean(BeanService.class).isInjectFieldInjected());
+        assertEquals("injected:true", applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).isInjectFieldInjected());
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class);
-        assertEquals("injectedChanged:true", applicationContext.getBean(BeanService.class).isInjectFieldInjected());
+        assertEquals("injectedChanged:true", applicationContext.getBean(org.hotswap.agent.plugin.spring.testBeans.BeanService.class).isInjectFieldInjected());
+        // recovery
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
     }
 
     @Test
@@ -129,6 +144,8 @@ public class SpringPluginTest {
         assertEquals("Hello from Repository ServiceWithAspect", bean.hello());
         swapClasses(BeanRepository.class, BeanRepository2.class);
         assertEquals("Hello from ChangedRepository2 ServiceWithAspect", bean.hello());
+        // recovery
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
     }
 
     @Test
@@ -140,12 +157,16 @@ public class SpringPluginTest {
 
         String helloNewMethodImplVal = (String) ReflectionHelper.invoke(
                 applicationContext.getBean("beanRepository", BeanRepository.class), BeanRepository.class,
-                "helloNewMethod", new Class[] {});
+                "helloNewMethod", new Class[]{});
         assertEquals("Repository new method", helloNewMethodImplVal);
     }
 
     @Test
     public void hotswapPrototypeTestNewInstance() throws Exception {
+        BeanServiceImpl c1 = applicationContext.getBean("beanServiceImpl", BeanServiceImpl.class);
+        BeanServiceImpl c2 = applicationContext.getBean(BeanServiceImpl.class);
+        System.out.println("xxxxxxxxxx:" + c1 + ", " + c1.hello());
+        System.out.println("xxxxxxxxxx:" + c2 + ", " + c2.hello());
         assertEquals("Hello from Repository ServiceWithAspect Prototype",
                 applicationContext.getBean(BeanPrototype.class).hello());
 
@@ -158,83 +179,64 @@ public class SpringPluginTest {
         // service.
         swapClasses(BeanPrototype.class, BeanPrototype2.class);
         assertEquals("Hello from Repository Prototype2", applicationContext.getBean(BeanPrototype.class).hello());
+        //recovery
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
+        swapClasses(BeanPrototype.class, BeanPrototype.class);
     }
 
     @Test
     public void hotswapPrototypeTestExistingInstance() throws Exception {
         BeanPrototype beanPrototypeInstance = applicationContext.getBean(BeanPrototype.class);
         assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
+        System.out.println("xxxxxxxxxx###1:" + beanPrototypeInstance + ", " + beanPrototypeInstance.hello());
 
         swapClasses(BeanServiceImpl.class, BeanServiceImpl2.class);
         assertEquals("Hello from ChangedRepository Service2WithAspect Prototype", beanPrototypeInstance.hello());
+        System.out.println("xxxxxxxxxx###2:" + beanPrototypeInstance + ", " + beanPrototypeInstance.hello());
+        // recovery
+        swapClasses(BeanServiceImpl.class, BeanServiceImpl.class);
+        assertEquals("Hello from Repository ServiceWithAspect Prototype", beanPrototypeInstance.hello());
+    }
+
+    @Test
+    public void hotswapBeanCreatedByIABPP() throws Exception {
+        BeanService beanService = applicationContext.getBean(BeanService.class);
+        assertEquals("Hello from Repository Service", beanService.hello());
+
+        swapClasses(BeanServiceImplNoAspect.class, BeanServiceImpl2NoAspect.class);
+        assertEquals("Hello from ChangedRepository Service2", beanService.hello());
+
+        // recovery
+        swapClasses(BeanServiceImplNoAspect.class, BeanServiceImplNoAspect.class);
+        assertEquals("Hello from Repository Service", beanService.hello());
     }
 
     @Test
     public void pojoTest() throws Exception {
         Pojo pojo = new Pojo();
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
-        swapClasses(Pojo.class, Pojo2.class);
+        // no reload happens
+        HotSwapper.swapClasses(Pojo.class, Pojo2.class.getName());
+        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
     }
 
     private void swapClasses(Class<?> original, Class<?> swap) throws Exception {
-        swappingRule.swapClasses(original, swap);
+        swappingRule.swapClasses(original, swap, reloadTimes++);
     }
 
-    private static ApplicationContext xmlApplicationContext;
-    private static Resource xmlContext = new ClassPathResource("xmlContext.xml");
-    private static Resource xmlContextWithRepo = new ClassPathResource("xmlContextWithRepository.xml");
-    private static Resource xmlContextWithChangedRepo = new ClassPathResource("xmlContextWithChangedRepository.xml");
-
-    /*
-     * -------Xml test, has to be put in there so xmlContext is load after component
-     * scan context----------- (because we don't support multiple component-scan
-     * context in single app, or ClassPathBeanDefinitionScannerAgent will not be
-     * able to get the right registry to use (it will only use the first one it
-     * encountered, Spring tends to reuse ClassPathScanner))
-     */
-    @Before
-    public void before() throws IOException {
-        if (xmlApplicationContext == null) {
-            writeRepositoryToXml();
-            xmlApplicationContext = new ClassPathXmlApplicationContext("xmlContext.xml");
-        }
-    }
-
-    private void writeRepositoryToXml() throws IOException {
-        Files.copy(xmlContextWithRepo.getFile().toPath(), xmlContext.getFile().toPath(),
-                StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    private void writeChangedRepositoryToXml() throws IOException {
-        Files.copy(xmlContextWithChangedRepo.getFile().toPath(), xmlContext.getFile().toPath(),
-                StandardCopyOption.REPLACE_EXISTING);
-    }
-
+    @Ignore
     @Test
-    public void swapXmlTest() throws IOException {
-        BeanService beanService = xmlApplicationContext.getBean("beanService", BeanService.class);
-        Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
+    public void beanLookupTest() {
+        BeanLookup beanLookup = applicationContext.getBean(BeanLookup.class);
+        String hello = beanLookup.getBeanPrototype().hello();
+        Assert.assertEquals(hello, "Hello from Repository ServiceWithAspect Prototype");
+    }
 
-        XmlBeanDefinitionScannerAgent.reloadFlag = true;
-        writeChangedRepositoryToXml();
-        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !XmlBeanDefinitionScannerAgent.reloadFlag;
-            }
-        }, 5000));
-
-        Assert.assertEquals(beanService.hello(), "Hello from ChangedRepository ServiceWithAspect");
-
-        XmlBeanDefinitionScannerAgent.reloadFlag = true;
-        writeRepositoryToXml();
-        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return !XmlBeanDefinitionScannerAgent.reloadFlag;
-            }
-        }, 5000));
-        Assert.assertEquals(beanService.hello(), "Hello from Repository ServiceWithAspect");
+    private void printDetail() {
+        BeanServiceImpl c1 = applicationContext.getBean(BeanServiceImpl.class);
+        BeanServiceImpl c2 = applicationContext.getBean(BeanServiceImpl.class);
+        System.out.println("xxxxxxxxxx:" + c1 + ", " + c1.hello());
+        System.out.println("xxxxxxxxxx:" + c2 + ", " + c2.hello());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -42,8 +42,6 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
 
     public ReloadJavaProxyCommand(ClassLoader classLoader, String className, Map<String, String> signatureMapOrig) {
         this.classLoader = classLoader;
-        this.classLoader = classLoader;
-        this.className = className;
         this.className = className;
         this.signatureMapOrig = signatureMapOrig;
     }
@@ -73,7 +71,6 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
                 PluginManager.getInstance().hotswap(reloadMap);
                 LOGGER.reload("Class '{}' has been reloaded.", className);
             }
-            ProxyPlugin.removeProxyDefiningClassName(className);
         } catch (ClassNotFoundException e) {
             LOGGER.error("Error redefining java proxy {}", e, className);
         }
@@ -92,9 +89,9 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
         for (Map.Entry<String, String> entry : signatureMap.entrySet()) {
             if(clazzSignature.contains(entry.getKey()) && entry.getValue().contains("public abstract")) {
                 LOGGER.debug("{} Signature: {}", entry.getKey(), entry.getValue());
-                String[] methodSigatures = entry.getValue().replaceAll("abstract ", "").split(";");
-                for (String methodSigature : methodSigatures) {
-                    if(!clazzSignature.contains(methodSigature)) {
+                String[] methodSignatures = entry.getValue().replaceAll("abstract ", "").split(";");
+                for (String methodSignature : methodSignatures) {
+                    if(!clazzSignature.contains(methodSignature)) {
                         return false;
                     }
                 }

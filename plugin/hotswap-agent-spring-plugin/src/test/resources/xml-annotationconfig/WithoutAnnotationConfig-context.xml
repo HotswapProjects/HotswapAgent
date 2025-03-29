@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="location" value="classpath:xml-annotationconfig/item.properties"/>
+    </bean>
+
+    <bean id="item1" class="org.hotswap.agent.plugin.spring.xml.annotationconfig.Item1">
+        <property name="name" value="${item.name}"/>
+    </bean>
+
+    <bean id="item2" class="org.hotswap.agent.plugin.spring.xml.annotationconfig.Item2"/>
+</beans>

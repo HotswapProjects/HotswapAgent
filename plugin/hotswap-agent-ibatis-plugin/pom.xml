@@ -7,14 +7,14 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>1.4.2-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>hotswap-agent-ibatis-plugin</artifactId>
 
     <properties>
-        <spring.version>5.2.21.RELEASE</spring.version>
+        <spring.version>5.3.30</spring.version>
         <ibatis.version>2.3.4.726</ibatis.version>
     </properties>
 

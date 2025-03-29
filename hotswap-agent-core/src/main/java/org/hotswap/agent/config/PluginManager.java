@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -124,10 +124,6 @@ public class PluginManager {
     public void init(Instrumentation instrumentation) {
         this.instrumentation = instrumentation;
 
-        // create default configuration from this classloader
-        ClassLoader classLoader = getClass().getClassLoader();
-        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
-
         if (watcher == null) {
             try {
                 watcher = new WatcherFactory().getWatcher();
@@ -141,6 +137,11 @@ public class PluginManager {
             scheduler = new SchedulerImpl();
         }
         scheduler.run();
+
+        // create default configuration from this classloader
+        ClassLoader classLoader = getClass().getClassLoader();
+
+        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
 
         pluginRegistry.scanPlugins(getClass().getClassLoader(), PLUGIN_PACKAGE);
 
@@ -188,8 +189,9 @@ public class PluginManager {
             }
 
             // create new configuration for the classloader
-            PluginConfiguration configuration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader);
-            classLoaderConfigurations.put(classLoader, configuration);
+            PluginConfiguration pluginConfiguration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader, false);
+            classLoaderConfigurations.put(classLoader, pluginConfiguration);
+            pluginConfiguration.init();
         }
 
         // call listeners
@@ -293,6 +295,7 @@ public class PluginManager {
                 }
                 LOGGER.debug("... reloaded classes {} (autoHotswap)", Arrays.toString(classNames));
             } catch (Exception e) {
+                LOGGER.debug("... Fail to reload classes {} (autoHotswap), msg is {}", Arrays.toString(classNames), e);
                 throw new IllegalStateException("Unable to redefine classes", e);
             }
             reloadMap.clear();

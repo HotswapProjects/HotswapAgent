@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -35,17 +35,16 @@ import java.nio.channels.ReadableByteChannel;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.logging.AgentLogger;
 import org.xml.sax.InputSource;
-import sun.nio.ch.ChannelInputStream;
 
 /**
  * IO utils (similar to apache commons).
  */
 public class IOUtils {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(IOUtils.class);
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(IOUtils.class);
 
     // some IDEs remove and recreate whole package multiple times while recompiling -
     // we may need to wait for a file to be available on a filesystem
-    private static int WAIT_FOR_FILE_MAX_SECONDS = 5;
+    private static final int WAIT_FOR_FILE_MAX_SECONDS = 5;
 
     /** URL protocol for a file in the file system: "file" */
     public static final String URL_PROTOCOL_FILE = "file";
@@ -82,7 +81,7 @@ public class IOUtils {
                     LOGGER.trace("File not found, waiting...", e);
                     try {
                         Thread.sleep(100);
-                    } catch (InterruptedException e1) {
+                    } catch (InterruptedException ignore) {
                     }
                 }
             } catch (Exception e) {
@@ -149,7 +148,7 @@ public class IOUtils {
             if(f.exists() && f.isDirectory()) {
                 return true;
             }
-        } catch (Exception e) {
+        } catch (Exception ignore) {
         }
         return false;
     }
@@ -173,7 +172,7 @@ public class IOUtils {
      */
     public static String extractFileNameFromInputStream(InputStream is) {
         try {
-            if (is instanceof ChannelInputStream) {
+            if ("sun.nio.ch.ChannelInputStream".equals(is.getClass().getName())) {
                 ReadableByteChannel ch = (ReadableByteChannel) ReflectionHelper.get(is, "ch");
                 return ch instanceof FileChannel ? (String) ReflectionHelper.get(ch, "path") : null;
             }

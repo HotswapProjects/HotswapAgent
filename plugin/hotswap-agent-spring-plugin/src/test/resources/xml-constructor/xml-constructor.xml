@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd"
+    default-autowire="byName" >
+
+    <context:component-scan base-package="org.hotswap.agent.plugin.spring.xml.constructor" />
+
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="location" value="classpath:xml-constructor/xml-constructor-item.properties"/>
+    </bean>
+
+    <bean id="xmlConstructorBean1" class="org.hotswap.agent.plugin.spring.xml.constructor.XmlConstructorBean1" />
+    <bean id="xmlConstructorBean4" class="org.hotswap.agent.plugin.spring.xml.constructor.XmlConstructorBean4" />
+    <bean id="xmlConstructorBean5" class="org.hotswap.agent.plugin.spring.xml.constructor.XmlConstructorBean5" />
+
+    <bean id="xmlConstructorParentBean2" class="org.hotswap.agent.plugin.spring.xml.constructor.XmlConstructorParentBean2" />
+    <bean id="xmlConstructorParentBean3" class="org.hotswap.agent.plugin.spring.xml.constructor.XmlConstructorParentBean3">
+        <constructor-arg index="0" ref="xmlConstructorBean3" />
+    </bean>
+    <bean id="xmlConstructorParentBean4" class="org.hotswap.agent.plugin.spring.xml.constructor.XmlConstructorParentBean4" />
+    <bean id="xmlConstructorParentBean5" class="org.hotswap.agent.plugin.spring.xml.constructor.XmlConstructorParentBean5" >
+        <constructor-arg name="xmlConstructorBean5" ref="xmlConstructorBean5" />
+    </bean>
+</beans>

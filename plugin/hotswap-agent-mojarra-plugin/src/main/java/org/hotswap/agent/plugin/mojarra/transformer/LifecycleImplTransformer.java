@@ -26,9 +26,25 @@ public class LifecycleImplTransformer {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(LifecycleImplTransformer.class);
 
-    
+    private static Boolean isJavax;
+
+    private static boolean isJavax(ClassPool classPool) {
+        if (isJavax == null) {
+            try {
+                classPool.get("javax.faces.context.FacesContext");
+                isJavax = true;
+            } catch (NotFoundException e) {
+                isJavax = false;
+            }
+        }
+        return isJavax;
+    }
+
     @OnClassLoadEvent(classNameRegexp = LIFECYCLE_IMPL_CLASS)
-    public static void init(CtClass ctClass, ClassLoader classLoader) throws CannotCompileException, NotFoundException {
+    public static void init(ClassLoader classLoader, ClassPool classPool, CtClass ctClass) throws CannotCompileException, NotFoundException {
+        if (!isJavax(classPool)) {
+            return; // no managed beans in jakarta
+        }
         LOGGER.info("Patching lifecycle implementation. classLoader: {}", classLoader);
 
         initClassPool(ctClass);

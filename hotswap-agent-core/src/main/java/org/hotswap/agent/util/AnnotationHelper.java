@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -41,6 +41,24 @@ public class AnnotationHelper {
             for (org.hotswap.agent.javassist.bytecode.annotation.Annotation annot : ainfo.getAnnotations()) {
                 if (annot.getTypeName().equals(annotationClass))
                     return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasAnnotation(Class<?> clazz, Iterable<String> annotationClasses) {
+        for (String pathAnnotation : annotationClasses) {
+            if (AnnotationHelper.hasAnnotation(clazz, pathAnnotation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasAnnotation(CtClass clazz, Iterable<String> annotationClasses) {
+        for (String pathAnnotation : annotationClasses) {
+            if (AnnotationHelper.hasAnnotation(clazz, pathAnnotation)) {
+                return true;
             }
         }
         return false;

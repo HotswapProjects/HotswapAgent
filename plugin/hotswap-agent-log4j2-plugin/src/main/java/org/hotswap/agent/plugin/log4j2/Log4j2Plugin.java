@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -34,6 +34,7 @@ import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.Watcher;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.HashSet;
@@ -82,24 +83,32 @@ public class Log4j2Plugin {
             if (url == null) {
                 LOGGER.warning("Location url is NULL on configurationSource={} - exiting.", configurationSource);
             } else {
-                configURI = Paths.get(url).toUri();
+                try {
+                    configURI = Paths.get(url).toUri();
+                    if (!IOUtils.isFileURL(configURI.toURL())) {
+                        LOGGER.trace("Unable to watch for new files. Archive '{}' is not file.", url);
+                    } else {
 
-                if (registeredURIs.contains(configURI)) {
-                    return;
-                }
-
-                final URI parentUri = Paths.get(configURI).getParent().toUri();
-                LOGGER.debug("Watching '{}' URI for Log4j2 configuration changes.", configURI);
-                registeredURIs.add(configURI);
-                watcher.addEventListener(appClassLoader, parentUri, new WatchEventListener() {
-
-                    @Override
-                    public void onEvent(WatchFileEvent event) {
-                        if (event.getEventType() != FileEvent.DELETE && registeredURIs.contains(event.getURI())) {
-                            reload(event.getURI());
+                        if (registeredURIs.contains(configURI)) {
+                            return;
                         }
+
+                        final URI parentUri = Paths.get(configURI).getParent().toUri();
+                        LOGGER.debug("Watching '{}' URI for Log4j2 configuration changes.", configURI);
+                        registeredURIs.add(configURI);
+                        watcher.addEventListener(appClassLoader, parentUri, new WatchEventListener() {
+
+                            @Override
+                            public void onEvent(WatchFileEvent event) {
+                                if (event.getEventType() != FileEvent.DELETE && registeredURIs.contains(event.getURI())) {
+                                    reload(event.getURI());
+                                }
+                            }
+                        });
                     }
-                });
+                } catch (MalformedURLException e) {
+                    LOGGER.error("Unable to convert URI '{}' to URL.", e, url);
+                }
             }
 
             if (!initialized) {

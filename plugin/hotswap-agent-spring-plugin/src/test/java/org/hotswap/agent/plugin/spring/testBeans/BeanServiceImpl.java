@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the HotswapAgent authors.
+ * Copyright 2013-2025 the HotswapAgent authors.
  *
  * This file is part of HotswapAgent.
  *
@@ -36,6 +36,9 @@ public class BeanServiceImpl implements BeanService {
 
     @Override
     public String hello() {
+        if (beanRepository == null) {
+            System.out.println("xxxx====: " + this);
+        }
         return beanRepository.hello() + " Service";
     }
 
