@@ -41,7 +41,7 @@ import org.hotswap.agent.logging.AgentLogger;
 /**
  * Java instrumentation transformer.
  * <p/>
- * The is the single instance of transformer registered by HotswapAgent. It will delegate to plugins to
+ * This is the single instance of transformer registered by HotswapAgent. It will delegate to plugins to
  * do the transformer work.
  *
  * @author Jiri Bubnik
@@ -107,7 +107,7 @@ public class HotswapTransformer implements ClassFileTransformer {
      * @param classLoader the classloader to which this transformation is associated
      * @param classNameRegexp regexp to match fully qualified class name.
      *                        Because "." is any character in regexp, this will match / in the transform method as well
-     *                        (diffentence between java/lang/String and java.lang.String).
+     *                        (difference between java/lang/String and java.lang.String).
      * @param transformer     the transformer to be called for each class matching regexp.
      */
     public void registerTransformer(ClassLoader classLoader, String classNameRegexp, HaClassFileTransformer transformer) {
@@ -184,7 +184,7 @@ public class HotswapTransformer implements ClassFileTransformer {
      * <p>It does not do the instrumentation itself, instead iterates registered transformers and compares
      * registration class regexp - if the regexp matches, the classloader is called.
      * <p/>
-     * <p>Note that class bytes may be send to multiple transformers, but the order is not defined.
+     * <p>Note that class bytes may be sent to multiple transformers, but the order is not defined.
      *
      * @see ClassFileTransformer#transform(ClassLoader, String, Class, java.security.ProtectionDomain, byte[])
      */
@@ -204,7 +204,7 @@ public class HotswapTransformer implements ClassFileTransformer {
         List<PluginClassFileTransformer> pluginTransformers = new ArrayList<>();
         try {
             // 1. call transform method of defining transformers
-            for (RegisteredTransformersRecord transformerRecord : new ArrayList<RegisteredTransformersRecord>(otherTransformers.values())) {
+            for (RegisteredTransformersRecord transformerRecord : new ArrayList<>(otherTransformers.values())) {
                 if ((className != null && transformerRecord.pattern.matcher(className).matches()) ||
                         (redefiningClass != null && transformerRecord.pattern.matcher(redefiningClass.getName()).matches())) {
                     for (ClassFileTransformer transformer : new ArrayList<ClassFileTransformer>(transformerRecord.transformerList)) {
@@ -221,7 +221,7 @@ public class HotswapTransformer implements ClassFileTransformer {
             }
             // 2. call transform method of redefining transformers
             if (redefiningClass != null && className != null) {
-                for (RegisteredTransformersRecord transformerRecord : new ArrayList<RegisteredTransformersRecord>(redefinitionTransformers.values())) {
+                for (RegisteredTransformersRecord transformerRecord : new ArrayList<>(redefinitionTransformers.values())) {
                     if (transformerRecord.pattern.matcher(className).matches()) {
                         for (ClassFileTransformer transformer : new ArrayList<ClassFileTransformer>(transformerRecord.transformerList)) {
                             if(transformer instanceof PluginClassFileTransformer) {
@@ -308,11 +308,11 @@ public class HotswapTransformer implements ClassFileTransformer {
     }
     /**
      * Every classloader should be initialized. Usually if anything interesting happens,
-     * it is initialized during plugin initialization process. However, some plugins (e.g. Hotswapper)
+     * it is initialized during the plugin initialization process. However, some plugins (e.g. Hotswapper)
      * are triggered during classloader initialization process itself (@Init on static method). In this case,
      * the plugin will be never invoked, until the classloader initialization is invoked from here.
      *
-     * Schedule with some timeout to allow standard plugin initialization process to precede.
+     * Schedule with some timeout to allow a standard plugin initialization process to precede.
      *
      * @param classLoader the classloader to which this transformation is associated
      * @param protectionDomain associated protection domain (if any)
@@ -322,7 +322,13 @@ public class HotswapTransformer implements ClassFileTransformer {
 
             if (classLoader == null) {
                 // directly init null (bootstrap) classloader
-                PluginManager.getInstance().initClassLoader(null, protectionDomain);
+                if (PluginManager.getInstance().getInitClassLoaderLock().tryLock()) {
+                    try {
+                        PluginManager.getInstance().initClassLoader(null, protectionDomain);
+                    } finally {
+                        PluginManager.getInstance().getInitClassLoaderLock().unlock();
+                    }
+                }
             } else {
                 // ensure the classloader should not be excluded
                 if (shouldScheduleClassLoader(classLoader)) {
@@ -364,10 +370,13 @@ public class HotswapTransformer implements ClassFileTransformer {
 
 
     /**
-     * Transform type to ^regexp$ form - match only whole pattern.
+     * Normalizes a given regular expression for matching types by ensuring
+     * it starts with a caret (^) and ends with a dollar sign ($).
      *
-     * @param registeredType type
-     * @return
+     * @param registeredType the input regular expression for a type which may or may not
+     *                       include starting or ending anchors.
+     * @return a string representing the normalized regular expression, guaranteed
+     *         to start with ^ and end with $.
      */
     protected String normalizeTypeRegexp(String registeredType) {
         String regexp = registeredType;

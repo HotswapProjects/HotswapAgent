@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.command.impl.SchedulerImpl;
@@ -37,7 +38,7 @@ import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
 
 /**
- * The main agent plugin manager, well known singleton controller.
+ * The main agent plugin manager, well-known singleton controller.
  *
  * @author Jiri Bubnik
  */
@@ -46,7 +47,7 @@ public class PluginManager {
 
     public static final String PLUGIN_PACKAGE = "org.hotswap.agent.plugin";
 
-    //////////////////////////   MANAGER SINGLETON /////////////////////////////////////
+    ////////////////////////// MANAGER SINGLETON /////////////////////////////////////
 
     // singleton instance
     private static PluginManager INSTANCE = new PluginManager();
@@ -68,6 +69,7 @@ public class PluginManager {
     private Instrumentation instrumentation;
 
     private Object hotswapLock = new Object();
+    private ReentrantLock initClassLoaderLock = new ReentrantLock();
 
     //////////////////////////   PLUGINS /////////////////////////////////////
 
@@ -113,8 +115,8 @@ public class PluginManager {
     /**
      * Initialize the singleton plugin manager.
      * <ul>
-     * <li>Create new resource watcher using WatcherFactory and start it in separate thread.</li>
-     * <li>Create new scheduler and start it in separate thread.</li>
+     * <li>Create a new resource watcher using WatcherFactory and start it in separate thread.</li>
+     * <li>Create a new scheduler and start it in separate thread.</li>
      * <li>Scan for plugins</li>
      * <li>Register HotswapTransformer with the javaagent instrumentation class</li>
      * </ul>
@@ -178,7 +180,8 @@ public class PluginManager {
 
         // synchronize ClassLoader patching - multiple classloaders may be patched at the same time
         // and they may synchronize loading for security reasons and introduce deadlocks
-        synchronized (this) {
+        try {
+            initClassLoaderLock.lock();
             if (classLoaderConfigurations.containsKey(classLoader))
                 return;
 
@@ -192,6 +195,8 @@ public class PluginManager {
             PluginConfiguration pluginConfiguration = new PluginConfiguration(getPluginConfiguration(getClass().getClassLoader()), classLoader, false);
             classLoaderConfigurations.put(classLoader, pluginConfiguration);
             pluginConfiguration.init();
+        } finally {
+            initClassLoaderLock.unlock();
         }
 
         // call listeners
@@ -203,7 +208,7 @@ public class PluginManager {
      * Remove any classloader reference and close all plugin instances associated with classloader.
      * This method is called typically after webapp undeploy.
      *
-     * @param classLoader the classloader to cleanup
+     * @param classLoader the classloader to clean up
      */
     public void closeClassLoader(ClassLoader classLoader) {
         pluginRegistry.closeClassLoader(classLoader);
@@ -325,4 +330,12 @@ public class PluginManager {
         getScheduler().scheduleCommand(new ScheduledHotswapCommand(reloadMap), timeout);
     }
 
+    /**
+     * Retrieves the lock used to synchronize initialization of the class loader for the plugin manager.
+     *
+     * @return the lock instance used for class loader initialization synchronization.
+     */
+    public ReentrantLock getInitClassLoaderLock() {
+        return initClassLoaderLock;
+    }
 }
