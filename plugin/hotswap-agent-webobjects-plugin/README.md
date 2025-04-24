@@ -1,7 +1,7 @@
 WebObjects plugin
 ====================================
 
-For more information on how to use with WebObjects, see the [WOCommunity wiki page](https://wiki.wocommunity.org/display/WOL/Using+DCEVM+and+Hotswap+for+rapid+turnaround)
+For more information on how to use with WebObjects, see the [WOCommunity wiki page](https://wiki.wocommunity.org/xwiki/bin/view/WOL/Home/WOLips/Using%20DCEVM%20and%20Hotswap%20for%20rapid%20turnaround/)
 
 This plugin replicate the WOJrebel plugin code found in the WOJRebelClassReloadHandler class originally written by qdolan.
 
