@@ -60,6 +60,7 @@
         <module>plugin/hotswap-agent-plugins</module>
         <module>plugin/hotswap-agent-sponge-plugin</module>
         <module>plugin/hotswap-agent-mybatis-plus-plugin</module>
+        <module>plugin/hotswap-agent-treasureboat-plugin</module>
         <module>hotswap-agent</module>
     </modules>
 
