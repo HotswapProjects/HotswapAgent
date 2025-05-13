@@ -527,7 +527,7 @@ public class SpringBeanReload {
                 LOGGER.debug("bean not found: " + beanName);
                 continue;
             }
-            if (beanDefinition.isSingleton()) {
+            if (!beanDefinition.isAbstract() && beanDefinition.isSingleton()) {
                 try {
                     beanFactory.getBean(beanName);
                 } catch (Exception e) {
