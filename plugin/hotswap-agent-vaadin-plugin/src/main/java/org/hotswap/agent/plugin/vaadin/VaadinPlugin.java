@@ -247,7 +247,7 @@ public class VaadinPlugin {
         if (!isPluginReady(event + " for class " + className)) {
             return;
         }
-        if (!isWatchedPackage(ctClass.getPackageName())) {
+        if ((ctClass.getPackageName() != null) && !isWatchedPackage(ctClass.getPackageName())) {
             LOGGER.trace("Ignoring class {} because it is not in the watched-packages list", className);
             return;
         }
