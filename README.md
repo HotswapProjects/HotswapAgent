@@ -181,7 +181,7 @@ even with standard java, we recommend using DCEVM (and all tutorials use DCEVM a
 Hotswap agent is a plugin container with plugin manager, plugin registry, and several agent services
 (e.g. to watch for class/resource change). It helps with common tasks and classloading issues. It scans the classpath
 for class annotated with @Plugin annotation, injects agent services, and registers reloading hooks. Runtime bytecode
-modification is provided by javaasist library.
+modification is provided by Javassist library.
 
 ### Plugins
 Plugins administered by Hotswap Agent are usually focused on a specific framework. For example, Spring plugin
