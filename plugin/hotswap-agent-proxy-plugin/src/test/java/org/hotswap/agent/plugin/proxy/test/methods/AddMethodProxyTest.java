@@ -138,7 +138,7 @@ public class AddMethodProxyTest {
         __toVersion__Delayed_JavaProxy(1);
 
         Method method = getMethod(a, "getValue2");
-        assertEquals(2, method.invoke(a, null));
+        assertEquals(2, method.invoke(a));
     }
 
     @Test
@@ -162,24 +162,30 @@ public class AddMethodProxyTest {
     public void accessNewMethodOnProxyCreatedAfterSwap() throws IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, IOException {
         assert __version__() == 0;
-        A a = (A) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { A.class }, new DummyHandler(
+        A a = (A) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[] { A.class }, new DummyHandler(
                 new AImpl()));
 
         assertEquals(1, a.getValue1());
         __toVersion__Delayed_JavaProxy(1);
 
-        a = (A) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { A.class }, new DummyHandler(
+        a = (A) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[] { A.class }, new DummyHandler(
                 new AImpl()));
 
         Method method = getMethod(a, "getValue2");
         assertEquals("getValue2", method.getName());
-        assertEquals(2, method.invoke(a, null));
+        assertEquals(2, method.invoke(a));
         method = getMethod(a, "getValue33");
         assertEquals("getValue33", method.getName());
         assertEquals(2, method.invoke(a, new Object[] { new Object[] { new Object() } }));
     }
 
     private Method getMethod(Object a, String methodName) {
+        try {
+            return a.getClass().getMethod(methodName);
+        } catch (NoSuchMethodException e) {
+            // Ignore
+        }
+
         Method[] declaredMethods = a.getClass().getDeclaredMethods();
         Method m = null;
         for (Method method : declaredMethods) {

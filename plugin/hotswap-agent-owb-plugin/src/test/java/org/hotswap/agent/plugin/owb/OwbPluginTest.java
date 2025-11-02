@@ -206,7 +206,6 @@ public class OwbPluginTest extends HAAbstractUnitTest {
     @Test
     public void newBeanClassIsManagedBeanReRunTestOnlyAfterMvnClean() throws Exception {
         try {
-            ClassFile.MAJOR_VERSION = ClassFile.JAVA_11; // hack, ASM9 does not support java17 (owb 2.0.26)
             OwbPlugin.isTestEnvironment = true;
             Class<?> clazz = getClass();
             String path = clazz.getResource(clazz.getSimpleName() + ".class")

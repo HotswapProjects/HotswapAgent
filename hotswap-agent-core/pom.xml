@@ -16,28 +16,6 @@
         <profile>
             <id>default-tools</id>
             <activation>
-                <os>
-                    <family>!mac</family>
-                </os>
-                <jdk>(,1.11)</jdk>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <version>${java.version}</version>
-                    <scope>system</scope>
-                    <optional>true</optional>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>mac-tools</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                </os>
                 <jdk>(,1.11)</jdk>
             </activation>
             <dependencies>

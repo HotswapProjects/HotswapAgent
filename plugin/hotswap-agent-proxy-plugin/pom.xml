@@ -13,7 +13,7 @@
     <artifactId>hotswap-agent-proxy-plugin</artifactId>
 
         <properties>
-                <org.springframework.version>5.3.30</org.springframework.version>
+                <org.springframework.version>5.3.39</org.springframework.version>
         </properties>
 
     <dependencies>
@@ -41,13 +41,13 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>7.0</version>
+            <version>9.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
-            <version>7.0</version>
+            <version>9.9</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -64,5 +64,34 @@
                 </dependency>
             </dependencies>
         </profile>
+        <profile>
+            <id>jdk9+</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <argLine>
+                                -XX:+AllowEnhancedClassRedefinition
+                                -XX:HotswapAgent=external
+                                -Xlog:redefine+class*=info
+                                --add-exports java.base/sun.security.action=ALL-UNNAMED
+                                --add-exports java.base/sun.security.util=ALL-UNNAMED
+                                --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                                --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                                -Dblank
+                                -javaagent:${project.basedir}/../../hotswap-agent-core/target/hotswap-agent-core-${project.version}.jar
+                            </argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
     </profiles>
 </project>
