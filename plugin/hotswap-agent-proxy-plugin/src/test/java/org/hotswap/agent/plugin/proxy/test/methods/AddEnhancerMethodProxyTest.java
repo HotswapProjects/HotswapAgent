@@ -105,7 +105,7 @@ public class AddEnhancerMethodProxyTest {
         __toVersion__Delayed(1);
 
         Method method = getMethod(a, "getValue2");
-        assertEquals(2, method.invoke(a, null));
+        assertEquals(2, method.invoke(a));
     }
 
     public static class SerializableNoOp
@@ -142,14 +142,14 @@ public class AddEnhancerMethodProxyTest {
         Method method = getMethod(a, "getValue2");
         assertEquals("getValue2", method.getName());
         assertEquals(1, cb.getInvocationCount());
-        assertEquals(2, method.invoke(a, null));
+        assertEquals(2, method.invoke(a));
         assertEquals(2, cb.getInvocationCount());
 
         __toVersion__Delayed(2);
         method = getMethod(a, "getValue3");
         assertEquals("getValue3", method.getName());
         assertEquals(2, cb.getInvocationCount());
-        assertEquals(3, method.invoke(a, null));
+        assertEquals(3, method.invoke(a));
         assertEquals(3, cb.getInvocationCount());
     }
 
@@ -180,11 +180,18 @@ public class AddEnhancerMethodProxyTest {
         Method method = getMethod(a, "getValue2");
         assertEquals("getValue2", method.getName());
         assertEquals(1, cb.getInvocationCount());
-        assertEquals(2, method.invoke(a, null));
+        assertEquals(2, method.invoke(a));
         assertEquals(2, cb.getInvocationCount());
     }
 
     private Method getMethod(Object a, String methodName) {
+
+        try{
+            return a.getClass().getMethod(methodName);
+        } catch (NoSuchMethodException e) {
+            // continue to old approach
+        }
+
         Method[] declaredMethods = a.getClass().getMethods();
         Method m = null;
         for (Method method : declaredMethods) {

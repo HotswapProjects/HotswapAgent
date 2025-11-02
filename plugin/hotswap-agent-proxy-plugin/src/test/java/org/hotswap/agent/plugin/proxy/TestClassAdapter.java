@@ -32,10 +32,10 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.AnnotationRemapper;
 import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.Remapper;
-import org.objectweb.asm.commons.RemappingAnnotationAdapter;
-import org.objectweb.asm.commons.RemappingMethodAdapter;
 
 /**
  * @author Ivan Dubrov
@@ -89,7 +89,7 @@ public class TestClassAdapter extends ClassRemapper {
 
     protected MethodVisitor createRemappingMethodAdapter(int access,
             String newDesc, MethodVisitor mv) {
-        return new RemappingMethodAdapter(access, newDesc, mv, remapper) {
+        return new MethodRemapper(mv, remapper) {
             @Override
             public void visitMethodInsn(int opcode, String owner, String name,
                     String desc, boolean itf) {
@@ -115,7 +115,7 @@ public class TestClassAdapter extends ClassRemapper {
         AnnotationVisitor av = super.visitAnnotation(remapper.mapDesc(desc),
                 visible);
         return av == null ? null
-                : new RemappingAnnotationAdapter(av, remapper) {
+                : new AnnotationRemapper(av, remapper) {
                     @Override
                     public void visitEnum(String name, String enumDesc,
                             String value) {

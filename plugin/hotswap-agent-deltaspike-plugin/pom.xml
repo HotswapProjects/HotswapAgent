@@ -232,9 +232,9 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <systemProperties>
+                            <systemPropertyVariables>
                                 <cdicontainer.version>${cdicontainer.version}</cdicontainer.version>
-                            </systemProperties>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -250,7 +250,7 @@
             </activation>
 
             <properties>
-                <owb.version>2.0.13</owb.version>
+                <owb.version>2.0.28</owb.version>
                 <cdicontainer.version>owb-${owb.version}</cdicontainer.version>
             </properties>
 
@@ -318,9 +318,9 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <systemProperties>
+                            <systemPropertyVariables>
                                 <cdicontainer.version>${cdicontainer.version}</cdicontainer.version>
-                            </systemProperties>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -364,9 +364,9 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <systemProperties>
+                            <systemPropertyVariables>
                                 <cdicontainer.version>${cdicontainer.version}</cdicontainer.version>
-                            </systemProperties>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>

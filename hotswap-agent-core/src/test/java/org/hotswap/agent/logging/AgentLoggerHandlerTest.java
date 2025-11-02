@@ -18,7 +18,7 @@
  */
 package org.hotswap.agent.logging;
 
-import org.hamcrest.text.StringContains;
+import org.hamcrest.core.StringContains;
 import org.hotswap.agent.config.PluginManager;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
