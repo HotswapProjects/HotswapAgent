@@ -32,7 +32,7 @@ import java.nio.file.Files;
 
 import static org.junit.Assert.assertEquals;
 
-public class MyBatisPluginTest extends BaseTest {
+public class AMyBatisPluginTest extends BaseTest {
 
   private static SqlSessionFactory sqlSessionFactory;
 
