@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
 import org.apache.ibatis.session.Configuration;
+import org.hotswap.agent.annotation.TestOnly;
 import org.hotswap.agent.javassist.util.proxy.MethodHandler;
 import org.hotswap.agent.javassist.util.proxy.ProxyFactory;
 import org.hotswap.agent.logging.AgentLogger;
@@ -41,7 +42,7 @@ public class ConfigurationProxy {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ConfigurationProxy.class);
 
-    private static Map<XMLConfigBuilder, ConfigurationProxy> proxiedConfigurations = new HashMap<>();
+    private static final Map<XMLConfigBuilder, ConfigurationProxy> proxiedConfigurations = new HashMap<>();
 
     public static ConfigurationProxy getWrapper(XMLConfigBuilder configBuilder) {
         /*
@@ -53,10 +54,10 @@ public class ConfigurationProxy {
             return new ConfigurationProxy(configBuilder);
         }
 
-        if (!proxiedConfigurations.containsKey(configBuilder)) {
-            proxiedConfigurations.put(configBuilder, new ConfigurationProxy(configBuilder));
-        }
-        return proxiedConfigurations.get(configBuilder);
+        return proxiedConfigurations.computeIfAbsent(
+                configBuilder,
+                ConfigurationProxy::new
+        );
     }
 
     public static void refreshProxiedConfigurations() {
@@ -77,7 +78,7 @@ public class ConfigurationProxy {
         ReflectionHelper.invoke(configBuilder, MyBatisTransformers.REFRESH_METHOD);
     }
 
-    private XMLConfigBuilder configBuilder;
+    private final XMLConfigBuilder configBuilder;
     private Configuration configuration;
     private Configuration proxyInstance;
 
@@ -112,5 +113,10 @@ public class ConfigurationProxy {
         }
 
         return false;
+    }
+
+    @TestOnly
+    protected static void reset() {
+        proxiedConfigurations.clear();
     }
 }

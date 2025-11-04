@@ -2,6 +2,7 @@ package org.hotswap.agent.plugin.mybatis;
 
 import org.apache.ibatis.io.Resources;
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.mybatis.proxy.ProxyReset;
 import org.hotswap.agent.plugin.mybatis.springboot.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -40,6 +41,7 @@ public class MybatisSpringBootTest extends BaseTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        ProxyReset.reset();
         File f = Resources.getResourceAsFile("swapXML/BootUserMapper1.xml");
         Files.copy(f.toPath(), f.toPath().getParent().resolve("BootUserMapper.xml"), StandardCopyOption.REPLACE_EXISTING);
     }
