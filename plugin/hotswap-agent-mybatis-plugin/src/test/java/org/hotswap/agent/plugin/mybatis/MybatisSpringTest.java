@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.mybatis;
 
 import org.apache.ibatis.io.Resources;
+import org.hotswap.agent.plugin.mybatis.proxy.ProxyReset;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -38,6 +39,7 @@ public class MybatisSpringTest extends BaseTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        ProxyReset.reset();
         File tmp = Resources.getResourceAsFile("org/hotswap/agent/plugin/mybatis/Mapper.xml");
         tmp.delete();
     }

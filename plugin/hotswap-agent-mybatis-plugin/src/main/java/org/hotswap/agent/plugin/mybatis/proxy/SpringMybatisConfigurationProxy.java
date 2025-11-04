@@ -1,6 +1,7 @@
 package org.hotswap.agent.plugin.mybatis.proxy;
 
 import org.apache.ibatis.session.Configuration;
+import org.hotswap.agent.annotation.TestOnly;
 import org.hotswap.agent.plugin.mybatis.transformers.ConfigurationCaller;
 import org.hotswap.agent.util.ReflectionHelper;
 
@@ -16,10 +17,10 @@ public class SpringMybatisConfigurationProxy {
     }
 
     public static SpringMybatisConfigurationProxy getWrapper(Object sqlSessionFactoryBean) {
-        if (!proxiedConfigurations.containsKey(sqlSessionFactoryBean)) {
-            proxiedConfigurations.put(sqlSessionFactoryBean, new SpringMybatisConfigurationProxy(sqlSessionFactoryBean));
-        }
-        return proxiedConfigurations.get(sqlSessionFactoryBean);
+        return proxiedConfigurations.computeIfAbsent(
+                sqlSessionFactoryBean,
+                SpringMybatisConfigurationProxy::new
+        );
     }
 
     public static boolean runningBySpringMybatis() {
@@ -59,5 +60,10 @@ public class SpringMybatisConfigurationProxy {
         }
 
         return false;
+    }
+
+    @TestOnly
+    protected static void reset() {
+        proxiedConfigurations.clear();
     }
 }

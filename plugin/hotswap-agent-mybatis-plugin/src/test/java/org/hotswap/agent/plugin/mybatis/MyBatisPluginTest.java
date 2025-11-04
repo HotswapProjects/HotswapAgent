@@ -22,6 +22,7 @@ import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.hotswap.agent.plugin.mybatis.proxy.ProxyReset;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,7 +33,7 @@ import java.nio.file.Files;
 
 import static org.junit.Assert.assertEquals;
 
-public class AMyBatisPluginTest extends BaseTest {
+public class MyBatisPluginTest extends BaseTest {
 
   private static SqlSessionFactory sqlSessionFactory;
 
@@ -52,6 +53,7 @@ public class AMyBatisPluginTest extends BaseTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        ProxyReset.reset();
         File tmp = Resources.getResourceAsFile("org/hotswap/agent/plugin/mybatis/Mapper.xml");
         tmp.delete();
     }

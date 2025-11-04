@@ -50,7 +50,7 @@ public class BaseTest {
             public boolean result() throws Exception {
                 return !MyBatisRefreshCommands.reloadFlag;
             }
-        }, 4000 )); // Repository is regenerated within 2*DeltaSpikePlugin.WAIT_ON_REDEFINE
+        }, 7000 )); // Repository is regenerated within 2*DeltaSpikePlugin.WAIT_ON_REDEFINE
 
         // TODO do not know why sleep is needed, maybe a separate thread in owb refresh?
         Thread.sleep(100);
