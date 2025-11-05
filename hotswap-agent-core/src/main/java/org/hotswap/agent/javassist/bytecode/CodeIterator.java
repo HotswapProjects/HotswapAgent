@@ -16,6 +16,8 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.bytecode.LocalVariableAttribute;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +28,7 @@ import java.util.List;
  * {@link #writeByte(int, int)}, {@link #write16bit(int, int)}, and other methods.
  * For example, if <code>method</code> refers to a <code>CtMethod</code> object,
  * the following code substitutes the <code>NOP</code> instruction for the first
- * instruction of the method:  
+ * instruction of the method:
  *
  * <pre>
  * CodeAttribute ca = method.getMethodInfo().getCodeAttribute();
@@ -52,7 +54,7 @@ public class CodeIterator implements Opcode {
     protected byte[] bytecode;
     protected int endPos;
     protected int currentPos;
-    protected int mark;
+    protected int mark, mark2;
 
     protected CodeIterator(CodeAttribute ca) {
         codeAttr = ca;
@@ -64,7 +66,7 @@ public class CodeIterator implements Opcode {
      * Moves to the first instruction.
      */
     public void begin() {
-        currentPos = mark = 0;
+        currentPos = mark = mark2 = 0;
         endPos = getCodeLength();
     }
 
@@ -99,6 +101,20 @@ public class CodeIterator implements Opcode {
     }
 
     /**
+     * Sets a mark to the bytecode at the given index.
+     * The mark can be used to track the position of that bytecode
+     * when code blocks are inserted.
+     * If a code block is inclusively inserted at the position of the
+     * bytecode, the mark is set to the inserted code block.
+     *
+     * @see #getMark2()
+     * @since 3.26
+     */
+    public void setMark2(int index) {
+        mark2 = index;
+    }
+
+    /**
      * Gets the index of the position of the mark set by
      * <code>setMark</code>.
      *
@@ -107,6 +123,16 @@ public class CodeIterator implements Opcode {
      * @since 3.11
      */
     public int getMark() { return mark; }
+
+    /**
+     * Gets the index of the position of the mark set by
+     * <code>setMark2</code>.
+     *
+     * @return the index of the position.
+     * @see #setMark2(int)
+     * @since 3.26
+     */
+    public int getMark2() { return mark2; }
 
     /**
      * Returns a Code attribute read with this iterator.
@@ -429,7 +455,7 @@ public class CodeIterator implements Opcode {
      * <p>The index at which the byte sequence is actually inserted
      * might be different from pos since some other bytes might be
      * inserted at other positions (e.g. to change <code>GOTO</code>
-     * to <code>GOTO_W</code>). 
+     * to <code>GOTO_W</code>).
      *
      * @param pos       the index at which a byte sequence is inserted.
      * @param code      inserted bytecode sequence.
@@ -646,6 +672,9 @@ public class CodeIterator implements Opcode {
 
             if (mark > pos || (mark == pos && exclusive))
                 mark += length2;
+
+            if (mark2 > pos || (mark2 == pos && exclusive))
+                mark2 += length2;
         }
 
         codeAttr.setCode(c);
@@ -801,7 +830,7 @@ public class CodeIterator implements Opcode {
     /**
      * insertGapCore0() inserts a gap (some NOPs).
      * It cannot handle a long code sequence more than 32K.  All branch offsets must be
-     * signed 16bits. 
+     * signed 16bits.
      *
      * If "where" is the beginning of a block statement and exclusive is false,
      * then the inserted gap is also included in the block statement.
@@ -1012,16 +1041,17 @@ public class CodeIterator implements Opcode {
 
     static class Pointers {
         int cursor;
-        int mark0, mark;
+        int mark0, mark, mark2;
         ExceptionTable etable;
         LineNumberAttribute line;
         LocalVariableAttribute vars, types;
         StackMapTable stack;
         StackMap stack2;
 
-        Pointers(int cur, int m, int m0, ExceptionTable et, CodeAttribute ca) {
+        Pointers(int cur, int m, int m2, int m0, ExceptionTable et, CodeAttribute ca) {
             cursor = cur;
             mark = m;
+            mark2 = m2;
             mark0 = m0;
             etable = et;    // non null
             line = (LineNumberAttribute)ca.getAttribute(LineNumberAttribute.tag);
@@ -1037,6 +1067,9 @@ public class CodeIterator implements Opcode {
 
             if (where < mark || (where == mark && exclusive))
                 mark += gapLength;
+
+            if (where < mark2 || (where == mark2 && exclusive))
+                mark2 += gapLength;
 
             if (where < mark0 || (where == mark0 && exclusive))
                 mark0 += gapLength;
@@ -1074,7 +1107,7 @@ public class CodeIterator implements Opcode {
                                   CodeAttribute ca, CodeAttribute.LdcEntry ldcs)
         throws BadBytecode
     {
-        Pointers pointers = new Pointers(0, 0, 0, etable, ca);
+        Pointers pointers = new Pointers(0, 0, 0, 0, etable, ca);
         List<Branch> jumps = makeJumpList(code, code.length, pointers);
         while (ldcs != null) {
             addLdcW(ldcs, jumps);
@@ -1099,11 +1132,11 @@ public class CodeIterator implements Opcode {
     }
 
     /*
-     * insertGapCore0w() can handle a long code sequence more than 32K. 
+     * insertGapCore0w() can handle a long code sequence more than 32K.
      * It guarantees that the length of the inserted gap (NOPs) is equal to
      * gapLength.  No other NOPs except some NOPs following TABLESWITCH or
-     * LOOKUPSWITCH will not be inserted. 
-     * 
+     * LOOKUPSWITCH will not be inserted.
+     *
      * Note: currentPos might be moved.
      *
      * @param where       It must indicate the first byte of an opcode.
@@ -1118,11 +1151,12 @@ public class CodeIterator implements Opcode {
         if (gapLength <= 0)
             return code;
 
-        Pointers pointers = new Pointers(currentPos, mark, where, etable, ca);
+        Pointers pointers = new Pointers(currentPos, mark, mark2, where, etable, ca);
         List<Branch> jumps = makeJumpList(code, code.length, pointers);
         byte[] r = insertGap2w(code, where, gapLength, exclusive, jumps, pointers);
         currentPos = pointers.cursor;
         mark = pointers.mark;
+        mark2 = pointers.mark2;
         int where2 = pointers.mark0;
         if (where2 == currentPos && !exclusive)
             currentPos += gapLength;

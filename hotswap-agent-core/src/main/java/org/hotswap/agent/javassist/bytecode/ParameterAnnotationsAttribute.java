@@ -36,7 +36,7 @@ import org.hotswap.agent.javassist.bytecode.annotation.AnnotationsWriter;
  * <code>getAttribute(ParameterAnnotationsAttribute.invisibleTag)</code>
  * in <code>MethodInfo</code>.
  * The obtained attribute is a
- * runtime invisible annotations attribute.  
+ * runtime invisible annotations attribute.
  * If the parameter is
  * <code>ParameterAnnotationAttribute.visibleTag</code>, then the obtained
  * attribute is a runtime visible one.
@@ -96,7 +96,7 @@ public class ParameterAnnotationsAttribute extends AttributeInfo {
     }
 
     /**
-     * Returns <code>num_parameters</code>. 
+     * Returns <code>num_parameters</code>.
      */
     public int numParameters() {
         return info[0] & 0xff;
@@ -127,7 +127,7 @@ public class ParameterAnnotationsAttribute extends AttributeInfo {
      *
      * @return Each element of the returned array represents an array of
      * annotations that are associated with each method parameter.
-     *      
+     *
      * @see #setAnnotations(Annotation[][])
      */
     public Annotation[][] getAnnotations() {
@@ -201,7 +201,7 @@ public class ParameterAnnotationsAttribute extends AttributeInfo {
         StringBuilder sbuf = new StringBuilder();
         for (Annotation[] a : aa) {
             for (Annotation i : a)
-                sbuf.append(i.toString()).append(" ");
+                sbuf.append(i.toString()).append(' ');
 
             sbuf.append(", ");
         }

@@ -72,7 +72,7 @@ public class StackMapTable extends AttributeInfo {
                             new Copier(this.constPool, info, newCp, classnames).doit());
         }
         catch (BadBytecode e) {
-            throw new RuntimeCopyException("bad bytecode. fatal?"); 
+            throw new RuntimeCopyException("bad bytecode. fatal?");
         }
     }
 
@@ -178,7 +178,7 @@ public class StackMapTable extends AttributeInfo {
         public final int size() { return numOfEntries; }
 
         /**
-         * Visits each entry of the stack map frames. 
+         * Visits each entry of the stack map frames.
          */
         public void parse() throws BadBytecode {
             int n = numOfEntries;
@@ -193,7 +193,7 @@ public class StackMapTable extends AttributeInfo {
          * @param pos       the position of the frame in the <code>info</code>
          *                  field of <code>attribute_info</code> structure.
          * @param nth       the frame is the N-th
-         *                  (0, 1st, 2nd, 3rd, 4th, ...) entry. 
+         *                  (0, 1st, 2nd, 3rd, 4th, ...) entry.
          * @return          the position of the next frame.
          */
         int stackMapFrames(int pos, int nth) throws BadBytecode {
@@ -204,8 +204,11 @@ public class StackMapTable extends AttributeInfo {
             }
             else if (type < 128)
                 pos = sameLocals(pos, type);
-            else if (type < 247)
-                throw new BadBytecode("bad frame_type in StackMapTable");
+            else if (type < 247) {
+                throw new BadBytecode(
+                    "bad frame_type " + type + " in StackMapTable (pos: "
+                        + pos + ", frame no.:" + nth + ")");
+            }
             else if (type == 247)   // SAME_LOCALS_1_STACK_ITEM_EXTENDED
                 pos = sameLocals(pos, type);
             else if (type < 251) {
@@ -275,10 +278,10 @@ public class StackMapTable extends AttributeInfo {
 
         /**
          * Invoked if the visited frame is a <code>chop_frame</code>.
-         * 
+         *
          * @param pos               the position.
          * @param offsetDelta
-         * @param k                 the <code>k</code> last locals are absent. 
+         * @param k                 the <code>k</code> last locals are absent.
          */
         public void chopFrame(int pos, int offsetDelta, int k) throws BadBytecode {}
 
@@ -316,7 +319,7 @@ public class StackMapTable extends AttributeInfo {
          *                      or <code>locals[i].offset</code>.
          */
         public void appendFrame(int pos, int offsetDelta, int[] tags, int[] data)
-            throws BadBytecode {} 
+            throws BadBytecode {}
 
         private int fullFrame(int pos) throws BadBytecode {
             int offset = ByteArray.readU16bit(info, pos + 1);
@@ -458,7 +461,7 @@ public class StackMapTable extends AttributeInfo {
      * for a new parameter.
      *
      * @param index          the index of the added local variable.
-     * @param tag            the type tag of that local variable. 
+     * @param tag            the type tag of that local variable.
      * @param classInfo      the index of the <code>CONSTANT_Class_info</code> structure
      *                       in a constant pool table.  This should be zero unless the tag
      *                       is <code>ITEM_Object</code>.
@@ -503,7 +506,7 @@ public class StackMapTable extends AttributeInfo {
     /* This implementation assumes that a local variable initially
      * holding a parameter value is never changed to be a different
      * type.
-     * 
+     *
      */
     static class InsertLocal extends SimpleCopy {
         private int varIndex;
@@ -881,16 +884,21 @@ public class StackMapTable extends AttributeInfo {
             position = oldPos + offsetDelta + (oldPos == 0 ? 0 : 1);
             boolean match;
             if (exclusive)
-                match = oldPos < where  && where <= position;
+                // We optimize this expression by hand:
+                //   match = (oldPos == 0 && where == 0 && (0 < position || 0 == position))
+                //           || oldPos < where  && where <= position;
+                match = (oldPos == 0 && where == 0)
+                        || oldPos < where  && where <= position;
             else
                 match = oldPos <= where  && where < position;
 
             if (match) {
+                int current = info[pos] & 0xff;
                 int newDelta = offsetDelta + gap;
                 position += gap;
                 if (newDelta < 64)
                     info[pos] = (byte)(newDelta + base);
-                else if (offsetDelta < 64) {
+                else if (offsetDelta < 64 && current != entry) {
                     byte[] newinfo = insertGap(info, pos, 2);
                     newinfo[pos] = (byte)entry;
                     ByteArray.write16bit(newDelta, newinfo, pos + 1);
@@ -904,9 +912,15 @@ public class StackMapTable extends AttributeInfo {
         static byte[] insertGap(byte[] info, int where, int gap) {
             int len = info.length;
             byte[] newinfo = new byte[len + gap];
-            for (int i = 0; i < len; i++)
-                newinfo[i + (i < where ? 0 : gap)] = info[i];
-
+            if (where <= 0) {
+                System.arraycopy(info, 0, newinfo, gap, len);
+            } else if (where >= len) {
+                System.arraycopy(info, 0, newinfo, 0, len);
+            } else {
+                assert (where > 0 && where < len);
+                System.arraycopy(info, 0, newinfo, 0, where);
+                System.arraycopy(info, where, newinfo, where + gap, len - where);
+            }
             return newinfo;
         }
 
@@ -931,7 +945,8 @@ public class StackMapTable extends AttributeInfo {
             position = oldPos + offsetDelta + (oldPos == 0 ? 0 : 1);
             boolean match;
             if (exclusive)
-                match = oldPos < where  && where <= position;
+                match = (oldPos == 0 && where == 0)
+                        || oldPos < where  && where <= position;
             else
                 match = oldPos <= where  && where < position;
 
@@ -1017,7 +1032,7 @@ public class StackMapTable extends AttributeInfo {
      *
      * <p>This method is for javassist.convert.TransformNew.
      * It is called to update the stack map table when
-     * the NEW opcode (and the following DUP) is removed. 
+     * the NEW opcode (and the following DUP) is removed.
      *
      * @param where     the position of the removed NEW opcode.
      */

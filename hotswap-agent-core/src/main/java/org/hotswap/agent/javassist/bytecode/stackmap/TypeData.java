@@ -32,7 +32,7 @@ import org.hotswap.agent.javassist.bytecode.StackMapTable;
 
 public abstract class TypeData {
     /* Memo:
-     * array type is a subtype of Cloneable and Serializable 
+     * array type is a subtype of Cloneable and Serializable
      */
 
     public static TypeData[] make(int size) {
@@ -50,7 +50,7 @@ public abstract class TypeData {
      * a subclass of the current type name, then the given name becomes
      * the name of this object type.
      *
-     * @param className     dot-separated name unless the type is an array type. 
+     * @param className     dot-separated name unless the type is an array type.
      */
     @SuppressWarnings("unused")
     private static void setType(TypeData td, String className, ClassPool cp) throws BadBytecode {
@@ -206,7 +206,12 @@ public abstract class TypeData {
         }
 
         @Override
-        public boolean eq(TypeData d) { return getName().equals(d.getName()); }
+        public boolean eq(TypeData d) {
+            if (d.isUninit())
+                return d.eq(this);
+            else
+                return getName().equals(d.getName());
+        }
     }
 
     /* a type variable representing a class type or a basic type.
@@ -429,7 +434,7 @@ public abstract class TypeData {
 
         private String fixTypes2(List<TypeData> scc, Set<String> lowersSet, ClassPool cp) throws NotFoundException {
             Iterator<String> it = lowersSet.iterator();
-            if (lowersSet.size() == 0)
+            if (lowersSet.isEmpty())
                 return null;      // only NullType
             else if (lowersSet.size() == 1)
                 return it.next();
@@ -603,7 +608,7 @@ public abstract class TypeData {
     }
 
     /* A type variable representing an array type.
-     * It is a decorator of another type variable.  
+     * It is a decorator of another type variable.
      */
     public static class ArrayType extends AbsTypeVar {
         private AbsTypeVar element;
@@ -682,8 +687,8 @@ public abstract class TypeData {
     }
 
     /* A type variable representing an array-element type.
-     * It is a decorator of another type variable.  
-     */ 
+     * It is a decorator of another type variable.
+     */
     public static class ArrayElement extends AbsTypeVar {
         private AbsTypeVar array;
 
@@ -853,7 +858,12 @@ public abstract class TypeData {
         }
 
         @Override
-        public boolean eq(TypeData d) { return name.equals(d.getName()); }
+        public boolean eq(TypeData d) {
+            if (d.isUninit())
+                return d.eq(this);
+            else
+                return name.equals(d.getName());
+        }
 
         @Override
         public void setType(String typeName, ClassPool cp) throws BadBytecode {}

@@ -49,6 +49,7 @@ import org.hotswap.agent.javassist.bytecode.ExceptionsAttribute;
 import org.hotswap.agent.javassist.bytecode.FieldInfo;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
 import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.bytecode.SignatureAttribute;
 import org.hotswap.agent.javassist.bytecode.StackMapTable;
 
 /*
@@ -186,6 +187,8 @@ public class ProxyFactory {
     private String basename;
     private String superName;
     private Class<?> thisClass;
+    private String genericSignature;
+
     /**
      * per factory setting initialised from current setting for useCache but able to be reset before each create call
      */
@@ -389,6 +392,7 @@ public class ProxyFactory {
         signatureMethods = null;
         hasGetHandler = false;
         thisClass = null;
+        genericSignature = null;
         writeDirectory = null;
         factoryUseCache = useCache;
         factoryWriteReplace = useWriteReplace;
@@ -433,6 +437,34 @@ public class ProxyFactory {
         methodFilter = mf;
         // force recompute of signature
         signature = null;
+    }
+
+    /**
+     * Sets the generic signature for the proxy class.
+     * <p>For example,
+     *
+     * <pre>class NullPtr&lt;T&gt; {
+     *     T get() { return null; }
+     * }
+     * </pre>
+     *
+     * <p>The following code makes a proxy for <code>NullPtr&lt;String&gt;</code>:
+     *
+     * <pre>ProxyFactory factory = new ProxyFactory();
+     * factory.setSuperclass(NullPtr.class);
+     * factory.setGenericSignature("LNullPtr&lt;Ljava/lang/String;&gt;;");
+     * NullPtr&lt;?&gt; np = (NullPtr&lt;?&gt;)factory.create(null, null);
+     *java.lang.reflect.Type[] x = ((java.lang.reflect.ParameterizedType)np.getClass().getGenericSuperclass())
+     *                                                                     .getActualTypeArguments();
+     * // x[0] == String.class
+     * </pre>
+     *
+     * @param sig   a generic signature.
+     * @see javassist.CtClass#setGenericSignature(String)
+     * @since 3.26
+     */
+    public void setGenericSignature(String sig) {
+        genericSignature = sig;
     }
 
     /**
@@ -539,14 +571,14 @@ public class ProxyFactory {
 
     public String getKey(Class<?> superClass, Class<?>[] interfaces, byte[] signature, boolean useWriteReplace)
     {
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         if (superClass != null){
             sbuf.append(superClass.getName());
         }
-        sbuf.append(":");
+        sbuf.append(':');
         for (int i = 0; i < interfaces.length; i++) {
             sbuf.append(interfaces[i].getName());
-            sbuf.append(":");
+            sbuf.append(':');
         }
         for (int i = 0; i < signature.length; i++) {
             byte b = signature[i];
@@ -622,7 +654,7 @@ public class ProxyFactory {
      * {@code java.lang.invoke.MethodHandles.Lookup}.
      */
     private Class<?> getClassInTheSamePackage() {
-        if (basename.startsWith("org.hotswap.agent.javassist.util.proxy."))       // maybe the super class is java.*
+        if (basename.startsWith(packageForJavaBase))       // maybe the super class is java.*
             return this.getClass();
         else if (superClass != null && superClass != OBJECT_TYPE)
             return superClass;
@@ -880,6 +912,11 @@ public class ProxyFactory {
         finfo4.setAccessFlags(AccessFlag.PUBLIC | AccessFlag.STATIC| AccessFlag.FINAL);
         cf.addField(finfo4);
 
+        if (genericSignature != null) {
+            SignatureAttribute sa = new SignatureAttribute(pool, genericSignature);
+            cf.addAttribute(sa);
+        }
+
         // HashMap allMethods = getMethods(superClass, interfaces);
         // int size = allMethods.size();
         makeConstructors(classname, cf, pool, classname);
@@ -921,9 +958,14 @@ public class ProxyFactory {
         if (Modifier.isFinal(superClass.getModifiers()))
             throw new RuntimeException(superName + " is final");
 
+        // Since java.base module is not opened, its proxy class should be
+        // in a different (open) module.  Otherwise, it could not be created
+        // by reflection.
         if (basename.startsWith("java.") || basename.startsWith("jdk.") || onlyPublicMethods)
-            basename = "org.hotswap.agent.javassist.util.proxy." + basename.replace('.', '_');
+            basename = packageForJavaBase + basename.replace('.', '_');
     }
+
+    private static final String packageForJavaBase = "org.hotswap.agent.javassist.util.proxy.";
 
     private void allocateClassName() {
         classname = makeProxyName(basename);
@@ -1112,10 +1154,10 @@ public class ProxyFactory {
         while (it.hasNext()) {
             Map.Entry<String,Method> e = it.next();
             if (ClassFile.MAJOR_VERSION < ClassFile.JAVA_5 || !isBridge(e.getValue()))
-                if (testBit(signature, index)) {
-                    override(className, e.getValue(), prefix, index,
-                             keyToDesc(e.getKey(), e.getValue()), cf, cp, forwarders);
-                }
+            	if (testBit(signature, index)) {
+            		override(className, e.getValue(), prefix, index,
+            				 keyToDesc(e.getKey(), e.getValue()), cf, cp, forwarders);
+            	}
 
             index++;
         }
@@ -1124,7 +1166,7 @@ public class ProxyFactory {
     }
 
     private static boolean isBridge(Method m) {
-        return m.isBridge();
+    	return m.isBridge();
     }
 
     private void override(String thisClassname, Method meth, String prefix,
@@ -1300,7 +1342,7 @@ public class ProxyFactory {
     }
 
     private static final String HANDLER_GETTER_KEY
-        = HANDLER_GETTER + ":()";
+    	= HANDLER_GETTER + ":()";
 
     private static String keyToDesc(String key, Method m) {
         return key.substring(key.indexOf(':') + 1);

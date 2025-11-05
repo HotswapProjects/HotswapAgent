@@ -16,15 +16,15 @@
 
 package org.hotswap.agent.javassist.util.proxy;
 
+import org.hotswap.agent.javassist.CannotCompileException;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.List;
-
-import org.hotswap.agent.javassist.CannotCompileException;
-import org.hotswap.agent.javassist.bytecode.ClassFile;
 
 /**
  * Helper class for invoking {@link ClassLoader#defineClass(String,byte[],int,int)}.
@@ -219,9 +219,6 @@ public class DefineClassHelper {
                 if (e instanceof RuntimeException) throw (RuntimeException) e;
                 throw new CannotCompileException(e);
             }
-            finally {
-                SecurityActions.setAccessible(defineClass, false);
-            }
         }
     }
 
@@ -330,7 +327,7 @@ public class DefineClassHelper {
     {
         try {
             Lookup lookup = MethodHandles.lookup();
-            lookup = lookup.dropLookupMode(java.lang.invoke.MethodHandles.Lookup.PRIVATE);
+            lookup = lookup.dropLookupMode(Lookup.PRIVATE);
             return lookup.defineClass(bcode);
         }
         catch (Throwable t) {

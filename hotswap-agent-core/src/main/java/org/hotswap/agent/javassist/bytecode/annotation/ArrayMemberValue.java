@@ -15,12 +15,15 @@
  */
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.annotation.MemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.MemberValueVisitor;
+
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-
-import org.hotswap.agent.javassist.ClassPool;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
+import java.util.Map;
 
 /**
  * Array member.
@@ -87,6 +90,30 @@ public class ArrayMemberValue extends MemberValue {
         return a.getClass();
     }
 
+    @Override
+    public void renameClass(String oldname, String newname) {
+        if (type != null) {
+            type.renameClass(oldname, newname);
+        }
+        if (values != null) {
+            for (MemberValue value : values) {
+                value.renameClass(oldname, newname);
+            }
+        }
+    }
+
+    @Override
+    public void renameClass(Map<String, String> classnames) {
+        if (type != null) {
+            type.renameClass(classnames);
+        }
+        if (values != null) {
+            for (MemberValue value : values) {
+                value.renameClass(classnames);
+            }
+        }
+    }
+
     /**
      * Obtains the type of the elements.
      *
@@ -117,7 +144,8 @@ public class ArrayMemberValue extends MemberValue {
      */
     @Override
     public String toString() {
-        StringBuffer buf = new StringBuffer("{");
+        StringBuilder buf = new StringBuilder();
+        buf.append('{');
         if (values != null) {
             for (int i = 0; i < values.length; i++) {
                 buf.append(values[i].toString());
@@ -126,7 +154,7 @@ public class ArrayMemberValue extends MemberValue {
                 }
         }
 
-        buf.append("}");
+        buf.append('}');
         return buf.toString();
     }
 

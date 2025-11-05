@@ -16,6 +16,12 @@
 
 package org.hotswap.agent.javassist;
 
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.expr.ExprEditor;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -26,11 +32,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.Collection;
-
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.expr.ExprEditor;
 
 /* Note:
  *
@@ -69,7 +70,7 @@ public abstract class CtClass {
     /**
      * The version number of this release.
      */
-    public static final String version = "3.24.0-GA";
+    public static final String version = "3.30.2-GA";
 
     /**
      * Prints the version number and the copyright notice.
@@ -80,7 +81,7 @@ public abstract class CtClass {
      */
     public static void main(String[] args) {
         System.out.println("Javassist version " + CtClass.version);
-        System.out.println("Copyright (C) 1999-2018 Shigeru Chiba."
+        System.out.println("Copyright (C) 1999-2023 Shigeru Chiba."
                            + " All Rights Reserved.");
     }
 
@@ -200,12 +201,12 @@ public abstract class CtClass {
      */
     @Override
     public String toString() {
-        StringBuffer buf = new StringBuffer(getClass().getName());
-        buf.append("@");
+        StringBuilder buf = new StringBuilder(getClass().getName());
+        buf.append('@');
         buf.append(Integer.toHexString(hashCode()));
-        buf.append("[");
+        buf.append('[');
         extendToString(buf);
-        buf.append("]");
+        buf.append(']');
         return buf.toString();
     }
 
@@ -213,7 +214,7 @@ public abstract class CtClass {
      * Implemented in subclasses to add to the {@link #toString()} result.
      * Subclasses should put a space before each token added to the buffer.
      */
-    protected void extendToString(StringBuffer buffer) {
+    protected void extendToString(StringBuilder buffer) {
         buffer.append(getName());
     }
 
@@ -330,6 +331,14 @@ public abstract class CtClass {
      */
     public boolean isArray() {
         return false;
+    }
+
+    /**
+     * Returns <code>true</code> if this object represents a Kotlin class.
+     * @since 3.26
+     */
+    public boolean isKotlin() {
+        return hasAnnotation("kotlin.Metadata");
     }
 
     /**
@@ -716,10 +725,6 @@ public abstract class CtClass {
         return null;
     }
 
-    public String getSuperclassName() throws NotFoundException {
-        return null;
-    }
-
     /**
      * Changes a super class unless this object represents an interface.
      * The new super class must be compatible with the old one; for example,
@@ -776,16 +781,6 @@ public abstract class CtClass {
      */
     public CtClass getDeclaringClass() throws NotFoundException {
         return null;
-    }
-
-    /**
-     * Checks if ctClass is inner class.
-     *
-     * @return true, if is inner class
-     * @throws NotFoundException the not found exception
-     */
-    public boolean isInnerClass()  throws NotFoundException {
-        return false;
     }
 
     /**
@@ -1003,7 +998,7 @@ public abstract class CtClass {
      * Gets all methods declared in the class.  The inherited methods
      * are not included.
      *
-     * @see javassist.CtMethod
+     * @see CtMethod
      */
     public CtMethod[] getDeclaredMethods() {
         return new CtMethod[0];
@@ -1017,7 +1012,7 @@ public abstract class CtClass {
      *
      * @param name              method name
      * @param params            parameter types
-     * @see javassist.CtMethod
+     * @see CtMethod
      */
     public CtMethod getDeclaredMethod(String name, CtClass[] params)
         throws NotFoundException
@@ -1046,7 +1041,7 @@ public abstract class CtClass {
      *
      * <p>Note: this method does not search the superclasses.
      *
-     * @see javassist.CtMethod
+     * @see CtMethod
      */
     public CtMethod getDeclaredMethod(String name) throws NotFoundException {
         throw new NotFoundException(name);
@@ -1385,7 +1380,7 @@ public abstract class CtClass {
      * @param domain        the protection domain that the class belongs to.
      *                      If it is null, the default domain created
      *                      by <code>java.lang.ClassLoader</code> is used.
-     * @see ClassPool#toClass(CtClass,java.lang.ClassLoader)
+     * @see ClassPool#toClass(CtClass, ClassLoader)
      * @since 3.3
      */
     public Class<?> toClass(ClassLoader loader, ProtectionDomain domain)
@@ -1429,7 +1424,7 @@ public abstract class CtClass {
     public void detach() {
         ClassPool cp = getClassPool();
         CtClass obj = cp.removeCached(getName());
-        if (obj != this)
+        if (obj != null && obj != this)
             cp.cacheCtClass(getName(), obj, false);
     }
 

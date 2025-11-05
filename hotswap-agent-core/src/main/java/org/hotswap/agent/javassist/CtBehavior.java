@@ -100,7 +100,7 @@ public abstract class CtBehavior extends CtMember {
     }
 
     @Override
-    protected void extendToString(StringBuffer buffer) {
+    protected void extendToString(StringBuilder buffer) {
         buffer.append(' ');
         buffer.append(getName());
         buffer.append(' ');
@@ -782,7 +782,7 @@ public abstract class CtBehavior extends CtMember {
                                         Modifier.isStatic(getModifiers()));
             jv.recordParamNames(ca, nvars);
             jv.recordLocalVariables(ca, 0);
-            jv.recordType(getReturnType0());
+            jv.recordReturnType(getReturnType0(), false);
             jv.compileStmnt(src);
             Bytecode b = jv.getBytecode();
             int stack = b.getMaxStack();
@@ -821,7 +821,7 @@ public abstract class CtBehavior extends CtMember {
     public void insertAfter(String src)
         throws CannotCompileException
     {
-        insertAfter(src, false);
+        insertAfter(src, false, false);
     }
 
     /**
@@ -837,6 +837,35 @@ public abstract class CtBehavior extends CtMember {
      *                  access local variables.
      */
     public void insertAfter(String src, boolean asFinally)
+        throws CannotCompileException
+    {
+        insertAfter(src, asFinally, false);
+    }
+
+    /**
+     * Inserts bytecode at the end of the body.
+     * The bytecode is inserted just before every return instruction.
+     *
+     * @param src       the source code representing the inserted bytecode.
+     *                  It must be a single statement or block.
+     * @param asFinally         true if the inserted bytecode is executed
+     *                  not only when the control normally returns
+     *                  but also when an exception is thrown.
+     *                  If this parameter is true, the inserted code cannot
+     *                  access local variables.
+     * @param redundant if true, redundant bytecode will be generated.
+     *                  the redundancy is necessary when some compilers (Kotlin?)
+     *                  generate the original bytecode.
+     *                  The other <code>insertAfter</code> methods calls this method
+     *                  with <code>false</code> for this parameter.
+     *                  A tip is to pass <code>this.getDeclaringClass().isKotlin()</code>
+     *                  to this parameter.
+     *
+     * @see CtClass#isKotlin()
+     * @see #getDeclaringClass()
+     * @since 3.26
+     */
+    public void insertAfter(String src, boolean asFinally, boolean redundant)
         throws CannotCompileException
     {
         CtClass cc = declaringClass;
@@ -878,18 +907,50 @@ public abstract class CtBehavior extends CtMember {
                 if (c == Opcode.ARETURN || c == Opcode.IRETURN
                     || c == Opcode.FRETURN || c == Opcode.LRETURN
                     || c == Opcode.DRETURN || c == Opcode.RETURN) {
-                    if (noReturn) {
-                        // finally clause for normal termination
-                        adviceLen = insertAfterAdvice(b, jv, src, pool, rtype, varNo);
-                        handlerPos = iterator.append(b.get());
-                        iterator.append(b.getExceptionTable(), handlerPos);
-                        advicePos = iterator.getCodeLength() - adviceLen;
-                        handlerLen = advicePos - handlerPos;
-                        noReturn = false;
+                    if (redundant) {
+                        iterator.setMark2(handlerPos);
+                        Bytecode bcode;
+                        Javac jvc;
+                        int retVarNo;
+                        if (noReturn) {
+                            noReturn = false;
+                            bcode = b;
+                            jvc = jv;
+                            retVarNo = varNo;
+                        }
+                        else {
+                            bcode = new Bytecode(pool, 0, retAddr + 1);
+                            bcode.setStackDepth(ca.getMaxStack() + 1);
+                            jvc = new Javac(bcode, cc);
+                            int nvars2 = jvc.recordParams(getParameterTypes(),
+                                                          Modifier.isStatic(getModifiers()));
+                            jvc.recordParamNames(ca, nvars2);
+                            retVarNo = jvc.recordReturnType(rtype, true);
+                            jvc.recordLocalVariables(ca, 0);
+                        }
+
+                        int adviceLen2 = insertAfterAdvice(bcode, jvc, src, pool, rtype, retVarNo);
+                        int offset = iterator.append(bcode.get());
+                        iterator.append(bcode.getExceptionTable(), offset);
+                        int advicePos2 = iterator.getCodeLength() - adviceLen2;
+                        insertGoto(iterator, advicePos2, pos);
+                        handlerPos = iterator.getMark2();
                     }
-                    insertGoto(iterator, advicePos, pos);
-                    advicePos = iterator.getCodeLength() - adviceLen;
-                    handlerPos = advicePos - handlerLen;
+                    else {
+                        if (noReturn) {
+                            // finally clause for normal termination
+                            adviceLen = insertAfterAdvice(b, jv, src, pool, rtype, varNo);
+                            handlerPos = iterator.append(b.get());
+                            iterator.append(b.getExceptionTable(), handlerPos);
+                            advicePos = iterator.getCodeLength() - adviceLen;
+                            handlerLen = advicePos - handlerPos;
+                            noReturn = false;
+                        }
+
+                        insertGoto(iterator, advicePos, pos);
+                        advicePos = iterator.getCodeLength() - adviceLen;
+                        handlerPos = advicePos - handlerLen;
+                    }
                 }
             }
 

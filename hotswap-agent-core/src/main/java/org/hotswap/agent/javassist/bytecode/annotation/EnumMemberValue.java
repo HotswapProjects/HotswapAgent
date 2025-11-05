@@ -16,12 +16,13 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * Enum constant value.
@@ -74,6 +75,20 @@ public class EnumMemberValue extends MemberValue {
     @Override
     Class<?> getType(ClassLoader cl) throws ClassNotFoundException {
         return loadClass(cl, getType());
+    }
+
+    @Override
+    public void renameClass(String oldname, String newname) {
+        String type = cp.getUtf8Info(typeIndex);
+        String newType = Descriptor.rename(type, oldname, newname);
+        setType(Descriptor.toClassName(newType));
+    }
+
+    @Override
+    public void renameClass(Map<String, String> classnames) {
+        String type = cp.getUtf8Info(typeIndex);
+        String newType = Descriptor.rename(type, classnames);
+        setType(Descriptor.toClassName(newType));
     }
 
     /**
