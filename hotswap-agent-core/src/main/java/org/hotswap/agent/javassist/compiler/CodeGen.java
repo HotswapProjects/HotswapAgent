@@ -16,12 +16,11 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.hotswap.agent.javassist.bytecode.Bytecode;
 import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.compiler.CompileError;
+import org.hotswap.agent.javassist.compiler.TokenId;
+import org.hotswap.agent.javassist.compiler.TypeChecker;
 import org.hotswap.agent.javassist.compiler.ast.ASTList;
 import org.hotswap.agent.javassist.compiler.ast.ASTree;
 import org.hotswap.agent.javassist.compiler.ast.ArrayInit;
@@ -46,6 +45,10 @@ import org.hotswap.agent.javassist.compiler.ast.StringL;
 import org.hotswap.agent.javassist.compiler.ast.Symbol;
 import org.hotswap.agent.javassist.compiler.ast.Variable;
 import org.hotswap.agent.javassist.compiler.ast.Visitor;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /* The code generator is implemented by three files:
  * CodeGen.java, MemberCodeGen.java, and JvstCodeGen.
@@ -197,7 +200,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
 
         if (dim == 0)
             return name;
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         int d = dim;
         while (d-- > 0)
             sbuf.append('[');
@@ -241,7 +244,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
             break;
         }
 
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         while (dim-- > 0)
                 sbuf.append('[');
 
@@ -473,7 +476,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
         boolean alwaysBranch = compileBooleanExpr(true, expr);
         if (alwaysBranch) {
             bytecode.addOpcode(Opcode.GOTO);
-            alwaysBranch = breakList.size() == 0;
+            alwaysBranch = breakList.isEmpty();
         }
 
         bytecode.addIndex(pc2 - bytecode.currentPc() + 1);
@@ -542,7 +545,23 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
     }
 
     private void atSwitchStmnt(Stmnt st) throws CompileError {
+        boolean isString = false;
+        if (typeChecker != null) {
+            doTypeCheck(st.head());
+            isString = typeChecker.exprType == TypeChecker.CLASS
+                       && typeChecker.arrayDim == 0
+                       && TypeChecker.jvmJavaLangString.equals(typeChecker.className);
+        }
+
         compileExpr(st.head());
+        int tmpVar = -1;
+        if (isString) {
+            tmpVar = getMaxLocals();
+            incMaxLocals(1);
+            bytecode.addAstore(tmpVar);
+            bytecode.addAload(tmpVar);
+            bytecode.addInvokevirtual(TypeChecker.jvmJavaLangString, "hashCode", "()I");
+        }
 
         List<Integer>  prevBreakList = breakList;
         breakList = new ArrayList<Integer>();
@@ -565,6 +584,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
         bytecode.addGap(npairs * 8);
 
         long[] pairs = new long[npairs];
+        ArrayList<Integer> gotoDefaults = new ArrayList<Integer>();
         int ipairs = 0;
         int defaultPc = -1;
         for (ASTList list = body; list != null; list = list.tail()) {
@@ -575,9 +595,18 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
             else if (op != CASE)
                 fatal();
             else {
+                int curPos = bytecode.currentPc();
+                long caseLabel;
+                if (isString) {
+                    // computeStringLabel() also adds bytecode as its side-effects.
+                    caseLabel = (long)computeStringLabel(label.head(), tmpVar, gotoDefaults);
+                }
+                else
+                    caseLabel = (long)computeLabel(label.head());
+
                 pairs[ipairs++]
-                    = ((long)computeLabel(label.head()) << 32) +
-                      ((long)(bytecode.currentPc() - opcodePc) & 0xffffffff);
+                    = (caseLabel << 32) +
+                      ((long)(curPos - opcodePc) & 0xffffffff);
             }
 
             hasReturned = false;
@@ -600,6 +629,8 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
             defaultPc = endPc;
 
         bytecode.write32bit(opcodePc2, defaultPc - opcodePc);
+        for (int addr: gotoDefaults)
+            bytecode.write16bit(addr, defaultPc - addr + 1);
 
         patchGoto(breakList, endPc);
         breakList = prevBreakList;
@@ -610,6 +641,26 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
         expr = TypeChecker.stripPlusExpr(expr);
         if (expr instanceof IntConst)
             return (int)((IntConst)expr).get();
+        throw new CompileError("bad case label");
+    }
+
+    private int computeStringLabel(ASTree expr, int tmpVar, List<Integer> gotoDefaults)
+        throws CompileError
+    {
+        doTypeCheck(expr);
+        expr = TypeChecker.stripPlusExpr(expr);
+        if (expr instanceof StringL) {
+            String label = ((StringL)expr).get();
+            bytecode.addAload(tmpVar);
+            bytecode.addLdc(label);
+            bytecode.addInvokevirtual(TypeChecker.jvmJavaLangString, "equals",
+                                      "(Ljava/lang/Object;)Z");
+            bytecode.addOpcode(IFEQ);
+            Integer pc = Integer.valueOf(bytecode.currentPc());
+            bytecode.addIndex(0);
+            gotoDefaults.add(pc);
+            return (int)label.hashCode();
+        }
         throw new CompileError("bad case label");
     }
 
@@ -1169,19 +1220,19 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
                 arrayDim = 0;
                 return true;
             }
-                int pc = bytecode.currentPc();
-                bytecode.addIndex(0);       // correct later
-                if (booleanExpr(isAndAnd, bexpr.oprand2()))
-                    bytecode.addOpcode(Opcode.GOTO);
+            	int pc = bytecode.currentPc();
+            	bytecode.addIndex(0);       // correct later
+            	if (booleanExpr(isAndAnd, bexpr.oprand2()))
+            		bytecode.addOpcode(Opcode.GOTO);
 
-                bytecode.write16bit(pc, bytecode.currentPc() - pc + 3);
-                if (branchIf != isAndAnd) {
-                    bytecode.addIndex(6);   // skip GOTO instruction
-                    bytecode.addOpcode(Opcode.GOTO);
-                }
+            	bytecode.write16bit(pc, bytecode.currentPc() - pc + 3);
+            	if (branchIf != isAndAnd) {
+            		bytecode.addIndex(6);   // skip GOTO instruction
+            		bytecode.addOpcode(Opcode.GOTO);
+            	}
         }
         else if (isAlwaysBranch(expr, branchIf)) {
-            // Opcode.GOTO is not added here.  The caller must add it.
+        	// Opcode.GOTO is not added here.  The caller must add it.
             exprType = BOOLEAN;
             arrayDim = 0;
             return true;	// always branch
@@ -1615,7 +1666,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
                      * must be passed to Class.forName().
                      */
                     name2 = MemberResolver.jvmToJavaName(name2);
-                    StringBuffer sbuf = new StringBuffer();
+                    StringBuilder sbuf = new StringBuilder();
                     while (i-- >= 0)
                         sbuf.append('[');
 

@@ -103,12 +103,6 @@ final class CtArray extends CtClass
         return pool.get(javaLangObject);
     }
 
-    public String getSuperclassName() throws NotFoundException
-    {
-        CtClass superclass = getSuperclass();
-        return superclass != null ? superclass.getName() : null;
-    }
-
     @Override
     public CtMethod[] getMethods()
     {

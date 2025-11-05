@@ -53,7 +53,7 @@ public class CtField extends CtMember {
      * by a <code>CtField.Initializer</code> object.
      *
      * <p>If getter and setter methods are needed,
-     * call <code>CtNewMethod.getter()</code> and 
+     * call <code>CtNewMethod.getter()</code> and
      * <code>CtNewMethod.setter()</code>.
      *
      * @param type              field type
@@ -79,7 +79,7 @@ public class CtField extends CtMember {
      * by a <code>CtField.Initializer</code> object.
      *
      * <p>If getter and setter methods are needed,
-     * call <code>CtNewMethod.getter()</code> and 
+     * call <code>CtNewMethod.getter()</code> and
      * <code>CtNewMethod.setter()</code>.
      *
      * @param src               the original field
@@ -97,7 +97,7 @@ public class CtField extends CtMember {
         fi.setAccessFlags(src.fieldInfo.getAccessFlags());
         ConstPool cp = fi.getConstPool();
         List<AttributeInfo> attributes = src.fieldInfo.getAttributes();
-        for (AttributeInfo ainfo : attributes) 
+        for (AttributeInfo ainfo : attributes)
             fi.addAttribute(ainfo.copy(cp, null));
     }
 
@@ -128,7 +128,7 @@ public class CtField extends CtMember {
     }
 
     @Override
-    protected void extendToString(StringBuffer buffer) {
+    protected void extendToString(StringBuilder buffer) {
         buffer.append(' ');
         buffer.append(getName());
         buffer.append(' ');
@@ -262,9 +262,9 @@ public class CtField extends CtMember {
     public boolean hasAnnotation(String typeName) {
         FieldInfo fi = getFieldInfo2();
         AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                    fi.getAttribute(AnnotationsAttribute.invisibleTag);  
+                    fi.getAttribute(AnnotationsAttribute.invisibleTag);
         AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                    fi.getAttribute(AnnotationsAttribute.visibleTag);  
+                    fi.getAttribute(AnnotationsAttribute.visibleTag);
         return CtClassType.hasAnnotationType(typeName, getDeclaringClass().getClassPool(),
                                              ainfo, ainfo2);
     }
@@ -284,9 +284,9 @@ public class CtField extends CtMember {
     public Object getAnnotation(Class<?> clz) throws ClassNotFoundException {
         FieldInfo fi = getFieldInfo2();
         AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                    fi.getAttribute(AnnotationsAttribute.invisibleTag);  
+                    fi.getAttribute(AnnotationsAttribute.invisibleTag);
         AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                    fi.getAttribute(AnnotationsAttribute.visibleTag);  
+                    fi.getAttribute(AnnotationsAttribute.visibleTag);
         return CtClassType.getAnnotationType(clz, getDeclaringClass().getClassPool(),
                                              ainfo, ainfo2);
     }
@@ -325,9 +325,9 @@ public class CtField extends CtMember {
     private Object[] getAnnotations(boolean ignoreNotFound) throws ClassNotFoundException {
         FieldInfo fi = getFieldInfo2();
         AnnotationsAttribute ainfo = (AnnotationsAttribute)
-                    fi.getAttribute(AnnotationsAttribute.invisibleTag);  
+                    fi.getAttribute(AnnotationsAttribute.invisibleTag);
         AnnotationsAttribute ainfo2 = (AnnotationsAttribute)
-                    fi.getAttribute(AnnotationsAttribute.visibleTag);  
+                    fi.getAttribute(AnnotationsAttribute.visibleTag);
         return CtClassType.toAnnotationType(ignoreNotFound, getDeclaringClass().getClassPool(),
                                             ainfo, ainfo2);
     }
@@ -417,7 +417,7 @@ public class CtField extends CtMember {
      * @return  a <code>Integer</code>, <code>Long</code>, <code>Float</code>,
      *          <code>Double</code>, <code>Boolean</code>,
      *          or <code>String</code> object
-     *          representing the constant value. 
+     *          representing the constant value.
      *          <code>null</code> if it is not a constant field
      *          or if the field type is not a primitive type
      *          or <code>String</code>.
@@ -818,7 +818,7 @@ public class CtField extends CtMember {
          * @throws NotFoundException    if the type of the array components
          *                              is not found.
          */
-        public static Initializer byNewArray(CtClass type, int size) 
+        public static Initializer byNewArray(CtClass type, int size)
             throws NotFoundException
         {
             return new ArrayInitializer(type.getComponentType(), size);

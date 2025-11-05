@@ -365,7 +365,7 @@ public class MemberCodeGen extends CodeGen {
                 sizeExpr.accept(this);
         else
             if (sizeExpr == null) {
-                int s = init.length();
+                int s = init.size();
                 bytecode.addIconst(s);
             }
             else
@@ -414,7 +414,7 @@ public class MemberCodeGen extends CodeGen {
         }
 
         if (init != null) {
-            int s = init.length();
+            int s = init.size();
             ASTList list = init;
             for (int i = 0; i < s; i++) {
                 bytecode.addOpcode(DUP);
@@ -619,6 +619,18 @@ public class MemberCodeGen extends CodeGen {
                           aload0pos, found);
     }
 
+    private boolean isFromSameDeclaringClass(CtClass outer, CtClass inner) {
+        try {
+            while (outer != null) {
+                if (isEnclosing(outer, inner))
+                    return true;
+                outer = outer.getDeclaringClass();
+            }
+        }
+        catch (NotFoundException e) {}
+        return false;
+    }
+
     private void atMethodCallCore2(CtClass targetClass, String mname,
                                    boolean isStatic, boolean isSpecial,
                                    int aload0pos,
@@ -636,8 +648,11 @@ public class MemberCodeGen extends CodeGen {
                 throw new CompileError("no such constructor: " + targetClass.getName());
 
             if (declClass != thisClass && AccessFlag.isPrivate(acc)) {
-                desc = getAccessibleConstructor(desc, declClass, minfo);
-                bytecode.addOpcode(Opcode.ACONST_NULL); // the last parameter
+                if (declClass.getClassFile().getMajorVersion() < ClassFile.JAVA_8
+                        || !isFromSameDeclaringClass(declClass, thisClass)) {
+                    desc = getAccessibleConstructor(desc, declClass, minfo);
+                    bytecode.addOpcode(Opcode.ACONST_NULL); // the last parameter
+                }
             }
         }
         else if (AccessFlag.isPrivate(acc))
@@ -749,7 +764,7 @@ public class MemberCodeGen extends CodeGen {
             }
         }
         catch (NotFoundException e) {}
-        return false;   
+        return false;
     }
 
     public int getMethodArgsLength(ASTList args) {
@@ -829,7 +844,7 @@ public class MemberCodeGen extends CodeGen {
         if (op == '=') {
             FieldInfo finfo = f.getFieldInfo2();
             setFieldType(finfo);
-            AccessorMaker maker = isAccessibleField(f, finfo);            
+            AccessorMaker maker = isAccessibleField(f, finfo);
             if (maker == null)
                 fi = addFieldrefInfo(f, finfo);
             else
@@ -927,7 +942,7 @@ public class MemberCodeGen extends CodeGen {
     /**
      * Generates bytecode for reading a field value.
      * It returns a fieldref_info index or zero if the field is a private
-     * one declared in an enclosing class. 
+     * one declared in an enclosing class.
      */
     private int atFieldRead(CtField f, boolean isStatic) throws CompileError {
         FieldInfo finfo = f.getFieldInfo2();
@@ -979,7 +994,7 @@ public class MemberCodeGen extends CodeGen {
     /**
      * Sets exprType, arrayDim, and className.
      *
-     * @return true if the field type is long or double. 
+     * @return true if the field type is long or double.
      */
     private boolean setFieldType(FieldInfo finfo) throws CompileError {
         String type = finfo.getDescriptor();
@@ -1080,7 +1095,7 @@ public class MemberCodeGen extends CodeGen {
             if (op == MEMBER) {
                 /* static member by # (extension by Javassist)
                  * For example, if int.class is parsed, the resulting tree
-                 * is (# "java.lang.Integer" "TYPE"). 
+                 * is (# "java.lang.Integer" "TYPE").
                  */
                 CtField f = resolver.lookupField(((Symbol)e.oprand1()).get(),
                                          (Symbol)e.oprand2());

@@ -137,42 +137,6 @@ public final class ClassFile {
     public static final int JAVA_11 = 55;
 
     /**
-     * The major version number of class files
-     * for JDK 12.
-     */
-    public static final int JAVA_12 = 56;
-
-    /**
-     * The major version number of class files
-     * for JDK 13.
-     */
-    public static final int JAVA_13 = 57;
-
-    /**
-     * The major version number of class files
-     * for JDK 14.
-     */
-    public static final int JAVA_14 = 58;
-
-    /**
-     * The major version number of class files
-     * for JDK 15.
-     */
-    public static final int JAVA_15 = 59;
-
-    /**
-     * The major version number of class files
-     * for JDK 16.
-     */
-    public static final int JAVA_16 = 60;
-
-    /**
-     * The major version number of class files
-     * for JDK 17.
-     */
-    public static final int JAVA_17 = 61;
-
-    /**
      * The major version number of class files created
      * from scratch.  The default value is 47 (JDK 1.3).
      * It is 49 (JDK 1.5)
@@ -189,20 +153,8 @@ public final class ClassFile {
      * if the JVM supports <code>java.util.List.copyOf(Collection)</code>.
      * It is 55 (JDK 11)
      * if the JVM supports <code>java.util.Optional.isEmpty()</code>.
-     * It is 56 (JDK 12)
-     * if the JVM supports <code>com.sun.source.tree.CaseTree.getExpressions()</code>.
-     * It is 57 (JDK 13)
-     * if the JVM supports <code>com.sun.source.tree.YieldTree</code>.
-     * It is 58 (JDK 14)
-     * if the JVM supports <code>com.sun.management.OperatingSystemMXBean.getFreeMemorySize()</code>.
-     * It is 59 (JDK 15)
-     * if the JVM supports <code>java.security.interfaces.EdECPublicKey</code>.
-     * It is 60 (JDK 16)
-     * if the JVM supports <code>com.sun.source.tree.PatternTree</code>.
-     * It is 61 (JDK 17)
-     * if the JVM supports <code>java.util.random.RandomGenerator</code>.
      */
-    public static int MAJOR_VERSION;
+    public static final int MAJOR_VERSION;
 
     static {
         int ver = JAVA_3;
@@ -221,19 +173,8 @@ public final class ClassFile {
             ver = JAVA_10;
             Class.forName("java.util.Optional").getMethod("isEmpty");
             ver = JAVA_11;
-            Class.forName("com.sun.source.tree.CaseTree").getMethod("getExpressions");
-            ver = JAVA_12;
-            Class.forName("com.sun.source.tree.YieldTree");
-            ver = JAVA_13;
-            Class.forName("com.sun.management.OperatingSystemMXBean").getMethod("getFreeMemorySize");
-            ver = JAVA_14;
-            Class.forName("java.security.interfaces.EdECPublicKey");
-            ver = JAVA_15;
-            Class.forName("com.sun.source.tree.PatternTree");
-            ver = JAVA_16;
-            Class.forName("java.util.random.RandomGenerator");
-            ver = JAVA_17;
-        } catch (Throwable t) {}
+        }
+        catch (Throwable t) {}
         MAJOR_VERSION = ver;
     }
 

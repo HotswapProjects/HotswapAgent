@@ -40,7 +40,7 @@ import org.hotswap.agent.javassist.bytecode.annotation.MemberValue;
  * <p>The defautl values of <code>name</code> and <code>age</code>
  * are stored as annotation default attributes in <code>Author.class</code>.
  * The following code snippet obtains the default value of <code>name</code>:
- * 
+ *
  * <pre>
  * ClassPool pool = ...
  * CtClass cc = pool.get("Author");
@@ -117,6 +117,28 @@ public class AnnotationDefaultAttribute extends AttributeInfo {
         }
     }
 
+    @Override
+    void renameClass(String oldname, String newname) {
+        try {
+            MemberValue defaultValue = getDefaultValue();
+            defaultValue.renameClass(oldname, newname);
+            setDefaultValue(defaultValue);
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    @Override
+    void renameClass(Map<String, String> classnames) {
+        try {
+            MemberValue defaultValue = getDefaultValue();
+            defaultValue.renameClass(classnames);
+            setDefaultValue(defaultValue);
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
     /**
      * Obtains the default value represented by this attribute.
      */
@@ -149,7 +171,7 @@ public class AnnotationDefaultAttribute extends AttributeInfo {
         }
 
         set(output.toByteArray());
-        
+
     }
 
     /**

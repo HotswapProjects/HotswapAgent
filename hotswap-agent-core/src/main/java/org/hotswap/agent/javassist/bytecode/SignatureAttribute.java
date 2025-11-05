@@ -16,14 +16,20 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.bytecode.AttributeInfo;
+import org.hotswap.agent.javassist.bytecode.BadBytecode;
+import org.hotswap.agent.javassist.bytecode.ByteArray;
+import org.hotswap.agent.javassist.bytecode.ConstPool;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.hotswap.agent.javassist.CtClass;
 
 /**
  * <code>Signature_attribute</code>.
@@ -110,42 +116,34 @@ public class SignatureAttribute extends AttributeInfo {
     }
 
     static String renameClass(String desc, Map<String,String> map) {
-        if (map == null)
+        if (map == null || map.isEmpty())
             return desc;
 
         StringBuilder newdesc = new StringBuilder();
         int head = 0;
         int i = 0;
         for (;;) {
-            int j = desc.indexOf('L', i);
+            final int j = desc.indexOf('L', i);
             if (j < 0)
                 break;
 
-            StringBuilder nameBuf = new StringBuilder();
-            int k = j;
-            char c;
-            try {
-                while ((c = desc.charAt(++k)) != ';') {
-                    nameBuf.append(c);
-                    if (c == '<') {
-                        while ((c = desc.charAt(++k)) != '>')
-                            nameBuf.append(c);
+            final ArrayList<StringBuilder> nameBufs = new ArrayList<>();
+            final ArrayList<StringBuilder> genericParamBufs = new ArrayList<>();
+            i = parseClassName(nameBufs, genericParamBufs, desc, j) + 1;
+            if (i < 0)
+                break;
 
-                        nameBuf.append(c);
-                    }
-                }
+            String name = String.join("$", nameBufs.toArray(new StringBuilder[0]));
+            String newname = map.get(name);
+            if (newname != null) {
+                if (makeNewClassName(desc, map, name, newname, newdesc, head, j,
+                                     nameBufs, genericParamBufs))
+                    head = i;
             }
-            catch (IndexOutOfBoundsException e) { break; }
-            i = k + 1;
-            String name = nameBuf.toString();
-            String name2 = map.get(name);
-            if (name2 != null) {
-                newdesc.append(desc.substring(head, j));
-                newdesc.append('L');
-                newdesc.append(name2);
-                newdesc.append(c);
-                head = i;
-            }
+            else
+                if (replaceTypeArguments(desc, map, newdesc, head, j,
+                                      nameBufs, genericParamBufs))
+                    head = i;
         }
 
         if (head == 0)
@@ -155,6 +153,127 @@ public class SignatureAttribute extends AttributeInfo {
             newdesc.append(desc.substring(head, len));
 
         return newdesc.toString();
+    }
+
+    private static int parseClassName(ArrayList<StringBuilder> nameBufs,
+                                    ArrayList<StringBuilder> genericParamBufs,
+                                    String desc, int j)
+    {
+        StringBuilder nameBuf = new StringBuilder();
+        StringBuilder genericParamBuf = new StringBuilder();
+        int k = j;
+        char c;
+        try {
+            while ((c = desc.charAt(++k)) != ';') {
+                if (c == '<') {
+                    genericParamBuf.append(c);
+                    int level = 1;
+                    while (level > 0) {
+                        c = desc.charAt(++k);
+                        genericParamBuf.append(c);
+                        if (c == '<')
+                            ++level;
+                        else if (c == '>')
+                            --level;
+                    }
+                }
+                else if (c == '.') {
+                    nameBufs.add(nameBuf);
+                    genericParamBufs.add(genericParamBuf);
+                    nameBuf = new StringBuilder();
+                    genericParamBuf = new StringBuilder();
+                }
+                else
+                    nameBuf.append(c);
+            }
+        }
+        catch (IndexOutOfBoundsException e) {
+            return -2;  // error
+        }
+
+        nameBufs.add(nameBuf);
+        genericParamBufs.add(genericParamBuf);
+        return k;
+    }
+
+    private static boolean makeNewClassName(String desc,
+                                    Map<String,String> map, String name,
+                                    String newname, StringBuilder newdesc,
+                                    int head, int j,
+                                    ArrayList<StringBuilder> nameBufs,
+                                    ArrayList<StringBuilder> genericParamBufs)
+    {
+        final String[] nameSplit = name.split("\\$");
+        final String[] newnameSplit = newname.split("\\$");
+        if (nameSplit.length == newnameSplit.length) {
+            final String[] newnames = new String[nameBufs.size()];
+            for (int start = 0, z = 0; z < nameBufs.size(); z++) {
+                final int toAggregate = (int) nameBufs.get(z).chars().filter(ch -> ch == '$').count() + 1;
+                String s = String.join("$", Arrays.copyOfRange(newnameSplit, start, start + toAggregate));
+                start += toAggregate;
+                newnames[z] = s;
+            }
+
+            newdesc.append(desc.substring(head, j));
+            newdesc.append('L');
+            for (int z = 0; z < newnames.length; z++) {
+                if (z > 0)
+                    newdesc.append('.');
+
+                newdesc.append(newnames[z]);
+                final String newgenericParam;
+                final StringBuilder genericParamBufCurrent = genericParamBufs.get(z);
+                if (genericParamBufCurrent.length() > 0)
+                    newgenericParam = "<" + renameClass(genericParamBufCurrent.substring(1, genericParamBufCurrent.length() - 1), map) + ">";
+                else
+                    newgenericParam = genericParamBufCurrent.toString(); //empty string
+
+                newdesc.append(newgenericParam);
+            }
+            newdesc.append(';'); //the final semicolon
+            return true;
+        }
+        else
+            return false;
+    }
+
+    private static boolean replaceTypeArguments(String desc,
+                                    Map<String,String> map,
+                                    StringBuilder newdesc,
+                                    int head, int j,
+                                    ArrayList<StringBuilder> nameBufs,
+                                    ArrayList<StringBuilder> genericParamBufs)
+    {
+        final ArrayList<String> newGenericParamBufs = new ArrayList<String>();
+        boolean changed = false;
+        for (int z = 0; z < genericParamBufs.size(); z++) {
+            final String newGenericParam;
+            final StringBuilder genericParamBufCurrent = genericParamBufs.get(z);
+            if (genericParamBufCurrent.length() > 0) {
+                newGenericParam = "<" + renameClass(genericParamBufCurrent.substring(1, genericParamBufCurrent.length() - 1), map) + ">";
+                changed = changed || !genericParamBufCurrent.toString().equals(newGenericParam);
+            }
+            else
+                newGenericParam = genericParamBufCurrent.toString(); //empty string
+
+                newGenericParamBufs.add(newGenericParam);
+        }
+
+        if (changed) {
+            newdesc.append(desc.substring(head, j));
+            newdesc.append('L');
+            for (int z = 0; z < genericParamBufs.size(); z++) {
+                if (z > 0)
+                    newdesc.append('.');
+
+                newdesc.append(nameBufs.get(z));
+                newdesc.append(newGenericParamBufs.get(z));
+            }
+            newdesc.append(';');
+            return true;
+        }
+        else
+            return false;
     }
 
     @SuppressWarnings("unused")
@@ -230,7 +349,7 @@ public class SignatureAttribute extends AttributeInfo {
          */
         @Override
         public String toString() {
-            StringBuffer sbuf = new StringBuffer();
+            StringBuilder sbuf = new StringBuilder();
 
             TypeParameter.toString(sbuf, params);
             sbuf.append(" extends ").append(superClass);
@@ -246,7 +365,7 @@ public class SignatureAttribute extends AttributeInfo {
          * Returns the encoded string representing the method type signature.
          */
         public String encode() {
-            StringBuffer sbuf = new StringBuffer();
+            StringBuilder sbuf = new StringBuilder();
             if (params.length > 0) {
                 sbuf.append('<');
                 for (int i = 0; i < params.length; i++)
@@ -320,7 +439,7 @@ public class SignatureAttribute extends AttributeInfo {
          */
         @Override
         public String toString() {
-            StringBuffer sbuf = new StringBuffer();
+            StringBuilder sbuf = new StringBuilder();
 
             TypeParameter.toString(sbuf, typeParams);
             sbuf.append(" (");
@@ -339,7 +458,7 @@ public class SignatureAttribute extends AttributeInfo {
          * Returns the encoded string representing the method type signature.
          */
         public String encode() {
-            StringBuffer sbuf = new StringBuffer();
+            StringBuilder sbuf = new StringBuilder();
             if (typeParams.length > 0) {
                 sbuf.append('<');
                 for (int i = 0; i < typeParams.length; i++)
@@ -431,7 +550,7 @@ public class SignatureAttribute extends AttributeInfo {
          */
         @Override
         public String toString() {
-            StringBuffer sbuf = new StringBuffer(getName());
+            StringBuilder sbuf = new StringBuilder(getName());
             if (superClass != null)
                 sbuf.append(" extends ").append(superClass.toString());
 
@@ -450,7 +569,7 @@ public class SignatureAttribute extends AttributeInfo {
             return sbuf.toString();
         }
 
-        static void toString(StringBuffer sbuf, TypeParameter[] tp) {
+        static void toString(StringBuilder sbuf, TypeParameter[] tp) {
             sbuf.append('<');
             for (int i = 0; i < tp.length; i++) {
                 if (i > 0)
@@ -462,7 +581,7 @@ public class SignatureAttribute extends AttributeInfo {
             sbuf.append('>');
         }
 
-        void encode(StringBuffer sb) {
+        void encode(StringBuilder sb) {
             sb.append(name);
             if (superClass == null)
                 sb.append(":Ljava/lang/Object;");
@@ -497,7 +616,7 @@ public class SignatureAttribute extends AttributeInfo {
          * A type argument is <code>&lt;String&gt;</code>, <code>&lt;int[]&gt;</code>,
          * or a type variable <code>&lt;T&gt;</code>, etc.
          *
-         * @param t         a class type, an array type, or a type variable.  
+         * @param t         a class type, an array type, or a type variable.
          */
         public TypeArgument(ObjectType t) {
             this(t, ' ');
@@ -512,8 +631,8 @@ public class SignatureAttribute extends AttributeInfo {
 
         /**
          * A factory method constructing a <code>TypeArgument</code> with an upper bound.
-         * It represents <code>&lt;? extends ... &gt;</code> 
-         * 
+         * It represents <code>&lt;? extends ... &gt;</code>
+         *
          * @param t     an upper bound type.
          */
         public static TypeArgument subclassOf(ObjectType t) {
@@ -523,7 +642,7 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * A factory method constructing a <code>TypeArgument</code> with an lower bound.
          * It represents <code>&lt;? super ... &gt;</code>
-         * 
+         *
          * @param t     an lower bbound type.
          */
         public static TypeArgument superOf(ObjectType t) {
@@ -534,7 +653,7 @@ public class SignatureAttribute extends AttributeInfo {
          * Returns the kind of this type argument.
          *
          * @return <code>' '</code> (not-wildcard), <code>'*'</code> (wildcard), <code>'+'</code> (wildcard with
-         * upper bound), or <code>'-'</code> (wildcard with lower bound). 
+         * upper bound), or <code>'-'</code> (wildcard with lower bound).
          */
         public char getKind() { return wildcard; }
 
@@ -549,7 +668,7 @@ public class SignatureAttribute extends AttributeInfo {
          * if the argument is not a wildcard type.  Otherwise, this method
          * returns the upper bound (if the kind is '+'),
          * the lower bound (if the kind is '-'), or null (if the upper or lower
-         * bound is not specified). 
+         * bound is not specified).
          */
         public ObjectType getType() { return arg; }
 
@@ -570,7 +689,7 @@ public class SignatureAttribute extends AttributeInfo {
                 return "? super " + type;
         }
 
-        static void encode(StringBuffer sb, TypeArgument[] args) {
+        static void encode(StringBuilder sb, TypeArgument[] args) {
             sb.append('<');
             for (int i = 0; i < args.length; i++) {
                 TypeArgument ta = args[i];
@@ -589,8 +708,8 @@ public class SignatureAttribute extends AttributeInfo {
      * Primitive types and object types.
      */
     public static abstract class Type {
-        abstract void encode(StringBuffer sb);
-        static void toString(StringBuffer sbuf, Type[] ts) {
+        abstract void encode(StringBuilder sb);
+        static void toString(StringBuilder sbuf, Type[] ts) {
             for (int i = 0; i < ts.length; i++) {
                 if (i > 0)
                     sbuf.append(", ");
@@ -617,7 +736,7 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * Constructs a <code>BaseType</code>.
          *
-         * @param typeName      <code>void</code>, <code>int</code>, ... 
+         * @param typeName      <code>void</code>, <code>int</code>, ...
          */
         public BaseType(String typeName) {
             this(Descriptor.of(typeName).charAt(0));
@@ -626,13 +745,13 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * Returns the descriptor representing this primitive type.
          *
-         * @see javassist.bytecode.Descriptor
+         * @see Descriptor
          */
         public char getDescriptor() { return descriptor; }
 
         /**
          * Returns the <code>CtClass</code> representing this
-         * primitive type. 
+         * primitive type.
          */
         public CtClass getCtlass() {
             return Descriptor.toPrimitiveClass(descriptor);
@@ -647,7 +766,7 @@ public class SignatureAttribute extends AttributeInfo {
         }
 
         @Override
-        void encode(StringBuffer sb) {
+        void encode(StringBuilder sb) {
             sb.append(descriptor);
         }
     }
@@ -661,7 +780,7 @@ public class SignatureAttribute extends AttributeInfo {
          * Returns the encoded string representing the object type signature.
          */
         public String encode() {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             encode(sb);
             return sb.toString();
         }
@@ -689,7 +808,7 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * A class type representing <code>java.lang.Object</code>.
          */
-        public static ClassType OBJECT = new ClassType("java.lang.Object", null); 
+        public static ClassType OBJECT = new ClassType("java.lang.Object", null);
 
         /**
          * Constructs a <code>ClassType</code>.  It represents
@@ -728,7 +847,7 @@ public class SignatureAttribute extends AttributeInfo {
         public TypeArgument[] getTypeArguments() { return arguments; }
 
         /**
-         * If this class is a member of another class, returns the 
+         * If this class is a member of another class, returns the
          * class in which this class is declared.
          *
          * @return null if this class is not a member of another class.
@@ -740,7 +859,7 @@ public class SignatureAttribute extends AttributeInfo {
          */
         @Override
         public String toString() {
-            StringBuffer sbuf = new StringBuffer();
+            StringBuilder sbuf = new StringBuilder();
             ClassType parent = getDeclaringClass();
             if (parent != null)
                 sbuf.append(parent.toString()).append('.');
@@ -748,7 +867,7 @@ public class SignatureAttribute extends AttributeInfo {
             return toString2(sbuf);
         }
 
-        private String toString2(StringBuffer sbuf) {
+        private String toString2(StringBuilder sbuf) {
             sbuf.append(name);
             if (arguments != null) {
                 sbuf.append('<');
@@ -773,7 +892,7 @@ public class SignatureAttribute extends AttributeInfo {
          */
         @Override
         public String jvmTypeName() {
-            StringBuffer sbuf = new StringBuffer();
+            StringBuilder sbuf = new StringBuilder();
             ClassType parent = getDeclaringClass();
             if (parent != null)
                 sbuf.append(parent.jvmTypeName()).append('$');
@@ -782,13 +901,13 @@ public class SignatureAttribute extends AttributeInfo {
         }
 
         @Override
-        void encode(StringBuffer sb) {
+        void encode(StringBuilder sb) {
             sb.append('L');
             encode2(sb);
             sb.append(';');
         }
 
-        void encode2(StringBuffer sb) {
+        void encode2(StringBuilder sb) {
             ClassType parent = getDeclaringClass();
             if (parent != null) {
                 parent.encode2(sb);
@@ -852,7 +971,7 @@ public class SignatureAttribute extends AttributeInfo {
         }
 
         /**
-         * Returns the dimension of the array. 
+         * Returns the dimension of the array.
          */
         public int getDimension() { return dim; }
 
@@ -868,7 +987,7 @@ public class SignatureAttribute extends AttributeInfo {
          */
         @Override
         public String toString() {
-            StringBuffer sbuf = new StringBuffer(componentType.toString());
+            StringBuilder sbuf = new StringBuilder(componentType.toString());
             for (int i = 0; i < dim; i++)
                 sbuf.append("[]");
 
@@ -876,7 +995,7 @@ public class SignatureAttribute extends AttributeInfo {
         }
 
         @Override
-        void encode(StringBuffer sb) {
+        void encode(StringBuilder sb) {
             for (int i = 0; i < dim; i++)
                 sb.append('[');
 
@@ -919,7 +1038,7 @@ public class SignatureAttribute extends AttributeInfo {
         }
 
         @Override
-        void encode(StringBuffer sb) {
+        void encode(StringBuilder sb) {
             sb.append('T').append(name).append(';');
         }
     }
@@ -986,7 +1105,7 @@ public class SignatureAttribute extends AttributeInfo {
     /**
      * Parses the given signature string as a type signature.
      * The type signature is either the field type signature or a base type
-     * descriptor including <code>void</code> type. 
+     * descriptor including <code>void</code> type.
      *
      * @throws BadBytecode		thrown when a syntactical error is found.
      * @since 3.18
@@ -1055,7 +1174,7 @@ public class SignatureAttribute extends AttributeInfo {
         if (sig.charAt(cur.position) == '<') {
             cur.position++;
             while (sig.charAt(cur.position) != '>') {
-                int nameBegin = cur.position; 
+                int nameBegin = cur.position;
                 int nameEnd = cur.indexOf(sig, ':');
                 ObjectType classBound = parseObjectType(sig, cur, true);
                 List<ObjectType> ifBound = new ArrayList<ObjectType>();

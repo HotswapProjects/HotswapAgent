@@ -16,6 +16,9 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
+import org.hotswap.agent.javassist.bytecode.ByteStream;
+import org.hotswap.agent.javassist.bytecode.StackMapTable;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -339,7 +342,7 @@ public class ClassFileWriter {
          * @param exceptions        throws clause.  It may be null.
          *                          The class names must be the JVM-internal
          *                          representations like <code>java/lang/Exception</code>.
-         * @param aw                attributes to the <code>Method_info</code>.                         
+         * @param aw                attributes to the <code>Method_info</code>.
          */
         public void begin(int accessFlags, String name, String descriptor,
                         String[] exceptions, AttributeWriter aw) {
@@ -362,7 +365,7 @@ public class ClassFileWriter {
          * @param descriptor        the field type.  an index indicating its <code>CONSTANT_Utf8_info</code>.
          * @param exceptions        throws clause.  indexes indicating <code>CONSTANT_Class_info</code>s.
          *                          It may be null.
-         * @param aw                attributes to the <code>Method_info</code>.                         
+         * @param aw                attributes to the <code>Method_info</code>.
          */
         public void begin(int accessFlags, int name, int descriptor, int[] exceptions, AttributeWriter aw) {
             ++methodCount;
@@ -508,7 +511,7 @@ public class ClassFileWriter {
          * @return      the length in bytes.
          * @since 3.19
          */
-        public int size() { return output.getPos() - startPos - 14; } 
+        public int size() { return output.getPos() - startPos - 14; }
 
         int numOfMethods() { return methodCount; }
 
@@ -695,6 +698,24 @@ public class ClassFileWriter {
         public int addInvokeDynamicInfo(int bootstrap,
                                         int nameAndTypeInfo) {
             output.write(InvokeDynamicInfo.tag);
+            output.writeShort(bootstrap);
+            output.writeShort(nameAndTypeInfo);
+            return num++;
+        }
+
+        /**
+         * Adds a new <code>CONSTANT_Dynamic_info</code>
+         * structure.
+         *
+         * @param bootstrap         <code>bootstrap_method_attr_index</code>.
+         * @param nameAndTypeInfo   <code>name_and_type_index</code>.
+         * @return                  the index of the added entry.
+         *
+         * @since 3.26
+         */
+        public int addDynamicInfo(int bootstrap,
+                                  int nameAndTypeInfo) {
+            output.write(DynamicInfo.tag);
             output.writeShort(bootstrap);
             output.writeShort(nameAndTypeInfo);
             return num++;

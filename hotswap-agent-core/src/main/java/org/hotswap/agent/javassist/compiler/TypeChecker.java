@@ -74,7 +74,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
      */
     protected static String argTypesToString(int[] types, int[] dims,
                                              String[] cnames) {
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         sbuf.append('(');
         int n = types.length;
         if (n > 0) {
@@ -96,7 +96,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
      * Converts a tuple of exprType, arrayDim, and className
      * into a String object.
      */
-    protected static StringBuffer typeToString(StringBuffer sbuf,
+    protected static StringBuilder typeToString(StringBuilder sbuf,
                                         int type, int dim, String cname) {
         String s;
         if (type == CLASS)
@@ -327,7 +327,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
      * If atBinExpr() substitutes a new expression for the original
      * binary-operator expression, it changes the operator name to '+'
      * (if the original is not '+') and sets the new expression to the
-     * left-hand-side expression and null to the right-hand-side expression. 
+     * left-hand-side expression and null to the right-hand-side expression.
      */
     @Override
     public void atBinExpr(BinExpr expr) throws CompileError {
@@ -491,7 +491,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
             return new DoubleConst(((Number)value).doubleValue(), token);
         }
         else if (value instanceof Number) {
-            int token = (value instanceof Long) ? LongConstant : IntConstant; 
+            int token = (value instanceof Long) ? LongConstant : IntConstant;
             return new IntConst(((Number)value).longValue(), token);
         }
         else if (value instanceof Boolean)
@@ -933,7 +933,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
             }
         }
 
-        throw new CompileError("bad filed access");
+        throw new CompileError("bad field access");
     }
 
     private CtField fieldAccess2(Expr e, String jvmClassName) throws CompileError {

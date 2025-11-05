@@ -309,8 +309,7 @@ public class MapMaker extends Tracer {
     }
 
     protected static void copyTypeData(int n, TypeData[] srcTypes, TypeData[] destTypes) {
-        for (int i = 0; i < n; i++)
-            destTypes[i] = srcTypes[i];
+        System.arraycopy(srcTypes, 0, destTypes, 0, n);
     }
 
     private static TypeData validateTypeData(TypeData[] data, int length, int index) {
@@ -347,7 +346,7 @@ public class MapMaker extends Tracer {
                         tb.incoming = 1;
                     }
                 }
-                
+
             }
         }
     }
@@ -370,7 +369,7 @@ public class MapMaker extends Tracer {
         // other dead code blocks.  So set block.incoming to 0.
         block.incoming = 0;
 
-        for (int k = 0; k < len; k++) 
+        for (int k = 0; k < len; k++)
             code[pos + k] = Bytecode.NOP;
 
         code[pos + len] = (byte)Bytecode.GOTO;
@@ -384,7 +383,7 @@ public class MapMaker extends Tracer {
      * in a TypeData graph by Tarjan's algorithm.
      * SCCs are TypeData nodes sharing the same type.
      * Since SCCs are found in the topologically sorted order,
-     * their types are also fixed when they are found. 
+     * their types are also fixed when they are found.
      */
     private void fixTypes(byte[] code, TypedBlock[] blocks) throws NotFoundException, BadBytecode {
         List<TypeData> preOrder = new ArrayList<TypeData>();

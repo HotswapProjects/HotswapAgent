@@ -46,7 +46,7 @@ public class BasicBlock {
     protected int position, length;
     protected int incoming;        // the number of incoming branches.
     protected BasicBlock[] exit;   // null if the block is a leaf.
-    protected boolean stop;        // true if the block ends with an unconditional jump. 
+    protected boolean stop;        // true if the block ends with an unconditional jump.
     protected Catch toCatch;
 
     protected BasicBlock(int pos) {
@@ -78,33 +78,33 @@ public class BasicBlock {
 
     @Override
     public String toString() {
-        StringBuffer sbuf = new StringBuffer();
+        StringBuilder sbuf = new StringBuilder();
         String cname = this.getClass().getName();
         int i = cname.lastIndexOf('.');
         sbuf.append(i < 0 ? cname : cname.substring(i + 1));
-        sbuf.append("[");
+        sbuf.append('[');
         toString2(sbuf);
-        sbuf.append("]");
+        sbuf.append(']');
         return sbuf.toString();
     }
 
-    protected void toString2(StringBuffer sbuf) {
+    protected void toString2(StringBuilder sbuf) {
         sbuf.append("pos=").append(position).append(", len=")
             .append(length).append(", in=").append(incoming)
             .append(", exit{");
         if (exit != null)
             for (BasicBlock b:exit)
-                sbuf.append(b.position).append(",");
+                sbuf.append(b.position).append(',');
 
         sbuf.append("}, {");
         Catch th = toCatch;
         while (th != null) {
-            sbuf.append("(").append(th.body.position).append(", ")
+            sbuf.append('(').append(th.body.position).append(", ")
                 .append(th.typeIndex).append("), ");
             th = th.next;
         }
 
-        sbuf.append("}");
+        sbuf.append('}');
     }
 
     /**
@@ -116,7 +116,7 @@ public class BasicBlock {
         BasicBlock block;
         BasicBlock[] jump;
         boolean alwaysJmp;     // true if an unconditional branch.
-        int size;       // 0 unless the mark indicates RETURN etc. 
+        int size;       // 0 unless the mark indicates RETURN etc.
         Catch catcher;
 
         Mark(int p) {

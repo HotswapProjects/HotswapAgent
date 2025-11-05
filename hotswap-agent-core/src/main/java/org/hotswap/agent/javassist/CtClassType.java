@@ -16,23 +16,16 @@
 
 package org.hotswap.agent.javassist;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import org.hotswap.agent.javassist.ClassMap;
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtBehavior;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtConstructor;
+import org.hotswap.agent.javassist.CtField;
+import org.hotswap.agent.javassist.CtMember;
+import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.Modifier;
+import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute;
 import org.hotswap.agent.javassist.bytecode.AttributeInfo;
@@ -55,6 +48,23 @@ import org.hotswap.agent.javassist.compiler.AccessorMaker;
 import org.hotswap.agent.javassist.compiler.CompileError;
 import org.hotswap.agent.javassist.compiler.Javac;
 import org.hotswap.agent.javassist.expr.ExprEditor;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Class<?> types.
@@ -106,7 +116,7 @@ class CtClassType extends CtClass {
     }
 
     @Override
-    protected void extendToString(StringBuffer buffer) {
+    protected void extendToString(StringBuilder buffer) {
         if (wasChanged)
             buffer.append("changed ");
 
@@ -125,7 +135,7 @@ class CtClassType extends CtClass {
             if (ext != null) {
                 String name = ext.getName();
                 if (!name.equals("java.lang.Object"))
-                    buffer.append(" extends " + ext.getName());
+                    buffer.append(" extends ").append(ext.getName());
             }
         }
         catch (NotFoundException e) {
@@ -155,7 +165,7 @@ class CtClassType extends CtClass {
                    memCache.methodHead(), memCache.lastMethod());
     }
 
-    private void exToString(StringBuffer buffer, String msg,
+    private void exToString(StringBuilder buffer, String msg,
                             CtMember head, CtMember tail) {
         buffer.append(msg);
         while (head != tail) {
@@ -179,6 +189,7 @@ class CtClassType extends CtClass {
     }
 
     public ClassFile getClassFile3(boolean doCompress) {
+        // quick path - no locking
         ClassFile cfile = classfile;
         if (cfile != null)
             return cfile;
@@ -186,16 +197,28 @@ class CtClassType extends CtClass {
         if (doCompress)
             classPool.compress();
 
-        if (rawClassfile != null) {
+        byte[] rcfile;
+        synchronized (this) {
+            // repeat under lock to make sure we get a consistent result (classfile might have been set by another thread)
+            cfile = classfile;
+            if (cfile != null)
+                return cfile;
+
+            rcfile = rawClassfile;
+        }
+
+        if (rcfile != null) {
+            final ClassFile cf;
             try {
-                ClassFile cf = new ClassFile(new DataInputStream(
-                                             new ByteArrayInputStream(rawClassfile)));
-                rawClassfile = null;
-                getCount = GET_THRESHOLD;
-                return setClassFile(cf);
+                cf = new ClassFile(new DataInputStream(new ByteArrayInputStream(rcfile)));
             }
             catch (IOException e) {
                 throw new RuntimeException(e.toString(), e);
+            }
+            getCount = GET_THRESHOLD;
+            synchronized (this) {
+                rawClassfile = null;
+                return setClassFile(cf);
             }
         }
 
@@ -817,11 +840,6 @@ class CtClassType extends CtClass {
     }
 
     @Override
-    public String getSuperclassName() throws NotFoundException {
-        return getClassFile2().getSuperclass();
-    }
-
-    @Override
     public void setSuperclass(CtClass clazz) throws CannotCompileException {
         checkModify();
         if (isInterface())
@@ -890,33 +908,6 @@ class CtClassType extends CtClass {
             }
 
         return null;
-    }
-
-    public boolean isInnerClass() throws NotFoundException {
-        ClassFile cf = getClassFile2();
-        InnerClassesAttribute ica = (InnerClassesAttribute)cf.getAttribute(
-                                                InnerClassesAttribute.tag);
-        if (ica == null)
-            return false;
-
-        String name = getName();
-        int n = ica.tableLength();
-        for (int i = 0; i < n; ++i)
-            if (name.equals(ica.innerClass(i))) {
-                String outName = ica.outerClass(i);
-                if (outName != null)
-                    return true;
-                else {
-                    // maybe anonymous or local class.
-                    EnclosingMethodAttribute ema
-                        = (EnclosingMethodAttribute)cf.getAttribute(
-                                                    EnclosingMethodAttribute.tag);
-                    if (ema != null)
-                        return true;
-                }
-            }
-
-        return false;
     }
 
     @Override
@@ -1782,8 +1773,7 @@ class CtClassType extends CtClass {
         int pos = it.insertEx(initializer.get());
         it.insert(initializer.getExceptionTable(), pos);
         int maxstack = codeAttr.getMaxStack();
-        if (maxstack < stacksize)
-            codeAttr.setMaxStack(stacksize);
+        codeAttr.setMaxStack(maxstack + stacksize);
     }
 
     private int makeFieldInitializer(Bytecode code, CtClass[] parameters)
