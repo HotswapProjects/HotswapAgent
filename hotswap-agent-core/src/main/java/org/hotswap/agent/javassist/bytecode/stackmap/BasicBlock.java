@@ -46,7 +46,7 @@ public class BasicBlock {
     protected int position, length;
     protected int incoming;        // the number of incoming branches.
     protected BasicBlock[] exit;   // null if the block is a leaf.
-    protected boolean stop;        // true if the block ends with an unconditional jump.
+    protected boolean stop;        // true if the block ends with an unconditional jump. 
     protected Catch toCatch;
 
     protected BasicBlock(int pos) {
@@ -116,7 +116,7 @@ public class BasicBlock {
         BasicBlock block;
         BasicBlock[] jump;
         boolean alwaysJmp;     // true if an unconditional branch.
-        int size;       // 0 unless the mark indicates RETURN etc.
+        int size;       // 0 unless the mark indicates RETURN etc. 
         Catch catcher;
 
         Mark(int p) {

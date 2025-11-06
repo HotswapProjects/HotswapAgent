@@ -25,7 +25,7 @@ import org.hotswap.agent.javassist.bytecode.Opcode;
 
 /*
  * A class for performing abstract interpretation.
- * See also MapMaker class.
+ * See also MapMaker class. 
  */
 
 public abstract class Tracer implements TypeTag {
@@ -389,7 +389,7 @@ public abstract class Tracer implements TypeTag {
             int sp = stackTop;
             stackTypes[sp - len] = stackTypes[sp];
             stackTypes[sp - len + 1] = stackTypes[sp + 1];
-            stackTop = sp + 2;
+            stackTop = sp + 2; 
             break; }
         case Opcode.SWAP : {
             int sp = stackTop - 1;

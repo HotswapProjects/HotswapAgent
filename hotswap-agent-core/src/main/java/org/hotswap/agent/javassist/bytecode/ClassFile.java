@@ -690,7 +690,7 @@ public final class ClassFile {
     /**
      * Returns the method with the specified name. If there are multiple methods
      * with that name, this method returns one of them.
-     *
+     * 
      * @return null if no such method is found.
      */
     public MethodInfo getMethod(String name) {
@@ -758,12 +758,12 @@ public final class ClassFile {
         if (desc.equals(newDesc)) {
             if (notBridgeMethod(minfo))
                 return true;
-                // if the bridge method with the same signature
-                // already exists, replace it.
+            	// if the bridge method with the same signature
+            	// already exists, replace it.
             it.remove();
             return false;
         }
-            return false;
+        	return false;
            // return notBridgeMethod(minfo) && notBridgeMethod(newMethod);
     }
 
@@ -779,7 +779,7 @@ public final class ClassFile {
      * the attribute is also added to the classs file represented by this
      * object.  If you remove an attribute from the list, it is also removed
      * from the class file.
-     *
+     * 
      * @return a list of <code>AttributeInfo</code> objects.
      * @see AttributeInfo
      */
@@ -794,7 +794,7 @@ public final class ClassFile {
      *
      * <p>An attribute name can be obtained by, for example,
      * {@link AnnotationsAttribute#visibleTag} or
-     * {@link AnnotationsAttribute#invisibleTag}.
+     * {@link AnnotationsAttribute#invisibleTag}. 
      * </p>
      *
      * @param name          attribute name
@@ -831,7 +831,7 @@ public final class ClassFile {
 
     /**
      * Returns the source file containing this class.
-     *
+     * 
      * @return null if this information is not available.
      */
     public String getSourceFile() {
@@ -923,7 +923,7 @@ public final class ClassFile {
 
     /**
      * Get the Major version.
-     *
+     * 
      * @return the major version
      */
     public int getMajorVersion() {
@@ -932,7 +932,7 @@ public final class ClassFile {
 
     /**
      * Set the major version.
-     *
+     * 
      * @param major
      *            the major version
      */
@@ -942,7 +942,7 @@ public final class ClassFile {
 
     /**
      * Get the minor version.
-     *
+     * 
      * @return the minor version
      */
     public int getMinorVersion() {
@@ -951,7 +951,7 @@ public final class ClassFile {
 
     /**
      * Set the minor version.
-     *
+     * 
      * @param minor
      *            the minor version
      */

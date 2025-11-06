@@ -16,8 +16,6 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.compiler.TokenId;
-
 class Token {
     public Token next = null;
     public int tokenId;

@@ -16,10 +16,6 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.LongVector;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -29,6 +25,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.hotswap.agent.javassist.CtClass;
 
 /**
  * Constant pool table.
@@ -252,7 +250,7 @@ public final class ConstPool
      * entry at the given index.
      *
      * @return either <code>CONST_Class</code>, <code>CONST_Fieldref</code>,
-     *         <code>CONST_Methodref</code>, or ...
+     *         <code>CONST_Methodref</code>, or ...  
      */
     public int getTag(int index)
     {
@@ -902,7 +900,7 @@ public final class ConstPool
      * @return          the name of the target class specified by
      *                  the <code>..._info</code> structure
      *                  at <code>index</code>.
-     *                  Otherwise, null if that structure does not
+     *                  Otherwise, null if that structure does not 
      *                  match the given member name and descriptor.
      */
     public String eqMember(String membername, String desc, int index)
@@ -1051,7 +1049,7 @@ public final class ConstPool
      * @param nameAndTypeInfo   <code>name_and_type_index</code>.
      * @return          the index of the added entry.
      */
-    public int addFieldrefInfo(int classInfo, int nameAndTypeInfo)
+    public int addFieldrefInfo(int classInfo, int nameAndTypeInfo) 
     {
         return addItem(new FieldrefInfo(classInfo, nameAndTypeInfo,
                                         numOfItems));
@@ -1422,7 +1420,7 @@ public final class ConstPool
             info = new PackageInfo(in, numOfItems);
             break;
         default :
-            throw new IOException("invalid constant type: "
+            throw new IOException("invalid constant type: " 
                                 + tag + " at " + numOfItems);
         }
 

@@ -72,7 +72,7 @@ public class StackMapTable extends AttributeInfo {
                             new Copier(this.constPool, info, newCp, classnames).doit());
         }
         catch (BadBytecode e) {
-            throw new RuntimeCopyException("bad bytecode. fatal?");
+            throw new RuntimeCopyException("bad bytecode. fatal?"); 
         }
     }
 
@@ -178,7 +178,7 @@ public class StackMapTable extends AttributeInfo {
         public final int size() { return numOfEntries; }
 
         /**
-         * Visits each entry of the stack map frames.
+         * Visits each entry of the stack map frames. 
          */
         public void parse() throws BadBytecode {
             int n = numOfEntries;
@@ -193,7 +193,7 @@ public class StackMapTable extends AttributeInfo {
          * @param pos       the position of the frame in the <code>info</code>
          *                  field of <code>attribute_info</code> structure.
          * @param nth       the frame is the N-th
-         *                  (0, 1st, 2nd, 3rd, 4th, ...) entry.
+         *                  (0, 1st, 2nd, 3rd, 4th, ...) entry. 
          * @return          the position of the next frame.
          */
         int stackMapFrames(int pos, int nth) throws BadBytecode {
@@ -278,10 +278,10 @@ public class StackMapTable extends AttributeInfo {
 
         /**
          * Invoked if the visited frame is a <code>chop_frame</code>.
-         *
+         * 
          * @param pos               the position.
          * @param offsetDelta
-         * @param k                 the <code>k</code> last locals are absent.
+         * @param k                 the <code>k</code> last locals are absent. 
          */
         public void chopFrame(int pos, int offsetDelta, int k) throws BadBytecode {}
 
@@ -319,7 +319,7 @@ public class StackMapTable extends AttributeInfo {
          *                      or <code>locals[i].offset</code>.
          */
         public void appendFrame(int pos, int offsetDelta, int[] tags, int[] data)
-            throws BadBytecode {}
+            throws BadBytecode {} 
 
         private int fullFrame(int pos) throws BadBytecode {
             int offset = ByteArray.readU16bit(info, pos + 1);
@@ -461,7 +461,7 @@ public class StackMapTable extends AttributeInfo {
      * for a new parameter.
      *
      * @param index          the index of the added local variable.
-     * @param tag            the type tag of that local variable.
+     * @param tag            the type tag of that local variable. 
      * @param classInfo      the index of the <code>CONSTANT_Class_info</code> structure
      *                       in a constant pool table.  This should be zero unless the tag
      *                       is <code>ITEM_Object</code>.
@@ -506,7 +506,7 @@ public class StackMapTable extends AttributeInfo {
     /* This implementation assumes that a local variable initially
      * holding a parameter value is never changed to be a different
      * type.
-     *
+     * 
      */
     static class InsertLocal extends SimpleCopy {
         private int varIndex;
@@ -1032,7 +1032,7 @@ public class StackMapTable extends AttributeInfo {
      *
      * <p>This method is for javassist.convert.TransformNew.
      * It is called to update the stack map table when
-     * the NEW opcode (and the following DUP) is removed.
+     * the NEW opcode (and the following DUP) is removed. 
      *
      * @param where     the position of the removed NEW opcode.
      */

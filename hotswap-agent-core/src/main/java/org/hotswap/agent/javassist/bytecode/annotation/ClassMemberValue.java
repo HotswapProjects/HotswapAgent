@@ -16,15 +16,15 @@
 
 package org.hotswap.agent.javassist.bytecode.annotation;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Map;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.bytecode.BadBytecode;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.javassist.bytecode.SignatureAttribute;
-
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.Map;
 
 /**
  * Class value.

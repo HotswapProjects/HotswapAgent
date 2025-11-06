@@ -58,7 +58,7 @@ public class Annotation {
 
     /**
      * Constructs an annotation including no members.  A member can be
-     * later added to the created annotation by <code>addMemberValue()</code>.
+     * later added to the created annotation by <code>addMemberValue()</code>. 
      *
      * @param type  the index into the constant pool table.
      *              the entry at that index must be the
@@ -76,7 +76,7 @@ public class Annotation {
 
     /**
      * Constructs an annotation including no members.  A member can be
-     * later added to the created annotation by <code>addMemberValue()</code>.
+     * later added to the created annotation by <code>addMemberValue()</code>. 
      *
      * @param typeName  the fully-qualified name of the annotation interface type.
      * @param cp        the constant pool table.
@@ -94,7 +94,7 @@ public class Annotation {
      *
      * @param cp        the constant pool table.
      * @param clazz     the interface.
-     * @throws NotFoundException when the clazz is not found
+     * @throws NotFoundException when the clazz is not found 
      */
     public Annotation(ConstPool cp, CtClass clazz)
         throws NotFoundException
@@ -229,7 +229,7 @@ public class Annotation {
 
     /**
      * Obtains the name of the annotation type.
-     *
+     * 
      * @return the type name
      */
     public String getTypeName() {
@@ -272,7 +272,7 @@ public class Annotation {
      * Constructs an annotation-type object representing this annotation.
      * For example, if this annotation represents <code>@Author</code>,
      * this method returns an <code>Author</code> object.
-     *
+     * 
      * @param cl        class loader for loading an annotation type.
      * @param cp        class pool for obtaining class files.
      * @return the annotation

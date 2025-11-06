@@ -32,7 +32,7 @@ import org.hotswap.agent.javassist.bytecode.StackMapTable;
 
 public abstract class TypeData {
     /* Memo:
-     * array type is a subtype of Cloneable and Serializable
+     * array type is a subtype of Cloneable and Serializable 
      */
 
     public static TypeData[] make(int size) {
@@ -50,7 +50,7 @@ public abstract class TypeData {
      * a subclass of the current type name, then the given name becomes
      * the name of this object type.
      *
-     * @param className     dot-separated name unless the type is an array type.
+     * @param className     dot-separated name unless the type is an array type. 
      */
     @SuppressWarnings("unused")
     private static void setType(TypeData td, String className, ClassPool cp) throws BadBytecode {
@@ -608,7 +608,7 @@ public abstract class TypeData {
     }
 
     /* A type variable representing an array type.
-     * It is a decorator of another type variable.
+     * It is a decorator of another type variable.  
      */
     public static class ArrayType extends AbsTypeVar {
         private AbsTypeVar element;
@@ -687,8 +687,8 @@ public abstract class TypeData {
     }
 
     /* A type variable representing an array-element type.
-     * It is a decorator of another type variable.
-     */
+     * It is a decorator of another type variable.  
+     */ 
     public static class ArrayElement extends AbsTypeVar {
         private AbsTypeVar array;
 

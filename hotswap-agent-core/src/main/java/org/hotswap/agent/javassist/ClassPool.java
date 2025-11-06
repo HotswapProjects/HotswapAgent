@@ -301,7 +301,7 @@ public class ClassPool {
     }
 
     /**
-     * Returns all the package names recorded by <code>importPackage()</code>.
+     * Returns all the package names recorded by <code>importPackage()</code>. 
      *
      * @see #importPackage(String)
      * @since 3.1
@@ -474,7 +474,7 @@ public class ClassPool {
      * that classname can be an array-type "descriptor" (an encoded
      * type name) such as <code>[Ljava/lang/Object;</code>.
      *
-     * <p>Using this method is not recommended; this method should be
+     * <p>Using this method is not recommended; this method should be 
      * used only to obtain the <code>CtClass</code> object
      * with a name returned from <code>getClassInfo</code> in
      * <code>javassist.bytecode.ClassPool</code>.  <code>getClassInfo</code>
@@ -538,7 +538,7 @@ public class ClassPool {
      * @return null if the class file could not be found.
      */
     protected CtClass createCtClass(String classname, boolean useCache) {
-        // accept "[L<class name>;" as a class name.
+        // accept "[L<class name>;" as a class name. 
         if (classname.charAt(0) == '[')
             classname = Descriptor.toClassName(classname);
 
@@ -890,7 +890,7 @@ public class ClassPool {
      * the new interface overwrites that previous one.
      *
      * @param name      a fully-qualified interface name.
-     *                  Or null if the annotation has no super interface.
+     *                  Or null if the annotation has no super interface. 
      * @throws RuntimeException if the existing interface is frozen.
      * @since 3.19
      */
@@ -1025,8 +1025,8 @@ public class ClassPool {
      * allowed any more.
      * To load the class, this method uses the context class loader
      * of the current thread.  It is obtained by calling
-     * <code>getClassLoader()</code>.
-     *
+     * <code>getClassLoader()</code>.  
+     * 
      * <p>This behavior can be changed by subclassing the pool and changing
      * the <code>getClassLoader()</code> method.
      * If the program is running on some application
@@ -1053,15 +1053,15 @@ public class ClassPool {
     public Class toClass(CtClass clazz) throws CannotCompileException {
         // Some subclasses of ClassPool may override toClass(CtClass,ClassLoader).
         // So we should call that method instead of toClass(.., ProtectionDomain).
-        return toClass(clazz, getClassLoader());
+        return toClass(clazz, getClassLoader()); 
     }
 
     /**
      * Get the classloader for <code>toClass()</code>, <code>getAnnotations()</code> in
      * <code>CtClass</code>, etc.
-     *
+     * 
      * <p>The default is the context class loader.
-     *
+     * 
      * @return the classloader for the pool
      * @see #toClass(CtClass)
      * @see CtClass#getAnnotations()
@@ -1069,10 +1069,10 @@ public class ClassPool {
     public ClassLoader getClassLoader() {
         return getContextClassLoader();
     }
-
+    
     /**
      * Obtains a class loader that seems appropriate to look up a class
-     * by name.
+     * by name. 
      */
     static ClassLoader getContextClassLoader() {
         return Thread.currentThread().getContextClassLoader();
@@ -1250,15 +1250,11 @@ public class ClassPool {
      * performs nothing.
      *
      * <p>You do not necessarily need to
-     * call this method.  If this method is called, then
-     * <code>getPackage()</code> on the <code>Class</code> object returned
+     * call this method.  If this method is called, then  
+     * <code>getPackage()</code> on the <code>Class</code> object returned 
      * by <code>toClass()</code> will return a non-null object.</p>
      *
-     * <p>The jigsaw module introduced by Java 9 has broken this method.
-     * In Java 9 or later, the VM argument
-     * <code>--add-opens java.base/java.lang=ALL-UNNAMED</code>
-     * has to be given to the JVM so that this method can run.
-     * </p>
+     * <p>The jigsaw module introduced by Java 9 has broken this method.</p>
      *
      * @param loader        the class loader passed to <code>toClass()</code> or
      *                      the default one obtained by <code>getClassLoader()</code>.

@@ -5,7 +5,6 @@ import org.hotswap.agent.javassist.bytecode.CodeIterator;
 import org.hotswap.agent.javassist.bytecode.ConstPool;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.convert.TransformCall;
 
 public class TransformCallToStatic extends TransformCall {
     public TransformCallToStatic(Transformer next, CtMethod origMethod, CtMethod substMethod) {

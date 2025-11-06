@@ -82,9 +82,9 @@ public class Desc {
         }
         catch (ClassNotFoundException e) {
             throw new RuntimeException(
-                    "$class: internal error, could not find class '" + name
-                    + "' (Desc.useContextClassLoader: "
-                    + Boolean.toString(useContextClassLoader) + ")", e);
+                    "$class: internal error, could not find class '" + name 
+                    + "' (Desc.useContextClassLoader: " 
+                    + Boolean.toString(useContextClassLoader) + ")", e); 
         }
     }
 

@@ -59,16 +59,16 @@ public class DefinePackageHelper
             if (stack.getCallerClass() != this.getClass())
                 throw new IllegalAccessError("Access denied for caller.");
             try {
-                return SecurityActions.getMethodHandle(ClassLoader.class,
+                return SecurityActions.getMethodHandle(ClassLoader.class, 
                             "definePackage", new Class[] {
                                 String.class, String.class, String.class, String.class,
-                                String.class, String.class, String.class, URL.class
+                                String.class, String.class, String.class, URL.class 
                             });
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException("cannot initialize", e);
             }
         }
-
+            
         @Override
         Package definePackage(ClassLoader loader, String name, String specTitle,
                     String specVersion, String specVendor, String implTitle, String implVersion,
@@ -96,16 +96,16 @@ public class DefinePackageHelper
             if (stack.getCallerClass() != this.getClass())
                 throw new IllegalAccessError("Access denied for caller.");
             try {
-                return SecurityActions.getDeclaredMethod(ClassLoader.class,
+                return SecurityActions.getDeclaredMethod(ClassLoader.class, 
                             "definePackage", new Class[] {
                                 String.class, String.class, String.class, String.class,
-                                String.class, String.class, String.class, URL.class
+                                String.class, String.class, String.class, URL.class 
                             });
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException("cannot initialize", e);
             }
         }
-
+            
         @Override
         Package definePackage(ClassLoader loader, String name, String specTitle,
                     String specVersion, String specVendor, String implTitle, String implVersion,
@@ -118,7 +118,7 @@ public class DefinePackageHelper
                 definePackage.setAccessible(true);
                 return (Package) definePackage.invoke(loader, new Object[] {
                         name, specTitle, specVersion, specVendor, implTitle,
-                        implVersion, implVendor, sealBase
+                        implVersion, implVendor, sealBase                                
                     });
             } catch (Throwable e) {
                 if (e instanceof InvocationTargetException) {
@@ -142,8 +142,8 @@ public class DefinePackageHelper
      * performs nothing.
      *
      * <p>You do not necessarily need to
-     * call this method.  If this method is called, then
-     * <code>getPackage()</code> on the <code>Class</code> object returned
+     * call this method.  If this method is called, then  
+     * <code>getPackage()</code> on the <code>Class</code> object returned 
      * by <code>toClass()</code> will return a non-null object.</p>
      *
      * <p>The jigsaw module introduced by Java 9 has broken this method.
@@ -162,7 +162,7 @@ public class DefinePackageHelper
         throws CannotCompileException
     {
         try {
-            privileged.definePackage(loader, className,
+            privileged.definePackage(loader, className, 
                     null, null, null, null, null, null, null);
         }
         catch (IllegalArgumentException e) {
@@ -174,6 +174,6 @@ public class DefinePackageHelper
             throw new CannotCompileException(e);
         }
     }
-
+    
     private DefinePackageHelper() {}
 }

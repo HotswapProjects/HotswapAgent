@@ -16,10 +16,6 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
-
 /**
  * An instance of <code>CtMember</code> represents a field, a constructor,
  * or a method.

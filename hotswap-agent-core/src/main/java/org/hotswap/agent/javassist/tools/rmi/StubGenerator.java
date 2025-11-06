@@ -159,7 +159,7 @@ public class StubGenerator implements Translator {
 
         f = new CtField(CtClass.intType, fieldObjectId, proxy);
         f.setModifiers(Modifier.PRIVATE);
-        proxy.addField(f, CtField.Initializer.byParameter(1));
+        proxy.addField(f, CtField.Initializer.byParameter(1)); 
 
         proxy.addMethod(CtNewMethod.getter(accessorObjectId, f));
 
