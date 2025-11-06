@@ -184,7 +184,7 @@ public class Loader extends ClassLoader {
     private Vector<String> notDefinedPackages; // must be atomic.
     private ClassPool source;
     private Translator translator;
-    private ProtectionDomain domain;
+    private ProtectionDomain domain; 
 
     /**
      * Specifies the algorithm of class loading.

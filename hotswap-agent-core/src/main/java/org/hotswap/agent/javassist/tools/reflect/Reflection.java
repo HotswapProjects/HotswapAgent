@@ -84,7 +84,7 @@ public class Reflection implements Translator {
 
     static final String metaobjectClassName = "org.hotswap.agent.javassist.tools.reflect.Metaobject";
     static final String classMetaobjectClassName
-        = "org.hotswap.agenta.javassist.tools.reflect.ClassMetaobject";
+        = "org.hotswap.agent.javassist.tools.reflect.ClassMetaobject";
 
     protected CtMethod trapMethod, trapStaticMethod;
     protected CtMethod trapRead, trapWrite;
@@ -119,7 +119,7 @@ public class Reflection implements Translator {
         final String msg
             = "org.hotswap.agent.javassist.tools.reflect.Sample is not found or broken.";
         try {
-            CtClass c = classPool.get("org.hotswap.agenta.javassist.tools.reflect.Sample");
+            CtClass c = classPool.get("org.hotswap.agent.javassist.tools.reflect.Sample");
             rebuildClassFile(c.getClassFile());
             trapMethod = c.getDeclaredMethod("trap");
             trapStaticMethod = c.getDeclaredMethod("trapStatic");

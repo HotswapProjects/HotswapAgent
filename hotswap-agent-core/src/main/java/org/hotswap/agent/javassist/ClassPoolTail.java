@@ -16,10 +16,6 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.ClassClassPath;
-import org.hotswap.agent.javassist.LoaderClassPath;
-import org.hotswap.agent.javassist.NotFoundException;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

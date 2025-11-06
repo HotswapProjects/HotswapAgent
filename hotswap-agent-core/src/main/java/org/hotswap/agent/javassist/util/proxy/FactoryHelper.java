@@ -88,7 +88,7 @@ public class FactoryHelper {
      * in <code>unwrapMethods</code>.
      */
     public static final String[] unwrapDesc = {
-        "()Z", "()B", "()C", "()S", "()I", "()J", "()F", "()D"
+        "()Z", "()B", "()C", "()S", "()I", "()J", "()F", "()D" 
     };
 
     /**

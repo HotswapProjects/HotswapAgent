@@ -16,12 +16,6 @@
 
 package org.hotswap.agent.javassist;
 
-import org.hotswap.agent.javassist.CtMethod;
-import org.hotswap.agent.javassist.bytecode.ClassFile;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.expr.ExprEditor;
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -32,6 +26,11 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.Collection;
+
+import org.hotswap.agent.javassist.bytecode.ClassFile;
+import org.hotswap.agent.javassist.bytecode.Descriptor;
+import org.hotswap.agent.javassist.bytecode.Opcode;
+import org.hotswap.agent.javassist.expr.ExprEditor;
 
 /* Note:
  *
@@ -584,7 +583,7 @@ public abstract class CtClass {
      * For decoding, use <code>javassist.Modifier</code>.
      *
      * <p>If the class is a static nested class (a.k.a. static inner class),
-     * the returned modifiers include <code>Modifier.STATIC</code>.
+     * the returned modifiers include <code>Modifier.STATIC</code>. 
      *
      * @see Modifier
      */
@@ -800,7 +799,7 @@ public abstract class CtClass {
     /**
      * Returns the immediately enclosing method of this class.
      * This method works only with JDK 1.5 or later.
-     *
+     * 
      * @return null if this class is not a local class or an anonymous
      * class.
      * @deprecated The enclosing method might be a constructor.
@@ -833,7 +832,7 @@ public abstract class CtClass {
     /**
      * Makes a new public nested class.  If this method is called,
      * the <code>CtClass</code>, which encloses the nested class, is modified
-     * since a class file includes a list of nested classes.
+     * since a class file includes a list of nested classes.  
      *
      * <p>The current implementation only supports a static nested class.
      * <code>isStatic</code> must be true.
@@ -1012,7 +1011,7 @@ public abstract class CtClass {
      * Gets all methods declared in the class.  The inherited methods
      * are not included.
      *
-     * @see CtMethod
+     * @see javassist.CtMethod
      */
     public CtMethod[] getDeclaredMethods() {
         return new CtMethod[0];
@@ -1026,7 +1025,7 @@ public abstract class CtClass {
      *
      * @param name              method name
      * @param params            parameter types
-     * @see CtMethod
+     * @see javassist.CtMethod
      */
     public CtMethod getDeclaredMethod(String name, CtClass[] params)
         throws NotFoundException
@@ -1055,7 +1054,7 @@ public abstract class CtClass {
      *
      * <p>Note: this method does not search the superclasses.
      *
-     * @see CtMethod
+     * @see javassist.CtMethod
      */
     public CtMethod getDeclaredMethod(String name) throws NotFoundException {
         throw new NotFoundException(name);
@@ -1394,7 +1393,7 @@ public abstract class CtClass {
      * @param domain        the protection domain that the class belongs to.
      *                      If it is null, the default domain created
      *                      by <code>java.lang.ClassLoader</code> is used.
-     * @see ClassPool#toClass(CtClass, ClassLoader)
+     * @see ClassPool#toClass(CtClass,java.lang.ClassLoader)
      * @since 3.3
      */
     public Class<?> toClass(ClassLoader loader, ProtectionDomain domain)
@@ -1458,7 +1457,7 @@ public abstract class CtClass {
      * <p>If <code>ClassPool.doPruning</code> is true, the automatic pruning
      * is on by default.  Otherwise, it is off.  The default value of
      * <code>ClassPool.doPruning</code> is false.
-     *
+     * 
      * @param stop      disallow pruning if true.  Otherwise, allow.
      * @return the previous status of pruning.  true if pruning is already stopped.
      *
@@ -1482,7 +1481,7 @@ public abstract class CtClass {
      *
      * <p><code>toBytecode()</code>, <code>writeFile()</code>, and
      * <code>toClass()</code> internally call this method if
-     * automatic pruning is on.
+     * automatic pruning is on. 
      *
      * <p>According to some experiments, pruning does not really reduce
      * memory consumption.  Only about 20%.  Since pruning takes time,

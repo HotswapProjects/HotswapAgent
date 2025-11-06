@@ -327,7 +327,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
      * If atBinExpr() substitutes a new expression for the original
      * binary-operator expression, it changes the operator name to '+'
      * (if the original is not '+') and sets the new expression to the
-     * left-hand-side expression and null to the right-hand-side expression.
+     * left-hand-side expression and null to the right-hand-side expression. 
      */
     @Override
     public void atBinExpr(BinExpr expr) throws CompileError {
@@ -491,7 +491,7 @@ public class TypeChecker extends Visitor implements Opcode, TokenId {
             return new DoubleConst(((Number)value).doubleValue(), token);
         }
         else if (value instanceof Number) {
-            int token = (value instanceof Long) ? LongConstant : IntConstant;
+            int token = (value instanceof Long) ? LongConstant : IntConstant; 
             return new IntConst(((Number)value).longValue(), token);
         }
         else if (value instanceof Boolean)

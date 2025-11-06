@@ -16,13 +16,6 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import org.hotswap.agent.javassist.CtClass;
-import org.hotswap.agent.javassist.bytecode.AttributeInfo;
-import org.hotswap.agent.javassist.bytecode.BadBytecode;
-import org.hotswap.agent.javassist.bytecode.ByteArray;
-import org.hotswap.agent.javassist.bytecode.ConstPool;
-import org.hotswap.agent.javassist.bytecode.Descriptor;
-
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +23,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.hotswap.agent.javassist.CtClass;
 
 /**
  * <code>Signature_attribute</code>.
@@ -616,7 +611,7 @@ public class SignatureAttribute extends AttributeInfo {
          * A type argument is <code>&lt;String&gt;</code>, <code>&lt;int[]&gt;</code>,
          * or a type variable <code>&lt;T&gt;</code>, etc.
          *
-         * @param t         a class type, an array type, or a type variable.
+         * @param t         a class type, an array type, or a type variable.  
          */
         public TypeArgument(ObjectType t) {
             this(t, ' ');
@@ -631,8 +626,8 @@ public class SignatureAttribute extends AttributeInfo {
 
         /**
          * A factory method constructing a <code>TypeArgument</code> with an upper bound.
-         * It represents <code>&lt;? extends ... &gt;</code>
-         *
+         * It represents <code>&lt;? extends ... &gt;</code> 
+         * 
          * @param t     an upper bound type.
          */
         public static TypeArgument subclassOf(ObjectType t) {
@@ -642,7 +637,7 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * A factory method constructing a <code>TypeArgument</code> with an lower bound.
          * It represents <code>&lt;? super ... &gt;</code>
-         *
+         * 
          * @param t     an lower bbound type.
          */
         public static TypeArgument superOf(ObjectType t) {
@@ -653,7 +648,7 @@ public class SignatureAttribute extends AttributeInfo {
          * Returns the kind of this type argument.
          *
          * @return <code>' '</code> (not-wildcard), <code>'*'</code> (wildcard), <code>'+'</code> (wildcard with
-         * upper bound), or <code>'-'</code> (wildcard with lower bound).
+         * upper bound), or <code>'-'</code> (wildcard with lower bound). 
          */
         public char getKind() { return wildcard; }
 
@@ -668,7 +663,7 @@ public class SignatureAttribute extends AttributeInfo {
          * if the argument is not a wildcard type.  Otherwise, this method
          * returns the upper bound (if the kind is '+'),
          * the lower bound (if the kind is '-'), or null (if the upper or lower
-         * bound is not specified).
+         * bound is not specified). 
          */
         public ObjectType getType() { return arg; }
 
@@ -736,7 +731,7 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * Constructs a <code>BaseType</code>.
          *
-         * @param typeName      <code>void</code>, <code>int</code>, ...
+         * @param typeName      <code>void</code>, <code>int</code>, ... 
          */
         public BaseType(String typeName) {
             this(Descriptor.of(typeName).charAt(0));
@@ -745,13 +740,13 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * Returns the descriptor representing this primitive type.
          *
-         * @see Descriptor
+         * @see javassist.bytecode.Descriptor
          */
         public char getDescriptor() { return descriptor; }
 
         /**
          * Returns the <code>CtClass</code> representing this
-         * primitive type.
+         * primitive type. 
          */
         public CtClass getCtlass() {
             return Descriptor.toPrimitiveClass(descriptor);
@@ -808,7 +803,7 @@ public class SignatureAttribute extends AttributeInfo {
         /**
          * A class type representing <code>java.lang.Object</code>.
          */
-        public static ClassType OBJECT = new ClassType("java.lang.Object", null);
+        public static ClassType OBJECT = new ClassType("java.lang.Object", null); 
 
         /**
          * Constructs a <code>ClassType</code>.  It represents
@@ -847,7 +842,7 @@ public class SignatureAttribute extends AttributeInfo {
         public TypeArgument[] getTypeArguments() { return arguments; }
 
         /**
-         * If this class is a member of another class, returns the
+         * If this class is a member of another class, returns the 
          * class in which this class is declared.
          *
          * @return null if this class is not a member of another class.
@@ -971,7 +966,7 @@ public class SignatureAttribute extends AttributeInfo {
         }
 
         /**
-         * Returns the dimension of the array.
+         * Returns the dimension of the array. 
          */
         public int getDimension() { return dim; }
 
@@ -1105,7 +1100,7 @@ public class SignatureAttribute extends AttributeInfo {
     /**
      * Parses the given signature string as a type signature.
      * The type signature is either the field type signature or a base type
-     * descriptor including <code>void</code> type.
+     * descriptor including <code>void</code> type. 
      *
      * @throws BadBytecode		thrown when a syntactical error is found.
      * @since 3.18
@@ -1174,7 +1169,7 @@ public class SignatureAttribute extends AttributeInfo {
         if (sig.charAt(cur.position) == '<') {
             cur.position++;
             while (sig.charAt(cur.position) != '>') {
-                int nameBegin = cur.position;
+                int nameBegin = cur.position; 
                 int nameEnd = cur.indexOf(sig, ':');
                 ObjectType classBound = parseObjectType(sig, cur, true);
                 List<ObjectType> ifBound = new ArrayList<ObjectType>();

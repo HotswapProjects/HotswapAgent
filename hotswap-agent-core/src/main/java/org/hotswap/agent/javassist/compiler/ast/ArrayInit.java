@@ -17,8 +17,6 @@
 package org.hotswap.agent.javassist.compiler.ast;
 
 import org.hotswap.agent.javassist.compiler.CompileError;
-import org.hotswap.agent.javassist.compiler.ast.ASTree;
-import org.hotswap.agent.javassist.compiler.ast.Visitor;
 
 /**
  * Array initializer such as <code>{ 1, 2, 3 }</code>.

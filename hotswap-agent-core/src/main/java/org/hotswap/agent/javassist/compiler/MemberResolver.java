@@ -16,6 +16,14 @@
 
 package org.hotswap.agent.javassist.compiler;
 
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtField;
@@ -25,21 +33,11 @@ import org.hotswap.agent.javassist.bytecode.AccessFlag;
 import org.hotswap.agent.javassist.bytecode.ClassFile;
 import org.hotswap.agent.javassist.bytecode.Descriptor;
 import org.hotswap.agent.javassist.bytecode.MethodInfo;
-import org.hotswap.agent.javassist.compiler.CompileError;
-import org.hotswap.agent.javassist.compiler.TokenId;
 import org.hotswap.agent.javassist.compiler.ast.ASTList;
 import org.hotswap.agent.javassist.compiler.ast.ASTree;
 import org.hotswap.agent.javassist.compiler.ast.Declarator;
 import org.hotswap.agent.javassist.compiler.ast.Keyword;
 import org.hotswap.agent.javassist.compiler.ast.Symbol;
-
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 /* Code generator methods depending on javassist.* classes.
  */

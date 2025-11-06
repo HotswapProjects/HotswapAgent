@@ -764,7 +764,7 @@ public class MemberCodeGen extends CodeGen {
             }
         }
         catch (NotFoundException e) {}
-        return false;
+        return false;   
     }
 
     public int getMethodArgsLength(ASTList args) {
@@ -844,7 +844,7 @@ public class MemberCodeGen extends CodeGen {
         if (op == '=') {
             FieldInfo finfo = f.getFieldInfo2();
             setFieldType(finfo);
-            AccessorMaker maker = isAccessibleField(f, finfo);
+            AccessorMaker maker = isAccessibleField(f, finfo);            
             if (maker == null)
                 fi = addFieldrefInfo(f, finfo);
             else
@@ -942,7 +942,7 @@ public class MemberCodeGen extends CodeGen {
     /**
      * Generates bytecode for reading a field value.
      * It returns a fieldref_info index or zero if the field is a private
-     * one declared in an enclosing class.
+     * one declared in an enclosing class. 
      */
     private int atFieldRead(CtField f, boolean isStatic) throws CompileError {
         FieldInfo finfo = f.getFieldInfo2();
@@ -994,7 +994,7 @@ public class MemberCodeGen extends CodeGen {
     /**
      * Sets exprType, arrayDim, and className.
      *
-     * @return true if the field type is long or double.
+     * @return true if the field type is long or double. 
      */
     private boolean setFieldType(FieldInfo finfo) throws CompileError {
         String type = finfo.getDescriptor();
@@ -1095,7 +1095,7 @@ public class MemberCodeGen extends CodeGen {
             if (op == MEMBER) {
                 /* static member by # (extension by Javassist)
                  * For example, if int.class is parsed, the resulting tree
-                 * is (# "java.lang.Integer" "TYPE").
+                 * is (# "java.lang.Integer" "TYPE"). 
                  */
                 CtField f = resolver.lookupField(((Symbol)e.oprand1()).get(),
                                          (Symbol)e.oprand2());

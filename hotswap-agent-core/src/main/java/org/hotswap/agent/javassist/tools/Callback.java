@@ -64,7 +64,7 @@ public abstract class Callback {
     public Callback(String src){
         String uuid = UUID.randomUUID().toString();
         callbacks.put(uuid, this);
-        sourceCode = "((javassist.tools.Callback) javassist.tools.Callback.callbacks.get(\""+uuid+"\")).result(new Object[]{"+src+"});";
+        sourceCode = "((org.hotswap.agent.javassist.tools.Callback) javassist.tools.Callback.callbacks.get(\""+uuid+"\")).result(new Object[]{"+src+"});";
     }
 
     /**

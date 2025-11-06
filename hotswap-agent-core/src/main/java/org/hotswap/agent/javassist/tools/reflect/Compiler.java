@@ -49,7 +49,7 @@ class CompiledClass {
  *
  * <p>If a class name is not followed by any options, the class indicated
  * by that class name is not reflective.
- *
+ * 
  * <p>For example,
  * <pre>% java Compiler Dog -m MetaDog -c CMetaDog Cat -m MetaCat Cow
  * </pre>

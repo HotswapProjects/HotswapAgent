@@ -16,11 +16,6 @@
 
 package org.hotswap.agent.javassist.compiler;
 
-import org.hotswap.agent.javassist.compiler.CodeGen;
-import org.hotswap.agent.javassist.compiler.CompileError;
-import org.hotswap.agent.javassist.compiler.Lex;
-import org.hotswap.agent.javassist.compiler.SymbolTable;
-import org.hotswap.agent.javassist.compiler.TokenId;
 import org.hotswap.agent.javassist.compiler.ast.ASTList;
 import org.hotswap.agent.javassist.compiler.ast.ASTree;
 import org.hotswap.agent.javassist.compiler.ast.ArrayInit;

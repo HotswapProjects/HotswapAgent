@@ -657,7 +657,7 @@ public class Descriptor {
      * is 2 words.  For example, if the given descriptor is
      *  <code>"(IJ)D"</code>, then this method returns 3.  The size of the
      * return type is not computed.
-     *
+     * 
      * @param desc      a method descriptor.
      */
     public static int paramSize(String desc) {
@@ -711,7 +711,7 @@ public class Descriptor {
      * given descriptor.  For example, <code>Ljava/lang/Object;</code>
      * is converted into <code>java.lang.Object</code>.
      * <code>(I[I)V</code> is converted into <code>(int, int[])</code>
-     * (the return type is ignored).
+     * (the return type is ignored). 
      */
     public static String toString(String desc) {
         return PrettyPrinter.toString(desc);

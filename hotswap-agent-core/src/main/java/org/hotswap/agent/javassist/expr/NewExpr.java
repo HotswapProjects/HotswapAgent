@@ -56,7 +56,7 @@ public class NewExpr extends Expr {
 
     /*
      * Not used
-     *
+     * 
     private int getNameAndType(ConstPool cp) {
         int pos = currentPos;
         int c = iterator.byteAt(pos);

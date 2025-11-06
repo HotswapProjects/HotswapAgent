@@ -254,7 +254,7 @@ public class LocalVariableAttribute extends AttributeInfo {
      * If this attribute represents a LocalVariableTypeTable attribute,
      * this method should be used instead of <code>descriptorIndex()</code>
      * since the method name is more appropriate.
-     *
+     * 
      * @param i         the i-th entry.
      * @see #descriptorIndex(int)
      * @see SignatureAttribute#toFieldSignature(String)

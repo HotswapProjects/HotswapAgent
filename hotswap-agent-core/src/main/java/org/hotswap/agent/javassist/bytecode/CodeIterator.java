@@ -16,8 +16,6 @@
 
 package org.hotswap.agent.javassist.bytecode;
 
-import org.hotswap.agent.javassist.bytecode.LocalVariableAttribute;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +26,7 @@ import java.util.List;
  * {@link #writeByte(int, int)}, {@link #write16bit(int, int)}, and other methods.
  * For example, if <code>method</code> refers to a <code>CtMethod</code> object,
  * the following code substitutes the <code>NOP</code> instruction for the first
- * instruction of the method:
+ * instruction of the method:  
  *
  * <pre>
  * CodeAttribute ca = method.getMethodInfo().getCodeAttribute();
@@ -455,7 +453,7 @@ public class CodeIterator implements Opcode {
      * <p>The index at which the byte sequence is actually inserted
      * might be different from pos since some other bytes might be
      * inserted at other positions (e.g. to change <code>GOTO</code>
-     * to <code>GOTO_W</code>).
+     * to <code>GOTO_W</code>). 
      *
      * @param pos       the index at which a byte sequence is inserted.
      * @param code      inserted bytecode sequence.
@@ -830,7 +828,7 @@ public class CodeIterator implements Opcode {
     /**
      * insertGapCore0() inserts a gap (some NOPs).
      * It cannot handle a long code sequence more than 32K.  All branch offsets must be
-     * signed 16bits.
+     * signed 16bits. 
      *
      * If "where" is the beginning of a block statement and exclusive is false,
      * then the inserted gap is also included in the block statement.
@@ -1132,11 +1130,11 @@ public class CodeIterator implements Opcode {
     }
 
     /*
-     * insertGapCore0w() can handle a long code sequence more than 32K.
+     * insertGapCore0w() can handle a long code sequence more than 32K. 
      * It guarantees that the length of the inserted gap (NOPs) is equal to
      * gapLength.  No other NOPs except some NOPs following TABLESWITCH or
-     * LOOKUPSWITCH will not be inserted.
-     *
+     * LOOKUPSWITCH will not be inserted. 
+     * 
      * Note: currentPos might be moved.
      *
      * @param where       It must indicate the first byte of an opcode.

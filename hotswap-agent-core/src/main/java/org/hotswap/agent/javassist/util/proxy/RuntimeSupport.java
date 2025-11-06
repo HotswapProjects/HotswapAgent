@@ -148,7 +148,7 @@ public class RuntimeSupport {
     private static Method findSuperMethod2(Class<?> clazz, String name, String desc) {
         Method m = findMethod2(clazz, name, desc);
         if (m != null)
-            return m;
+            return m; 
 
         Class<?> superClass = clazz.getSuperclass();
         if (superClass != null) {

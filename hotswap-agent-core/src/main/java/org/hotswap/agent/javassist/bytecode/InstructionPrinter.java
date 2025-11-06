@@ -68,7 +68,7 @@ public class InstructionPrinter implements Opcode {
 
     /**
      * Gets a string representation of the bytecode instruction at the specified
-     * position.
+     * position. 
      */
     public static String instructionString(CodeIterator iter, int pos, ConstPool pool) {
         int opcode = iter.byteAt(pos);

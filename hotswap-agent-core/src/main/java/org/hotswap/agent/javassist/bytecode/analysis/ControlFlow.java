@@ -38,7 +38,7 @@ import org.hotswap.agent.javassist.bytecode.stackmap.BasicBlock;
  * <p><code>blocks</code> is an array of basic blocks in
  * that method body.</p>
  *
- * @see CtMethod
+ * @see javassist.CtMethod
  * @see Block
  * @see Frame
  * @see Analyzer
@@ -93,7 +93,7 @@ public class ControlFlow {
                 e.entrances[counters[e.index]++] = b;
             }
 
-            Catcher[] catchers = b.catchers();
+            ControlFlow.Catcher[] catchers = b.catchers();
             for (int k = 0; k < catchers.length; k++) {
                 Block catchBlock = catchers[k].node;
                 catchBlock.entrances[counters[catchBlock.index]++] = b;
@@ -130,17 +130,17 @@ public class ControlFlow {
      * Constructs a dominator tree.  This method returns an array of
      * the tree nodes.  The first element of the array is the root
      * of the tree.
-     *
+     * 
      * <p> The order of the elements is the same as that
      * of the elements in the <code>Block</code> array returned
      * by the <code>basicBlocks</code>
      * method.  If a <code>Block</code> object is at the i-th position
-     * in the <code>Block</code> array, then
+     * in the <code>Block</code> array, then  
      * the <code>Node</code> object referring to that
      * <code>Block</code> object is at the i-th position in the
      * array returned by this method.
      * For every array element <code>node</code>, its index in the
-     * array is equivalent to <code>node.block().index()</code>.
+     * array is equivalent to <code>node.block().index()</code>. 
      *
      * @return an array of the tree nodes, or null if the method doesn't have code.
      * @see Node#block()
@@ -178,12 +178,12 @@ public class ControlFlow {
      * Constructs a post dominator tree.  This method returns an array of
      * the tree nodes.  Note that the tree has multiple roots.
      * The parent of the root nodes is null.
-     *
+     * 
      * <p> The order of the elements is the same as that
      * of the elements in the <code>Block</code> array returned
      * by the <code>basicBlocks</code>
      * method.  If a <code>Block</code> object is at the i-th position
-     * in the <code>Block</code> array, then
+     * in the <code>Block</code> array, then  
      * the <code>Node</code> object referring to that
      * <code>Block</code> object is at the i-th position in the
      * array returned by this method.
@@ -320,11 +320,11 @@ public class ControlFlow {
 
         /**
          * Returns catch clauses that will catch an exception thrown
-         * in this block.
+         * in this block. 
          */
         public Catcher[] catchers() {
             List<Catcher> catchers = new ArrayList<Catcher>();
-            Catch c = toCatch;
+            BasicBlock.Catch c = toCatch;
             while (c != null) {
                 catchers.add(new Catcher(c));
                 c = c.next;
@@ -337,13 +337,13 @@ public class ControlFlow {
     static abstract class Access {
         Node[] all;
         Access(Node[] nodes) { all = nodes; }
-        Node node(BasicBlock b) { return all[((Block)b).index]; }
+        Node node(BasicBlock b) { return all[((Block)b).index]; } 
         abstract BasicBlock[] exits(Node n);
         abstract BasicBlock[] entrances(Node n);
     }
 
     /**
-     * A node of (post) dominator trees.
+     * A node of (post) dominator trees. 
      */
     public static class Node {
         private Block block;
@@ -389,7 +389,7 @@ public class ControlFlow {
 
         /**
          * Returns the n-th child of this node.
-         *
+         *  
          * @param n     an index in the array of children.
          */
         public Node child(int n) { return children[n]; }
@@ -501,7 +501,7 @@ public class ControlFlow {
         }
 
         /**
-         * Returns the first block of the catch clause.
+         * Returns the first block of the catch clause. 
          */
         public Block block() { return node; }
 

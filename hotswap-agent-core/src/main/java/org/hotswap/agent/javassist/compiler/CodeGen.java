@@ -16,11 +16,12 @@
 
 package org.hotswap.agent.javassist.compiler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.hotswap.agent.javassist.bytecode.Bytecode;
 import org.hotswap.agent.javassist.bytecode.Opcode;
-import org.hotswap.agent.javassist.compiler.CompileError;
-import org.hotswap.agent.javassist.compiler.TokenId;
-import org.hotswap.agent.javassist.compiler.TypeChecker;
 import org.hotswap.agent.javassist.compiler.ast.ASTList;
 import org.hotswap.agent.javassist.compiler.ast.ASTree;
 import org.hotswap.agent.javassist.compiler.ast.ArrayInit;
@@ -45,10 +46,6 @@ import org.hotswap.agent.javassist.compiler.ast.StringL;
 import org.hotswap.agent.javassist.compiler.ast.Symbol;
 import org.hotswap.agent.javassist.compiler.ast.Variable;
 import org.hotswap.agent.javassist.compiler.ast.Visitor;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /* The code generator is implemented by three files:
  * CodeGen.java, MemberCodeGen.java, and JvstCodeGen.
@@ -86,7 +83,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
 
         /**
          * Returns true if the generated code ends with return,
-         * throw, or goto.
+         * throw, or goto. 
          */
         protected abstract boolean doit(Bytecode b, int opcode);
 
@@ -129,7 +126,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
     }
 
     public static boolean is2word(int type, int dim) {
-        return dim == 0 && (type == DOUBLE || type == LONG);
+        return dim == 0 && (type == DOUBLE || type == LONG); 
     }
 
     public int getMaxLocals() { return bytecode.getMaxLocals(); }
@@ -605,7 +602,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
                     caseLabel = (long)computeLabel(label.head());
 
                 pairs[ipairs++]
-                    = (caseLabel << 32) +
+                    = (caseLabel << 32) + 
                       ((long)(curPos - opcodePc) & 0xffffffff);
             }
 
@@ -619,7 +616,7 @@ public abstract class CodeGen extends Visitor implements Opcode, TokenId {
             bytecode.write32bit(pc, (int)(pairs[i] >>> 32));
             bytecode.write32bit(pc + 4, (int)pairs[i]);
             pc += 8;
-        }
+        } 
 
         if (defaultPc < 0 || breakList.size() > 0)
             hasReturned = false;

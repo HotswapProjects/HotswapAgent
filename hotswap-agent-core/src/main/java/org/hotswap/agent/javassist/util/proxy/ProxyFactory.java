@@ -67,7 +67,7 @@ import org.hotswap.agent.javassist.bytecode.StackMapTable;
  * the interfaces are also forwarded to the method handler.
  *
  * <p>For example, if the following code is executed,
- *
+ * 
  * <pre>
  * ProxyFactory f = new ProxyFactory();
  * f.setSuperclass(Foo.class);
@@ -225,7 +225,7 @@ public class ProxyFactory {
     /**
      * If the value of this variable is not null, the class file of
      * the generated proxy class is written under the directory specified
-     * by this variable.  For example, if the value is
+     * by this variable.  For example, if the value is 
      * <code>"."</code>, then the class file is written under the current
      * directory.  This method is for debugging.
      *
@@ -345,7 +345,7 @@ public class ProxyFactory {
      */
     public static boolean isProxyClass(Class<?> cl)
     {
-        // all proxies implement Proxy or ProxyObject. nothing else should.
+        // all proxies implement Proxy or ProxyObject. nothing else should. 
         return (Proxy.class.isAssignableFrom(cl));
     }
 
@@ -458,7 +458,7 @@ public class ProxyFactory {
      *                                                                     .getActualTypeArguments();
      * // x[0] == String.class
      * </pre>
-     *
+     * 
      * @param sig   a generic signature.
      * @see javassist.CtClass#setGenericSignature(String)
      * @since 3.26
@@ -504,6 +504,10 @@ public class ProxyFactory {
 
     /**
      * Generates a proxy class using the current filter.
+     * It loads a class file by the given
+     * {@code java.lang.invoke.MethodHandles.Lookup} object,
+     * which can be obtained by {@code MethodHandles.lookup()} called from
+     * somewhere in the package that the loaded class belongs to.
      *
      * @param lookup    used for loading the proxy class.
      *                  It needs an appropriate right to invoke {@code defineClass}
@@ -524,6 +528,7 @@ public class ProxyFactory {
      *                  It needs an appropriate right to invoke {@code defineClass}
      *                  for the proxy class.
      * @param filter    the filter.
+     * @see #createClass(Lookup)
      * @since 3.24
      */
     public Class<?> createClass(Lookup lookup, MethodFilter filter) {
@@ -696,7 +701,7 @@ public class ProxyFactory {
 
     /**
      * Obtains the method handler of the given proxy object.
-     *
+     * 
      * @param p     a proxy object.
      * @return the method handler.
      * @since 3.16
@@ -767,7 +772,7 @@ public class ProxyFactory {
             loader = superClass.getClassLoader();
         else if (interfaces != null && interfaces.length > 0)
             loader = interfaces[0].getClassLoader();
-
+ 
         if (loader == null) {
             loader = getClass().getClassLoader();
             // In case javassist is in the endorsed dir
@@ -1232,7 +1237,7 @@ public class ProxyFactory {
     /**
      * Returns true if the method is visible from the package.
      *
-     * @param mod       the modifiers of the method.
+     * @param mod       the modifiers of the method. 
      */
     private static boolean isVisible(int mod, String from, Member meth) {
         if ((mod & Modifier.PRIVATE) != 0)
@@ -1305,12 +1310,12 @@ public class ProxyFactory {
                     && !Modifier.isAbstract(oldMethod.getModifiers()) && !isDuplicated(i, methods))
                     hash.put(key, oldMethod);
 
-                // check if visibility has been reduced
+                // check if visibility has been reduced 
                 if (null != oldMethod && Modifier.isPublic(oldMethod.getModifiers())
-                                      && !Modifier.isPublic(m.getModifiers())) {
+                                      && !Modifier.isPublic(m.getModifiers())) { 
                     // we tried to overwrite a public definition with a non-public definition,
-                    // use the old definition instead.
-                    hash.put(key, oldMethod);
+                    // use the old definition instead. 
+                    hash.put(key, oldMethod); 
                 }
             }
     }
@@ -1324,7 +1329,7 @@ public class ProxyFactory {
 
         return false;
     }
-
+    
     private static boolean areParametersSame(Method method, Method targetMethod) {
         Class<?>[] methodTypes = method.getParameterTypes();
         Class<?>[] targetMethodTypes = targetMethod.getParameterTypes();
@@ -1340,7 +1345,7 @@ public class ProxyFactory {
         }
         return false;
     }
-
+    
     private static final String HANDLER_GETTER_KEY
     	= HANDLER_GETTER + ":()";
 
@@ -1413,7 +1418,7 @@ public class ProxyFactory {
 
     /* Suppose that the receiver type is S, the invoked method
      * is declared in T, and U is the immediate super class of S
-     * (or its interface).  If S <: U <: T (S <: T reads "S extends T"),
+     * (or its interface).  If S <: U <: T (S <: T reads "S extends T"), 
      * the target type of invokespecial has to be not T but U.
      */
     private Class<?> invokespecialTarget(Class<?> declClass) {
@@ -1594,7 +1599,7 @@ public class ProxyFactory {
 
     private static int makeWrapper(Bytecode code, Class<?> type, int regno) {
         int index = FactoryHelper.typeIndex(type);
-        String wrapper = FactoryHelper.wrapperTypes[index];
+        String wrapper = FactoryHelper.wrapperTypes[index]; 
         code.addNew(wrapper);
         code.addOpcode(Opcode.DUP);
         addLoad(code, regno, type);
@@ -1616,7 +1621,7 @@ public class ProxyFactory {
                                       FactoryHelper.unwrapDesc[index]);
             }
         }
-        else
+        else       
             code.addCheckcast(type.getName());
     }
 
