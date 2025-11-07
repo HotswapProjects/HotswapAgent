@@ -97,7 +97,7 @@ public abstract class ClassSignatureBase {
                             value = arrayToString(value);
                         }
 
-                        b.append(method.getName() + "=" + value.getClass() + ":" + value);
+                        b.append(method.getName()).append("=").append(value.getClass()).append(":").append(value);
                     }
                 }
             }

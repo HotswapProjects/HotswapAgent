@@ -133,7 +133,7 @@ public class PluginManagerInvoker {
         b.append(managerClass);
         b.append(".getInstance().getPlugin(");
         b.append(pluginClass.getName());
-        b.append(".class.getName(), " + appClassLoaderVar + ");");
+        b.append(".class.getName(), ").append(appClassLoaderVar).append(");");
 
         // Class __pluginClass = __pluginClassLoader.loadClass("org.hotswap.agent.plugin.TestPlugin");
         b.append("Class __pluginClass = ");
@@ -142,10 +142,10 @@ public class PluginManagerInvoker {
         b.append("\");");
 
         // param types
-        b.append("Class[] paramTypes = new Class[" + paramCount + "];");
+        b.append("Class[] paramTypes = new Class[").append(paramCount).append("];");
         for (int i = 0; i < paramCount; i++) {
             // paramTypes[i] = = __pluginClassLoader.loadClass("my.test.TestClass").getClass();
-            b.append("paramTypes[" + i + "] = __pluginClassLoader.loadClass(\"" + paramValueAndType[(i * 2) + 1] + "\");");
+            b.append("paramTypes[").append(i).append("] = __pluginClassLoader.loadClass(\"").append(paramValueAndType[(i * 2) + 1]).append("\");");
         }
 
         //   java.lang.reflect.Method __pluginMethod = __pluginClass.getDeclaredMethod("method", paramType1, paramType2);
@@ -154,9 +154,9 @@ public class PluginManagerInvoker {
         b.append("\", paramTypes");
         b.append(");");
 
-        b.append("Object[] params = new Object[" + paramCount + "];");
+        b.append("Object[] params = new Object[").append(paramCount).append("];");
         for (int i = 0; i < paramCount; i = i + 1) {
-            b.append("params[" + i + "] = " + paramValueAndType[i * 2] + ";");
+            b.append("params[").append(i).append("] = ").append(paramValueAndType[i * 2]).append(";");
         }
 
         // __pluginMethod.invoke(__pluginInstance, param1, param2);

@@ -48,7 +48,7 @@ public class IBatisTransformers {
     @OnClassLoadEvent(classNameRegexp = "com.ibatis.sqlmap.engine.builder.xml.SqlMapConfigParser")
     public static void patchSqlMapConfigParser(CtClass ctClass, ClassPool classPool) throws CannotCompileException, NotFoundException {
         StringBuilder src = new StringBuilder("{");
-        src.append(IBatisConfigurationHandler.class.getName() + ".setSqlMapConfigParser(this);");
+        src.append(IBatisConfigurationHandler.class.getName()).append(".setSqlMapConfigParser(this);");
         src.append("}");
         CtClass[] constructorParams = new CtClass[] {};
         ctClass.getDeclaredConstructor(constructorParams).insertAfter(src.toString());
@@ -69,7 +69,7 @@ public class IBatisTransformers {
         src.append(PluginManagerInvoker.buildInitializePlugin(IBatisPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(IBatisPlugin.class, "registConfigFile",IBatisConfigurationHandler.class.getName() + ".toPath(this.configLocations)", "java.lang.String"));
         src.append(PluginManagerInvoker.buildCallPluginMethod(IBatisPlugin.class, "registConfigFile",IBatisConfigurationHandler.class.getName() + ".toPath(this.mappingLocations)", "java.lang.String"));
-        src.append(IBatisConfigurationHandler.class.getName() + ".setMapFiles(this.configLocations,this.mappingLocations,this.sqlMapClientProperties);");
+        src.append(IBatisConfigurationHandler.class.getName()).append(".setMapFiles(this.configLocations,this.mappingLocations,this.sqlMapClientProperties);");
         src.append("}");
         CtMethod method = ctClass.getDeclaredMethod("afterPropertiesSet");
         method.insertAfter(src.toString());
@@ -86,7 +86,7 @@ public class IBatisTransformers {
     @OnClassLoadEvent(classNameRegexp = "com.ibatis.sqlmap.engine.builder.xml.SqlMapParser")
     public static void  patchSqlMapParser(CtClass ctClass, ClassPool classPool) throws CannotCompileException, NotFoundException {
         StringBuilder src = new StringBuilder("{");
-        src.append(IBatisConfigurationHandler.class.getName() + ".setParserState(this.state);");
+        src.append(IBatisConfigurationHandler.class.getName()).append(".setParserState(this.state);");
         src.append("}");
         CtClass[] constructorParams = new CtClass[] {
             classPool.get("com.ibatis.sqlmap.engine.builder.xml.XmlParserState")
