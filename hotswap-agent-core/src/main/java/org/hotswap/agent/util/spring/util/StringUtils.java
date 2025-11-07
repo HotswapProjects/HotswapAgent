@@ -1015,10 +1015,7 @@ public abstract class StringUtils {
         if (ObjectUtils.isEmpty(array)) {
             return array;
         }
-        Set<String> set = new LinkedHashSet<>();
-        for (String element : array) {
-            set.add(element);
-        }
+        Set<String> set = new LinkedHashSet<>(Arrays.asList(array));
         return toStringArray(set);
     }
 
@@ -1271,12 +1268,8 @@ public abstract class StringUtils {
      * @see #removeDuplicateStrings(String[])
      */
     public static Set<String> commaDelimitedListToSet(String str) {
-        Set<String> set = new LinkedHashSet<>();
         String[] tokens = commaDelimitedListToStringArray(str);
-        for (String token : tokens) {
-            set.add(token);
-        }
-        return set;
+        return new LinkedHashSet<>(Arrays.asList(tokens));
     }
 
     /**
