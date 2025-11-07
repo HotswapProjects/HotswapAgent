@@ -793,11 +793,7 @@ public abstract class ReflectionUtils {
      * @see Class#getDeclaredFields()
      */
     private static Field[] getDeclaredFields(Class<?> clazz) {
-        Field[] result = declaredFieldsCache.get(clazz);
-        if (result == null) {
-            result = clazz.getDeclaredFields();
-            declaredFieldsCache.put(clazz, result);
-        }
+        Field[] result = declaredFieldsCache.computeIfAbsent(clazz, k -> clazz.getDeclaredFields());
         return result;
     }
 
