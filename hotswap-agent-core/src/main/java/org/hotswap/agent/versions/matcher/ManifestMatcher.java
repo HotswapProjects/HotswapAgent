@@ -38,8 +38,8 @@ import org.hotswap.agent.versions.VersionMatcher;
 import org.hotswap.agent.versions.VersionRange;
 
 /**
- * The ManifestMatcher will parse and match a single @Manifest definition 
- * 
+ * The ManifestMatcher will parse and match a single @Manifest definition
+ *
  * @author alpapad@gmail.com
  */
 public class ManifestMatcher implements VersionMatcher {
@@ -47,16 +47,16 @@ public class ManifestMatcher implements VersionMatcher {
 
     /** The included versions range */
     private final VersionRange includes;
-    
+
     /** The excluded versions range */
     private final VersionRange excludes;
-    
+
     /** The properties. */
     private final Map<Name, String> properties;
 
     /** The includes string. */
     private final String includesString;
-    
+
     /** The excludes string. */
     private final String excludesString;
 
@@ -94,9 +94,9 @@ public class ManifestMatcher implements VersionMatcher {
                     versions.add(new Name(versionName));
                 }
             }
-            version = versions.toArray(new Name[versions.size()]);
+            version = versions.toArray(new Name[0]);
         }
-        
+
         if (cfg.names() != null && cfg.names().length > 0) {
             this.properties = new HashMap<>();
             for (org.hotswap.agent.annotation.Name name : cfg.names()) {
@@ -144,10 +144,10 @@ public class ManifestMatcher implements VersionMatcher {
         if(info.getManifest() == null  || info.getManifest().size() == 0) {
             return VersionMatchResult.SKIPPED;
         }
-        
+
        	for (ManifestInfo manifest: info.getManifest()) {
        	    VersionMatchResult result = match(manifest);
-       	 
+
        		if(VersionMatchResult.MATCHED.equals(result)){
        		    LOGGER.debug("Matched {} with {}", this, manifest);
        			return VersionMatchResult.MATCHED;
@@ -157,7 +157,7 @@ public class ManifestMatcher implements VersionMatcher {
                 return VersionMatchResult.REJECTED;
             }
        	}
-       	
+
        	// There were no matches (maybe another matcher will pass)
        	return VersionMatchResult.SKIPPED;
     }
@@ -177,7 +177,7 @@ public class ManifestMatcher implements VersionMatcher {
         if(StringUtils.isEmpty(artifactVersion)){
             return VersionMatchResult.SKIPPED;
         }
-        
+
         // if no properties, then skip
         if(properties.size() == 0) {
             return VersionMatchResult.SKIPPED;
@@ -191,19 +191,19 @@ public class ManifestMatcher implements VersionMatcher {
             }
         }
         ArtifactVersion version = new ArtifactVersion(artifactVersion);
-        
+
         if(excludes != null && excludes.containsVersion(version)) {
             return VersionMatchResult.REJECTED;
         }
-        
+
         if(includes != null && !includes.containsVersion(version)) {
             return VersionMatchResult.REJECTED;
         } else {
             return VersionMatchResult.MATCHED;
         }
-        
+
     }
-    
+
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
      */

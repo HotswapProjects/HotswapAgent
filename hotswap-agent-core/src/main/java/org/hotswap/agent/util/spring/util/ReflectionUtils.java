@@ -629,7 +629,7 @@ public abstract class ReflectionUtils {
     public static Method[] getAllDeclaredMethods(Class<?> leafClass) {
         final List<Method> methods = new ArrayList<>(32);
         doWithMethods(leafClass, methods::add);
-        return methods.toArray(new Method[methods.size()]);
+        return methods.toArray(new Method[0]);
     }
 
     /**
@@ -667,7 +667,7 @@ public abstract class ReflectionUtils {
                 }
             }
         });
-        return methods.toArray(new Method[methods.size()]);
+        return methods.toArray(new Method[0]);
     }
 
     /**
