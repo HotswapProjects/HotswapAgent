@@ -118,7 +118,7 @@ public class PluginConfiguration {
                 }
 
                 // Add logging properties defined in jvm argument like -DLOGGER=warning
-                System.getProperties().forEach((key, value) -> properties.put(key, value));
+                properties.putAll(System.getProperties());
 
             } catch (Exception e) {
                 LOGGER.error("Error while loading 'hotswap-agent.properties' from base URL " + configurationURL, e);
