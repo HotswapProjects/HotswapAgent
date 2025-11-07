@@ -39,7 +39,7 @@ import org.hotswap.agent.util.classloader.ClassLoaderHelper;
  */
 public class GeneratorParametersTransformer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(GeneratorParametersTransformer.class);
-    private static Map<ClassLoader, WeakReference<Map<String, Object>>> classLoaderMaps = new WeakHashMap<ClassLoader, WeakReference<Map<String, Object>>>();
+    private static Map<ClassLoader, WeakReference<Map<String, Object>>> classLoaderMaps = new WeakHashMap<>();
 
     /**
      * Adds bytecode generation call parameter recording
@@ -101,7 +101,7 @@ public class GeneratorParametersTransformer {
                         Map<String, Object> map = (Map<String, Object>) loader
                                 .loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
                                 .get(null);
-                        mapRef = new WeakReference<Map<String, Object>>(map);
+                        mapRef = new WeakReference<>(map);
                         classLoaderMaps.put(loader, mapRef);
                     }
                 }

@@ -53,7 +53,7 @@ public class LogbackPlugin {
     ClassLoader appClassLoader;
 
     // ensure uri registered only once
-    Set<URI> registeredURIs = new HashSet<URI>();
+    Set<URI> registeredURIs = new HashSet<>();
 
     boolean initialized;
 

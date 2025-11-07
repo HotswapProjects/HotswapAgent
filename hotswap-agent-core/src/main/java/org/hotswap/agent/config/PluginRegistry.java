@@ -43,7 +43,7 @@ public class PluginRegistry {
     private static AgentLogger LOGGER = AgentLogger.getLogger(PluginRegistry.class);
 
     // plugin class -> Map (ClassLoader -> Plugin instance)
-    protected Map<Class, Map<ClassLoader, Object>> registeredPlugins = Collections.synchronizedMap(new HashMap<Class, Map<ClassLoader, Object>>());
+    protected Map<Class, Map<ClassLoader, Object>> registeredPlugins = Collections.synchronizedMap(new HashMap<>());
 
     /**
      * Returns map of all registered plugins.
@@ -128,7 +128,7 @@ public class PluginRegistry {
                 if (registeredPlugins.containsKey(pluginClass))
                     continue;
 
-                registeredPlugins.put(pluginClass, Collections.synchronizedMap(new HashMap<ClassLoader, Object>()));
+                registeredPlugins.put(pluginClass, Collections.synchronizedMap(new HashMap<>()));
 
                 if (annotationProcessor.processAnnotations(pluginClass, pluginClass)) {
                     LOGGER.debug("Plugin registered {}.", pluginClass);

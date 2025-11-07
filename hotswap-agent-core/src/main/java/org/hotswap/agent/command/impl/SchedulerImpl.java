@@ -42,7 +42,7 @@ public class SchedulerImpl implements Scheduler {
     //        must be executed in order. There is an issue related to this problem
     //        https://github.com/HotswapProjects/HotswapAgent/issues/39  which requires concurrent using
     final Map<Command, DuplicateScheduleConfig> scheduledCommands = new ConcurrentHashMap<>();
-    final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<Command>());
+    final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<>());
 
     Thread runner;
     boolean stopped;

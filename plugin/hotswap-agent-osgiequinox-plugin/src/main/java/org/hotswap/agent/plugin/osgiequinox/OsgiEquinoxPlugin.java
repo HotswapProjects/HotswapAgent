@@ -82,7 +82,7 @@ public class OsgiEquinoxPlugin {
 
     private AutoHotswapPathEventListener listener;
 
-    private Set<ClassLoader> registeredEquinoxClassLoaders = Collections.newSetFromMap(new WeakHashMap<ClassLoader, Boolean>());
+    private Set<ClassLoader> registeredEquinoxClassLoaders = Collections.newSetFromMap(new WeakHashMap<>());
 
     // command to do actual hotswap. Single command to merge possible multiple reload actions.
     private Command hotswapCommand;
@@ -231,7 +231,7 @@ public class OsgiEquinoxPlugin {
             for (ClassLoader classLoader: registeredEquinoxClassLoaders) {
                 if (ClassLoaderHelper.isClassLoaded(classLoader, ctClass.getName())) {
                     if (ret == null)
-                        ret = new ArrayList<ClassLoader>();
+                        ret = new ArrayList<>();
                     ret.add(classLoader);
                 }
             }

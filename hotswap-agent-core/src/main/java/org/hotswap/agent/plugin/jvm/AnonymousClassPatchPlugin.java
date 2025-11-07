@@ -84,7 +84,7 @@ public class AnonymousClassPatchPlugin {
     // Map ClassLoader -> (className -> infos about inner/local anonymous classes)
     // This caches information for one hotswap on main class and all anonymous classes
     private static Map<ClassLoader, Map<String, AnonymousClassInfos>> anonymousClassInfosMap =
-            new WeakHashMap<ClassLoader, Map<String, AnonymousClassInfos>>();
+            new WeakHashMap<>();
 
     /**
      * Replace an anonymous class with an compatible change (from another class according to state info).

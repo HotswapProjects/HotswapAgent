@@ -42,7 +42,7 @@ public class ClassResourceInfoProxyHelper {
 
     private static Class<?> classResourceInfoProxyClass = null;
 
-    private static final ThreadLocal<Boolean> DISABLE_PROXY_GENERATION = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> DISABLE_PROXY_GENERATION = new ThreadLocal<>() {
         @Override
         protected Boolean initialValue() {
             return false;

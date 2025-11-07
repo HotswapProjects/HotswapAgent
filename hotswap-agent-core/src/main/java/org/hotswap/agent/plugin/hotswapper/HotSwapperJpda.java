@@ -184,7 +184,7 @@ public class HotSwapperJpda {
      */
     public void reload(String className, byte[] classFile) {
         ReferenceType classtype = toRefType(className);
-        Map<ReferenceType,byte[]> map = new HashMap<ReferenceType,byte[]>();
+        Map<ReferenceType,byte[]> map = new HashMap<>();
         map.put(classtype, classFile);
         reload2(map, className);
     }
@@ -198,7 +198,7 @@ public class HotSwapperJpda {
      *                   class files is <code>byte[]</code>.
      */
     public void reload(Map<String,byte[]> classFiles) {
-        Map<ReferenceType,byte[]> map = new HashMap<ReferenceType,byte[]>();
+        Map<ReferenceType,byte[]> map = new HashMap<>();
         String className = null;
         for (Map.Entry<String,byte[]> e:classFiles.entrySet()) {
             className = e.getKey();

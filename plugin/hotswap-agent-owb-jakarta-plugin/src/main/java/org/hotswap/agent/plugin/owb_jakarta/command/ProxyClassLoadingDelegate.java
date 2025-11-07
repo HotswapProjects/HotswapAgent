@@ -36,7 +36,7 @@ public class ProxyClassLoadingDelegate {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyClassLoadingDelegate.class);
 
-    private static final ThreadLocal<Boolean> MAGIC_IN_PROGRESS = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> MAGIC_IN_PROGRESS = new ThreadLocal<>() {
         @Override
         protected Boolean initialValue() {
             return false;

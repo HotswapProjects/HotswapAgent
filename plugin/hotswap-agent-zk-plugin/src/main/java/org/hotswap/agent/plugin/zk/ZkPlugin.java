@@ -113,7 +113,7 @@ public class ZkPlugin {
         LOGGER.debug("org.zkoss.zel.BeanELResolver - added method __resetCache().");
     }
 
-    Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<>());
 
     public void registerBeanELResolver(Object beanELResolver) {
         registeredBeanELResolvers.add(beanELResolver);
@@ -139,7 +139,7 @@ public class ZkPlugin {
         LOGGER.debug("org.zkoss.bind.impl.BinderImpl - added method __resetCache().");
     }
 
-    Set<Object> registerBinderImpls = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> registerBinderImpls = Collections.newSetFromMap(new WeakHashMap<>());
 
     public void registerBinderImpl(Object binderImpl) {
         registerBinderImpls.add(binderImpl);

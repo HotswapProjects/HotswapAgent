@@ -207,7 +207,7 @@ public class TomcatPlugin {
 
     private static Map<String, ClassLoader> getExtraRepositories(ClassLoader appClassLoader) {
         if (!extraRepositories.containsKey(appClassLoader)) {
-            extraRepositories.put(appClassLoader, new HashMap<String, ClassLoader>());
+            extraRepositories.put(appClassLoader, new HashMap<>());
         }
         return extraRepositories.get(appClassLoader);
     }
