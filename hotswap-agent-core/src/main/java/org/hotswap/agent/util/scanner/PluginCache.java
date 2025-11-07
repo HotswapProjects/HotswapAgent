@@ -39,10 +39,7 @@ public class PluginCache {
     Scanner scanner = new ClassPathScanner();
 
     public Set<CtClass> getPlugins(ClassLoader classLoader) {
-        if (pluginDefs.containsKey(classLoader))
-            return pluginDefs.get(classLoader);
-        else
-            return Collections.emptySet();
+        return pluginDefs.getOrDefault(classLoader, Collections.emptySet());
     }
 
     public Set<CtClass> scanPlugins(ClassLoader classLoader) throws IOException {
