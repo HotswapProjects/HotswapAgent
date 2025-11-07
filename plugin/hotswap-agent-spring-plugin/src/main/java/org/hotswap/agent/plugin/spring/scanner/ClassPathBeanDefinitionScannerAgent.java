@@ -222,10 +222,7 @@ public class ClassPathBeanDefinitionScannerAgent {
                 return clazz;
             }
             return ctClass.toClass(appClassLoader, registry.getClass().getProtectionDomain());
-        } catch (IOException e) {
-            LOGGER.trace("make new class failed, {}", e.getMessage());
-            return null;
-        } catch (CannotCompileException e) {
+        } catch (IOException | CannotCompileException e) {
             LOGGER.trace("make new class failed, {}", e.getMessage());
             return null;
         }
@@ -240,9 +237,7 @@ public class ClassPathBeanDefinitionScannerAgent {
             }
             String realClassName = clazzName.replaceAll("/", ".");
             return appClassLoader.loadClass(realClassName);
-        } catch (ClassNotFoundException e) {
-            // ignore
-        } catch (NoClassDefFoundError e) {
+        } catch (ClassNotFoundException | NoClassDefFoundError e) {
             // ignore
         }
         return null;
