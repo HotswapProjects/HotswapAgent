@@ -208,8 +208,7 @@ public class ELResolverPlugin {
             int modifiers = ctCacheField.getModifiers();
             ctCacheField.setModifiers(modifiers & ~Modifier.FINAL);
             return true;
-        } catch(NotFoundException e1) {
-        } catch (CannotCompileException e2) {
+        } catch(NotFoundException | CannotCompileException e1) {
         }
         return false;
     }

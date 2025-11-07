@@ -701,10 +701,7 @@ public class SpringBeanReload {
         try {
             LOGGER.debug("try to invoke PostProcessorRegistrationDelegate");
             invokePostProcessorRegistrationDelegate(factory);
-        } catch (ClassNotFoundException t) {
-            LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
-            invokeBeanFactoryPostProcessors0(factory);
-        } catch (NoSuchMethodException t) {
+        } catch (ClassNotFoundException | NoSuchMethodException t) {
             LOGGER.debug("Failed to invoke PostProcessorRegistrationDelegate, possibly Spring version is 3.x or less, {}", t.getMessage());
             invokeBeanFactoryPostProcessors0(factory);
         } catch (Exception e) {
