@@ -389,7 +389,7 @@ public class PluginConfiguration {
             }
         }
 
-        return ret.toArray(new URL[ret.size()]);
+        return ret.toArray(new URL[0]);
     }
 
     private static URL resourceNameToURL(String resource) throws Exception {

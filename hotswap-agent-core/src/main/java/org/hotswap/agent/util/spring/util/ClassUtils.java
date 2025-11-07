@@ -1173,7 +1173,7 @@ public abstract class ClassUtils {
         if (collection == null) {
             return null;
         }
-        return collection.toArray(new Class<?>[collection.size()]);
+        return collection.toArray(new Class<?>[0]);
     }
 
     /**
@@ -1218,7 +1218,7 @@ public abstract class ClassUtils {
      */
     public static Class<?>[] getAllInterfacesForClass(Class<?> clazz, ClassLoader classLoader) {
         Set<Class<?>> ifcs = getAllInterfacesForClassAsSet(clazz, classLoader);
-        return ifcs.toArray(new Class<?>[ifcs.size()]);
+        return ifcs.toArray(new Class<?>[0]);
     }
 
     /**

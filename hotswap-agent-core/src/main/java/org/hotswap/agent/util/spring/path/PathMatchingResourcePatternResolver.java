@@ -333,7 +333,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
             path = path.substring(1);
         }
         Set<Resource> result = doFindAllClassPathResources(path);
-        return result.toArray(new Resource[result.size()]);
+        return result.toArray(new Resource[0]);
     }
 
     /**
@@ -455,7 +455,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
         if (logger.isDebugEnabled()) {
             logger.debug("Resolved location pattern [" + locationPattern + "] to resources " + result);
         }
-        return result.toArray(new Resource[result.size()]);
+        return result.toArray(new Resource[0]);
     }
 
     /**

@@ -131,7 +131,7 @@ public class SpringPlugin {
             List<String> both = new ArrayList<>(basePackagePrefixes.length + newBasePackagePrefixes.length);
             Collections.addAll(both, basePackagePrefixes);
             Collections.addAll(both, newBasePackagePrefixes);
-            basePackagePrefixes = both.toArray(new String[both.size()]);
+            basePackagePrefixes = both.toArray(new String[0]);
         }
     }
 
