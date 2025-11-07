@@ -113,7 +113,7 @@ public class JavaClassSignature extends ClassSignatureBase {
 
     private String getConstructorString(Constructor<?> method) {
         StringBuilder strBuilder = new StringBuilder();
-        strBuilder.append(Modifier.toString(method.getModifiers()) + " ");
+        strBuilder.append(Modifier.toString(method.getModifiers())).append(" ");
         strBuilder.append(method.getName());
         strBuilder.append(getParams(method.getParameterTypes()));
         if (hasElement(ClassSignatureElement.METHOD_ANNOTATION))
@@ -128,8 +128,8 @@ public class JavaClassSignature extends ClassSignatureBase {
 
     private String getMethodString(Method method) {
         StringBuilder strBuilder = new StringBuilder();
-        strBuilder.append(Modifier.toString(method.getModifiers()) + " ");
-        strBuilder.append(getName(method.getReturnType()) + " " + method.getName());
+        strBuilder.append(Modifier.toString(method.getModifiers())).append(" ");
+        strBuilder.append(getName(method.getReturnType())).append(" ").append(method.getName());
         strBuilder.append(getParams(method.getParameterTypes()));
         if (hasElement(ClassSignatureElement.METHOD_ANNOTATION))
             strBuilder.append(annotationToString(method.getDeclaredAnnotations()));

@@ -89,7 +89,7 @@ public class MyBatisPlusTransformers {
         src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlusPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlusPlugin.class, "registerConfigurationFile",
                 XPathParserCaller.class.getName() + ".getSrcFileName(this.parser)", "java.lang.String", "this", "java.lang.Object"));
-        src.append("this.configuration = " + ConfigurationPlusProxy.class.getName() + ".getWrapper(this).proxy(this.configuration);");
+        src.append("this.configuration = ").append(ConfigurationPlusProxy.class.getName()).append(".getWrapper(this).proxy(this.configuration);");
         src.append("}");
 
         XMLConfigBuilderUtils.getBuilderInstrumentConstructor(ctClass, classPool).insertAfter(src.toString());
@@ -103,7 +103,7 @@ public class MyBatisPlusTransformers {
         src.append(PluginManagerInvoker.buildInitializePlugin(MyBatisPlusPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(MyBatisPlusPlugin.class, "registerConfigurationFile",
                 XPathParserCaller.class.getName() + ".getSrcFileName(this.parser)", "java.lang.String", "this", "java.lang.Object"));
-        src.append("this.configuration = " + ConfigurationPlusProxy.class.getName() + ".getWrapper(this).proxy(this.configuration);");
+        src.append("this.configuration = ").append(ConfigurationPlusProxy.class.getName()).append(".getWrapper(this).proxy(this.configuration);");
         src.append("}");
 
         CtConstructor instrumentConstructor = XMLConfigBuilderUtils.getBuilderInstrumentConstructor(ctClass, classPool);

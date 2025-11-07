@@ -121,7 +121,7 @@ public class CtClassSignature extends ClassSignatureBase {
 
     private String getConstructorString(CtConstructor method) throws ClassNotFoundException, NotFoundException {
         StringBuilder strBuilder = new StringBuilder();
-        strBuilder.append(Modifier.toString(method.getModifiers()) + " ");
+        strBuilder.append(Modifier.toString(method.getModifiers())).append(" ");
         strBuilder.append(method.getDeclaringClass().getName());
         strBuilder.append(getParams(method.getParameterTypes()));
         if (hasElement(ClassSignatureElement.METHOD_ANNOTATION))
@@ -136,8 +136,8 @@ public class CtClassSignature extends ClassSignatureBase {
 
     private String getMethodString(CtMethod method) throws NotFoundException, ClassNotFoundException {
         StringBuilder strBuilder = new StringBuilder();
-        strBuilder.append(Modifier.toString(method.getModifiers()) + " ");
-        strBuilder.append(getName(method.getReturnType()) + " " + method.getName());
+        strBuilder.append(Modifier.toString(method.getModifiers())).append(" ");
+        strBuilder.append(getName(method.getReturnType())).append(" ").append(method.getName());
         strBuilder.append(getParams(method.getParameterTypes()));
         if (hasElement(ClassSignatureElement.METHOD_ANNOTATION))
             strBuilder.append(annotationToString(method.getAvailableAnnotations()));
@@ -174,7 +174,7 @@ public class CtClassSignature extends ClassSignatureBase {
         StringBuilder b = new StringBuilder();
         b.append('[');
         for (int i = 0;; i++) {
-            b.append("class " + a[i].getName());
+            b.append("class ").append(a[i].getName());
             if (i == iMax)
                 return b.append(']').toString();
             b.append(", ");
