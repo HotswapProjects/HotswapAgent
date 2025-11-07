@@ -628,12 +628,7 @@ public abstract class ReflectionUtils {
      */
     public static Method[] getAllDeclaredMethods(Class<?> leafClass) {
         final List<Method> methods = new ArrayList<>(32);
-        doWithMethods(leafClass, new MethodCallback() {
-            @Override
-            public void doWith(Method method) {
-                methods.add(method);
-            }
-        });
+        doWithMethods(leafClass, methods::add);
         return methods.toArray(new Method[methods.size()]);
     }
 
