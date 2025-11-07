@@ -92,9 +92,9 @@ public class AntPathMatcher implements PathMatcher {
 
     private volatile Boolean cachePatterns;
 
-    private final Map<String, String[]> tokenizedPatternCache = new ConcurrentHashMap<String, String[]>(256);
+    private final Map<String, String[]> tokenizedPatternCache = new ConcurrentHashMap<>(256);
 
-    final Map<String, AntPathStringMatcher> stringMatcherCache = new ConcurrentHashMap<String, AntPathStringMatcher>(256);
+    final Map<String, AntPathStringMatcher> stringMatcherCache = new ConcurrentHashMap<>(256);
 
     /**
      * Create a new instance with the {@link #DEFAULT_PATH_SEPARATOR}.
@@ -107,7 +107,7 @@ public class AntPathMatcher implements PathMatcher {
     /**
      * A convenient, alternative constructor to use with a custom path
      * separator.
-     * 
+     *
      * @param pathSeparator
      *            the path separator to use, must not be {@code null}.
      * @since 4.1
@@ -133,7 +133,7 @@ public class AntPathMatcher implements PathMatcher {
      * <p>
      * Default is {@code true}. Switch this to {@code false} for
      * case-insensitive matching.
-     * 
+     *
      * @since 4.2
      */
     public void setCaseSensitive(boolean caseSensitive) {
@@ -159,7 +159,7 @@ public class AntPathMatcher implements PathMatcher {
      * turn it off when encountering too many patterns to cache at runtime (the
      * threshold is 65536), assuming that arbitrary permutations of patterns are
      * coming in, with little chance for encountering a recurring pattern.
-     * 
+     *
      * @since 4.0.1
      * @see #getStringMatcher(String)
      */
@@ -190,7 +190,7 @@ public class AntPathMatcher implements PathMatcher {
 
     /**
      * Actually match the given {@code path} against the given {@code pattern}.
-     * 
+     *
      * @param pattern
      *            the pattern to match against
      * @param path
@@ -328,7 +328,7 @@ public class AntPathMatcher implements PathMatcher {
      * <p>
      * Performs caching based on {@link #setCachePatterns}, delegating to
      * {@link #tokenizePath(String)} for the actual tokenization algorithm.
-     * 
+     *
      * @param pattern
      *            the pattern to tokenize
      * @return the tokenized pattern parts
@@ -361,7 +361,7 @@ public class AntPathMatcher implements PathMatcher {
     /**
      * Tokenize the given path String into parts, based on this matcher's
      * settings.
-     * 
+     *
      * @param path
      *            the path to tokenize
      * @return the tokenized path parts
@@ -372,7 +372,7 @@ public class AntPathMatcher implements PathMatcher {
 
     /**
      * Test whether or not a string matches against a pattern.
-     * 
+     *
      * @param pattern
      *            the pattern to match against (never {@code null})
      * @param str
@@ -398,7 +398,7 @@ public class AntPathMatcher implements PathMatcher {
      * encountering a recurring pattern.
      * <p>
      * This method may be overridden to implement a custom cache strategy.
-     * 
+     *
      * @param pattern
      *            the pattern to match against (never {@code null})
      * @return a corresponding AntPathStringMatcher (never {@code null})
@@ -480,7 +480,7 @@ public class AntPathMatcher implements PathMatcher {
 
     @Override
     public Map<String, String> extractUriTemplateVariables(String pattern, String path) {
-        Map<String, String> variables = new LinkedHashMap<String, String>();
+        Map<String, String> variables = new LinkedHashMap<>();
         boolean result = doMatch(pattern, path, true, variables);
         if (!result) {
             throw new IllegalStateException("Pattern \"" + pattern + "\" is not a match for \"" + path + "\"");
@@ -568,7 +568,7 @@ public class AntPathMatcher implements PathMatcher {
      * <td>{@code IllegalArgumentException}</td>
      * </tr>
      * </table>
-     * 
+     *
      * @param pattern1
      *            the first pattern
      * @param pattern2
@@ -659,7 +659,7 @@ public class AntPathMatcher implements PathMatcher {
      * The full path given as parameter is used to test for exact matches. So
      * when the given path is {@code /hotels/2}, the pattern {@code /hotels/2}
      * will be sorted before {@code /hotels/1}.
-     * 
+     *
      * @param path
      *            the full path to use for comparison
      * @return a comparator capable of sorting patterns in order of explicitness
@@ -685,7 +685,7 @@ public class AntPathMatcher implements PathMatcher {
 
         private final Pattern pattern;
 
-        private final List<String> variableNames = new LinkedList<String>();
+        private final List<String> variableNames = new LinkedList<>();
 
         public AntPathStringMatcher(String pattern) {
             this(pattern, true);
@@ -731,7 +731,7 @@ public class AntPathMatcher implements PathMatcher {
 
         /**
          * Main entry point.
-         * 
+         *
          * @return {@code true} if the string matches against the pattern, or
          *         {@code false} otherwise.
          */
@@ -783,7 +783,7 @@ public class AntPathMatcher implements PathMatcher {
         /**
          * Compare two patterns to determine which should match first, i.e.
          * which is the most specific regarding the current path.
-         * 
+         *
          * @return a negative integer, zero, or a positive integer as pattern1
          *         is more specific, equally specific, or less specific than
          *         pattern2.

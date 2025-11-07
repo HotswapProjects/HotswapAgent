@@ -53,7 +53,7 @@ import org.hotswap.agent.util.PluginManagerInvoker;
         description = "JSF/Mojarra. Clear resource bundle cache when *.properties files are changed.",
         testedVersions = {"2.1.23, 2.2.8"},
         expectedVersions = {"2.1", "2.2"},
-        supportClass = { 
+        supportClass = {
     		MojarraTransformer.class,
     		BeanManagerTransformer.class,
     		LifecycleImplTransformer.class
@@ -68,7 +68,7 @@ public class MojarraPlugin {
     @Init
     ClassLoader appClassLoader;
 
-    Set<Object> registeredRBMaps = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> registeredRBMaps = Collections.newSetFromMap(new WeakHashMap<>());
 
     @Init
     public void init(PluginConfiguration pluginConfiguration) {

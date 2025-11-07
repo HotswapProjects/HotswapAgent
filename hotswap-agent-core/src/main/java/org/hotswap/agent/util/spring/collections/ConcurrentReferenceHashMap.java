@@ -116,7 +116,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
     /**
      * Create a new {@code ConcurrentReferenceHashMap} instance.
-     * 
+     *
      * @param initialCapacity
      *            the initial capacity of the map
      */
@@ -126,7 +126,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
     /**
      * Create a new {@code ConcurrentReferenceHashMap} instance.
-     * 
+     *
      * @param initialCapacity
      *            the initial capacity of the map
      * @param loadFactor
@@ -139,7 +139,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
     /**
      * Create a new {@code ConcurrentReferenceHashMap} instance.
-     * 
+     *
      * @param initialCapacity
      *            the initial capacity of the map
      * @param concurrencyLevel
@@ -152,7 +152,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
     /**
      * Create a new {@code ConcurrentReferenceHashMap} instance.
-     * 
+     *
      * @param initialCapacity
      *            the initial capacity of the map
      * @param referenceType
@@ -164,7 +164,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
     /**
      * Create a new {@code ConcurrentReferenceHashMap} instance.
-     * 
+     *
      * @param initialCapacity
      *            the initial capacity of the map
      * @param loadFactor
@@ -180,7 +180,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
     /**
      * Create a new {@code ConcurrentReferenceHashMap} instance.
-     * 
+     *
      * @param initialCapacity
      *            the initial capacity of the map
      * @param loadFactor
@@ -225,7 +225,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
     /**
      * Factory method that returns the {@link ReferenceManager}. This method
      * will be called once for each {@link Segment}.
-     * 
+     *
      * @return a new reference manager
      */
     protected ReferenceManager createReferenceManager() {
@@ -237,7 +237,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
      * reduce collisions. This implementation uses the same Wang/Jenkins
      * algorithm as {@link ConcurrentHashMap}. Subclasses can override to
      * provide alternative hashing.
-     * 
+     *
      * @param o
      *            the object to hash (may be null)
      * @return the resulting hash code
@@ -270,7 +270,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
     /**
      * Return a {@link Reference} to the {@link Entry} for the specified
      * {@code key}, or {@code null} if not found.
-     * 
+     *
      * @param key
      *            the key (can be {@code null})
      * @param restructure
@@ -415,7 +415,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
     /**
      * Calculate a shift value that can be used to create a power-of-two value
      * between the specified maximum and minimum values.
-     * 
+     *
      * @param minimumValue
      *            the minimum value
      * @param maximumValue
@@ -498,7 +498,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
         /**
          * Apply an update operation to this segment. The segment will be locked
          * during the update.
-         * 
+         *
          * @param hash
          *            the hash of the key
          * @param key
@@ -525,7 +525,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
                     @Override
                     public void add(V value) {
                         @SuppressWarnings("unchecked")
-                        Entry<K, V> newEntry = new Entry<K, V>((K) key, value);
+                        Entry<K, V> newEntry = new Entry<>((K) key, value);
                         Reference<K, V> newReference = Segment.this.referenceManager.createReference(newEntry, hash, head);
                         Segment.this.references[index] = newReference;
                         Segment.this.count++;
@@ -560,7 +560,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
          * Restructure the underlying data structure when it becomes necessary.
          * This method can increase the size of the references table as well as
          * purge any references that have been garbage collected.
-         * 
+         *
          * @param allowResize
          *            if resizing is permitted
          */
@@ -574,7 +574,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
                     Set<Reference<K, V>> toPurge = Collections.emptySet();
                     if (reference != null) {
-                        toPurge = new HashSet<Reference<K, V>>();
+                        toPurge = new HashSet<>();
                         while (reference != null) {
                             toPurge.add(reference);
                             reference = this.referenceManager.pollForPurge();
@@ -650,7 +650,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
         /**
          * Replace the references with a new value, recalculating the
          * resizeThreshold.
-         * 
+         *
          * @param references
          *            the new references
          */
@@ -684,21 +684,21 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
         /**
          * Returns the referenced entry or {@code null} if the entry is no
          * longer available.
-         * 
+         *
          * @return the entry or {@code null}
          */
         Entry<K, V> get();
 
         /**
          * Returns the hash for the reference.
-         * 
+         *
          * @return the hash
          */
         int getHash();
 
         /**
          * Returns the next reference in the chain or {@code null}
-         * 
+         *
          * @return the next reference of {@code null}
          */
         Reference<K, V> getNext();
@@ -782,7 +782,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
         /**
          * Execute the task.
-         * 
+         *
          * @param reference
          *            the found reference or {@code null}
          * @param entry
@@ -799,7 +799,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
         /**
          * Convenience method that can be used for tasks that do not need access
          * to {@link Entries}.
-         * 
+         *
          * @param reference
          *            the found reference or {@code null}
          * @param entry
@@ -827,7 +827,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
 
         /**
          * Add a new entry with the specified value.
-         * 
+         *
          * @param value
          *            the value to add
          */
@@ -970,11 +970,11 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
      */
     protected class ReferenceManager {
 
-        private final ReferenceQueue<Entry<K, V>> queue = new ReferenceQueue<Entry<K, V>>();
+        private final ReferenceQueue<Entry<K, V>> queue = new ReferenceQueue<>();
 
         /**
          * Factory method used to create a new {@link Reference}.
-         * 
+         *
          * @param entry
          *            the entry contained in the reference
          * @param hash
@@ -985,9 +985,9 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
          */
         public Reference<K, V> createReference(Entry<K, V> entry, int hash, Reference<K, V> next) {
             if (ConcurrentReferenceHashMap.this.referenceType == ReferenceType.WEAK) {
-                return new WeakEntryReference<K, V>(entry, hash, next, this.queue);
+                return new WeakEntryReference<>(entry, hash, next, this.queue);
             }
-            return new SoftEntryReference<K, V>(entry, hash, next, this.queue);
+            return new SoftEntryReference<>(entry, hash, next, this.queue);
         }
 
         /**
@@ -996,7 +996,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V>implement
          * need purging. This method must be thread safe and ideally should not
          * block when returning {@code null}. References should be returned once
          * and only once.
-         * 
+         *
          * @return a reference to purge or {@code null}
          */
         @SuppressWarnings("unchecked")

@@ -97,7 +97,7 @@ public class ELResolverPlugin {
     @Init
     Scheduler scheduler;
 
-    Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> registeredBeanELResolvers = Collections.newSetFromMap(new WeakHashMap<>());
 
     boolean jbossReflectionUtil = false;
     String rootPackage = "javax";

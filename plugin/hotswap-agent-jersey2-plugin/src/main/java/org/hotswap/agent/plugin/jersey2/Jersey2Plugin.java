@@ -52,9 +52,9 @@ public class Jersey2Plugin {
     @Init
     ClassLoader appClassLoader;
 
-    Set<Object> registeredJerseyContainers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> registeredJerseyContainers = Collections.newSetFromMap(new WeakHashMap<>());
 //    Set<Object> registeredServiceLocators = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
-    Set<Class<?>> allRegisteredClasses = Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>());
+    Set<Class<?>> allRegisteredClasses = Collections.newSetFromMap(new WeakHashMap<>());
 
     /**
      *  Initialize the plugin when Jersey's ServletContainer.init(WebConfig config) is called.  This is called from both init() for a servlet
@@ -137,7 +137,7 @@ public class Jersey2Plugin {
         @SuppressWarnings("unchecked")
         Set<Class<?>> registeredClasses = (Set<Class<?>>)getRegisteredClassesMethod.invoke(resourceConfig);
 
-        Set<Class<?>> containerClasses = Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>());
+        Set<Class<?>> containerClasses = Collections.newSetFromMap(new WeakHashMap<>());
         containerClasses.addAll(scannedClasses);
         containerClasses.addAll(registeredClasses);
         return containerClasses;

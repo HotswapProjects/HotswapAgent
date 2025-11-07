@@ -74,9 +74,9 @@ public class HibernateJakartaPlugin
     @Init
     ClassLoader appClassLoader;
 
-    Set<Object> regAnnotatedMetaDataProviders = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> regAnnotatedMetaDataProviders = Collections.newSetFromMap(new WeakHashMap<>());
 
-    Map<Object, String> regBeanMetaDataManagersMap = new WeakHashMap<Object, String>();
+    Map<Object, String> regBeanMetaDataManagersMap = new WeakHashMap<>();
 
     // refresh commands
     Command reloadEntityManagerFactoryCommand =

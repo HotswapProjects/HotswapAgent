@@ -53,8 +53,8 @@ public class Jersey1Plugin {
     @Init
     ClassLoader appClassLoader;
 
-    Set<Object> registeredJerseyContainers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
-    Set<Class<?>> allRegisteredClasses = Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>());
+    Set<Object> registeredJerseyContainers = Collections.newSetFromMap(new WeakHashMap<>());
+    Set<Class<?>> allRegisteredClasses = Collections.newSetFromMap(new WeakHashMap<>());
 
     /**
      *  Initialize the plugin when Jersey's ServletContainer.init(WebConfig config) is called.  This is called from both init() for a servlet
@@ -99,7 +99,7 @@ public class Jersey1Plugin {
     private Set<Class<?>> getContainerClasses(Class<?> resourceConfigClass, Object resourceConfig)
                 throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
-        Set<Class<?>> containerClasses = Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>());
+        Set<Class<?>> containerClasses = Collections.newSetFromMap(new WeakHashMap<>());
 
         Set<Class<?>> providerClasses = (Set<Class<?>>) ReflectionHelper.invoke(resourceConfig, resourceConfigClass, "getProviderClasses",  new Class[]{});
         if (providerClasses != null) {

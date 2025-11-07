@@ -141,7 +141,7 @@ public class CglibEnhancerProxyBytecodeGenerator
 
     private Collection<FieldState> getFieldValuesWithClasses()
             throws IllegalAccessException {
-        Collection<FieldState> classValueFields = new ArrayList<FieldState>();
+        Collection<FieldState> classValueFields = new ArrayList<>();
 
         Field[] fields = generatorClass.getDeclaredFields();
         for (Field field : fields) {

@@ -73,10 +73,10 @@ public class Hibernate3JPAPlugin {
     ClassLoader appClassLoader;
 
     /** The reg annotated meta data providers. */
-    Set<Object> regAnnotatedMetaDataProviders = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> regAnnotatedMetaDataProviders = Collections.newSetFromMap(new WeakHashMap<>());
 
     /** The reg bean meta data managers. */
-    Set<Object> regBeanMetaDataManagers = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
+    Set<Object> regBeanMetaDataManagers = Collections.newSetFromMap(new WeakHashMap<>());
 
     /** The reload entity manager factory command. */
     // refresh commands

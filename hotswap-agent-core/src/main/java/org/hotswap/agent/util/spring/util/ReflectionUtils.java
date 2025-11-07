@@ -50,7 +50,7 @@ public abstract class ReflectionUtils {
 
     /**
      * Naming prefix for CGLIB-renamed methods.
-     * 
+     *
      * @see #isCglibRenamedMethod
      */
     private static final String CGLIB_RENAMED_METHOD_PREFIX = "CGLIB$";
@@ -59,18 +59,18 @@ public abstract class ReflectionUtils {
      * Cache for {@link Class#getDeclaredMethods()} plus equivalent default
      * methods from Java 8 based interfaces, allowing for fast iteration.
      */
-    private static final Map<Class<?>, Method[]> declaredMethodsCache = new ConcurrentReferenceHashMap<Class<?>, Method[]>(256);
+    private static final Map<Class<?>, Method[]> declaredMethodsCache = new ConcurrentReferenceHashMap<>(256);
 
     /**
      * Cache for {@link Class#getDeclaredFields()}, allowing for fast iteration.
      */
-    private static final Map<Class<?>, Field[]> declaredFieldsCache = new ConcurrentReferenceHashMap<Class<?>, Field[]>(256);
+    private static final Map<Class<?>, Field[]> declaredFieldsCache = new ConcurrentReferenceHashMap<>(256);
 
     /**
      * Attempt to find a {@link Field field} on the supplied {@link Class} with
      * the supplied {@code name}. Searches all superclasses up to {@link Object}
      * .
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @param name
@@ -85,7 +85,7 @@ public abstract class ReflectionUtils {
      * Attempt to find a {@link Field field} on the supplied {@link Class} with
      * the supplied {@code name} and/or {@link Class type}. Searches all
      * superclasses up to {@link Object}.
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @param name
@@ -121,7 +121,7 @@ public abstract class ReflectionUtils {
      * <p>
      * Thrown exceptions are handled via a call to
      * {@link #handleReflectionException(Exception)}.
-     * 
+     *
      * @param field
      *            the field to set
      * @param target
@@ -146,7 +146,7 @@ public abstract class ReflectionUtils {
      * <p>
      * Thrown exceptions are handled via a call to
      * {@link #handleReflectionException(Exception)}.
-     * 
+     *
      * @param field
      *            the field to get
      * @param target
@@ -168,7 +168,7 @@ public abstract class ReflectionUtils {
      * name and no parameters. Searches all superclasses up to {@code Object}.
      * <p>
      * Returns {@code null} if no {@link Method} can be found.
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @param name
@@ -184,7 +184,7 @@ public abstract class ReflectionUtils {
      * name and parameter types. Searches all superclasses up to {@code Object}.
      * <p>
      * Returns {@code null} if no {@link Method} can be found.
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @param name
@@ -217,7 +217,7 @@ public abstract class ReflectionUtils {
      * <p>
      * Thrown exceptions are handled via a call to
      * {@link #handleReflectionException}.
-     * 
+     *
      * @param method
      *            the method to invoke
      * @param target
@@ -236,7 +236,7 @@ public abstract class ReflectionUtils {
      * <p>
      * Thrown exceptions are handled via a call to
      * {@link #handleReflectionException}.
-     * 
+     *
      * @param method
      *            the method to invoke
      * @param target
@@ -258,7 +258,7 @@ public abstract class ReflectionUtils {
     /**
      * Invoke the specified JDBC API {@link Method} against the supplied target
      * object with no arguments.
-     * 
+     *
      * @param method
      *            the method to invoke
      * @param target
@@ -275,7 +275,7 @@ public abstract class ReflectionUtils {
     /**
      * Invoke the specified JDBC API {@link Method} against the supplied target
      * object with the supplied arguments.
-     * 
+     *
      * @param method
      *            the method to invoke
      * @param target
@@ -309,7 +309,7 @@ public abstract class ReflectionUtils {
      * Throws the underlying RuntimeException or Error in case of an
      * InvocationTargetException with such a root cause. Throws an
      * IllegalStateException with an appropriate message else.
-     * 
+     *
      * @param ex
      *            the reflection exception to handle
      */
@@ -335,7 +335,7 @@ public abstract class ReflectionUtils {
      * <p>
      * Throws the underlying RuntimeException or Error in case of such a root
      * cause. Throws an IllegalStateException else.
-     * 
+     *
      * @param ex
      *            the invocation target exception to handle
      */
@@ -352,7 +352,7 @@ public abstract class ReflectionUtils {
      * Rethrows the underlying exception cast to an {@link RuntimeException} or
      * {@link Error} if appropriate; otherwise, throws an
      * {@link IllegalStateException}.
-     * 
+     *
      * @param ex
      *            the exception to rethrow
      * @throws RuntimeException
@@ -377,7 +377,7 @@ public abstract class ReflectionUtils {
      * Rethrows the underlying exception cast to an {@link Exception} or
      * {@link Error} if appropriate; otherwise, throws an
      * {@link IllegalStateException}.
-     * 
+     *
      * @param ex
      *            the exception to rethrow
      * @throws Exception
@@ -397,7 +397,7 @@ public abstract class ReflectionUtils {
      * Determine whether the given method explicitly declares the given
      * exception or one of its superclasses, which means that an exception of
      * that type can be propagated as-is within a reflective invocation.
-     * 
+     *
      * @param method
      *            the declaring method
      * @param exceptionType
@@ -418,7 +418,7 @@ public abstract class ReflectionUtils {
 
     /**
      * Determine whether the given field is a "public static final" constant.
-     * 
+     *
      * @param field
      *            the field to check
      */
@@ -429,7 +429,7 @@ public abstract class ReflectionUtils {
 
     /**
      * Determine whether the given method is an "equals" method.
-     * 
+     *
      * @see java.lang.Object#equals(Object)
      */
     public static boolean isEqualsMethod(Method method) {
@@ -442,7 +442,7 @@ public abstract class ReflectionUtils {
 
     /**
      * Determine whether the given method is a "hashCode" method.
-     * 
+     *
      * @see java.lang.Object#hashCode()
      */
     public static boolean isHashCodeMethod(Method method) {
@@ -451,7 +451,7 @@ public abstract class ReflectionUtils {
 
     /**
      * Determine whether the given method is a "toString" method.
-     * 
+     *
      * @see java.lang.Object#toString()
      */
     public static boolean isToStringMethod(Method method) {
@@ -477,7 +477,7 @@ public abstract class ReflectionUtils {
     /**
      * Determine whether the given method is a CGLIB 'renamed' method, following
      * the pattern "CGLIB$methodName$0".
-     * 
+     *
      * @param renamedMethod
      *            the method to check
      * @see org.springframework.cglib.proxy.Enhancer#rename
@@ -499,7 +499,7 @@ public abstract class ReflectionUtils {
      * necessary. The {@code setAccessible(true)} method is only called when
      * actually necessary, to avoid unnecessary conflicts with a JVM
      * SecurityManager (if active).
-     * 
+     *
      * @param field
      *            the field to make accessible
      * @see java.lang.reflect.Field#setAccessible
@@ -515,7 +515,7 @@ public abstract class ReflectionUtils {
      * necessary. The {@code setAccessible(true)} method is only called when
      * actually necessary, to avoid unnecessary conflicts with a JVM
      * SecurityManager (if active).
-     * 
+     *
      * @param method
      *            the method to make accessible
      * @see java.lang.reflect.Method#setAccessible
@@ -531,7 +531,7 @@ public abstract class ReflectionUtils {
      * if necessary. The {@code setAccessible(true)} method is only called when
      * actually necessary, to avoid unnecessary conflicts with a JVM
      * SecurityManager (if active).
-     * 
+     *
      * @param ctor
      *            the constructor to make accessible
      * @see java.lang.reflect.Constructor#setAccessible
@@ -546,7 +546,7 @@ public abstract class ReflectionUtils {
      * Perform the given callback operation on all matching methods of the given
      * class, as locally declared or equivalent thereof (such as default methods
      * on Java 8 based interfaces that the given class implements).
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @param mc
@@ -571,7 +571,7 @@ public abstract class ReflectionUtils {
      * <p>
      * The same named method occurring on subclass and superclass will appear
      * twice, unless excluded by a {@link MethodFilter}.
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @param mc
@@ -588,7 +588,7 @@ public abstract class ReflectionUtils {
      * <p>
      * The same named method occurring on subclass and superclass will appear
      * twice, unless excluded by the specified {@link MethodFilter}.
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @param mc
@@ -622,12 +622,12 @@ public abstract class ReflectionUtils {
     /**
      * Get all declared methods on the leaf class and all superclasses. Leaf
      * class methods are included first.
-     * 
+     *
      * @param leafClass
      *            the class to introspect
      */
     public static Method[] getAllDeclaredMethods(Class<?> leafClass) {
-        final List<Method> methods = new ArrayList<Method>(32);
+        final List<Method> methods = new ArrayList<>(32);
         doWithMethods(leafClass, new MethodCallback() {
             @Override
             public void doWith(Method method) {
@@ -642,12 +642,12 @@ public abstract class ReflectionUtils {
      * superclasses. Leaf class methods are included first and while traversing
      * the superclass hierarchy any methods found with signatures matching a
      * method already included are filtered out.
-     * 
+     *
      * @param leafClass
      *            the class to introspect
      */
     public static Method[] getUniqueDeclaredMethods(Class<?> leafClass) {
-        final List<Method> methods = new ArrayList<Method>(32);
+        final List<Method> methods = new ArrayList<>(32);
         doWithMethods(leafClass, new MethodCallback() {
             @Override
             public void doWith(Method method) {
@@ -681,7 +681,7 @@ public abstract class ReflectionUtils {
      * array copying. In addition, it also includes Java 8 default methods from
      * locally implemented interfaces, since those are effectively to be treated
      * just like declared methods.
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @return the cached array of methods
@@ -714,7 +714,7 @@ public abstract class ReflectionUtils {
             for (Method ifcMethod : ifc.getMethods()) {
                 if (!Modifier.isAbstract(ifcMethod.getModifiers())) {
                     if (result == null) {
-                        result = new LinkedList<Method>();
+                        result = new LinkedList<>();
                     }
                     result.add(ifcMethod);
                 }
@@ -726,7 +726,7 @@ public abstract class ReflectionUtils {
     /**
      * Invoke the given callback on all fields in the target class, going up the
      * class hierarchy to get all declared fields.
-     * 
+     *
      * @param clazz
      *            the target class to analyze
      * @param fc
@@ -747,7 +747,7 @@ public abstract class ReflectionUtils {
     /**
      * Invoke the given callback on all fields in the target class, going up the
      * class hierarchy to get all declared fields.
-     * 
+     *
      * @param clazz
      *            the target class to analyze
      * @param fc
@@ -760,7 +760,7 @@ public abstract class ReflectionUtils {
     /**
      * Invoke the given callback on all fields in the target class, going up the
      * class hierarchy to get all declared fields.
-     * 
+     *
      * @param clazz
      *            the target class to analyze
      * @param fc
@@ -791,7 +791,7 @@ public abstract class ReflectionUtils {
      * This variant retrieves {@link Class#getDeclaredFields()} from a local
      * cache in order to avoid the JVM's SecurityManager check and defensive
      * array copying.
-     * 
+     *
      * @param clazz
      *            the class to introspect
      * @return the cached array of fields
@@ -838,7 +838,7 @@ public abstract class ReflectionUtils {
 
         /**
          * Perform an operation using the given method.
-         * 
+         *
          * @param method
          *            the method to operate on
          */
@@ -853,7 +853,7 @@ public abstract class ReflectionUtils {
 
         /**
          * Determine whether the given method matches.
-         * 
+         *
          * @param method
          *            the method to check
          */
@@ -867,7 +867,7 @@ public abstract class ReflectionUtils {
 
         /**
          * Perform an operation using the given field.
-         * 
+         *
          * @param field
          *            the field to operate on
          */
@@ -882,7 +882,7 @@ public abstract class ReflectionUtils {
 
         /**
          * Determine whether the given field matches.
-         * 
+         *
          * @param field
          *            the field to check
          */

@@ -751,7 +751,7 @@ public class ProxyGenerator {
         public short maxStack;
         public short maxLocals;
         public ByteArrayOutputStream code = new ByteArrayOutputStream();
-        public List<ExceptionTableEntry> exceptionTable = new ArrayList<ExceptionTableEntry>();
+        public List<ExceptionTableEntry> exceptionTable = new ArrayList<>();
         public short[] declaredExceptions;
 
         public MethodInfo(String name, String descriptor, int accessFlags) {

@@ -39,7 +39,7 @@ public class CglibProxyTransformer extends MultistepProxyTransformer {
     // Class transformation states for all the ClassLoaders. Used in the Agent
     // ClassLoader
     private static final Map<Class<?>, TransformationState> TRANSFORMATION_STATES = Collections
-            .synchronizedMap(new WeakHashMap<Class<?>, TransformationState>());
+            .synchronizedMap(new WeakHashMap<>());
     private GeneratorParams params;
 
     /**

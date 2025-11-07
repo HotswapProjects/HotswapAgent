@@ -46,7 +46,7 @@ public abstract class CollectionUtils {
     /**
      * Return {@code true} if the supplied Collection is {@code null} or empty.
      * Otherwise, return {@code false}.
-     * 
+     *
      * @param collection
      *            the Collection to check
      * @return whether the given Collection is empty
@@ -58,7 +58,7 @@ public abstract class CollectionUtils {
     /**
      * Return {@code true} if the supplied Map is {@code null} or empty.
      * Otherwise, return {@code false}.
-     * 
+     *
      * @param map
      *            the Map to check
      * @return whether the given Map is empty
@@ -77,7 +77,7 @@ public abstract class CollectionUtils {
      * runtime.
      * <p>
      * A {@code null} source value will be converted to an empty List.
-     * 
+     *
      * @param source
      *            the (potentially primitive) array
      * @return the converted List result
@@ -91,7 +91,7 @@ public abstract class CollectionUtils {
 
     /**
      * Merge the given array into the given Collection.
-     * 
+     *
      * @param array
      *            the array to merge (may be {@code null})
      * @param collection
@@ -114,7 +114,7 @@ public abstract class CollectionUtils {
      * <p>
      * Uses {@code Properties.propertyNames()} to even catch default properties
      * linked into the original Properties instance.
-     * 
+     *
      * @param props
      *            the Properties instance to merge (may be {@code null})
      * @param map
@@ -140,7 +140,7 @@ public abstract class CollectionUtils {
 
     /**
      * Check whether the given Iterator contains the given element.
-     * 
+     *
      * @param iterator
      *            the Iterator to check
      * @param element
@@ -161,7 +161,7 @@ public abstract class CollectionUtils {
 
     /**
      * Check whether the given Enumeration contains the given element.
-     * 
+     *
      * @param enumeration
      *            the Enumeration to check
      * @param element
@@ -185,7 +185,7 @@ public abstract class CollectionUtils {
      * <p>
      * Enforces the given instance to be present, rather than returning
      * {@code true} for an equal element as well.
-     * 
+     *
      * @param collection
      *            the Collection to check
      * @param element
@@ -206,7 +206,7 @@ public abstract class CollectionUtils {
     /**
      * Return {@code true} if any element in '{@code candidates}' is contained
      * in '{@code source}'; otherwise returns {@code false}.
-     * 
+     *
      * @param source
      *            the source Collection
      * @param candidates
@@ -230,7 +230,7 @@ public abstract class CollectionUtils {
      * {@code source}'. If no element in '{@code candidates}' is present in '
      * {@code source}' returns {@code null}. Iteration order is
      * {@link Collection} implementation specific.
-     * 
+     *
      * @param source
      *            the source Collection
      * @param candidates
@@ -252,7 +252,7 @@ public abstract class CollectionUtils {
 
     /**
      * Find a single value of the given type in the given Collection.
-     * 
+     *
      * @param collection
      *            the Collection to search
      * @param type
@@ -282,7 +282,7 @@ public abstract class CollectionUtils {
      * Find a single value of one of the given types in the given Collection:
      * searching the Collection for a value of the first type, then searching
      * for a value of the second type, etc.
-     * 
+     *
      * @param collection
      *            the collection to search
      * @param types
@@ -306,7 +306,7 @@ public abstract class CollectionUtils {
     /**
      * Determine whether the given Collection only contains a single unique
      * object.
-     * 
+     *
      * @param collection
      *            the Collection to check
      * @return {@code true} if the collection contains a single reference or
@@ -331,7 +331,7 @@ public abstract class CollectionUtils {
 
     /**
      * Find the common element type of the given Collection, if any.
-     * 
+     *
      * @param collection
      *            the Collection to check
      * @return the common element type, or {@code null} if no clear common type
@@ -361,7 +361,7 @@ public abstract class CollectionUtils {
      * array given.
      */
     public static <A, E extends A> A[] toArray(Enumeration<E> enumeration, A[] array) {
-        ArrayList<A> elements = new ArrayList<A>();
+        ArrayList<A> elements = new ArrayList<>();
         while (enumeration.hasMoreElements()) {
             elements.add(enumeration.nextElement());
         }
@@ -370,30 +370,30 @@ public abstract class CollectionUtils {
 
     /**
      * Adapt an enumeration to an iterator.
-     * 
+     *
      * @param enumeration
      *            the enumeration
      * @return the iterator
      */
     public static <E> Iterator<E> toIterator(Enumeration<E> enumeration) {
-        return new EnumerationIterator<E>(enumeration);
+        return new EnumerationIterator<>(enumeration);
     }
 
     /**
      * Adapt a {@code Map<K, List<V>>} to an {@code MultiValueMap<K, V>}.
-     * 
+     *
      * @param map
      *            the original map
      * @return the multi-value map
      * @since 3.1
      */
     public static <K, V> MultiValueMap<K, V> toMultiValueMap(Map<K, List<V>> map) {
-        return new MultiValueMapAdapter<K, V>(map);
+        return new MultiValueMapAdapter<>(map);
     }
 
     /**
      * Return an unmodifiable view of the specified multi-value map.
-     * 
+     *
      * @param map
      *            the map for which an unmodifiable view is to be returned.
      * @return an unmodifiable view of the specified multi-value map.
@@ -402,7 +402,7 @@ public abstract class CollectionUtils {
     @SuppressWarnings("unchecked")
     public static <K, V> MultiValueMap<K, V> unmodifiableMultiValueMap(MultiValueMap<? extends K, ? extends V> map) {
         Assert.notNull(map, "'map' must not be null");
-        Map<K, List<V>> result = new LinkedHashMap<K, List<V>>(map.size());
+        Map<K, List<V>> result = new LinkedHashMap<>(map.size());
         for (Map.Entry<? extends K, ? extends List<? extends V>> entry : map.entrySet()) {
             List<? extends V> values = Collections.unmodifiableList(entry.getValue());
             result.put(entry.getKey(), (List<V>) values);
@@ -455,7 +455,7 @@ public abstract class CollectionUtils {
         public void add(K key, V value) {
             List<V> values = this.map.get(key);
             if (values == null) {
-                values = new LinkedList<V>();
+                values = new LinkedList<>();
                 this.map.put(key, values);
             }
             values.add(value);
@@ -469,7 +469,7 @@ public abstract class CollectionUtils {
 
         @Override
         public void set(K key, V value) {
-            List<V> values = new LinkedList<V>();
+            List<V> values = new LinkedList<>();
             values.add(value);
             this.map.put(key, values);
         }
@@ -483,7 +483,7 @@ public abstract class CollectionUtils {
 
         @Override
         public Map<K, V> toSingleValueMap() {
-            LinkedHashMap<K, V> singleValueMap = new LinkedHashMap<K, V>(this.map.size());
+            LinkedHashMap<K, V> singleValueMap = new LinkedHashMap<>(this.map.size());
             for (Entry<K, List<V>> entry : map.entrySet()) {
                 singleValueMap.put(entry.getKey(), entry.getValue().get(0));
             }

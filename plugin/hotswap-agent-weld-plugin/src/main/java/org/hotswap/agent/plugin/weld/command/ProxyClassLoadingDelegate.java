@@ -38,7 +38,7 @@ import org.jboss.weld.serialization.spi.ProxyServices;
  */
 public class ProxyClassLoadingDelegate {
 
-    private static final ThreadLocal<Boolean> MAGIC_IN_PROGRESS = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> MAGIC_IN_PROGRESS = new ThreadLocal<>() {
         @Override
         protected Boolean initialValue() {
             return false;
