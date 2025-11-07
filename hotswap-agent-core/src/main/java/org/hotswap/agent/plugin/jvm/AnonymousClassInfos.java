@@ -157,26 +157,11 @@ public class AnonymousClassInfos {
         }
 
         // try to match - exact, than signatures (enclosing method may change), than class signature
-        searchForMappings(compatibleTransitions, previousInfos, currentInfos, new AnonymousClassInfoMatcher() {
-            @Override
-            public boolean match(AnonymousClassInfo previous, AnonymousClassInfo current) {
-                return previous.matchExact(current);
-            }
-        });
+        searchForMappings(compatibleTransitions, previousInfos, currentInfos, AnonymousClassInfo::matchExact);
 
-        searchForMappings(compatibleTransitions, previousInfos, currentInfos, new AnonymousClassInfoMatcher() {
-            @Override
-            public boolean match(AnonymousClassInfo previous, AnonymousClassInfo current) {
-                return previous.matchSignatures(current);
-            }
-        });
+        searchForMappings(compatibleTransitions, previousInfos, currentInfos, AnonymousClassInfo::matchSignatures);
 
-        searchForMappings(compatibleTransitions, previousInfos, currentInfos, new AnonymousClassInfoMatcher() {
-            @Override
-            public boolean match(AnonymousClassInfo previous, AnonymousClassInfo current) {
-                return previous.matchClassSignature(current);
-            }
-        });
+        searchForMappings(compatibleTransitions, previousInfos, currentInfos, AnonymousClassInfo::matchClassSignature);
 
 
         // how many anonymous classes will be defined

@@ -168,7 +168,7 @@ public class PropertyReload {
             // 4. get new propertySources
             MutablePropertySources curPropertySources = getPropertySources(propertySourcesPlaceholderConfigurer);
             // 5. add new propertySources elements to orig propertySources
-            curPropertySources.forEach(propertySource -> origPropertySources.addLast(propertySource));
+            curPropertySources.forEach(origPropertySources::addLast);
             // 6 set orig propertySources to placeholderConfigurerSupport.
             // we should keep origPropertySources, because it is used other objects, such as StringValueResolver.
             ReflectionHelper.set(propertySourcesPlaceholderConfigurer, "propertySources", origPropertySources);
@@ -207,7 +207,7 @@ public class PropertyReload {
                     if (AnnotatedBeanDefinitionUtils.getFactoryMethodMetadata(annotatedBeanDefinition) != null) {
                         continue;
                     }
-                    if (BeanFactoryProcessor.needReloadOnConstructor(beanFactory, currentBeanDefinition, beanName, constructors -> checkConstructorContainsValueAnnotation(constructors))) {
+                    if (BeanFactoryProcessor.needReloadOnConstructor(beanFactory, currentBeanDefinition, beanName, PropertyReload::checkConstructorContainsValueAnnotation)) {
                         needRecreateBeans.add(beanName);
                     }
                 }
