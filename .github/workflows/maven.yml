@@ -13,10 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        ref: master
 
-    - name: Set up JBR17
+    - name: Set up DCEVM 11
       run: |
         curl -L -o jdk.tar.gz https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases/download/dcevm-11.0.15%2B1/Openjdk11u-dcevm-linux-x64.tar.gz
         tar -xzf jdk.tar.gz
@@ -30,5 +28,5 @@ jobs:
         export JAVA_HOME=$PWD/dcevm-11.0.15+1
         export PATH=$JAVA_HOME/bin:$PATH
         java -version
-        mvn install
+        mvn -B clean install
       shell: bash
