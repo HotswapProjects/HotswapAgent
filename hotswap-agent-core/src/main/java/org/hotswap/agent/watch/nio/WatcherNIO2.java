@@ -53,7 +53,7 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         // register directory and sub-directories
         LOGGER.debug("Registering directory  {}", dir);
 
-        Files.walkFileTree(dir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<>() {
+        Files.walkFileTree(dir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 if (fromCreateEvent) {
