@@ -119,7 +119,7 @@ public class ClassInitPlugin {
             );
 
             if (reinitializeStatics[0]) {
-                PluginManager.getInstance().getScheduler().scheduleCommand(new Command() {
+                PluginManager.getInstance().getScheduler().scheduleCommandOnClassesRedefinedOrTimeout(new Command() {
                     @Override
                     public void executeCommand() {
                         try {

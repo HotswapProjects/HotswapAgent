@@ -18,8 +18,6 @@
  */
 package org.hotswap.agent.command;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Schedule a command to run.
  *
@@ -27,19 +25,19 @@ import java.util.concurrent.TimeUnit;
  */
 public interface Scheduler {
 
-    public static enum DuplicateSheduleBehaviour {
+    enum DuplicateSheduleBehaviour {
         SKIP,
         WAIT_AND_RUN_AFTER,
         RUN_DUPLICATE
     }
 
     /**
-     * Schedule new command for execution.
+     * Schedule a new command for execution.
      * <p/>
      * If the command (or another same instance by equals) is already scheduled, then the
-     * old instance is replaced by this command and timer is restarted.
+     * old instance is replaced by this command and the timer is restarted.
      * <p/>
-     * The command contains information about target classloader where it should be run.
+     * The command contains information about the target classloader where it should be run.
      * <p/>
      * The default timeout 100ms is assumed. If another (equals) command is scheduled before
      * the timeout expires, it replaced (or merged). Otherwise the command is executed at timeout.
@@ -49,7 +47,7 @@ public interface Scheduler {
     void scheduleCommand(Command command);
 
     /**
-     * Schedule new command for execution.
+     * Schedule a new command for execution.
      * <p/>
      *
      * @param command the command to execute
@@ -58,7 +56,7 @@ public interface Scheduler {
     void scheduleCommand(Command command, int timeout);
 
     /**
-     * Schedule new command for execution.
+     * Schedule a new command for execution.
      * <p/>
      *
      * @param command the command to execute
@@ -66,6 +64,23 @@ public interface Scheduler {
      * @param behaviour if another instance of this commands runs on schedule or within timeout, should we skip it?
      */
     void scheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour);
+
+    /**
+     * Schedule command on classes redefined or timeout.
+     *
+     * @param command the command
+     * @param timeout the timeout
+     */
+    void scheduleCommandOnClassesRedefinedOrTimeout(Command command, int timeout);
+
+    /**
+     * Schedule command on classes redefined or timeout.
+     *
+     * @param command   the command
+     * @param timeout   the timeout
+     * @param behaviour the behaviour
+     */
+    void scheduleCommandOnClassesRedefinedOrTimeout(Command command, int timeout, DuplicateSheduleBehaviour behaviour);
 
     /**
      * Run the scheduler agent thread.
@@ -76,4 +91,15 @@ public interface Scheduler {
      * Stop the scheduler agent thread.
      */
     void stop();
+
+    /**
+     * This method is invoked when classes are redefined.
+     *
+     * It is expected to be used as a callback for performing necessary actions
+     * or processing related to the redefinition of classes, such as updating
+     * persisted states, managing classloader-specific resources, or triggering
+     * dependent workflows.
+     */
+    void onClassesRedefined();
+
 }

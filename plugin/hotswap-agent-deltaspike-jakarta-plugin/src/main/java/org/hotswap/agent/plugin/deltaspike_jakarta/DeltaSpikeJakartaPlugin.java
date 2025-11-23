@@ -125,7 +125,7 @@ public class DeltaSpikeJakartaPlugin
         if (registeredPartialBeanClasses.containsKey(original)) {
             String oldSignForProxyCheck = DeltaspikeClassSignatureHelper.getSignaturePartialBeanClass(original);
             cmd = new PartialBeanClassRefreshCommand(appClassLoader, original, oldSignForProxyCheck, scheduler);
-            scheduler.scheduleCommand(cmd, waitOnRedefine);
+            scheduler.scheduleCommandOnClassesRedefinedOrTimeout(cmd, waitOnRedefine);
         }
         return cmd;
     }

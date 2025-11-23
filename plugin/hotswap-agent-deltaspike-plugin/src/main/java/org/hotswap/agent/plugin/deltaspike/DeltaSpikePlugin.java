@@ -146,7 +146,7 @@ public class DeltaSpikePlugin {
         if (partialBean != null) {
             String oldSignForProxyCheck = DeltaspikeClassSignatureHelper.getSignaturePartialBeanClass(original);
             cmd = new PartialBeanClassRefreshCommand(appClassLoader, partialBean, clazz.getName(), oldSignForProxyCheck, scheduler);
-            scheduler.scheduleCommand(cmd, waitOnRedefine);
+            scheduler.scheduleCommandOnClassesRedefinedOrTimeout(cmd, waitOnRedefine);
         }
         return cmd;
     }
@@ -212,7 +212,7 @@ public class DeltaSpikePlugin {
             List<String> rootClassNameList = entry.getValue();
             for (String viewConfigClassName: rootClassNameList) {
                 if (viewConfigClassName.equals(rootClassName)) {
-                    scheduler.scheduleCommand(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), entry.getValue()), waitOnRedefine);
+                    scheduler.scheduleCommandOnClassesRedefinedOrTimeout(new ViewConfigReloadCommand(appClassLoader, entry.getKey(), entry.getValue()), waitOnRedefine);
                     return;
                 }
             }

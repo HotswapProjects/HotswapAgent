@@ -78,6 +78,8 @@ public class PartialBeanClassRefreshCommand extends MergeableCommand  {
         }
         if (reloaded) {
             for (Command cmd: chainedCommands) {
+                // we can't use scheduleCommandOnClassesRedefinedOrTimeout() since we are not in instrumentation here
+                // and it's not guaranteed that the proxy will already be redefined
                 scheduler.scheduleCommand(cmd, DeltaSpikePlugin.WAIT_ON_REDEFINE);
             }
         }
