@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.jetbrains.Hotswap;
+import com.jetbrains.JBR;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.command.impl.SchedulerImpl;
 import org.hotswap.agent.logging.AgentLogger;
@@ -136,7 +138,17 @@ public class PluginManager {
         watcher.run();
 
         if (scheduler == null) {
-            scheduler = new SchedulerImpl();
+            String property = System.getProperty("hotswapagent.disableJbrHotswap");
+            boolean isOnClsRedefinedSupported = JBR.isHotswapSupported() && !Boolean.parseBoolean(property);
+            scheduler = new SchedulerImpl(isOnClsRedefinedSupported);
+            if (isOnClsRedefinedSupported) {
+                JBR.getHotswap().addListener(new Hotswap.Listener() {
+                    @Override
+                    public void onClassesRedefined() {
+                        scheduler.onClassesRedefined();
+                    }
+                });
+            }
         }
         scheduler.run();
 

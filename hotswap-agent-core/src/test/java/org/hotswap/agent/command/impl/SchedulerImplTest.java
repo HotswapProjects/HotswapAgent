@@ -41,7 +41,7 @@ public class SchedulerImplTest {
 
     @Before
     public void setup() throws IOException {
-        scheduler = new SchedulerImpl();
+        scheduler = new SchedulerImpl(false);
         scheduler.run();
     }
 

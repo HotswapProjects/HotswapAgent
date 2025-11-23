@@ -29,7 +29,7 @@ import org.hotswap.agent.util.test.WaitHelper;
 
 public class ClassInitTest {
 
-//    @Test
+    // @Test
     public void testStatic1() throws Exception {
         StaticTest1 o = new StaticTest1();
         ClassInitPlugin.reloadFlag = true;
@@ -45,7 +45,7 @@ public class ClassInitTest {
         assertEquals(ReflectionHelper.get(o, "obj3"), StaticTest2.obj3); // must have new value ("obj2")
     }
 
-//    @Test
+    // @Test
     public void testEnumAddRemove() throws Exception {
         Enum1 enum1 = Enum1.ITEM_1;
         ClassInitPlugin.reloadFlag = true;
@@ -90,7 +90,7 @@ public class ClassInitTest {
         assertFalse(wasException);
     }
 
-//    @Test
+    // @Test
     public void testEnumRemove() throws Exception {
         ClassInitPlugin.reloadFlag = true;
 

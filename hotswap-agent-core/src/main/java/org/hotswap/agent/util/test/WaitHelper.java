@@ -81,7 +81,7 @@ public class WaitHelper {
      * @return true if command returned true during command
      */
     public static boolean waitForCommand(Command command, int timeout) {
-        for (int i = 0; i < timeout / 10; i++) {
+        for (int i = 0; i < timeout / 5; i++) {
             try {
                 if (command.result())
                     return true;
@@ -91,7 +91,7 @@ public class WaitHelper {
 
             // waitForResult for command to execute
             try {
-                Thread.sleep(10);
+                Thread.sleep(5);
             } catch (InterruptedException e) {
             }
         }

@@ -249,7 +249,7 @@ public class OwbPlugin {
                     String oldSignForProxyCheck = OwbClassSignatureHelper.getSignatureForProxyClass(original);
                     String oldSignByStrategy = OwbClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
                     String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
-                    scheduler.scheduleCommand(
+                    scheduler.scheduleCommandOnClassesRedefinedOrTimeout(
                             new BeanClassRefreshCommand(appClassLoader,
                                     original.getName(),
                                     oldFullSignature,
@@ -258,7 +258,7 @@ public class OwbPlugin {
                                     entry.getValue(),
                                     beanReloadStrategy),
                             waitOnRedefine
-                            );
+                    );
                     break;
                 }
             }

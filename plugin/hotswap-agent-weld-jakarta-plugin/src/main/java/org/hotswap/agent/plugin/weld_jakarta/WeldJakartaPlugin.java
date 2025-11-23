@@ -247,7 +247,7 @@ public class WeldJakartaPlugin {
                 String oldSignatureForProxyCheck = WeldClassSignatureHelper.getSignatureForProxyClass(original);
                 String oldSignatureByStrategy = WeldClassSignatureHelper.getSignatureByStrategy(beanReloadStrategy, original);
                 String oldFullSignature = ClassSignatureComparerHelper.getJavaClassSignature(original, ClassSignatureElement.values());
-                scheduler.scheduleCommand(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
+                scheduler.scheduleCommandOnClassesRedefinedOrTimeout(new BeanClassRefreshCommand(classLoader, archivePath, registeredProxiedBeans,
                         original.getName(), oldFullSignature, oldSignatureForProxyCheck, oldSignatureByStrategy, beanReloadStrategy), WAIT_ON_REDEFINE);
             }
         } catch (Exception e) {

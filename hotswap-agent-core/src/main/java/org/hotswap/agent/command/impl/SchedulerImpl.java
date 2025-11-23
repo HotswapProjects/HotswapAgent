@@ -41,11 +41,16 @@ public class SchedulerImpl implements Scheduler {
     //        there could be a LinkedHashMap and CommandExecutor should be singleton for commands that
     //        must be executed in order. There is an issue related to this problem
     //        https://github.com/HotswapProjects/HotswapAgent/issues/39  which requires concurrent using
-    final Map<Command, DuplicateScheduleConfig> scheduledCommands = new ConcurrentHashMap<>();
+    final Map<Command, ScheduleCommandConfig> scheduledCommands = new ConcurrentHashMap<>();
     final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<>());
 
+    final boolean isOnClsRedefinedSupported;
     Thread runner;
     boolean stopped;
+
+    public SchedulerImpl(boolean isOnClsRedefinedSupported) {
+        this.isOnClsRedefinedSupported = isOnClsRedefinedSupported;
+    }
 
     @Override
     public void scheduleCommand(Command command) {
@@ -59,9 +64,23 @@ public class SchedulerImpl implements Scheduler {
 
     @Override
     public void scheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour) {
+        doScheduleCommand(command, timeout, behaviour, false);
+    }
+
+    @Override
+    public void scheduleCommandOnClassesRedefinedOrTimeout(Command command, int timeout) {
+        scheduleCommandOnClassesRedefinedOrTimeout(command, timeout, DuplicateSheduleBehaviour.WAIT_AND_RUN_AFTER);
+    }
+
+    @Override
+    public void scheduleCommandOnClassesRedefinedOrTimeout(Command command, int timeout, DuplicateSheduleBehaviour behaviour) {
+        doScheduleCommand(command, timeout, behaviour, true);
+    }
+
+    public void doScheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour, boolean isOnClassRedefined) {
         synchronized (scheduledCommands) {
             Command targetCommand = command;
-            if (scheduledCommands.containsKey(command) && (command instanceof MergeableCommand)) {
+            if ((command instanceof MergeableCommand) && scheduledCommands.containsKey(command)) {
                 // get existing equals command and merge it
                 for (Command scheduledCommand : scheduledCommands.keySet()) {
                     if (command.equals(scheduledCommand)) {
@@ -72,7 +91,7 @@ public class SchedulerImpl implements Scheduler {
             }
 
             // map may already contain equals command, put will replace it and reset timer
-            scheduledCommands.put(targetCommand, new DuplicateScheduleConfig(System.currentTimeMillis() + timeout, behaviour));
+            scheduledCommands.put(targetCommand, new ScheduleCommandConfig(System.currentTimeMillis() + timeout, behaviour, isOnClassRedefined));
             LOGGER.trace("{} scheduled for execution in {}ms", targetCommand, timeout);
         }
     }
@@ -83,16 +102,17 @@ public class SchedulerImpl implements Scheduler {
      *
      * @return true if the agent should continue (false for fatal error)
      */
-    private boolean processCommands() {
+    private boolean processCommands(boolean isOnClassRedefined) {
         Long currentTime = System.currentTimeMillis();
+        boolean useOnClassRedefined = isOnClsRedefinedSupported && isOnClassRedefined;
         synchronized (scheduledCommands) {
-            for (Iterator<Map.Entry<Command, DuplicateScheduleConfig>> it = scheduledCommands.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<Command, DuplicateScheduleConfig> entry = it.next();
-                DuplicateScheduleConfig config = entry.getValue();
+            for (Iterator<Map.Entry<Command, ScheduleCommandConfig>> it = scheduledCommands.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<Command, ScheduleCommandConfig> entry = it.next();
+                ScheduleCommandConfig config = entry.getValue();
                 Command command = entry.getKey();
 
                 // if timeout
-                if (config.getTime() < currentTime) {
+                if (useOnClassRedefined && config.isOnClassRedefined || config.getTime() < currentTime) {
                     // command is currently running
                     if (runningCommands.contains(command)) {
                         if (config.getBehaviour().equals(DuplicateSheduleBehaviour.SKIP)) {
@@ -138,18 +158,17 @@ public class SchedulerImpl implements Scheduler {
         runner = new Thread() {
             @Override
             public void run() {
-                for (; ; ) {
-                    if (stopped || !processCommands())
-                        break;
+            for (; ; ) {
+                if (stopped || !processCommands(false))
+                    break;
 
-                    // wait for 100 ms
-                    try {
-                        sleep(100);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
+                // wait for 100 ms
+                try {
+                    sleep(100);
+                } catch (InterruptedException e) {
+                    break;
                 }
-
+            }
             }
         };
 
@@ -162,16 +181,26 @@ public class SchedulerImpl implements Scheduler {
         stopped = true;
     }
 
-    private static class DuplicateScheduleConfig {
+    @Override
+    public void onClassesRedefined() {
+        processCommands(true);
+    }
+
+    private static class ScheduleCommandConfig {
         // time when to run
         long time;
 
         // behaviour in case of conflict (running same command in progress)
         DuplicateSheduleBehaviour behaviour;
 
-        private DuplicateScheduleConfig(long time, DuplicateSheduleBehaviour behaviour) {
+        // could be called after class redefinition
+        boolean isOnClassRedefined;
+
+        private ScheduleCommandConfig(long time, DuplicateSheduleBehaviour behaviour, boolean isOnClassRedefined)
+        {
             this.time = time;
             this.behaviour = behaviour;
+            this.isOnClassRedefined = isOnClassRedefined;
         }
 
         public long getTime() {
@@ -180,6 +209,10 @@ public class SchedulerImpl implements Scheduler {
 
         public DuplicateSheduleBehaviour getBehaviour() {
             return behaviour;
+        }
+
+        public boolean isOnClassRedefined() {
+            return isOnClassRedefined;
         }
     }
 }

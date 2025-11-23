@@ -164,7 +164,7 @@ public class ResteasyRegistryPlugin {
             ReflectionHelper.invoke(cmd, cmdClass, "setupCmd",
                     new Class[] { ClassLoader.class, Object.class, Object.class, String.class, java.lang.Class.class },
                     classLoader, servletContext, servletContainerDispatcher, name, original);
-            scheduler.scheduleCommand(cmd, timeout);
+            scheduler.scheduleCommandOnClassesRedefinedOrTimeout(cmd, timeout);
         } catch (Exception e) {
             LOGGER.error("refreshClass() exception {}.", e.getMessage());
         }
