@@ -40,22 +40,57 @@ public class CtClassSignature extends ClassSignatureBase {
 
     private CtClass ctClass;
 
-    /**
-     * @param ctClass the class for signature is to be counted
-     */
     public CtClassSignature(CtClass ctClass) {
         this.ctClass = ctClass;
-
     }
 
     @Override
     public String getValue() throws Exception {
+        String local = buildLocalValue(ctClass);
+        if (!hasElement(ClassSignatureElement.SUPER_SIGNATURES)) {
+            return local;
+        }
+
+        StringBuilder out = new StringBuilder();
+        out.append("LOCAL{").append(local).append("}|SUPERS{");
+
+        boolean first = true;
+        java.util.Set<String> visited = new java.util.HashSet<>();
+
+        CtClass sc;
+        try {
+            sc = ctClass.getSuperclass();
+        } catch (NotFoundException e) {
+            sc = null;
+        }
+
+        while (sc != null && !Object.class.getName().equals(sc.getName()) && visited.add(sc.getName())) {
+            if (!first) {
+                out.append("|");
+            }
+            first = false;
+
+            String superLocal = buildLocalValue(sc);
+            out.append(sc.getName()).append("{").append(superLocal).append("}");
+
+            try {
+                sc = sc.getSuperclass();
+            } catch (NotFoundException e) {
+                sc = null;
+            }
+        }
+
+        out.append("}");
+        return out.toString();
+    }
+
+    private String buildLocalValue(CtClass c) throws Exception {
         List<String> strings = new ArrayList<>();
 
         if (hasElement(ClassSignatureElement.METHOD)) {
             boolean usePrivateMethod = hasElement(ClassSignatureElement.METHOD_PRIVATE);
             boolean useStaticMethod = hasElement(ClassSignatureElement.METHOD_STATIC);
-            for (CtMethod method : ctClass.getDeclaredMethods()) {
+            for (CtMethod method : c.getDeclaredMethods()) {
                 if (!usePrivateMethod && Modifier.isPrivate(method.getModifiers()))
                     continue;
                 if (!useStaticMethod && Modifier.isStatic(method.getModifiers()))
@@ -68,7 +103,7 @@ public class CtClassSignature extends ClassSignatureBase {
 
         if (hasElement(ClassSignatureElement.CONSTRUCTOR)) {
             boolean usePrivateConstructor = hasElement(ClassSignatureElement.CONSTRUCTOR_PRIVATE);
-            for (CtConstructor method : ctClass.getDeclaredConstructors()) {
+            for (CtConstructor method : c.getDeclaredConstructors()) {
                 if (!usePrivateConstructor && Modifier.isPrivate(method.getModifiers()))
                     continue;
                 strings.add(getConstructorString(method));
@@ -76,17 +111,17 @@ public class CtClassSignature extends ClassSignatureBase {
         }
 
         if (hasElement(ClassSignatureElement.CLASS_ANNOTATION)) {
-            strings.add(annotationToString(ctClass.getAvailableAnnotations()));
+            strings.add(annotationToString(c.getAvailableAnnotations()));
         }
 
         if (hasElement(ClassSignatureElement.INTERFACES)) {
-            for (CtClass iClass : ctClass.getInterfaces()) {
+            for (CtClass iClass : c.getInterfaces()) {
                 strings.add(iClass.getName());
             }
         }
 
         if (hasElement(ClassSignatureElement.SUPER_CLASS)) {
-            String superclassName = ctClass.getSuperclassName();
+            String superclassName = c.getSuperclassName();
             if (superclassName != null && !superclassName.equals(Object.class.getName()))
                 strings.add(superclassName);
         }
@@ -94,19 +129,20 @@ public class CtClassSignature extends ClassSignatureBase {
         if (hasElement(ClassSignatureElement.FIELD)) {
             boolean useStaticField = hasElement(ClassSignatureElement.FIELD_STATIC);
             boolean useFieldAnnotation = hasElement(ClassSignatureElement.FIELD_ANNOTATION);
-            for (CtField field : ctClass.getDeclaredFields()) {
+            for (CtField field : c.getDeclaredFields()) {
                 if (!useStaticField && Modifier.isStatic(field.getModifiers()))
                     continue;
                 if (field.getName().startsWith(SWITCH_TABLE_METHOD_PREFIX))
                     continue;
+
                 String fieldSignature = field.getType().getName() + " " + field.getName();
                 if (useFieldAnnotation) {
                     fieldSignature += annotationToString(field.getAvailableAnnotations());
                 }
-
                 strings.add(fieldSignature + ";");
             }
         }
+
         Collections.sort(strings);
         StringBuilder strBuilder = new StringBuilder();
         for (String methodString : strings) {
