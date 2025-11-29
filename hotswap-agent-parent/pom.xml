@@ -327,7 +327,7 @@
     </dependencyManagement>
 
     <properties>
-        <revision>2.0.2</revision>
+        <revision>2.0.3-SNAPSHOT</revision>
         <dcevm>dcevm</dcevm>
         <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external
             --add-exports java.base/sun.security.action=ALL-UNNAMED
