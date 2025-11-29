@@ -32,6 +32,7 @@ public class WeldClassSignatureHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(WeldClassSignatureHelper.class);
 
     private static final ClassSignatureElement[] SIGNATURE_ELEM_PROXY = {
+            ClassSignatureElement.SUPER_SIGNATURES,
             ClassSignatureElement.SUPER_CLASS,
             ClassSignatureElement.INTERFACES,
             ClassSignatureElement.CLASS_ANNOTATION,
@@ -45,6 +46,7 @@ public class WeldClassSignatureHelper {
     };
 
     private static final ClassSignatureElement[] SIGNATURE_ELEM_METHOD_FIELDS = {
+            ClassSignatureElement.SUPER_SIGNATURES,
             ClassSignatureElement.SUPER_CLASS,
             ClassSignatureElement.INTERFACES,
             ClassSignatureElement.CLASS_ANNOTATION,

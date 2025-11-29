@@ -32,6 +32,7 @@ public class DeltaspikeClassSignatureHelper {
     private static AgentLogger LOGGER = AgentLogger.getLogger(DeltaspikeClassSignatureHelper.class);
 
     private static final ClassSignatureElement[] SIGNATURE_ELEM_PROXY = {
+            ClassSignatureElement.SUPER_SIGNATURES,
             ClassSignatureElement.SUPER_CLASS,
             ClassSignatureElement.INTERFACES,
             ClassSignatureElement.CLASS_ANNOTATION,
