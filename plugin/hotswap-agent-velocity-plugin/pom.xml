@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-velocity-plugin</artifactId>
+    <name>hotswap-agent-velocity-plugin</name>
 
     <dependencies>
         <dependency>

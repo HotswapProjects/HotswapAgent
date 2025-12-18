@@ -6,11 +6,13 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>${revision}</version>
+        <!-- cannot use ${revision} because pom packaging fails on deploy to central -->
+        <version>2.0.4-SNAPSHOT</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>hotswap-agent-plugins</artifactId>
+    <name>hotswap-agent-plugins</name>
     <description>POM with ALL HotswapAgent plugins.</description>
 
     <packaging>pom</packaging>
@@ -254,7 +256,7 @@
             <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-ibatis-plugin</artifactId>
             <version>${project.version}</version>
-        </dependency>        
+        </dependency>
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
@@ -287,4 +289,38 @@
         </dependency>
 
     </dependencies>
+
+    <!-- Flattened plugin does not include pom packaging. Need to duplicate the info here -->
+    <url>http://hotswapagent.org/</url>
+    <scm>
+        <url>https://github.com/HotswapProjects/HotswapAgent</url>
+        <connection>scm:git:git://github.com/HotswapProjects/HotswapAgent.git</connection>
+        <developerConnection>scm:git:git@github.com:HotswapProjects/HotswapAgent.git</developerConnection>
+    </scm>
+
+    <issueManagement>
+        <system>git</system>
+        <url>https://github.com/HotswapProjects/HotswapAgent/issues</url>
+    </issueManagement>
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPL)</name>
+            <url>http://www.gnu.org/licenses/gpl.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <email>jiri.bubnik@gmail.com</email>
+            <name>Jiri Bubnik</name>
+            <url>http://jiribubnik.cz</url>
+            <id>edudant</id>
+        </developer>
+        <developer>
+            <email>lada.dvorak7@gmail.com</email>
+            <name>Vladimir Dvorak</name>
+            <url>https://github.com/skybber</url>
+            <id>skybber</id>
+        </developer>
+    </developers>
 </project>

@@ -11,6 +11,7 @@
 	</parent>
 
 	<artifactId>hotswap-agent-wildfly-el-plugin</artifactId>
+	<name>hotswap-agent-wildfly-el-plugin</name>
 
 	<properties>
 		<version.org.jboss.spec.javax.el>1.0.5.Final</version.org.jboss.spec.javax.el>

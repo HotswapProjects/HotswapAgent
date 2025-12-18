@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-myfaces-plugin</artifactId>
+    <name>hotswap-agent-myfaces-plugin</name>
 
     <properties>
     </properties>

@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-resteasy-registry-plugin</artifactId>
+    <name>hotswap-agent-resteasy-registry-plugin</name>
 
     <properties>
         <servlet-api.version>3.0.1</servlet-api.version>

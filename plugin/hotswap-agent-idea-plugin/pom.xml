@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-idea-plugin</artifactId>
+    <name>hotswap-agent-idea-plugin</name>
 
     <dependencies>
         <dependency>

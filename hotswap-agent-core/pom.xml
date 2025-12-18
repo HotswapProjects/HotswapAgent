@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-core</artifactId>
+    <name>hotswap-agent-core</name>
 
     <profiles>
         <profile>

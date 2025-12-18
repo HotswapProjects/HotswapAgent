@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-jackson-plugin</artifactId>
+    <name>hotswap-agent-jackson-plugin</name>
 
     <properties>
         <jackson.version>2.13.2</jackson.version>

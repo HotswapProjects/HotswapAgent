@@ -171,7 +171,7 @@
                 <artifactId>flatten-maven-plugin</artifactId>
                 <version>1.7.3</version>
                 <configuration>
-                    <flattenMode>minimum</flattenMode>
+                    <flattenMode>ossrh</flattenMode>
                 </configuration>
                 <executions>
                     <execution>
@@ -199,12 +199,12 @@
 
             <distributionManagement>
                 <repository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <id>central-hotswap-agent-release</id>
+                    <url>https://central.sonatype.com/</url>
                 </repository>
                 <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                    <id>central-hotswap-agent-release</id>
+                    <url>https://central.sonatype.com/</url>
                 </snapshotRepository>
             </distributionManagement>
 
@@ -213,7 +213,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>2.2.1</version>
+                        <version>3.3.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -226,7 +226,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.10.4</version>
+                        <version>3.10.1</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -243,7 +243,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>3.2.7</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -253,21 +253,23 @@
                                 </goals>
                                 <configuration>
                                     <keyname>jiri.bubnik@gmail.com</keyname>
+                                    <passphraseServerId>gpg.passphrase</passphraseServerId>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.7</version>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.6.0</version>
                         <extensions>true</extensions>
-
                         <configuration>
-                            <serverId>ossrh</serverId>
-
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                            <publishingServerId>central-hotswap-agent-release</publishingServerId>
+                            <autoPublish>false</autoPublish>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -290,8 +292,7 @@
                         <scope>system</scope>
                         <systemPath>${java.home}/../lib/tools.jar</systemPath>
                         <optional>true</optional>
-                    </dependency>
-                </dependencies>
+                    </dependency>                </dependencies>
             </dependencyManagement>
         </profile>
     </profiles>
@@ -327,7 +328,7 @@
     </dependencyManagement>
 
     <properties>
-        <revision>2.0.3-SNAPSHOT</revision>
+        <revision>2.0.4-SNAPSHOT</revision>
         <dcevm>dcevm</dcevm>
         <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external
             --add-exports java.base/sun.security.action=ALL-UNNAMED

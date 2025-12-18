@@ -10,7 +10,8 @@
     </parent>
 
     <artifactId>hotswap-agent-tomcat-plugin</artifactId>
-    
+    <name>hotswap-agent-tomcat-plugin</name>
+
     <properties>
         <tomcat.version>10.1.28</tomcat.version>
         <!--<tomcat.artifact>catalina</tomcat.artifact> &lt;!&ndash; catalina if 6.x &ndash;&gt;-->

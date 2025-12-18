@@ -11,6 +11,7 @@
 
 
     <artifactId>hotswap-agent-spring-plugin</artifactId>
+    <name>hotswap-agent-spring-plugin</name>
 
     <properties>
         <org.springframework.version>5.3.37</org.springframework.version>

@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>hotswap-agent-log4j2-plugin</artifactId>
+    <name>hotswap-agent-log4j2-plugin</name>
 
     <dependencies>
         <dependency>

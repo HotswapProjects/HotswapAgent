@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-deltaspike-jakarta-plugin</artifactId>
+    <name>hotswap-agent-deltaspike-jakarta-plugin</name>
 
     <properties>
         <deltaspike.version>2.0.0</deltaspike.version>

@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-weblogic-plugin</artifactId>
+    <name>hotswap-agent-weblogic-plugin</name>
 
     <dependencies>
         <dependency>

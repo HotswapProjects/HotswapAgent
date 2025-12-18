@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>hotswap-agent-owb-plugin</artifactId>
+    <name>hotswap-agent-owb-plugin</name>
 
     <properties>
         <owb.version>2.0.28</owb.version>

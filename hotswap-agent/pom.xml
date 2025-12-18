@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent</artifactId>
+    <name>hotswap-agent</name>
     <description>Distribution of HotswapAgent core and all plugins in all-in-one JAR.</description>
 
     <packaging>jar</packaging>

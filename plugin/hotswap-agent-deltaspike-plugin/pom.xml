@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-deltaspike-plugin</artifactId>
+    <name>hotswap-agent-deltaspike-plugin</name>
 
     <properties>
         <deltaspike.version>1.9.6</deltaspike.version>

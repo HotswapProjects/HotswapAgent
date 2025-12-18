@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-wicket-plugin</artifactId>
+    <name>hotswap-agent-wicket-plugin</name>
 
     <dependencies>
         <dependency>

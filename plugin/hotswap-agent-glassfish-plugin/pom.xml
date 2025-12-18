@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-glassfish-plugin</artifactId>
+    <name>hotswap-agent-glassfish-plugin</name>
 
     <dependencies>
         <dependency>

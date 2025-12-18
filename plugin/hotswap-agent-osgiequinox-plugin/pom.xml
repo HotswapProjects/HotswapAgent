@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-osgiequinox-plugin</artifactId>
+    <name>hotswap-agent-osgiequinox-plugin</name>
 
     <dependencies>
         <dependency>

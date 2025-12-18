@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-vaadin-plugin</artifactId>
+    <name>hotswap-agent-vaadin-plugin</name>
 
     <dependencies>
         <dependency>

@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-logback-plugin</artifactId>
+    <name>hotswap-agent-logback-plugin</name>
 
     <dependencies>
         <dependency>

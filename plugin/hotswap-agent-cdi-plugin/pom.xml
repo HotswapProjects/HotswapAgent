@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-cdi-plugin</artifactId>
+    <name>hotswap-agent-cdi-plugin</name>
 
     <properties>
     </properties>

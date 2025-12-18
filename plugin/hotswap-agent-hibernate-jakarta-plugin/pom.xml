@@ -11,6 +11,7 @@
 </parent>
 
 <artifactId>hotswap-agent-hibernate-jakarta-plugin</artifactId>
+<name>hotswap-agent-hibernate-jakarta-plugin</name>
 
 <properties>
 	<org.hibernateframework.version>5.6.15.Final</org.hibernateframework.version>

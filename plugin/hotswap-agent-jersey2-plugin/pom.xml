@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-jersey2-plugin</artifactId>
+    <name>hotswap-agent-jersey2-plugin</name>
 
     <dependencies>
         <dependency>

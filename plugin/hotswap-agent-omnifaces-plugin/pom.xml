@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-omnifaces-plugin</artifactId>
+    <name>hotswap-agent-omnifaces-plugin</name>
 
     <properties>
     </properties>

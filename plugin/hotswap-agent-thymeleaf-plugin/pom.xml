@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-thymeleaf-plugin</artifactId>
+    <name>hotswap-agent-thymeleaf-plugin</name>
 
     <dependencies>
         <dependency>

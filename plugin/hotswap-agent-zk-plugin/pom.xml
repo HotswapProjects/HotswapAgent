@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-zk-plugin</artifactId>
+    <name>hotswap-agent-zk-plugin</name>
 
     <dependencies>
         <dependency>

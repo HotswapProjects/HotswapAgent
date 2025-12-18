@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>hotswap-agent-owb-jakarta-plugin</artifactId>
+    <name>hotswap-agent-owb-jakarta-plugin</name>
 
     <properties>
         <owb.version>4.0.2</owb.version>

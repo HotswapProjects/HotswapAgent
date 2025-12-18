@@ -11,6 +11,7 @@
 
 
     <artifactId>hotswap-agent-spring-boot-plugin</artifactId>
+    <name>hotswap-agent-spring-boot-plugin</name>
 
     <properties>
         <org.springframework.boot.version>2.0.9.RELEASE</org.springframework.boot.version>

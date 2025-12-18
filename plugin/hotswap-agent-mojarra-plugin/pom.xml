@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-mojarra-plugin</artifactId>
+    <name>hotswap-agent-mojarra-plugin</name>
 
     <properties>
     </properties>

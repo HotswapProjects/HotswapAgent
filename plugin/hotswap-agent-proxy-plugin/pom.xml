@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-proxy-plugin</artifactId>
+    <name>hotswap-agent-proxy-plugin</name>
 
         <properties>
                 <org.springframework.version>5.3.39</org.springframework.version>

@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-undertow-plugin</artifactId>
+    <name>hotswap-agent-undertow-plugin</name>
 
     <properties>
     </properties>

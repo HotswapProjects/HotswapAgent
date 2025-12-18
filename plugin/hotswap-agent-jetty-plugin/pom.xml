@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-jetty-plugin</artifactId>
+    <name>hotswap-agent-jetty-plugin</name>
 
     <dependencies>
         <dependency>

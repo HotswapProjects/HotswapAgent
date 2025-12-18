@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>hotswap-agent-ibatis-plugin</artifactId>
+    <name>hotswap-agent-ibatis-plugin</name>
 
     <properties>
         <spring.version>5.3.30</spring.version>

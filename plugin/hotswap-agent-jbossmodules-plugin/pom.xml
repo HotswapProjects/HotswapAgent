@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-jbossmodules-plugin</artifactId>
+    <name>hotswap-agent-jbossmodules-plugin</name>
 
     <dependencies>
         <dependency>

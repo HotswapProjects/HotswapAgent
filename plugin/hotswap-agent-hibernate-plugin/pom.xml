@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-hibernate-plugin</artifactId>
+    <name>hotswap-agent-hibernate-plugin</name>
 
     <properties>
         <org.hibernateframework.version>5.3.14.Final</org.hibernateframework.version>

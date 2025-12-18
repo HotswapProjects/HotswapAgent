@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-hibernate3-plugin</artifactId>
+    <name>hotswap-agent-hibernate3-plugin</name>
 
     <properties>
         <org.hibernateframework.version>3.6.10.Final</org.hibernateframework.version>

@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-webobjects-plugin</artifactId>
+    <name>hotswap-agent-webobjects-plugin</name>
 
     <dependencies>
         <dependency>

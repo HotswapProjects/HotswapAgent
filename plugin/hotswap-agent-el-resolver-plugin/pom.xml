@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-el-resolver-plugin</artifactId>
+    <name>hotswap-agent-el-resolver-plugin</name>
 
     <dependencies>
         <dependency>

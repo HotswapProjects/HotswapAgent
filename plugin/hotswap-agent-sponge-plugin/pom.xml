@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-sponge-plugin</artifactId>
+    <name>hotswap-agent-sponge-plugin</name>
 
     <dependencies>
         <dependency>

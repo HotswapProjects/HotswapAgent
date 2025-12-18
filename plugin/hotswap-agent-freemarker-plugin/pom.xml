@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hotswap-agent-freemarker-plugin</artifactId>
+    <name>hotswap-agent-freemarker-plugin</name>
 
     <dependencies>
         <dependency>

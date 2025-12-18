@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>hotswap-agent-mybatis-plus-plugin</artifactId>
+    <name>hotswap-agent-mybatis-plus-plugin</name>
 
     <properties>
         <org.mybatis.plus.version>3.5.8</org.mybatis.plus.version>
