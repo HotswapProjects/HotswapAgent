@@ -6,8 +6,7 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <!-- cannot use ${revision} because pom packaging fails on deploy to central -->
-        <version>2.0.4-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
     </parent>
 
@@ -289,6 +288,36 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.7.3</version>
+                <configuration>
+                    <updatePomFile>true</updatePomFile>
+                    <flattenMode>ossrh</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <!-- Flattened plugin does not include pom packaging. Need to duplicate the info here -->
     <url>http://hotswapagent.org/</url>
