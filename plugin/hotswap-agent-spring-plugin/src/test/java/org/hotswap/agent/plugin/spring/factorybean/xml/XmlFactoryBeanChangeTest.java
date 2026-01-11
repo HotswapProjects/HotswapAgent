@@ -29,6 +29,7 @@ import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean1;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean2;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,6 +53,7 @@ public class XmlFactoryBeanChangeTest {
     public void before() {
         BaseTestUtil.configMaxReloadTimes();
         SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory());
+        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
     }
 
     @After

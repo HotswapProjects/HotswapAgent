@@ -20,11 +20,13 @@ package org.hotswap.agent.plugin.spring.xml.constructor;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorFactoryBean2;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v2.*;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,11 @@ public class XmlConstructorBeanChangeTest {
 
     @Autowired
     private AbstractApplicationContext applicationContext;
+
+    @Before
+    public void before() {
+        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
+    }
 
     @Test
     public void testFactoryBeanChanged() throws Exception {

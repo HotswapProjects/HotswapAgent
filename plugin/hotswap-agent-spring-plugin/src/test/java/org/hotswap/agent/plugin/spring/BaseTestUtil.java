@@ -41,11 +41,7 @@ public class BaseTestUtil {
     }
 
     public static void waitForReload() throws Exception {
-        waitForReload(300);
-    }
-
-    public static void waitForReload(long startSleep) throws Exception {
-        Thread.sleep(startSleep);
+        Thread.sleep(200);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() {

@@ -22,6 +22,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,6 +46,7 @@ public class NewClassTest {
     @Before
     public void before() {
         BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).reset();
+        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
     }
 
     @Test

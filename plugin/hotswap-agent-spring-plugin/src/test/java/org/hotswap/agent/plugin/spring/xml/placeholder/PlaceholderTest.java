@@ -20,7 +20,8 @@ package org.hotswap.agent.plugin.spring.xml.placeholder;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
-import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,11 @@ public class PlaceholderTest {
 
     private static final Resource propertyFile = new ClassPathResource("xml-placeholder/item.properties");
     private static final Resource changedPropertyFile = new ClassPathResource("xml-placeholder/itemChanged.properties");
+
+    @Before
+    public void before() {
+        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
+    }
 
     @Test
     public void swapPropertyTest() throws Exception {

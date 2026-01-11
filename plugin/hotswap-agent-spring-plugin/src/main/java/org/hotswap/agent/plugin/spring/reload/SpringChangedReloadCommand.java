@@ -36,6 +36,7 @@ public class SpringChangedReloadCommand extends MergeableCommand {
 
     // unit test only
     private static AtomicLong waitingTaskCount = new AtomicLong(0);
+    private static boolean isInitialTaskCountHysteresis = false;
 
     ClassLoader appClassLoader;
     long timestamps;
@@ -72,7 +73,11 @@ public class SpringChangedReloadCommand extends MergeableCommand {
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
         } finally {
-            waitingTaskCount.decrementAndGet();
+            long taskCount = waitingTaskCount.decrementAndGet();
+            if (isInitialTaskCountHysteresis && taskCount == 1) {
+                isInitialTaskCountHysteresis = false;
+                waitingTaskCount.decrementAndGet();
+            }
         }
     }
 
@@ -98,6 +103,13 @@ public class SpringChangedReloadCommand extends MergeableCommand {
     // this is used by tests
     public static boolean isEmptyTask() {
         return waitingTaskCount.get() == 0;
+    }
+
+    public static void setInitialTaskCountHysteresis() {
+        if (waitingTaskCount.get() == 0) {
+            waitingTaskCount.set(1);
+            isInitialTaskCountHysteresis = true;
+        }
     }
 
     @Override
