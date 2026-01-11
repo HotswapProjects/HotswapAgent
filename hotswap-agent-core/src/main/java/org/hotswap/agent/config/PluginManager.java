@@ -138,9 +138,10 @@ public class PluginManager {
         watcher.run();
 
         if (scheduler == null) {
-            boolean isOnClsRedefinedSupported = JBR.isHotswapSupported();
+            String property = System.getProperty("hotswapagent.disableJbrHotswap");
+            boolean isOnClsRedefinedSupported = JBR.isHotswapSupported() && !Boolean.parseBoolean(property);
             scheduler = new SchedulerImpl(isOnClsRedefinedSupported);
-            if (JBR.isHotswapSupported()) {
+            if (isOnClsRedefinedSupported) {
                 JBR.getHotswap().addListener(new Hotswap.Listener() {
                     @Override
                     public void onClassesRedefined() {

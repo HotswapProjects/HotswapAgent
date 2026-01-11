@@ -80,7 +80,7 @@ public class SchedulerImpl implements Scheduler {
     public void doScheduleCommand(Command command, int timeout, DuplicateSheduleBehaviour behaviour, boolean isOnClassRedefined) {
         synchronized (scheduledCommands) {
             Command targetCommand = command;
-            if (scheduledCommands.containsKey(command) && (command instanceof MergeableCommand)) {
+            if ((command instanceof MergeableCommand) && scheduledCommands.containsKey(command)) {
                 // get existing equals command and merge it
                 for (Command scheduledCommand : scheduledCommands.keySet()) {
                     if (command.equals(scheduledCommand)) {
@@ -104,6 +104,7 @@ public class SchedulerImpl implements Scheduler {
      */
     private boolean processCommands(boolean isOnClassRedefined) {
         Long currentTime = System.currentTimeMillis();
+        boolean useOnClassRedefined = isOnClsRedefinedSupported && isOnClassRedefined;
         synchronized (scheduledCommands) {
             for (Iterator<Map.Entry<Command, ScheduleCommandConfig>> it = scheduledCommands.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<Command, ScheduleCommandConfig> entry = it.next();
@@ -111,8 +112,7 @@ public class SchedulerImpl implements Scheduler {
                 Command command = entry.getKey();
 
                 // if timeout
-                if (isOnClsRedefinedSupported && config.isOnClassRedefined && isOnClassRedefined
-                    || (!isOnClsRedefinedSupported || !config.isOnClassRedefined) && config.getTime() < currentTime) {
+                if (useOnClassRedefined && config.isOnClassRedefined || config.getTime() < currentTime) {
                     // command is currently running
                     if (runningCommands.contains(command)) {
                         if (config.getBehaviour().equals(DuplicateSheduleBehaviour.SKIP)) {
