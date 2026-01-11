@@ -1,7 +1,25 @@
+/*
+ * Copyright 2013-2025 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring.factorybean.annotations;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v1.BakAnnotationFactoryBean1;
@@ -10,7 +28,7 @@ import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationBean3;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationFactoryBean1;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v2.V2BakAnnotationFactoryBean2;
-import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -70,11 +88,12 @@ public class FactoryBeanChangeTest {
         Assert.assertEquals(annotationBean4, annotationParentBean4.getAnnotationBean4());
         Assert.assertEquals(annotationBean5, annotationParentBean5.getAnnotationBean5());
         // swap
+        BaseTestUtil.setClassesForReload(AnnotationBean3.class, AnnotationBean4.class, AnnotationFactoryBean1.class, AnnotationFactoryBean2.class);
         HotSwapper.swapClasses(AnnotationBean3.class, BakAnnotationBean3.class.getName());
         HotSwapper.swapClasses(AnnotationBean4.class, BakAnnotationBean4.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean1.class, BakAnnotationFactoryBean1.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean2.class, BakAnnotationFactoryBean2.class.getName());
-        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
+        BaseTestUtil.waitForClassReloadsToFinish();
         // check
         AnnotationBean1 annotationBeanNew1 = applicationContext.getBean(AnnotationBean1.class);
         AnnotationBean2 annotationBeanNew2 = applicationContext.getBean(AnnotationBean2.class);
@@ -118,11 +137,12 @@ public class FactoryBeanChangeTest {
 
 
         // swap v2
+        BaseTestUtil.setClassesForReload(AnnotationBean3.class, AnnotationBean4.class, AnnotationFactoryBean1.class, AnnotationFactoryBean2.class);
         HotSwapper.swapClasses(AnnotationBean3.class, V2BakAnnotationBean3.class.getName());
         HotSwapper.swapClasses(AnnotationBean4.class, V2BakAnnotationBean4.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean1.class, V2BakAnnotationFactoryBean1.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean2.class, V2BakAnnotationFactoryBean2.class.getName());
-        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
+        BaseTestUtil.waitForClassReloadsToFinish();
         // check
         AnnotationBean1 annotationBeanV2_1 = applicationContext.getBean(AnnotationBean1.class);
         AnnotationBean2 annotationBeanV2_2 = applicationContext.getBean(AnnotationBean2.class);

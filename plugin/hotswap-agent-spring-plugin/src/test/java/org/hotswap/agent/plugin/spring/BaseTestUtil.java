@@ -1,10 +1,37 @@
+/*
+ * Copyright 2013-2025 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
 import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
+import org.hotswap.agent.util.test.WaitHelper;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertTrue;
+
+/**
+ * The type Base test util.
+ */
 public class BaseTestUtil {
 
     public static boolean finishReloading(ConfigurableListableBeanFactory beanFactory, int reloadTimes) {
@@ -14,5 +41,32 @@ public class BaseTestUtil {
 
     public static void configMaxReloadTimes() {
         SpringReloadConfig.setDelayMillis(3000);
+    }
+
+    public static void waitForReloadQueueEmpty() throws Exception {
+        Thread.sleep(200);
+        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() {
+                return SpringChangedReloadCommand.isEmptyTask();
+            }
+        }, 10000));
+    }
+
+    public static void setClassesForReload(Class<?> ... classesForReload) {
+        List<String> classNames = new ArrayList<>();
+        for (Class<?> cls : classesForReload) {
+            classNames.add(cls.getName());
+        }
+        SpringChangedReloadCommand.setClassesForReload(classNames);
+    }
+
+    public static void waitForClassReloadsToFinish() {
+        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() {
+                return SpringChangedReloadCommand.isClassesForReloadEmpty() && SpringChangedReloadCommand.isEmptyTask();
+            }
+        }, 10000));
     }
 }
