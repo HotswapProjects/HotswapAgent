@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013-2025 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring.factorybean.xml;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
@@ -11,7 +29,6 @@ import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean1;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean2;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
-import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,7 +94,7 @@ public class XmlFactoryBeanChangeTest {
         HotSwapper.swapClasses(XmlFactBean4.class, BakXmlFactBean4.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean1.class, BakXmlFactFactoryBean1.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean2.class, BakXmlFactFactoryBean2.class.getName());
-        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
+        BaseTestUtil.waitForReload();
         // check
         XmlFactBean1 xmlFactBeanNew1 = applicationContext.getBean(XmlFactBean1.class);
         XmlFactBean2 xmlFactBeanNew2 = applicationContext.getBean(XmlFactBean2.class);
@@ -125,7 +142,7 @@ public class XmlFactoryBeanChangeTest {
         HotSwapper.swapClasses(XmlFactBean4.class, V2BakXmlFactBean4.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean1.class, V2BakXmlFactFactoryBean1.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean2.class, V2BakXmlFactFactoryBean2.class.getName());
-        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
+        BaseTestUtil.waitForReload();
         // check
         XmlFactBean1 xmlFactBeanV2_1 = applicationContext.getBean(XmlFactBean1.class);
         XmlFactBean2 xmlFactBeanV2_2 = applicationContext.getBean(XmlFactBean2.class);

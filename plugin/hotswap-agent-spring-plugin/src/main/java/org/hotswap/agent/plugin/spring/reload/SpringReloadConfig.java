@@ -23,41 +23,16 @@ package org.hotswap.agent.plugin.spring.reload;
  */
 public class SpringReloadConfig {
 
-    private static final String SPRING_RELOAD_DELAY_MILLIS = "SpringReloadDelayMillis";
-    private static final String SPRING_TEST_SLEEP_TIME_FACTOR = "SpringTestSleepTimeFactor";
-    public static int reloadDelayMillis = 1600;
-    private static boolean isReloadDelayMillisProperty = false;
+    public static int reloadDelayMillisForFile = 200;
+    public static int reloadDelayMillisForClass = 1600;
     private static double testSleepTimeFactor = 1.0;
 
-    static {
-        String delayProperty = System.getProperty(SPRING_RELOAD_DELAY_MILLIS);
-        if (delayProperty != null) {
-            try {
-                reloadDelayMillis = Integer.parseInt(delayProperty);
-                isReloadDelayMillisProperty = true;
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid format for -D" + SPRING_RELOAD_DELAY_MILLIS + ". Using default value: " + reloadDelayMillis);
-            }
-        }
-        String fac = System.getProperty(SPRING_TEST_SLEEP_TIME_FACTOR);
-        if (fac != null) {
-            try {
-                testSleepTimeFactor = Double.parseDouble(fac);
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid format for -D" + SPRING_TEST_SLEEP_TIME_FACTOR + ".");
-            }
-        }
-    }
-
     public static void setDelayMillis(int delayMillis) {
-        if (isReloadDelayMillisProperty) {
-            return;
-        }
         if (delayMillis > 30000) {
-            reloadDelayMillis = 30000;
+            reloadDelayMillisForClass = 30000;
             return;
         }
-        reloadDelayMillis = delayMillis;
+        reloadDelayMillisForClass = delayMillis;
     }
 
     public static long scaleTestSleepTime(long timeMillis) {

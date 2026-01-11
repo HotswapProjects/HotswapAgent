@@ -1,8 +1,25 @@
+/*
+ * Copyright 2013-2025 the HotswapAgent authors.
+ *
+ * This file is part of HotswapAgent.
+ *
+ * HotswapAgent is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * HotswapAgent is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with HotswapAgent. If not, see http://www.gnu.org/licenses/.
+ */
 package org.hotswap.agent.plugin.spring.xml.constructor;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
-import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorFactoryBean2;
@@ -67,7 +84,8 @@ public class XmlConstructorBeanChangeTest {
         HotSwapper.swapClasses(XmlConstructorBean3.class, BakConstructorBean3.class.getName());
         HotSwapper.swapClasses(XmlConstructorBean4.class, BakConstructorBean4.class.getName());
         HotSwapper.swapClasses(XmlConstructorFactoryBean2.class, BakConstructorFactoryBean2.class.getName());
-        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
+        BaseTestUtil.waitForReload();
+
         // check
         XmlConstructorBean1 xmlConstructorBeanNew1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBeanNew2 = applicationContext.getBean(XmlConstructorBean2.class);
@@ -124,7 +142,7 @@ public class XmlConstructorBeanChangeTest {
         HotSwapper.swapClasses(XmlConstructorFactoryBean2.class, BakConstructorFactoryBean2V2.class.getName());
         HotSwapper.swapClasses(XmlConstructorParentBeanMul1.class, BakConstructorParentBeanMul1.class.getName());
         HotSwapper.swapClasses(XmlConstructorParentBeanMul2.class, BakConstructorParentBeanMul2.class.getName());
-        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
+        BaseTestUtil.waitForReload();
         // check
         XmlConstructorBean1 xmlConstructorBeanV2_1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBeanV2_2 = applicationContext.getBean(XmlConstructorBean2.class);

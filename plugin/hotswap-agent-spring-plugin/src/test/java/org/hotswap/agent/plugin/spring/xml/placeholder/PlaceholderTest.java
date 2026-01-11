@@ -67,7 +67,9 @@ public class PlaceholderTest {
         byte[] content = Files.readAllBytes(propertyFile.getFile().toPath());
         try {
             modifyPropertyFile();
-            Thread.sleep(SpringReloadConfig.scaleTestSleepTime(10000));
+
+            BaseTestUtil.waitForReload();
+            //Thread.sleep(SpringReloadConfig.scaleTestSleepTime(10000));
 
             Item1 itemChange1 = applicationContext.getBean("item1", Item1.class);
             Item1 itemChange11 = applicationContext.getBean("item11", Item1.class);
@@ -97,7 +99,8 @@ public class PlaceholderTest {
             assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
             assertNull(applicationContext.getBean("item2", Item2.class).getName2());
             HotSwapper.swapClasses(Item2.class, Item2WithoutValue.class.getName());
-            Thread.sleep(SpringReloadConfig.scaleTestSleepTime(10000));
+
+            BaseTestUtil.waitForReload();
 
             assertNull(applicationContext.getBean("item2", Item2.class).getName());
             assertNotNull(applicationContext.getBean("item2", Item2.class).getName2());

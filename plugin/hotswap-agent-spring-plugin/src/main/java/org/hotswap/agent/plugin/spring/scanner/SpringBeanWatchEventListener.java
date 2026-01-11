@@ -30,7 +30,6 @@ import org.hotswap.agent.watch.WatchFileEvent;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The type Spring bean watch event listener.
@@ -44,8 +43,6 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
      * ClassPathBeanRefreshCommand tries to merge these events into single command.
      * Wait this this timeout after class file event.
      */
-    private static final int WAIT_ON_CREATE = 600;
-
     private Scheduler scheduler;
     private ClassLoader appClassLoader;
     private String basePackage;
@@ -71,10 +68,11 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
             }
             if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
                 // refresh spring only for new classes
-                scheduler.scheduleCommand(new ClassPathBeanRefreshCommand(appClassLoader,
-                        basePackage, className, event, scheduler), WAIT_ON_CREATE);
                 LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", className, appClassLoader);
-                scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
+                scheduler.scheduleCommand(
+                    new SpringChangedReloadCommand(appClassLoader, new ClassPathBeanRefreshCommand(appClassLoader, basePackage, className, event, scheduler)),
+                    SpringReloadConfig.reloadDelayMillisForClass
+                );
             }
         }
     }

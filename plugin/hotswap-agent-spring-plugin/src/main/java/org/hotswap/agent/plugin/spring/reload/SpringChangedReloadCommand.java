@@ -18,11 +18,14 @@
  */
 package org.hotswap.agent.plugin.spring.reload;
 
+import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,21 +39,29 @@ public class SpringChangedReloadCommand extends MergeableCommand {
 
     ClassLoader appClassLoader;
     long timestamps;
+    Command subCommand;
 
-    public SpringChangedReloadCommand(ClassLoader appClassLoader) {
+    public SpringChangedReloadCommand(ClassLoader appClassLoader, Command subCommand) {
         this.appClassLoader = appClassLoader;
         this.timestamps = System.currentTimeMillis();
+        this.subCommand = subCommand;
         LOGGER.trace("SpringChangedReloadCommand created with timestamp '{}'", timestamps);
         waitingTaskCount.incrementAndGet();
+    }
+
+    public Command merge(Command other) {
+        Command result = super.merge(other);
+        waitingTaskCount.decrementAndGet(); // other will not be executed
+        return result;
     }
 
     @Override
     public void executeCommand() {
         // async call to avoid reload too much times
         try {
+            executeSubCommands();
             Class<?> clazz = Class.forName("org.hotswap.agent.plugin.spring.reload.SpringChangedAgent", true, appClassLoader);
-            Method method = clazz.getDeclaredMethod(
-                    "reload", long.class);
+            Method method = clazz.getDeclaredMethod("reload", long.class);
             method.invoke(null, timestamps);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Plugin error, method not found", e);
@@ -65,8 +76,42 @@ public class SpringChangedReloadCommand extends MergeableCommand {
         }
     }
 
+    private void executeSubCommands() {
+        List<Command> mergedCommands = new ArrayList<>();
+        mergedCommands.add(0, this);
+        mergedCommands.addAll(popMergedCommands());
+        do {
+            for (Command command : mergedCommands) {
+                try {
+                    SpringChangedReloadCommand changedReloadCommand = (SpringChangedReloadCommand) command;
+                    if (changedReloadCommand.subCommand != null) {
+                        changedReloadCommand.subCommand.executeCommand();
+                    }
+                } catch (RuntimeException e) {
+                    LOGGER.error("Error executing command", e);
+                }
+            }
+            mergedCommands = popMergedCommands();
+        } while (!mergedCommands.isEmpty());
+    }
+
     // this is used by tests
     public static boolean isEmptyTask() {
         return waitingTaskCount.get() == 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SpringChangedReloadCommand that = (SpringChangedReloadCommand) o;
+        if (!appClassLoader.equals(that.appClassLoader)) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = appClassLoader.hashCode();
+        return result;
     }
 }

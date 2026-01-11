@@ -137,31 +137,39 @@ public class SpringPlugin {
 
     @OnResourceFileEvent(path = "/", filter = ".*.xml", events = {FileEvent.MODIFY})
     public void registerResourceListeners(URL url) {
-        scheduler.scheduleCommand(new XmlsChangedCommand(appClassLoader, url, scheduler));
         LOGGER.trace("Scheduling Spring reload for XML '{}'", url);
-        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
+        scheduler.scheduleCommand(
+            new SpringChangedReloadCommand(appClassLoader, new XmlsChangedCommand(appClassLoader, url, scheduler)),
+            SpringReloadConfig.reloadDelayMillisForFile
+        );
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties", events = {FileEvent.MODIFY})
     public void registerPropertiesListeners(URL url) {
-        scheduler.scheduleCommand(new PropertiesChangedCommand(appClassLoader, url, scheduler));
         LOGGER.trace("Scheduling Spring reload for properties '{}'", url);
-        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
+        scheduler.scheduleCommand(
+            new SpringChangedReloadCommand(appClassLoader, new PropertiesChangedCommand(appClassLoader, url, scheduler)),
+            SpringReloadConfig.reloadDelayMillisForFile
+        );
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.yaml", events = {FileEvent.MODIFY})
     public void registerYamlListeners(URL url) {
-        scheduler.scheduleCommand(new YamlChangedCommand(appClassLoader, url, scheduler));
         // schedule reload after 1000 milliseconds
         LOGGER.trace("Scheduling Spring reload for yaml '{}'", url);
-        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
+        scheduler.scheduleCommand(
+            new SpringChangedReloadCommand(appClassLoader, new YamlChangedCommand(appClassLoader, url, scheduler)),
+            SpringReloadConfig.reloadDelayMillisForFile
+        );
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = {LoadEvent.REDEFINE})
     public void registerClassListeners(Class<?> clazz) {
-        scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
         LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", clazz, appClassLoader);
-        scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader), SpringReloadConfig.reloadDelayMillis);
+        scheduler.scheduleCommandOnClassesRedefinedOrTimeout(
+            new SpringChangedReloadCommand(appClassLoader, new ClassChangedCommand(appClassLoader, clazz, scheduler)),
+            SpringReloadConfig.reloadDelayMillisForClass
+        );
     }
 
     @OnClassLoadEvent(classNameRegexp = "org.springframework.data.repository.Repository")
@@ -183,9 +191,10 @@ public class SpringPlugin {
             } else {
                 LOGGER.trace("New JPA Repository class '{}' loaded", clazz.getName());
             }
-            scheduler.scheduleCommand(new ClassChangedCommand(appClassLoader, clazz, scheduler));
-            scheduler.scheduleCommand(new SpringChangedReloadCommand(appClassLoader),
-                    SpringReloadConfig.reloadDelayMillis);
+            scheduler.scheduleCommand(
+                new SpringChangedReloadCommand(appClassLoader, new ClassChangedCommand(appClassLoader, clazz, scheduler)),
+                SpringReloadConfig.reloadDelayMillisForClass
+            );
         }
     }
 

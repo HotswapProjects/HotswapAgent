@@ -20,15 +20,10 @@ package org.hotswap.agent.plugin.spring;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
-import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.plugin.spring.testBeans.*;
 import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanService;
 import org.hotswap.agent.plugin.spring.testBeans.iabpp.BeanServiceImplNoAspect;
-import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanPrototype2;
-import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanRepository2;
-import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2;
-import org.hotswap.agent.plugin.spring.testBeansHotswap.BeanServiceImpl2NoAspect;
-import org.hotswap.agent.plugin.spring.testBeansHotswap.Pojo2;
+import org.hotswap.agent.plugin.spring.testBeansHotswap.*;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -217,7 +212,7 @@ public class SpringPluginTest {
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
         // no reload happens
         HotSwapper.swapClasses(Pojo.class, Pojo2.class.getName());
-        Thread.sleep(SpringReloadConfig.scaleTestSleepTime(8000));
+        BaseTestUtil.waitForReload();
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
     }
 
