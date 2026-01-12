@@ -20,13 +20,11 @@ package org.hotswap.agent.plugin.spring.xml.constructor;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean3;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorBean4;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v1.BakConstructorFactoryBean2;
 import org.hotswap.agent.plugin.spring.xml.bak.constructor.v2.*;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,11 +39,6 @@ public class XmlConstructorBeanChangeTest {
 
     @Autowired
     private AbstractApplicationContext applicationContext;
-
-    @Before
-    public void before() {
-        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
-    }
 
     @Test
     public void testFactoryBeanChanged() throws Exception {
@@ -88,10 +81,11 @@ public class XmlConstructorBeanChangeTest {
         Assert.assertEquals(xmlConstructorBean3, xmlConstructorParentBeanMul2.getXmlConstructorBean3());
 
         // swap first time
+        BaseTestUtil.setClassesForReload(XmlConstructorBean3.class, XmlConstructorBean4.class, XmlConstructorFactoryBean2.class);
         HotSwapper.swapClasses(XmlConstructorBean3.class, BakConstructorBean3.class.getName());
         HotSwapper.swapClasses(XmlConstructorBean4.class, BakConstructorBean4.class.getName());
         HotSwapper.swapClasses(XmlConstructorFactoryBean2.class, BakConstructorFactoryBean2.class.getName());
-        BaseTestUtil.waitForReload();
+        BaseTestUtil.waitForClassReloadsToFinish();
 
         // check
         XmlConstructorBean1 xmlConstructorBeanNew1 = applicationContext.getBean(XmlConstructorBean1.class);
@@ -144,12 +138,14 @@ public class XmlConstructorBeanChangeTest {
         Assert.assertNotEquals(xmlConstructorParentBeanMul2, xmlConstructorParentBeanMulNew2);
 
         // swap twice
+        BaseTestUtil.setClassesForReload(XmlConstructorBean3.class, XmlConstructorBean4.class,
+            XmlConstructorFactoryBean2.class, XmlConstructorParentBeanMul1.class, XmlConstructorParentBeanMul2.class);
         HotSwapper.swapClasses(XmlConstructorBean3.class, BakConstructorBean3V2.class.getName());
         HotSwapper.swapClasses(XmlConstructorBean4.class, BakConstructorBean4V2.class.getName());
         HotSwapper.swapClasses(XmlConstructorFactoryBean2.class, BakConstructorFactoryBean2V2.class.getName());
         HotSwapper.swapClasses(XmlConstructorParentBeanMul1.class, BakConstructorParentBeanMul1.class.getName());
         HotSwapper.swapClasses(XmlConstructorParentBeanMul2.class, BakConstructorParentBeanMul2.class.getName());
-        BaseTestUtil.waitForReload();
+        BaseTestUtil.waitForClassReloadsToFinish();
         // check
         XmlConstructorBean1 xmlConstructorBeanV2_1 = applicationContext.getBean(XmlConstructorBean1.class);
         XmlConstructorBean2 xmlConstructorBeanV2_2 = applicationContext.getBean(XmlConstructorBean2.class);

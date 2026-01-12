@@ -18,11 +18,12 @@
  */
 package org.hotswap.agent.plugin.spring.xml.scan;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +33,12 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -46,7 +52,6 @@ public class NewClassTest {
     @Before
     public void before() {
         BeanFactoryAssistant.getBeanFactoryAssistant(applicationContext.getBeanFactory()).reset();
-        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
     }
 
     @Test
@@ -61,8 +66,9 @@ public class NewClassTest {
         moveClass("org.hotswap.agent.plugin.spring.xml.scanbak.ScanBakItem2",
                 "org.hotswap.agent.plugin.spring.xml.scan.ScanBakItem2", ScanItem.class.getClassLoader());
 
-        BaseTestUtil.waitForReload();
-        //Thread.sleep(SpringReloadConfig.scaleTestSleepTime(12000));
+        Thread.sleep(8000);
+
+        BaseTestUtil.waitForClassReloadsToFinish();
 
         LOGGER.info("swap class finished");
         assertNotNull(applicationContext.getBean(ScanItem.class).getName());
@@ -83,8 +89,19 @@ public class NewClassTest {
             currentPath = path;
             file = file.getParentFile();
         }
+//
+//        Class c = HotSwapper.newClass(targetClassName, currentPath, cl);
+//        HotSwapper.swapClasses(c, origClassName);
 
-        Class c = HotSwapper.newClass(targetClassName, currentPath, cl);
-        HotSwapper.swapClasses(c, origClassName);
+        ClassPool classPool = new ClassPool();
+        classPool.appendClassPath(new LoaderClassPath(cl));
+        CtClass ctClass = classPool.get(origClassName);
+
+        ClassPathResource res = new ClassPathResource(targetClassName.replace('.', '/') + ".class");
+
+        Path outFile = Paths.get(currentPath)
+            .resolve(targetClassName.replace('.', '/') + ".class");
+
+        Files.copy(new ByteArrayInputStream(ctClass.toBytecode()), outFile, StandardCopyOption.REPLACE_EXISTING);
     }
 }

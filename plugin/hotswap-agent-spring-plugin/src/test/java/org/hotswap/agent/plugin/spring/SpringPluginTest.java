@@ -211,8 +211,9 @@ public class SpringPluginTest {
         Pojo pojo = new Pojo();
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
         // no reload happens
+        BaseTestUtil.setClassesForReload(Pojo.class);
         HotSwapper.swapClasses(Pojo.class, Pojo2.class.getName());
-        BaseTestUtil.waitForReload();
+        BaseTestUtil.waitForReloadQueueEmpty();
         assertEquals(0, applicationContext.getBeanNamesForType(Pojo.class).length);
     }
 

@@ -24,8 +24,8 @@ import org.hotswap.agent.logging.AgentLogger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,11 +36,16 @@ public class SpringChangedReloadCommand extends MergeableCommand {
 
     // unit test only
     private static AtomicLong waitingTaskCount = new AtomicLong(0);
-    private static boolean isInitialTaskCountHysteresis = false;
+
+    // this is used by tests
+    private static Map<String, Boolean> classesForReload;
 
     ClassLoader appClassLoader;
     long timestamps;
     Command subCommand;
+
+    // this is used by tests
+    Set<String> reloadingClasses;
 
     public SpringChangedReloadCommand(ClassLoader appClassLoader, Command subCommand) {
         this.appClassLoader = appClassLoader;
@@ -53,6 +58,7 @@ public class SpringChangedReloadCommand extends MergeableCommand {
     public Command merge(Command other) {
         Command result = super.merge(other);
         waitingTaskCount.decrementAndGet(); // other will not be executed
+        SpringChangedReloadCommand changedReloadCommand = (SpringChangedReloadCommand) other;
         return result;
     }
 
@@ -73,10 +79,9 @@ public class SpringChangedReloadCommand extends MergeableCommand {
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Plugin error, Spring class not found in application classloader", e);
         } finally {
-            long taskCount = waitingTaskCount.decrementAndGet();
-            if (isInitialTaskCountHysteresis && taskCount == 1) {
-                isInitialTaskCountHysteresis = false;
-                waitingTaskCount.decrementAndGet();
+            waitingTaskCount.decrementAndGet();
+            if (classesForReload != null && this.reloadingClasses != null) {
+                classesForReload.keySet().removeAll(this.reloadingClasses);
             }
         }
     }
@@ -90,6 +95,7 @@ public class SpringChangedReloadCommand extends MergeableCommand {
                 try {
                     SpringChangedReloadCommand changedReloadCommand = (SpringChangedReloadCommand) command;
                     if (changedReloadCommand.subCommand != null) {
+                        addReloadingClass(changedReloadCommand);
                         changedReloadCommand.subCommand.executeCommand();
                     }
                 } catch (RuntimeException e) {
@@ -100,16 +106,36 @@ public class SpringChangedReloadCommand extends MergeableCommand {
         } while (!mergedCommands.isEmpty());
     }
 
+    private void addReloadingClass(SpringChangedReloadCommand changedReloadCommand) {
+        if (classesForReload != null && changedReloadCommand.subCommand instanceof ClassChangedCommand) {
+            ClassChangedCommand classChangedCommand = (ClassChangedCommand) changedReloadCommand.subCommand;
+            if (classChangedCommand.clazz != null) {
+                if (classesForReload != null) {
+                    if (this.reloadingClasses == null) {
+                        this.reloadingClasses = new HashSet<>();
+                    }
+                    this.reloadingClasses.add(classChangedCommand.clazz.getName());
+                }
+            }
+        }
+    }
+
     // this is used by tests
     public static boolean isEmptyTask() {
         return waitingTaskCount.get() == 0;
     }
 
-    public static void setInitialTaskCountHysteresis() {
-        if (waitingTaskCount.get() == 0) {
-            waitingTaskCount.set(1);
-            isInitialTaskCountHysteresis = true;
-        }
+    // this is used by tests
+    public static void setClassesForReload(List<String> classesForReloadList) {
+       if (classesForReload == null) {
+           classesForReload = new ConcurrentHashMap<>();
+       }
+       classesForReloadList.forEach(className -> classesForReload.put(className, true));
+    }
+
+    // this is used by tests
+    public static boolean isClassesForReloadEmpty() {
+        return classesForReload == null || classesForReload.isEmpty();
     }
 
     @Override

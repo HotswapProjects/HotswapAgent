@@ -88,11 +88,12 @@ public class FactoryBeanChangeTest {
         Assert.assertEquals(annotationBean4, annotationParentBean4.getAnnotationBean4());
         Assert.assertEquals(annotationBean5, annotationParentBean5.getAnnotationBean5());
         // swap
+        BaseTestUtil.setClassesForReload(AnnotationBean3.class, AnnotationBean4.class, AnnotationFactoryBean1.class, AnnotationFactoryBean2.class);
         HotSwapper.swapClasses(AnnotationBean3.class, BakAnnotationBean3.class.getName());
         HotSwapper.swapClasses(AnnotationBean4.class, BakAnnotationBean4.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean1.class, BakAnnotationFactoryBean1.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean2.class, BakAnnotationFactoryBean2.class.getName());
-        BaseTestUtil.waitForReload();
+        BaseTestUtil.waitForClassReloadsToFinish();
         // check
         AnnotationBean1 annotationBeanNew1 = applicationContext.getBean(AnnotationBean1.class);
         AnnotationBean2 annotationBeanNew2 = applicationContext.getBean(AnnotationBean2.class);
@@ -136,11 +137,12 @@ public class FactoryBeanChangeTest {
 
 
         // swap v2
+        BaseTestUtil.setClassesForReload(AnnotationBean3.class, AnnotationBean4.class, AnnotationFactoryBean1.class, AnnotationFactoryBean2.class);
         HotSwapper.swapClasses(AnnotationBean3.class, V2BakAnnotationBean3.class.getName());
         HotSwapper.swapClasses(AnnotationBean4.class, V2BakAnnotationBean4.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean1.class, V2BakAnnotationFactoryBean1.class.getName());
         HotSwapper.swapClasses(AnnotationFactoryBean2.class, V2BakAnnotationFactoryBean2.class.getName());
-        BaseTestUtil.waitForReload();
+        BaseTestUtil.waitForClassReloadsToFinish();
         // check
         AnnotationBean1 annotationBeanV2_1 = applicationContext.getBean(AnnotationBean1.class);
         AnnotationBean2 annotationBeanV2_2 = applicationContext.getBean(AnnotationBean2.class);

@@ -24,6 +24,9 @@ import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.util.test.WaitHelper;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -40,12 +43,29 @@ public class BaseTestUtil {
         SpringReloadConfig.setDelayMillis(3000);
     }
 
-    public static void waitForReload() throws Exception {
+    public static void waitForReloadQueueEmpty() throws Exception {
         Thread.sleep(200);
         assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
             @Override
             public boolean result() {
                 return SpringChangedReloadCommand.isEmptyTask();
+            }
+        }, 10000));
+    }
+
+    public static void setClassesForReload(Class<?> ... classesForReload) {
+        List<String> classNames = new ArrayList<>();
+        for (Class<?> cls : classesForReload) {
+            classNames.add(cls.getName());
+        }
+        SpringChangedReloadCommand.setClassesForReload(classNames);
+    }
+
+    public static void waitForClassReloadsToFinish() {
+        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() {
+                return SpringChangedReloadCommand.isClassesForReloadEmpty() && SpringChangedReloadCommand.isEmptyTask();
             }
         }, 10000));
     }

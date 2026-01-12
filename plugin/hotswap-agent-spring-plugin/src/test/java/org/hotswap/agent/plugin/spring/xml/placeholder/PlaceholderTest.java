@@ -20,8 +20,6 @@ package org.hotswap.agent.plugin.spring.xml.placeholder;
 
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,11 +42,6 @@ public class PlaceholderTest {
 
     private static final Resource propertyFile = new ClassPathResource("xml-placeholder/item.properties");
     private static final Resource changedPropertyFile = new ClassPathResource("xml-placeholder/itemChanged.properties");
-
-    @Before
-    public void before() {
-        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
-    }
 
     @Test
     public void swapPropertyTest() throws Exception {
@@ -74,7 +67,7 @@ public class PlaceholderTest {
         try {
             modifyPropertyFile();
 
-            BaseTestUtil.waitForReload();
+            BaseTestUtil.waitForReloadQueueEmpty();
             //Thread.sleep(SpringReloadConfig.scaleTestSleepTime(10000));
 
             Item1 itemChange1 = applicationContext.getBean("item1", Item1.class);
@@ -104,9 +97,10 @@ public class PlaceholderTest {
             // part 2
             assertNotNull(applicationContext.getBean("item2", Item2.class).getName());
             assertNull(applicationContext.getBean("item2", Item2.class).getName2());
-            HotSwapper.swapClasses(Item2.class, Item2WithoutValue.class.getName());
 
-            BaseTestUtil.waitForReload();
+            BaseTestUtil.setClassesForReload(Item2.class);
+            HotSwapper.swapClasses(Item2.class, Item2WithoutValue.class.getName());
+            BaseTestUtil.waitForClassReloadsToFinish();
 
             assertNull(applicationContext.getBean("item2", Item2.class).getName());
             assertNotNull(applicationContext.getBean("item2", Item2.class).getName2());

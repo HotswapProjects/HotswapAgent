@@ -29,7 +29,6 @@ import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactBean4;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean1;
 import org.hotswap.agent.plugin.spring.factorybean.bak.v21.V2BakXmlFactFactoryBean2;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,7 +52,6 @@ public class XmlFactoryBeanChangeTest {
     public void before() {
         BaseTestUtil.configMaxReloadTimes();
         SpringChangedAgent.getInstance((DefaultListableBeanFactory) applicationContext.getBeanFactory());
-        SpringChangedReloadCommand.setInitialTaskCountHysteresis();
     }
 
     @After
@@ -92,11 +90,12 @@ public class XmlFactoryBeanChangeTest {
         Assert.assertEquals(xmlFactBean4, xmlFactParentBean4.getXmlFactBean4());
         Assert.assertEquals(xmlFactBean5, xmlFactParentBean5.getXmlFactBean5());
         // swap
+        BaseTestUtil.setClassesForReload(XmlFactBean3.class, XmlFactBean4.class, XmlFactoryBean1.class, XmlFactoryBean2.class);
         HotSwapper.swapClasses(XmlFactBean3.class, BakXmlFactBean3.class.getName());
         HotSwapper.swapClasses(XmlFactBean4.class, BakXmlFactBean4.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean1.class, BakXmlFactFactoryBean1.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean2.class, BakXmlFactFactoryBean2.class.getName());
-        BaseTestUtil.waitForReload();
+        BaseTestUtil.waitForClassReloadsToFinish();
         // check
         XmlFactBean1 xmlFactBeanNew1 = applicationContext.getBean(XmlFactBean1.class);
         XmlFactBean2 xmlFactBeanNew2 = applicationContext.getBean(XmlFactBean2.class);
@@ -140,11 +139,12 @@ public class XmlFactoryBeanChangeTest {
 
 
         // swap v2
+        BaseTestUtil.setClassesForReload(XmlFactBean3.class, XmlFactBean4.class, XmlFactoryBean1.class, XmlFactoryBean2.class);
         HotSwapper.swapClasses(XmlFactBean3.class, V2BakXmlFactBean3.class.getName());
         HotSwapper.swapClasses(XmlFactBean4.class, V2BakXmlFactBean4.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean1.class, V2BakXmlFactFactoryBean1.class.getName());
         HotSwapper.swapClasses(XmlFactoryBean2.class, V2BakXmlFactFactoryBean2.class.getName());
-        BaseTestUtil.waitForReload();
+        BaseTestUtil.waitForClassReloadsToFinish();
         // check
         XmlFactBean1 xmlFactBeanV2_1 = applicationContext.getBean(XmlFactBean1.class);
         XmlFactBean2 xmlFactBeanV2_2 = applicationContext.getBean(XmlFactBean2.class);

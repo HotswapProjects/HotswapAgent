@@ -28,7 +28,6 @@ import org.hotswap.agent.plugin.spring.configuration.configs.Config1;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config2;
 import org.hotswap.agent.plugin.spring.configuration.configs.Config3;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
-import org.hotswap.agent.util.test.WaitHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -107,14 +106,11 @@ public class ConfigurationTest {
         classPool.appendClassPath(new LoaderClassPath(Config.class.getClassLoader()));
         CtClass ctClass = classPool.getAndRename(swap.getName(), Config.class.getName());
 
-//        AnnotatedBeanDefinitionReaderAgent.reloadFlag = true;
+        BaseTestUtil.setClassesForReload(Config.class);
+
         Files.copy(new ByteArrayInputStream(ctClass.toBytecode()), config.getFile().toPath(),
                 StandardCopyOption.REPLACE_EXISTING);
-        assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-            @Override
-            public boolean result() throws Exception {
-                return BaseTestUtil.finishReloading(context.getBeanFactory(), reloadTimes);
-            }
-        }, 8000));
+
+        BaseTestUtil.waitForClassReloadsToFinish();
     }
 }

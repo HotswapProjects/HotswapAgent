@@ -129,8 +129,9 @@ public class ComponentScanWithWildcardsTest {
     }
 
     private void swapClasses(Class<?> original, String swap) throws Exception {
+        BaseTestUtil.setClassesForReload(original);
         HotSwapper.swapClasses(original, swap);
-        waitForReload(8000);
+        BaseTestUtil.waitForClassReloadsToFinish();
     }
 
     public File copyClassFileAndWaitForReload(Class<?> clazz, String newName) throws Exception {
@@ -152,8 +153,6 @@ public class ComponentScanWithWildcardsTest {
                 return BaseTestUtil.finishReloading(context.getBeanFactory(), rt);
             }
         }, timeout));
-        // TODO do not know why sleep is needed, maybe a separate thread in Spring
-        // refresh?
         Thread.sleep(100);
     }
 
