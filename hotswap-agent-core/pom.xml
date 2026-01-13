@@ -64,7 +64,7 @@
         </profile>
         <profile>
             <activation>
-                <jdk>21</jdk>
+                <jdk>[21,)</jdk>
             </activation>
             <build>
                 <plugins>
