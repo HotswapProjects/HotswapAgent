@@ -139,7 +139,7 @@ public class VaadinPlugin {
     @OnClassLoadEvent(classNameRegexp = VAADIN_SERVLET)
     public static void init(CtClass ctClass, ClassPool classPool)
             throws NotFoundException, CannotCompileException {
-        boolean hasVaadinHotSwapper = classPool.getOrNull("com.vaadin.flow.hotswap.Hotswapper") != null;
+        boolean hasVaadinHotSwapper = findHotswapperClass(classPool) != null;
 
         String src = PluginManagerInvoker
                 .buildInitializePlugin(VaadinPlugin.class);
@@ -156,7 +156,9 @@ public class VaadinPlugin {
     @OnClassLoadEvent(classNameRegexp = VAADIN_SERVICE)
     public static void transformVaadinService(CtClass ctClass, ClassPool classPool)
             throws NotFoundException, CannotCompileException {
-        boolean hasVaadinHotSwapper = classPool.getOrNull("com.vaadin.flow.hotswap.Hotswapper") != null;
+
+        CtClass vaadinHotSwapper = findHotswapperClass(classPool);
+        boolean hasVaadinHotSwapper = vaadinHotSwapper != null;
 
         StringBuilder src = new StringBuilder();
         if (hasVaadinHotSwapper) {
@@ -164,7 +166,9 @@ public class VaadinPlugin {
                     VaadinPlugin.class, "initializeHotswapper", "hotswapper",
                     "java.lang.Object");
             src.append("try { ")
-                    .append("java.util.Optional maybeHotswapper = com.vaadin.flow.hotswap.Hotswapper.register(this);")
+                    .append("java.util.Optional maybeHotswapper = ")
+                    .append(vaadinHotSwapper.getName())
+                    .append(".register(this);")
                     .append("if (maybeHotswapper.isPresent()) { ")
                     .append("Object hotswapper = maybeHotswapper.get();")
                     .append(initHotswapperPluginCall)
@@ -182,6 +186,16 @@ public class VaadinPlugin {
         LOGGER.debug("{} has been enhanced.{}", VAADIN_SERVICE, hasVaadinHotSwapper ? "Vaadin Hotswapper registered" : "");
 
 
+    }
+
+    private static CtClass findHotswapperClass(ClassPool classPool) {
+        // Since Vaadin 25.1
+        CtClass vaadinHotSwapper = classPool.getOrNull("com.vaadin.base.devserver.hotswap.Hotswapper");
+        if (vaadinHotSwapper == null) {
+            // Until Vaadin 25.0
+            vaadinHotSwapper = classPool.getOrNull("com.vaadin.flow.hotswap.Hotswapper");
+        }
+        return vaadinHotSwapper;
     }
 
     public void registerServlet(Object vaadinServlet) {
