@@ -21,6 +21,8 @@ package org.hotswap.agent.plugin.jvm;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -70,6 +72,11 @@ public class ClassInitPlugin {
             // swallow
         }
 
+        final boolean enumReordered = isEnumReordered(ctClass, originalClass);
+        if (enumReordered) {
+            LOGGER.debug("Enum order changed for {} -> will reinitialize enum constant fields.", className);
+        }
+
         CtConstructor clinit = ctClass.getClassInitializer();
 
         if (clinit != null) {
@@ -102,11 +109,17 @@ public class ClassInitPlugin {
                                         if (reinitializeStatics[0]) {
                                             LOGGER.debug("New field will be initialized {}", f.getFieldName());
                                         } else {
-                                            reinitializeStatics[0] = checkOldEnumValues(ctClass, originalClass);
+                                            if (enumReordered) {
+                                                reinitializeStatics[0] = true;
+                                            } else {
+                                                reinitializeStatics[0] = checkOldEnumValues(ctClass, originalClass);
+                                            }
                                         }
                                     } else {
-                                        LOGGER.debug("Skipping old field {}", f.getFieldName());
-                                        f.replace("{}");
+                                        if (!originalField.isEnumConstant() || !enumReordered) {
+                                            LOGGER.debug("Skipping old field {}", f.getFieldName());
+                                            f.replace("{}");
+                                        }
                                     }
                                 }
                             }
@@ -165,11 +178,47 @@ public class ClassInitPlugin {
         return false;
     }
 
+    private static boolean isEnumReordered(CtClass ctClass, Class<?> originalClass) {
+        if (!ctClass.isEnum() || originalClass == null || !originalClass.isEnum()) {
+            return false;
+        }
+
+        // Old order from runtime (original class)
+        Enum<?>[] oldConsts = (Enum<?>[]) originalClass.getEnumConstants();
+        List<String> oldOrder = new ArrayList<>();
+        for (Enum<?> e : oldConsts) {
+            oldOrder.add(e.name());
+        }
+
+        List<String> newOrder = new ArrayList<>();
+        try {
+            for (CtField f : ctClass.getDeclaredFields()) {
+                int mod = f.getModifiers();
+                boolean looksLikeConst = Modifier.isStatic(mod) && Modifier.isFinal(mod) && f.getType().getName().equals(ctClass.getName());
+                if (looksLikeConst) {
+                    newOrder.add(f.getName());
+                }
+            }
+        } catch (NotFoundException ex) {
+            return true;
+        }
+
+        for (int i = 0; i < newOrder.size() && i < oldOrder.size(); i++) {
+            if (!newOrder.get(i).equals(oldOrder.get(i))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
     private static boolean isSyntheticClass(Class<?> classBeingRedefined) {
         return classBeingRedefined.getSimpleName().contains("$$_javassist")
                 || classBeingRedefined.getSimpleName().contains("$$_jvst")
                 || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
                 || classBeingRedefined.getSimpleName().contains("$$");
     }
+
 
 }
