@@ -40,7 +40,7 @@ plugin.
 
 1. **Download and Install:**
 
-    - **For Java 17/21:** Download the [latest JBR17 or JBR21](https://github.com/JetBrains/JetBrainsRuntime/releases). Since these versions do not include a built-in
+    - **For Java 17/21/25:** Download the [latest JBR17,21,25](https://github.com/JetBrains/JetBrainsRuntime/releases). Since these versions do not include a built-in
       Hotswap Agent, you will need to manually copy `hotswap-agent.jar` to the `lib/hotswap` folder. You can find the latest Hotswap Agent [here](https://github.com/HotswapProjects/HotswapAgent/releases).
       Ensure that the file in the `lib/hotswap` folder is named `hotswap-agent.jar` without any version numbers in the filename.
     
