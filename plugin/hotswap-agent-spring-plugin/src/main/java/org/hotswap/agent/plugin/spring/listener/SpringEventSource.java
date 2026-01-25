@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 
 /**
  * The type Spring event source.
@@ -59,6 +60,15 @@ public class SpringEventSource {
             } catch (Throwable e) {
                 LOGGER.warning("SpringListener onEvent error", e);
             }
+        }
+    }
+
+    public void removeListener(SpringChangedAgent listener) {
+        if (listener == null) {
+            return;
+        }
+        synchronized (listeners) {
+            listeners.remove(listener);
         }
     }
 }
