@@ -156,6 +156,10 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>>, Compa
         if (!(beanFactory instanceof DefaultListableBeanFactory)) {
             return;
         }
+        SpringChangedAgent springChangedAgent = springChangeAgents.get(beanFactory);
+        if (springChangedAgent != null) {
+            SpringEventSource.INSTANCE.removeListener(springChangedAgent);
+        }
         springChangeAgents.remove(beanFactory);
     }
 
