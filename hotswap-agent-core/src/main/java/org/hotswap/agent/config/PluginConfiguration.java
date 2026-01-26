@@ -98,6 +98,8 @@ public class PluginConfiguration {
             if (externalPropertiesFile != null) {
                 configurationURL = resourceNameToURL(externalPropertiesFile);
                 properties.load(configurationURL.openStream());
+                containsPropertyFileDirectly = true;
+                properties.putAll(System.getProperties());
                 return;
             }
 
