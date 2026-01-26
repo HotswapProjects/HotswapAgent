@@ -54,7 +54,13 @@ public class ClassPathScanner implements Scanner {
         Enumeration<URL> en = classLoader == null ? ClassLoader.getSystemResources(path) : classLoader.getResources(path);
         while (en.hasMoreElements()) {
             URL pluginDirURL = en.nextElement();
-            File pluginDir = new File(pluginDirURL.getFile());
+            File pluginDir;
+            try {
+                pluginDir = new File(pluginDirURL.toURI());
+            } catch (URISyntaxException e) {
+                // Fallback for URLs that are not valid URIs
+                pluginDir = new File(pluginDirURL.getFile());
+            }
             if (pluginDir.isDirectory()) {
                 scanDirectory(pluginDir, visitor);
             } else {
