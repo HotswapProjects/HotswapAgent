@@ -146,7 +146,7 @@
         <dependency>
             <groupId>org.jetbrains.runtime</groupId>
             <artifactId>jbr-api</artifactId>
-            <version>SNAPSHOT</version>
+            <version>1.10.0</version>
             <optional>true</optional>
         </dependency>
         <dependency>
