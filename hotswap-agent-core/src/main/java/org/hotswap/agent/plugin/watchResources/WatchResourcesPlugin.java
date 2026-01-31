@@ -93,7 +93,9 @@ public class WatchResourcesPlugin {
                 .initializePlugin(WatchResourcesPlugin.class.getName(), appClassLoader);
 
         // and init it with watchResources path
-        plugin.init(watchResources);
+        if (plugin != null) {
+            plugin.init(watchResources);
+        }
     }
 
     /**
