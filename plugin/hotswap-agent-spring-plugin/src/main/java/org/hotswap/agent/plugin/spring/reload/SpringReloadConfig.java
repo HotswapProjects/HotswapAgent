@@ -23,7 +23,7 @@ package org.hotswap.agent.plugin.spring.reload;
  */
 public class SpringReloadConfig {
 
-    public static int reloadDelayMillisForFile = 200;
+    public static int reloadDelayMillisForFile = 1600;
     public static int reloadDelayMillisForClass = 1600;
     private static double testSleepTimeFactor = 1.0;
 
