@@ -1,63 +1,32 @@
-name: Java CI with Maven (JetBrains Runtime)
+name: Java CI with Maven
 
 on:
   push:
-    branches: [ "for_action", "master" ]
+    branches: [ "for_action","master" ]
   pull_request:
     branches: [ "master" ]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JetBrains Runtime (JBRSDK 25)
-        shell: bash
+      - name: Set up DCEVM 11
         run: |
-          set -euo pipefail
-
-          JBR_URL="https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk-25.0.1-linux-x64-b285.56.tar.gz"
-          echo "Downloading JBR from: $JBR_URL"
-          curl -fL --retry 3 --retry-delay 2 -o jbr.tar.gz "$JBR_URL"
-
-          echo "Disk space before extract:"
-          df -h .
-
-          AVAILABLE_MB="$(df -Pm . | awk 'NR==2 {print $4}')"
-          REQUIRED_MB=800
-          if [ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]; then
-            echo "Error: Not enough disk space. Required ${REQUIRED_MB}MB, available ${AVAILABLE_MB}MB."
-            exit 1
-          fi
-
-          tar -tzf jbr.tar.gz > jbr_contents.txt
-          JBR_DIR="$(head -n 1 jbr_contents.txt | cut -d/ -f1)"
-          echo "JBR directory detected: $JBR_DIR"
-
-          echo "Extracting JBR..."
-          tar -xzf jbr.tar.gz || { echo "Extraction failed, retrying once..."; tar -xzf jbr.tar.gz; }
-
-          echo "JAVA_HOME=$PWD/$JBR_DIR" >> "$GITHUB_ENV"
-          echo "$PWD/$JBR_DIR/bin" >> "$GITHUB_PATH"
-
+          curl -L -o jdk.tar.gz https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases/download/dcevm-11.0.15%2B1/Openjdk11u-dcevm-linux-x64.tar.gz
+          tar -xzf jdk.tar.gz
+          export JAVA_HOME=$PWD/dcevm-11.0.15+1
+          export PATH=$JAVA_HOME/bin:$PATH
           java -version
-
-          rm -f jbr.tar.gz jbr_contents.txt
-
-      - name: Cache Maven repository
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      - name: Maven clean install
         shell: bash
+
+      - name: Maven install
         run: |
-          set -euo pipefail
+          export JAVA_HOME=$PWD/dcevm-11.0.15+1
+          export PATH=$JAVA_HOME/bin:$PATH
           java -version
           mvn -B clean install
+        shell: bash

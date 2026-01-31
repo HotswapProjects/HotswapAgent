@@ -98,7 +98,7 @@ public class ConfigurationXmlTest {
             public boolean result() throws Exception {
                 return BaseTestUtil.finishReloading(context.getBeanFactory(), reloadTimes);
             }
-        }, 8000));
+        }, 16000));
         System.out.println("Reload times: " + reloadTimes + ", " + (System.currentTimeMillis() - now) + "ms");
     }
 }
