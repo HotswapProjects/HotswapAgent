@@ -1,32 +1,50 @@
-name: Java CI with Maven
+name: Java CI with Maven (JetBrains Runtime)
 
 on:
   push:
-    branches: [ "for_action","master" ]
+    branches: [ "for_action", "master" ]
   pull_request:
     branches: [ "master" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up DCEVM 11
-      run: |
-        curl -L -o jdk.tar.gz https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases/download/dcevm-11.0.15%2B1/Openjdk11u-dcevm-linux-x64.tar.gz
-        tar -xzf jdk.tar.gz
-        export JAVA_HOME=$PWD/dcevm-11.0.15+1
-        export PATH=$JAVA_HOME/bin:$PATH
-        java -version
-      shell: bash
+      - name: Set up JetBrains Runtime (JBRSDK 25)
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    - name: Maven install
-      run: |
-        export JAVA_HOME=$PWD/dcevm-11.0.15+1
-        export PATH=$JAVA_HOME/bin:$PATH
-        java -version
-        mvn -B clean install
-      shell: bash
+          JBR_URL="https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk-25.0.1-linux-x64-b285.56.tar.gz"
+          echo "Downloading JBR from: $JBR_URL"
+          curl -L -o jbr.tar.gz "$JBR_URL"
+
+          JBR_DIR="$(tar -tzf jbr.tar.gz | head -1 | cut -d/ -f1)"
+          echo "JBR directory detected: $JBR_DIR"
+
+          tar -xzf jbr.tar.gz
+
+          echo "JAVA_HOME=$PWD/$JBR_DIR" >> "$GITHUB_ENV"
+          echo "$PWD/$JBR_DIR/bin" >> "$GITHUB_PATH"
+
+          # Sanity check
+          java -version
+
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Maven clean install
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          mvn -B clean install
