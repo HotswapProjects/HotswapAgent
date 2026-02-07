@@ -47,7 +47,12 @@ import org.hotswap.agent.util.PluginManagerInvoker;
         description = "Purge WildFlyELResolver class cache on any class redefinition.",
         testedVersions = { "1.0.5.Final" },
         expectedVersions = { "1.0.5.Final" })
-@Versions(maven = { @Maven(value = "[1.0,)", artifactId = "jboss-el-api_3.0_spec", groupId = "org.jboss.spec.javax.el") })
+@Versions(
+    maven = {
+        @Maven(value = "[1.0,)", artifactId = "jboss-el-api_3.0_spec", groupId = "org.jboss.spec.javax.el"),
+        @Maven(value = "[1.0,)", artifactId = "jboss-el-api_5.0_spec", groupId = "org.jboss.spec.jakarta.el"),
+    }
+)
 public class WildFlyELResolverPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(WildFlyELResolverPlugin.class);
