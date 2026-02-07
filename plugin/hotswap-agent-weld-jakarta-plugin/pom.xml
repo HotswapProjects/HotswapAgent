@@ -41,8 +41,8 @@
             </activation>
 
             <properties>
-                <org.jboss.weld.version>5.1.2.Final</org.jboss.weld.version>
-                <org.jboss.weld-spi.version>5.0.SP3</org.jboss.weld-spi.version>
+                <org.jboss.weld.version>6.0.4.Final</org.jboss.weld.version>
+                <org.jboss.weld-spi.version>6.0.Final</org.jboss.weld-spi.version>
             </properties>
 
             <dependencies>

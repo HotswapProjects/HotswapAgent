@@ -21,6 +21,10 @@ public class ReloadRepositories {
     }
 
     public static void reloadAllRepositories() {
+        if (repositoryConfigurationDelegate == null || registry == null || repositoryConfigurationExtension == null) {
+            LOGGER.debug("Skipping repository reload because references are not initialized");
+            return;
+        }
         LOGGER.trace("Rescanning and reloading all JPA repositories");
         ReflectionHelper.invoke(repositoryConfigurationDelegate, repositoryConfigurationDelegate.getClass(),
                 "registerRepositoriesIn",

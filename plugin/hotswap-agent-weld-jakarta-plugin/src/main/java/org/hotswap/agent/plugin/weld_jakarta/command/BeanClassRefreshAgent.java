@@ -194,10 +194,10 @@ public class BeanClassRefreshAgent {
             Class<?> beanClass = bdaAgent.getClass().getClassLoader().loadClass(beanClassName);
 
             BeanManagerImpl beanManager;
-            if (CDI.current().getBeanManager() instanceof BeanManagerImpl) {
-                beanManager = ((BeanManagerImpl) CDI.current().getBeanManager()).unwrap();
-            } else {
-                beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
+                if (CDI.current().getBeanManager() instanceof BeanManagerImpl) {
+                    beanManager = ((BeanManagerImpl) CDI.current().getBeanManager()).unwrap();
+                } else {
+                    beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
             }
 
             ClassLoader beanManagerClassLoader = beanManager.getClass().getClassLoader();
