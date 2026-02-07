@@ -49,45 +49,45 @@ import org.hotswap.agent.util.PluginManagerInvoker;
  * @author Vladimir Dvorak
  */
 @Plugin(name = "ELResolver",
-        group = "groupELResolver",
-        fallback = true,
-        description = "Purge BeanELResolver class cache on any class redefinition.",
-        testedVersions = {"2.2"},
-        expectedVersions = {"2.2"})
+    group = "groupELResolver",
+    fallback = true,
+    description = "Purge BeanELResolver class cache on any class redefinition.",
+    testedVersions = {"2.2"},
+    expectedVersions = {"2.2"})
 @Versions(
-        maven = {
-            //Jboss el 2
-            @Maven(value = "[1.0,)", artifactId = "jboss-el-api_2.2_spec", groupId = "org.jboss.spec.javax.el"),
-            //Juel
-            @Maven(value = "[2.0,)", artifactId = "juel", groupId = "de.odysseus.juel"),
-            //Jboss el 3.0
-            @Maven(value="[3.0,)", artifactId = "javax.el-api", groupId = "javax.el")
-        },
-        manifest = {
-            // Seam jboss
-            @Manifest(value="[1.0,)", versionName="JBoss-EL-Version", names ={@Name(key="JBoss-EL-Version", value=".*")}),
-            // Tomcat bundled EL (6-9)
-            @Manifest(value="[2.0,5.0)",versionName = Name.SpecificationVersion, names={
-                    @Name(key=Name.ImplementationTitle,value="javax.el"),
-                    @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
-            }),
-            // Tomcat bundled EL (10)
-            @Manifest(value="[5.0,)",versionName = Name.SpecificationVersion, names={
-                @Name(key=Name.ImplementationTitle,value="jakarta.el"),
-                @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
-            }),
-            //Jetty 7,8
-            @Manifest(value="[2.0,)", versionName={Name.BundleVersion}, names={@Name(key=Name.BundleSymbolicName,value="javax.el")}),
-            //Jetty 9
-            @Manifest(value="[8.0,)", versionName={Name.BundleVersion}, names={
-                    @Name(key=Name.BundleSymbolicName,value="org.mortbay.jasper.apache-el"),
-                    @Name(key="Bundle-Vendor",value="Webtide")}),
-            // GlassFish
-            @Manifest(value="[3.0,)", versionName={Name.BundleVersion}, names={
-                    @Name(key=Name.BundleSymbolicName,value="com.sun.el.javax.el"),
-                    @Name(key="Bundle-Vendor",value="GlassFish Community")})
-        }
-    )
+    maven = {
+        //Jboss el 2
+        @Maven(value = "[1.0,)", artifactId = "jboss-el-api_2.2_spec", groupId = "org.jboss.spec.javax.el"),
+        //Juel
+        @Maven(value = "[2.0,)", artifactId = "juel", groupId = "de.odysseus.juel"),
+        //Jboss el 3.0
+        @Maven(value="[3.0,)", artifactId = "javax.el-api", groupId = "javax.el")
+    },
+    manifest = {
+        // Seam jboss
+        @Manifest(value="[1.0,)", versionName="JBoss-EL-Version", names ={@Name(key="JBoss-EL-Version", value=".*")}),
+        // Tomcat bundled EL (6-9)
+        @Manifest(value="[2.0,5.0)",versionName = Name.SpecificationVersion, names={
+            @Name(key=Name.ImplementationTitle,value="javax.el"),
+            @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
+        }),
+        // Tomcat bundled EL (10)
+        @Manifest(value="[5.0,)",versionName = Name.SpecificationVersion, names={
+            @Name(key=Name.ImplementationTitle,value="jakarta.el"),
+            @Name(key=Name.ImplementationVendor, value="Apache.*Software.*Foundation")
+        }),
+        //Jetty 7,8
+        @Manifest(value="[2.0,)", versionName={Name.BundleVersion}, names={@Name(key=Name.BundleSymbolicName,value="javax.el")}),
+        //Jetty 9
+        @Manifest(value="[8.0,)", versionName={Name.BundleVersion}, names={
+            @Name(key=Name.BundleSymbolicName,value="org.mortbay.jasper.apache-el"),
+            @Name(key="Bundle-Vendor",value="Webtide")}),
+        // GlassFish
+        @Manifest(value="[3.0,)", versionName={Name.BundleVersion}, names={
+            @Name(key=Name.BundleSymbolicName,value="com.sun.el.javax.el"),
+            @Name(key="Bundle-Vendor",value="GlassFish Community")})
+    }
+)
 public class ELResolverPlugin {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(ELResolverPlugin.class);
@@ -121,7 +121,7 @@ public class ELResolverPlugin {
 
         String initPlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class);
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(ELResolverPlugin.class, "registerBeanELResolver",
-                "this", "java.lang.Object");
+            "this", "java.lang.Object");
 
         String rootPackage = ctClass.getName().startsWith("javax") ? "javax" : "jakarta";
 
@@ -140,9 +140,6 @@ public class ELResolverPlugin {
         } else if (checkJBoss_3_0_EL(rootPackage, ctClass)) {
             found = true;
             LOGGER.debug("JBossEL 3.0 - " + rootPackage + ".el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
-        } else if (checkGenericEL(ctClass)) {
-            found = true;
-            LOGGER.debug("Generic EL - " + rootPackage + ".el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
 
         if (!found) {
@@ -158,14 +155,14 @@ public class ELResolverPlugin {
 
         String buildInitializePlugin = PluginManagerInvoker.buildInitializePlugin(ELResolverPlugin.class, "base.getClass().getClassLoader()");
         String registerJBossReflectionUtil = PluginManagerInvoker.buildCallPluginMethod("base.getClass().getClassLoader()",
-                ELResolverPlugin.class, "registerJBossReflectionUtil");
+            ELResolverPlugin.class, "registerJBossReflectionUtil");
 
         CtMethod mFindMethod = ctClass.getDeclaredMethod("findMethod");
         mFindMethod.insertAfter(
-                "if(!$$ha$haInitialized) {" +
-                    "$$ha$haInitialized=true;" +
-                    buildInitializePlugin +
-                    registerJBossReflectionUtil +
+            "if(!$$ha$haInitialized) {" +
+                "$$ha$haInitialized=true;" +
+                buildInitializePlugin +
+                registerJBossReflectionUtil +
                 "}"
         );
         LOGGER.debug("org.jboss.el.util.ReflectionUtil enhanced with resource bundles registration.");
@@ -177,8 +174,8 @@ public class ELResolverPlugin {
             // check if we have purgeBeanClasses method
             CtMethod purgeMeth = ctClass.getDeclaredMethod("purgeBeanClasses");
             ctClass.addMethod(CtNewMethod.make(
-                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                        "purgeBeanClasses(classLoader);" +
+                "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                    "purgeBeanClasses(classLoader);" +
                     "}", ctClass));
             return true;
         } catch (NotFoundException | CannotCompileException e) {
@@ -197,15 +194,15 @@ public class ELResolverPlugin {
             ctClass.addField(new CtField(CtClass.booleanType, "$$ha$purgeRequested", ctClass), CtField.Initializer.constant(false));
 
             ctClass.addMethod(CtNewMethod.make(
-                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                        "$$ha$purgeRequested=true;" +
+                "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                    "$$ha$purgeRequested=true;" +
                     "}", ctClass));
             CtMethod mGetBeanProperty = ctClass.getDeclaredMethod("property");
             mGetBeanProperty.insertBefore(
                 "if($$ha$purgeRequested) {" +
                     "$$ha$purgeRequested=false;" +
                     "this.cache = new " + rootPackage + " .el.BeanELResolver.ConcurrentCache(CACHE_SIZE); " +
-                "}"
+                    "}"
             );
             CtField ctCacheField = ctClass.getDeclaredField("cache");
             int modifiers = ctCacheField.getModifiers();
@@ -232,50 +229,6 @@ public class ELResolverPlugin {
         return false;
     }
 
-    private static boolean checkGenericEL(CtClass ctClass) {
-        if (!(hasField(ctClass, "cache") || hasField(ctClass, "propertyCache")
-                || hasField(ctClass, "properties") || hasField(ctClass, "typeCache"))) {
-            return false;
-        }
-        try {
-            ctClass.addMethod(CtNewMethod.make(
-                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                        "try {" +
-                            "java.lang.Class cls = this.getClass();" +
-                            "String[] fields = new String[]{\"cache\",\"propertyCache\",\"properties\",\"typeCache\"};" +
-                            "for (int i = 0; i < fields.length; i++) {" +
-                                "try {" +
-                                    "java.lang.reflect.Field f = cls.getDeclaredField(fields[i]);" +
-                                    "f.setAccessible(true);" +
-                                    "Object v = java.lang.reflect.Modifier.isStatic(f.getModifiers()) ? f.get(null) : f.get(this);" +
-                                    "if (v instanceof java.util.Map) {" +
-                                        "((java.util.Map)v).clear();" +
-                                    "} else if (v != null) {" +
-                                        "try {" +
-                                            "java.lang.reflect.Method m = v.getClass().getMethod(\"clear\");" +
-                                            "m.invoke(v);" +
-                                        "} catch (Exception e) { }" +
-                                    "}" +
-                                "} catch (NoSuchFieldException e) { }" +
-                            "}" +
-                        "} catch (Exception e) { }" +
-                    "}", ctClass));
-            return true;
-        } catch (CannotCompileException e) {
-            LOGGER.error("checkGenericEL() exception {}", e.getMessage());
-        }
-        return false;
-    }
-
-    private static boolean hasField(CtClass ctClass, String name) {
-        try {
-            ctClass.getDeclaredField(name);
-            return true;
-        } catch (NotFoundException e) {
-            return false;
-        }
-    }
-
     /*
      * JBossEL has weak reference cache. Values are stored in ThreadGroupContext cache, that must be flushed from appropriate thread.
      * Therefore we must create request for cleanup cache in PURGE_CLASS_CACHE_METHOD and own cleanup is executed indirectly when
@@ -286,8 +239,8 @@ public class ELResolverPlugin {
             ctClass.addField(new CtField(CtClass.booleanType, "$$ha$purgeRequested", ctClass), CtField.Initializer.constant(false));
 
             ctClass.addMethod(CtNewMethod.make(
-                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
-                        "$$ha$purgeRequested=true;" +
+                "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                    "$$ha$purgeRequested=true;" +
                     "}", ctClass));
             try {
                 CtMethod mGetBeanProperty = ctClass.getDeclaredMethod("getBeanProperty");
@@ -296,7 +249,7 @@ public class ELResolverPlugin {
                         "$$ha$purgeRequested=false;" +
                         "java.lang.reflect.Method meth = " + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap.class.getDeclaredMethod(\"$$ha$createNewInstance\", null);" +
                         "properties = (" + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap) meth.invoke(properties, null);" +
-                    "}");
+                        "}");
             } catch (NotFoundException e) {
                 LOGGER.debug("FIXME : checkJBoss_3_0_EL() 'getBeanProperty(...)' not found in javax.el.BeanELResolver.");
             }
@@ -313,7 +266,7 @@ public class ELResolverPlugin {
             ctClass.addMethod(CtNewMethod.make(
                 "public " + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap $$ha$createNewInstance() {" +
                     "return new " + rootPackage + ".el.BeanELResolver.SoftConcurrentHashMap();" +
-                "}", ctClass));
+                    "}", ctClass));
         } catch (CannotCompileException e) {
             LOGGER.error("patchJbossElSoftConcurrentHashMap() exception {}", e.getMessage());
         }
