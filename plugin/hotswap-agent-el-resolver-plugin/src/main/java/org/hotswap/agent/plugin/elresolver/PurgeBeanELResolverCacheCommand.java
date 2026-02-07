@@ -19,7 +19,9 @@
 package org.hotswap.agent.plugin.elresolver;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
@@ -31,32 +33,35 @@ import org.hotswap.agent.logging.AgentLogger;
 public class PurgeBeanELResolverCacheCommand extends MergeableCommand {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(PurgeBeanELResolverCacheCommand.class);
+    private static final Set<Class<?>> MISSING_RESET_CACHE_LOGGED =
+            Collections.newSetFromMap(new ConcurrentHashMap<Class<?>, Boolean>());
 
     private ClassLoader appClassLoader;
 
-    private final String rootPackage;
     private Set<Object> registeredBeanELResolvers;
 
     public PurgeBeanELResolverCacheCommand(ClassLoader appClassLoader, String rootPackage, Set<Object> registeredBeanELResolvers)
     {
         this.appClassLoader = appClassLoader;
-        this.rootPackage = rootPackage;
         this.registeredBeanELResolvers = registeredBeanELResolvers;
     }
 
     @Override
     public void executeCommand() {
         LOGGER.debug("Purging BeanELResolver cache.");
-        try {
-            Class<?> beanElResolverClass = Class.forName(rootPackage + ".el.BeanELResolver", true, appClassLoader);
-            Method beanElResolverMethod = beanElResolverClass.getDeclaredMethod(ELResolverPlugin.PURGE_CLASS_CACHE_METHOD_NAME, ClassLoader.class);
-            for (Object registeredBeanELResolver : registeredBeanELResolvers) {
+        for (Object registeredBeanELResolver : registeredBeanELResolvers) {
+            Class<?> resolverClass = registeredBeanELResolver.getClass();
+            try {
+                Method beanElResolverMethod = resolverClass.getMethod(ELResolverPlugin.PURGE_CLASS_CACHE_METHOD_NAME, ClassLoader.class);
                 beanElResolverMethod.invoke(registeredBeanELResolver, appClassLoader);
+            } catch (NoSuchMethodException e) {
+                if (MISSING_RESET_CACHE_LOGGED.add(resolverClass)) {
+                    LOGGER.warning("BeanELResolver '{}' does not provide {}. Purge skipped.",
+                            resolverClass.getName(), ELResolverPlugin.PURGE_CLASS_CACHE_METHOD_NAME);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error purging BeanELResolver cache.", e);
             }
-        } catch (ClassNotFoundException e) {
-            LOGGER.debug("BeanELResolver class not found in class loader {}.", appClassLoader);
-        } catch (Exception e) {
-            LOGGER.error("Error purging BeanELResolver cache.", e);
         }
     }
 

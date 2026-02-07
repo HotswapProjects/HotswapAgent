@@ -140,6 +140,9 @@ public class ELResolverPlugin {
         } else if (checkJBoss_3_0_EL(rootPackage, ctClass)) {
             found = true;
             LOGGER.debug("JBossEL 3.0 - " + rootPackage + ".el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
+        } else if (checkGenericEL(ctClass)) {
+            found = true;
+            LOGGER.debug("Generic EL - " + rootPackage + ".el.BeanELResolver - method added " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader). ");
         }
 
         if (!found) {
@@ -227,6 +230,50 @@ public class ELResolverPlugin {
             // do nothing
         }
         return false;
+    }
+
+    private static boolean checkGenericEL(CtClass ctClass) {
+        if (!(hasField(ctClass, "cache") || hasField(ctClass, "propertyCache")
+                || hasField(ctClass, "properties") || hasField(ctClass, "typeCache"))) {
+            return false;
+        }
+        try {
+            ctClass.addMethod(CtNewMethod.make(
+                    "public void " + PURGE_CLASS_CACHE_METHOD_NAME + "(java.lang.ClassLoader classLoader) {" +
+                        "try {" +
+                            "java.lang.Class cls = this.getClass();" +
+                            "String[] fields = new String[]{\"cache\",\"propertyCache\",\"properties\",\"typeCache\"};" +
+                            "for (int i = 0; i < fields.length; i++) {" +
+                                "try {" +
+                                    "java.lang.reflect.Field f = cls.getDeclaredField(fields[i]);" +
+                                    "f.setAccessible(true);" +
+                                    "Object v = java.lang.reflect.Modifier.isStatic(f.getModifiers()) ? f.get(null) : f.get(this);" +
+                                    "if (v instanceof java.util.Map) {" +
+                                        "((java.util.Map)v).clear();" +
+                                    "} else if (v != null) {" +
+                                        "try {" +
+                                            "java.lang.reflect.Method m = v.getClass().getMethod(\"clear\");" +
+                                            "m.invoke(v);" +
+                                        "} catch (Exception e) { }" +
+                                    "}" +
+                                "} catch (NoSuchFieldException e) { }" +
+                            "}" +
+                        "} catch (Exception e) { }" +
+                    "}", ctClass));
+            return true;
+        } catch (CannotCompileException e) {
+            LOGGER.error("checkGenericEL() exception {}", e.getMessage());
+        }
+        return false;
+    }
+
+    private static boolean hasField(CtClass ctClass, String name) {
+        try {
+            ctClass.getDeclaredField(name);
+            return true;
+        } catch (NotFoundException e) {
+            return false;
+        }
     }
 
     /*
