@@ -187,27 +187,26 @@ public class BeanClassRefreshAgent {
         ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
         try {
-            Thread.currentThread().setContextClassLoader(classLoader);
-
-            // BDA classLoader can be different then appClassLoader for Wildfly/EAR deployment
+            // BDA classLoader can be different then appClassLoader for Wildfly/EAR deployment,
             // therefore we use class loader from BdaAgent class which is classloader for BDA
             Class<?> beanClass = bdaAgent.getClass().getClassLoader().loadClass(beanClassName);
 
-            BeanManagerImpl beanManager;
-                if (CDI.current().getBeanManager() instanceof BeanManagerImpl) {
-                    beanManager = ((BeanManagerImpl) CDI.current().getBeanManager()).unwrap();
-                } else {
-                    beanManager = ((BeanManagerProxy) CDI.current().getBeanManager()).unwrap();
+            BeanManagerImpl beanManager = resolveBeanManager(bdaAgent, oldContextClassLoader);
+            if (beanManager == null) {
+                LOGGER.error("Bean reloading failed. Unable to obtain BeanManager for archive '{}'", archivePath);
+                return;
             }
 
             ClassLoader beanManagerClassLoader = beanManager.getClass().getClassLoader();
+            Thread.currentThread().setContextClassLoader(beanManagerClassLoader);
             Class<?> bdaAgentClazz = Class.forName(BeanReloadExecutor.class.getName(), true, beanManagerClassLoader);
+            Class<?> beanManagerImplClass = beanManagerClassLoader.loadClass(BeanManagerImpl.class.getName());
 
             // Execute reload in BeanManagerClassLoader since reloading creates weld classes used for bean redefinition
             // (like EnhancedAnnotatedType)
             ReflectionHelper.invoke(null, bdaAgentClazz, "reloadBean",
-                    new Class[] {String.class, Class.class, Map.class, Map.class, String.class },
-                    bdaAgent.getBdaId(), beanClass, oldFullSignatures, oldSignatures, strReloadStrategy
+                    new Class[] {String.class, beanManagerImplClass, Class.class, Map.class, Map.class, String.class },
+                    bdaAgent.getBdaId(), beanManager, beanClass, oldFullSignatures, oldSignatures, strReloadStrategy
             );
 
         } catch (Exception e) {
@@ -216,6 +215,49 @@ public class BeanClassRefreshAgent {
             reloadFlag = false;
             Thread.currentThread().setContextClassLoader(oldContextClassLoader);
         }
+    }
+
+    private static BeanManagerImpl resolveBeanManager(BeanClassRefreshAgent bdaAgent, ClassLoader previousCl) {
+        ClassLoader bdaClassLoader = bdaAgent.getClass().getClassLoader();
+        Thread.currentThread().setContextClassLoader(bdaClassLoader);
+
+        try {
+            Object bm = CDI.current().getBeanManager();
+            if (bm instanceof BeanManagerImpl) {
+                return ((BeanManagerImpl) bm).unwrap();
+            }
+            if (bm instanceof BeanManagerProxy) {
+                return ((BeanManagerProxy) bm).unwrap();
+            }
+        } catch (Exception e) {
+            LOGGER.debug("CDI.current() failed with TCCL '{}', trying Weld Container fallback.", e, bdaClassLoader);
+        } finally {
+            Thread.currentThread().setContextClassLoader(previousCl);
+        }
+
+        // Fallback to Weld Container to obtain BeanManagerImpl by BDA id
+        Thread.currentThread().setContextClassLoader(bdaClassLoader);
+        try {
+            Class<?> containerClass = bdaClassLoader.loadClass("org.jboss.weld.Container");
+            Object container = ReflectionHelper.invoke(null, containerClass, "instance", new Class[] {}, new Object[] {});
+            if (container != null) {
+                Object bm = ReflectionHelper.invoke(container, containerClass, "getBeanManager",
+                        new Class[] {String.class}, bdaAgent.getBdaId());
+                if (bm instanceof BeanManagerImpl) {
+                    return (BeanManagerImpl) bm;
+                }
+                bm = ReflectionHelper.invoke(container, containerClass, "deploymentManager", new Class[] {}, new Object[] {});
+                if (bm instanceof BeanManagerImpl) {
+                    return (BeanManagerImpl) bm;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Weld Container fallback failed.", e);
+        } finally {
+            Thread.currentThread().setContextClassLoader(previousCl);
+        }
+
+        return null;
     }
 
     /**
