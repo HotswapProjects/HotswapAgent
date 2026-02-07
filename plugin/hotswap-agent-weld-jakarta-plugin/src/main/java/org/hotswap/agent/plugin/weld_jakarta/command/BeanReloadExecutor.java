@@ -68,34 +68,6 @@ public class BeanReloadExecutor {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(BeanReloadExecutor.class);
 
-    /**
-     * Reload bean in existing bean manager.
-     *
-     * @param bdaId the Bean Deployment Archive ID
-     * @param beanClass the bean class
-     * @param oldFullSignatures the old full signatures
-     * @param oldSignatures the old signatures
-     * @param strReloadStrategy the str reload strategy
-     */
-    public static void reloadBean(String bdaId, Class<?> beanClass, Map<String, String> oldFullSignatures,
-            Map<String, String> oldSignatures, String strReloadStrategy) {
-
-        BeanReloadStrategy reloadStrategy;
-
-        // check if it is Object descendant (not interface)
-        if (!Object.class.isAssignableFrom(beanClass)) {
-            return;
-        }
-
-        try {
-            reloadStrategy = BeanReloadStrategy.valueOf(strReloadStrategy);
-        } catch (Exception e) {
-            reloadStrategy = BeanReloadStrategy.NEVER;
-        }
-
-        doReloadBean(bdaId, beanClass, oldFullSignatures, oldSignatures, reloadStrategy);
-    }
-
     public static void reloadBean(String bdaId, BeanManagerImpl beanManager, Class<?> beanClass, Map<String, String> oldFullSignatures,
             Map<String, String> oldSignatures, String strReloadStrategy) {
 
@@ -112,54 +84,6 @@ public class BeanReloadExecutor {
         }
 
         doReloadBean(bdaId, beanManager, beanClass, oldFullSignatures, oldSignatures, reloadStrategy);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
-    private static void doReloadBean(String bdaId, Class<?> beanClass, Map<String, String> oldFullSignatures,
-            Map<String, String> oldSignatures, BeanReloadStrategy reloadStrategy) {
-
-        BeanManagerImpl beanManager = null;
-        BeanManager bm = CDI.current().getBeanManager();
-
-        if (bm instanceof WeldManager) {
-            bm = ((WeldManager) bm).unwrap();
-        }
-
-        if (bm instanceof BeanManagerImpl) {
-            beanManager = (BeanManagerImpl) bm;
-        }
-
-        // TODO: check if archive is excluded
-
-        Set<Bean<?>> beans = beanManager.getBeans(beanClass, new AnnotationLiteral<Any>() {});
-
-        if (beans != null && !beans.isEmpty()) {
-            for (Bean<?> bean : beans) {
-                if (bean.getBeanClass().isInterface()) {
-                    continue;
-                }
-                if (!fullSignatureChanged(bean, oldFullSignatures)) {
-                    LOGGER.debug("Skipping bean redefinition. Bean '{}' signature was not changed.", bean.getBeanClass().getName());
-                    continue;
-                }
-                if (bean instanceof AbstractClassBean) {
-                    EnhancedAnnotatedType eat = createAnnotatedTypeForExistingBeanClass(bdaId, bean);
-                    if (!eat.isAbstract() || !eat.getJavaClass().isInterface()) { // injectionTargetCannotBeCreatedForInterface
-                        ((AbstractClassBean)bean).setProducer(beanManager.getLocalInjectionTargetFactory(eat).createInjectionTarget(eat, bean, false));
-                        if (isReinjectingContext(bean) || HaCdiCommons.isInExtraScope(bean)) {
-                            doReloadAbstractClassBean(beanManager, (AbstractClassBean) bean, oldSignatures, reloadStrategy);
-                            LOGGER.debug("Bean reloaded '{}'", bean.getBeanClass().getName());
-                            continue;
-                        }
-                    }
-                    LOGGER.info("Bean '{}' redefined", bean.getBeanClass().getName());
-                } else {
-                    LOGGER.warning("Bean '{}' is not AbstractClassBean, reloading/reinjection not supported.", bean.getBeanClass().getName());
-                }
-            }
-        } else {
-            doDefineNewManagedBean(beanManager, bdaId, beanClass);
-        }
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
