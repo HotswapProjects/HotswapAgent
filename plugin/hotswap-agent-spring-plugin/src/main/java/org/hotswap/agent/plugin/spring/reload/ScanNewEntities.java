@@ -15,6 +15,14 @@ public class ScanNewEntities {
     }
 
     public static void scanNewEntities(Object localContainerEntityManagerFactoryBean) {
+        if (persistenceManagedTypesScanner == null || packagesToScan == null) {
+            LOGGER.debug("Skipping entity rescan because scanner references are not initialized");
+            return;
+        }
+        if (localContainerEntityManagerFactoryBean == null) {
+            LOGGER.debug("Skipping entity rescan because LocalContainerEntityManagerFactoryBean is null");
+            return;
+        }
         LOGGER.trace("Rescanning for entities");
         Object persistenceManagedTypes = ReflectionHelper.invoke(persistenceManagedTypesScanner,
                 persistenceManagedTypesScanner.getClass(), "scan",

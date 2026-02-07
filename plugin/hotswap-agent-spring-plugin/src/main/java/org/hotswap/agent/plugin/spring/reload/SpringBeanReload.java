@@ -526,10 +526,21 @@ public class SpringBeanReload {
         if (context.newEntities.isEmpty()) {
             return;
         }
+        if (localContainerEntityManagerFactoryBeanClass == null) {
+            LOGGER.debug("Skipping entity rescan because LocalContainerEntityManagerFactoryBean is not available");
+            context.newEntities.clear();
+            return;
+        }
         context.newEntities.clear();
 
-        Object localContainerEntityManagerFactoryBean = beanFactory
-                .getBean(localContainerEntityManagerFactoryBeanClass);
+        Object localContainerEntityManagerFactoryBean = null;
+        try {
+            localContainerEntityManagerFactoryBean = beanFactory
+                    .getBean(localContainerEntityManagerFactoryBeanClass);
+        } catch (Exception e) {
+            LOGGER.debug("Skipping entity rescan because LocalContainerEntityManagerFactoryBean bean is not available: {}",
+                    e.getMessage());
+        }
         ScanNewEntities.scanNewEntities(localContainerEntityManagerFactoryBean);
     }
 
