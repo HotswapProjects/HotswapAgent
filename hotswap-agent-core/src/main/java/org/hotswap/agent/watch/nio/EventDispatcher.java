@@ -21,9 +21,12 @@ package org.hotswap.agent.watch.nio;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -40,6 +43,7 @@ import org.hotswap.agent.watch.WatchFileEvent;
  *
  */
 public class EventDispatcher implements Runnable {
+    private static final int MAX_BATCH_SIZE = 1024;
 
     /** The logger. */
     protected AgentLogger LOGGER = AgentLogger.getLogger(this.getClass());
@@ -70,11 +74,35 @@ public class EventDispatcher implements Runnable {
         }
     }
 
+    static class EventKey {
+        final WatchEvent.Kind<?> kind;
+        final Path path;
+
+        EventKey(WatchEvent.Kind<?> kind, Path path) {
+            this.kind = kind;
+            this.path = path;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof EventKey)) return false;
+            EventKey eventKey = (EventKey) o;
+            return kind == eventKey.kind && Objects.equals(path, eventKey.path);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(kind, path);
+        }
+    }
+
     /** The map of listeners.  This is managed by the watcher service*/
     private final Map<Path, List<WatchEventListener>> listeners;
 
     /** The working queue. The event queue is drained and all pending events are added in this list */
     private final ArrayList<Event> working = new ArrayList<>();
+    private final LinkedHashSet<EventKey> dedupSet = new LinkedHashSet<>();
 
     /** The runnable. */
     private Thread runnable = null;
@@ -91,7 +119,7 @@ public class EventDispatcher implements Runnable {
     }
 
     /** The event queue. */
-    private final ArrayBlockingQueue<Event> eventQueue = new ArrayBlockingQueue<>(500);
+    private final BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<>();
 
     /*
      * (non-Javadoc)
@@ -100,42 +128,23 @@ public class EventDispatcher implements Runnable {
      */
     @Override
     public void run() {
-
-        /*
-         * The algorithm is naive:
-         * a) work with not processed (in case);
-         * b) drain the queue
-         * c) work on newly collected
-         * d) empty working queue
-         */
-        while (true) {
-            // finish any pending ones
-            for (Event e : working) {
-                callListeners(e.event, e.path);
-                if (Thread.interrupted()) {
-                    return;
-                }
-                Thread.yield();
-            }
-            // drain the event queue
-            eventQueue.drainTo(working);
-
-            // work on new events.
-            for (Event e : working) {
-                callListeners(e.event, e.path);
-                if (Thread.interrupted()) {
-                    return;
-                }
-                Thread.yield();
-            }
-
-            // crear the working queue.
-            working.clear();
-
+        while (!Thread.currentThread().isInterrupted()) {
             try {
-                Thread.sleep(50);
-            } catch (InterruptedException e1) {
-                // TODO Auto-generated catch block
+                // Block until first event is available and then drain burst of pending events.
+                Event first = eventQueue.take();
+                working.add(first);
+                eventQueue.drainTo(working, MAX_BATCH_SIZE - 1);
+
+                for (Event e : working) {
+                    EventKey key = new EventKey(e.event.kind(), e.path);
+                    if (dedupSet.add(key)) {
+                        callListeners(e.event, e.path);
+                    }
+                }
+                dedupSet.clear();
+                working.clear();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 return;
             }
         }
