@@ -150,6 +150,12 @@ The basic configuration is set to reload classes and resources from the classpat
 
 Detail documentation of available properties and default values can be found in the [agent properties file](https://github.com/HotswapProjects/HotswapAgent/blob/master/hotswap-agent-core/src/main/resources/hotswap-agent.properties)
 
+Useful logging options in `hotswap-agent.properties`:
+
+* `LOGFILE=agent.log` - write Hotswap Agent logs to a file
+* `LOGFILE.append=true` - append to logfile instead of truncating
+* `LOG_TO_CONSOLE=false` - disable Hotswap Agent log output to standard console
+
 ### Hotswap agent command-line options
 Full syntax of command line options is:
 
