@@ -33,6 +33,7 @@ public class AgentLoggerHandler {
 
     // stream to receive the log
     PrintStream outputStream;
+    private boolean logToConsole = true;
 
     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 
@@ -45,10 +46,20 @@ public class AgentLoggerHandler {
         this.outputStream = outputStream;
     }
 
+    public void setLogToConsole(boolean logToConsole) {
+        this.logToConsole = logToConsole;
+    }
+
+    public boolean isLogToConsole() {
+        return logToConsole;
+    }
+
     // print a message to System.out and optionally to custom stream
     protected void printMessage(String message) {
         String log = "HOTSWAP AGENT: " + sdf.format(new Date()) +  " " + message;
-        System.out.println(log);
+        if (logToConsole) {
+            System.out.println(log);
+        }
         if (outputStream != null)
             outputStream.println(log);
     }

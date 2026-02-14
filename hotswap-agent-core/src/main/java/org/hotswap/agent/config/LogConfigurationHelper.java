@@ -39,6 +39,7 @@ public class LogConfigurationHelper {
     public static final String DATETIME_FORMAT = "LOGGER_DATETIME_FORMAT";
     private static final String LOGFILE = "LOGFILE";
     private static final String LOGFILE_APPEND = "LOGFILE.append";
+    private static final String LOG_TO_CONSOLE = "LOG_TO_CONSOLE";
 
     /**
      * Search properties for prefix LOGGER and set level for package in format:
@@ -75,6 +76,8 @@ public class LogConfigurationHelper {
                     LOGGER.error("Invalid configuration property {} value '{}'. Unable to create/open the file.",
                             e, LOGFILE, logfile);
                 }
+            } else if (property.equals(LOG_TO_CONSOLE)) {
+                AgentLogger.getHandler().setLogToConsole(parseBoolean(properties.getProperty(LOG_TO_CONSOLE, "true")));
             }
         }
     }
