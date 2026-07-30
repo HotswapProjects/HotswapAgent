@@ -94,6 +94,10 @@ public class AnonymousClassPatchPlugin {
     public static CtClass patchAnonymousClass(ClassLoader classLoader, ClassPool classPool, String className, Class original)
             throws IOException, NotFoundException, CannotCompileException {
 
+        // skip synthetic proxy/lambda classes (e.g. Foo$$SpringCGLIB$$0), not source anonymous classes
+        if (isSyntheticClass(className))
+            return null;
+
         String javaClass = className.replaceAll("/", ".");
         String mainClass = javaClass.replaceAll("\\$\\d+$", "");
 
@@ -131,6 +135,11 @@ public class AnonymousClassPatchPlugin {
             // replaced with a new version. Automatic update of old instances containing references to obsolete
             // class is not supported yet.");
         }
+    }
+
+    // CGLIB/ByteBuddy proxies and lambdas carry a double $$; source anonymous/local classes never do.
+    static boolean isSyntheticClass(String className) {
+        return className != null && className.contains("$$");
     }
 
     private static boolean isHotswapAgentSyntheticClass(String compatibleName) {
@@ -176,6 +185,9 @@ public class AnonymousClassPatchPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public static byte[] patchMainClass(String className, ClassPool classPool, CtClass ctClass,
                                         ClassLoader classLoader, ProtectionDomain protectionDomain) throws IOException, CannotCompileException, NotFoundException {
+        if (isSyntheticClass(className))
+            return null;
+
         String javaClassName = className.replaceAll("/", ".");
 
         // check if has anonymous classes
