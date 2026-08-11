@@ -19,6 +19,7 @@ public class PostConstructorBean2 {
     public AtomicBoolean initialized = new AtomicBoolean(false);
 
     @PostConstruct
+    @jakarta.annotation.PostConstruct
     public void init() {
         if (globalInitialized.get()) {
             throw new IllegalStateException("Bean already initialized");

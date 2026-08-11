@@ -56,10 +56,20 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring 5.x only recognizes javax.inject.Inject, Spring 6+ jakarta.inject.Inject.
+             Test beans are annotated with both (javax.inject.Inject imported, jakarta.inject.Inject
+             used via FQDN) so @Inject injection works under either version. -->
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
             <version>1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <version>2.0.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -98,13 +108,6 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.1.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
             <version>${org.springframework.version}</version>
@@ -135,11 +138,53 @@
             <version>${org.springframework.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Spring 5.x only recognizes javax.annotation.PostConstruct/Resource, Spring 6+ the jakarta
+             equivalents. Test beans are annotated with both (javax.annotation.PostConstruct imported,
+             jakarta.annotation.PostConstruct used via FQDN) so @PostConstruct works under either version. -->
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
             <version>1.3.2</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>2.1.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <!-- The Servlet API is a hard split (unlike @Inject/@PostConstruct, Spring itself is compiled
+         against one namespace or the other): Spring 5.x's WebApplicationContext support is compiled
+         against javax.servlet, Spring 6+'s against jakarta.servlet. spring5 (javax.servlet) is the
+         default; select -Pspring6 when testing against Spring 6+. -->
+    <profiles>
+        <profile>
+            <id>spring5</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                    <version>3.1.0</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>spring6</id>
+            <dependencies>
+                <dependency>
+                    <groupId>jakarta.servlet</groupId>
+                    <artifactId>jakarta.servlet-api</artifactId>
+                    <version>6.0.0</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

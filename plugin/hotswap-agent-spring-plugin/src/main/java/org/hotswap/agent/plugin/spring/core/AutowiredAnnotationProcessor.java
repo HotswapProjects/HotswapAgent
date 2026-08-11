@@ -23,11 +23,15 @@ import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Map;
 
 public class AutowiredAnnotationProcessor {
     private static AgentLogger LOGGER = AgentLogger.getLogger(AutowiredAnnotationProcessor.class);
+    private static volatile Method postProcessPropertyValuesMethod;
+    private static volatile boolean postProcessPropertyValuesChecked;
 
     public static void processSingletonBeanInjection(DefaultListableBeanFactory beanFactory) {
         try {
@@ -38,22 +42,11 @@ public class AutowiredAnnotationProcessor {
                 return;
             }
             AutowiredAnnotationBeanPostProcessor postProcessor = postProcessors.values().iterator().next();
-            boolean postProcessPropertyValuesNotExists = false;
             for (String beanName : beanFactory.getBeanDefinitionNames()) {
                 Object object = beanFactory.getSingleton(beanName);
                 if (object != null) {
-                    if (postProcessPropertyValuesNotExists) {
-                        // spring 6.x
+                    if (!invokePostProcessPropertyValues(postProcessor, object, beanName)) {
                         postProcessor.postProcessProperties(null, object, beanName);
-                        continue;
-                    }
-                    try {
-                        // from spring 3.2.x to 5.x
-                        postProcessor.postProcessPropertyValues(null, null, object, beanName);
-                    } catch (NoSuchMethodError e) {
-                        // spring 6.x
-                        postProcessor.postProcessProperties(null, object, beanName);
-                        postProcessPropertyValuesNotExists = true;
                     }
                 }
             }
@@ -66,4 +59,42 @@ public class AutowiredAnnotationProcessor {
         }
     }
 
+    private static boolean invokePostProcessPropertyValues(AutowiredAnnotationBeanPostProcessor postProcessor,
+                                                           Object bean,
+                                                           String beanName) {
+        Method method = getPostProcessPropertyValuesMethod(postProcessor.getClass());
+        if (method == null) {
+            return false;
+        }
+        try {
+            method.invoke(postProcessor, (PropertyValues) null, (PropertyDescriptor[]) null, bean, beanName);
+            return true;
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Plugin error, illegal access", e);
+        } catch (InvocationTargetException e) {
+            throw new IllegalStateException("Plugin error, method invocation failed", e);
+        }
+    }
+
+    private static Method getPostProcessPropertyValuesMethod(Class<?> processorClass) {
+        if (postProcessPropertyValuesChecked) {
+            return postProcessPropertyValuesMethod;
+        }
+        synchronized (AutowiredAnnotationProcessor.class) {
+            if (!postProcessPropertyValuesChecked) {
+                try {
+                    postProcessPropertyValuesMethod = processorClass.getMethod(
+                            "postProcessPropertyValues",
+                            PropertyValues.class,
+                            PropertyDescriptor[].class,
+                            Object.class,
+                            String.class);
+                } catch (NoSuchMethodException e) {
+                    postProcessPropertyValuesMethod = null;
+                }
+                postProcessPropertyValuesChecked = true;
+            }
+        }
+        return postProcessPropertyValuesMethod;
+    }
 }

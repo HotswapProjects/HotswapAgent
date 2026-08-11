@@ -18,6 +18,7 @@ public class PostConstructorBean3 {
     public AtomicBoolean initialized = new AtomicBoolean(false);
 
     @PostConstruct
+    @jakarta.annotation.PostConstruct
     public void init() {
         initialized.set(true);
     }
