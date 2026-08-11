@@ -32,6 +32,7 @@ public class BeanServiceImpl implements BeanService {
     BeanRepository beanRepository;
 
     @Inject
+    @jakarta.inject.Inject
     BeanChangedRepository beanRepositoryWithInject;
 
     @Override

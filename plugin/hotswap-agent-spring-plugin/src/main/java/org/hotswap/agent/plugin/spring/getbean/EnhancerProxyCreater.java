@@ -68,7 +68,9 @@ public class EnhancerProxyCreater {
             return false;
         }
         String beanClassName = bean.getClass().getName();
-        return beanClassName.contains("$$EnhancerBySpringCGLIB") || beanClassName.contains("$$EnhancerByCGLIB");
+        // Spring 5.x: Foo$$EnhancerBySpringCGLIB$$<hex>; Spring 6.0+: Foo$$SpringCGLIB$$<n> (see SpringNamingPolicy)
+        return beanClassName.contains("$$EnhancerBySpringCGLIB") || beanClassName.contains("$$EnhancerByCGLIB")
+                || beanClassName.contains("$$SpringCGLIB");
     }
 
     /**
@@ -214,7 +216,7 @@ public class EnhancerProxyCreater {
                 .replaceAll("\\{3\\}", namingPolicy.getName());
         CtMethod m = CtNewMethod.make(body, ct);
         ct.addMethod(m);
-        return ct.toClass(loader, pd);
+        return defineOrLoad(ct);
     }
 
     // Spring 4: CGLIB-based proxy classes no longer require a default constructor. Support is provided
@@ -259,11 +261,24 @@ public class EnhancerProxyCreater {
      * @throws NotFoundException
      */
     private Class<?> buildNamingPolicyClass(String cglibPackage, ClassPool cp) throws CannotCompileException, NotFoundException {
+        try {
+            return buildNamingPolicyClass(cglibPackage, cp, true);
+        } catch (CannotCompileException e) {
+            if (!isNoInheritableConstructor(e)) {
+                throw e;
+            }
+            return buildNamingPolicyClass(cglibPackage, cp, false);
+        }
+    }
+
+    private Class<?> buildNamingPolicyClass(String cglibPackage, ClassPool cp, boolean useSpringNamingPolicy)
+            throws CannotCompileException, NotFoundException {
         CtClass ct = cp.makeClass("HotswapAgentSpringNamingPolicy" + getClassSuffix(cglibPackage));
         String core = cglibPackage + "core.";
-        String originalNamingPolicy = core + "SpringNamingPolicy";
-        if (cp.find(originalNamingPolicy) == null)
+        String originalNamingPolicy = useSpringNamingPolicy ? core + "SpringNamingPolicy" : core + "DefaultNamingPolicy";
+        if (useSpringNamingPolicy && cp.find(originalNamingPolicy) == null) {
             originalNamingPolicy = core + "DefaultNamingPolicy";
+        }
         ct.setSuperclass(cp.get(originalNamingPolicy));
         String rawBody =
                 "public String getClassName(String prefix, String source, Object key, {0}Predicate names) {" +
@@ -272,7 +287,7 @@ public class EnhancerProxyCreater {
         String body = rawBody.replaceAll("\\{0\\}", core);
         CtMethod m = CtNewMethod.make(body, ct);
         ct.addMethod(m);
-        return ct.toClass(loader, pd);
+        return defineOrLoad(ct);
     }
 
     private static String getClassSuffix(String cglibPackage) {
@@ -312,7 +327,45 @@ public class EnhancerProxyCreater {
 
         CtMethod m = CtNewMethod.make(body, ct);
         ct.addMethod(m);
-        return ct.toClass(loader, pd);
+        return defineOrLoad(ct);
+    }
+
+    private Class<?> defineOrLoad(CtClass ct) throws CannotCompileException {
+        String className = ct.getName();
+        try {
+            return ct.toClass(loader, pd);
+        } catch (CannotCompileException e) {
+            if (containsLinkageError(e)) {
+                try {
+                    LOGGER.debug("Class '{}' was already defined in {}, reusing the existing definition", e, className, loader);
+                    return Class.forName(className, false, loader);
+                } catch (ClassNotFoundException ex) {
+                    throw e;
+                }
+            }
+            throw e;
+        }
+    }
+
+    private boolean containsLinkageError(Throwable throwable) {
+        while (throwable != null) {
+            if (throwable instanceof LinkageError) {
+                return true;
+            }
+            throwable = throwable.getCause();
+        }
+        return false;
+    }
+
+    private boolean isNoInheritableConstructor(Throwable throwable) {
+        while (throwable != null) {
+            String message = throwable.getMessage();
+            if (message != null && message.contains("no inheritable constructor")) {
+                return true;
+            }
+            throwable = throwable.getCause();
+        }
+        return false;
     }
 
     private ClassPool getCp(ClassLoader loader) {

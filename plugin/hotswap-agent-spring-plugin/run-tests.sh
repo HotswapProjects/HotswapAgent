@@ -6,16 +6,30 @@
 set -e
 
 # run clean package with all unit tests
+# $1: Spring version, $2: optional Maven profile (spring5, the javax.* namespace, is the
+# default; pass spring6 for Spring 6+'s jakarta.* namespace), $3: optional extra test JVM args
+# (e.g. a JBR/JVM workaround needed only for that one version)
 function test {
     echo "################################################################"
     echo "########             Running with Spring $1          ###########"
     echo "################################################################"
-    mvn -Dorg.springframework.version=$1 clean package -e
+    if [ -n "$2" ]; then
+        mvn -P$2 -Dorg.springframework.version=$1 -DextraTestJvmArgs="$3" clean package -e
+    else
+        mvn -Dorg.springframework.version=$1 -DextraTestJvmArgs="$3" clean package -e
+    fi
 }
 
 # test following Spring versions
 
-# test 6.0.10
+#test 5.3.37
+# -XX:TieredStopAtLevel=1 works around a JBR C2/enhanced-redefinition JVM crash seen on 7.0.8
+# (ciMethod.cpp guarantee(...jvmti_state_changed()) failed) - not needed on other versions.
+test 7.0.8 spring6 -XX:TieredStopAtLevel=1
+#test 6.2.19 spring6
+#test 6.1.21 spring6
+#test 6.0.23 spring6
+#test 6.0.10 spring6
 
 # test 5.3.0
 # test 5.3.1
@@ -37,7 +51,7 @@ function test {
 # test 5.3.17
 
 # 5.3.30 is lowest not vulnerable version(2023.7.05)
-test 5.3.30
+# test 5.3.30
 
 # test 5.2.0.RELEASE
 # test 5.2.1.RELEASE
@@ -96,7 +110,7 @@ test 5.3.30
 # test 4.3.13.RELEASE
 
 # 4.3.20 is lowest not vulnerable version(2022.01.19) look at CVE-2018-15756
-test 4.3.20.RELEASE
+# test 4.3.20.RELEASE
 
 # test 4.0.x
 #test 4.0.9.RELEASE

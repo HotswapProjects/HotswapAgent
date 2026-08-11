@@ -53,6 +53,10 @@
                     <configuration>
                         <source>1.8</source>
                         <target>1.8</target>
+                        <!-- Spring resolves XML constructor-arg/@Bean parameters by name via reflection.
+                             Without this, it falls back to reading javac's LocalVariableTable debug info,
+                             which Spring 6.1+ no longer reliably supports. -->
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -161,7 +165,7 @@
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <argLine>-javaagent:${org.hotswapagent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswapagent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
                      -->
-                    <argLine>${dcevm.test.arguments} -javaagent:${project.basedir}/../../hotswap-agent-core/target/hotswap-agent-core-${project.version}.jar</argLine>
+                    <argLine>${dcevm.test.arguments} ${extraTestJvmArgs} -javaagent:${project.basedir}/../../hotswap-agent-core/target/hotswap-agent-core-${project.version}.jar</argLine>
                     <jvm>${java.home}/bin/java</jvm>
                 </configuration>
             </plugin>
@@ -333,8 +337,13 @@
         <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external
             --add-exports java.base/sun.security.action=ALL-UNNAMED
             --add-exports java.base/sun.security.util=ALL-UNNAMED
+            --add-opens java.base/java.lang=ALL-UNNAMED
             --add-opens java.base/java.lang.reflect=ALL-UNNAMED
             --add-opens=java.base/sun.nio.ch=ALL-UNNAMED</dcevm.test.arguments>
+        <!-- Per-invocation escape hatch, e.g. -XX:TieredStopAtLevel=1 to dodge a JBR C2/enhanced-redefinition
+             JVM crash (ciMethod.cpp guarantee(...jvmti_state_changed())) seen on some Spring versions.
+             Empty by default so it doesn't affect every test run; override with -DextraTestJvmArgs=... -->
+        <extraTestJvmArgs></extraTestJvmArgs>
         <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
