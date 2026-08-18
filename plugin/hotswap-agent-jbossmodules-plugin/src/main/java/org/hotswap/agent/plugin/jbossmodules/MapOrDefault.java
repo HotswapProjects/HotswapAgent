@@ -18,26 +18,20 @@
  */
 package org.hotswap.agent.plugin.jbossmodules;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
- * PrependingMap
- *
- * @author Vladimir Dvorak
+ * MapOrDefault
  */
 @SuppressWarnings("rawtypes")
-public class PrependingMap implements Map {
+public class MapOrDefault implements Map {
 
     private Map masterMap;
-    private Object prependList;
+    private Object defaultValue;
 
-    public PrependingMap(Map masterMap, Object prependList) {
+    public MapOrDefault(Map masterMap, Object defaultValue) {
         this.masterMap = masterMap;
-        this.prependList = prependList;
+        this.defaultValue = defaultValue;
     }
 
     @Override
@@ -64,19 +58,8 @@ public class PrependingMap implements Map {
     @Override
     public Object get(Object paramObject) {
         Object list = masterMap.get(paramObject);
-        if (prependList != null) {
-            // There is no path registered in the ModuleClassLoader when new package is created
-            // and prepending loader should be returned
-            if (list == null) {
-                List result = new ArrayList();
-                result.addAll((List) prependList);
-                return result;
-            }
-            if (list instanceof List){
-                List result = new ArrayList<>((List) prependList);
-                result.addAll((List)list);
-                return result;
-            }
+        if (list == null) {
+            return defaultValue;
         }
         return list;
     }
