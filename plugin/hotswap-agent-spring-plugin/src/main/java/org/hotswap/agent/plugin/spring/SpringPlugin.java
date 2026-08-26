@@ -286,7 +286,6 @@ public class SpringPlugin {
     @OnClassLoadEvent(classNameRegexp = "org.springframework.beans.factory.support.DefaultListableBeanFactory")
     public static void register(ClassLoader appClassLoader, CtClass clazz, ClassPool classPool) throws NotFoundException, CannotCompileException {
         StringBuilder src = new StringBuilder("{");
-        src.append("setCacheBeanMetadata(false);");
         // init a spring plugin with every appclassloader
         src.append(PluginManagerInvoker.buildInitializePlugin(SpringPlugin.class));
         src.append(PluginManagerInvoker.buildCallPluginMethod(SpringPlugin.class, "init",
