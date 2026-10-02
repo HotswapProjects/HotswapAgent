@@ -128,11 +128,33 @@ public class PluginClassFileTransformer implements HaClassFileTransformer {
      * @throws NotFoundException
      */
     private static CtClass createCtClass(byte[] bytes, ClassLoader classLoader) throws IOException {
-        ClassPool cp = new ClassPool();
-        cp.appendSystemPath();
-        cp.appendClassPath(new LoaderClassPath(classLoader));
+        return createClassPool(classLoader).makeClass(new ByteArrayInputStream(bytes));
+    }
 
-        return cp.makeClass(new ByteArrayInputStream(bytes));
+    /**
+     * Creates the class pool a plugin transforms a class with.
+     * <p>
+     * Types are resolved through the class's own loader, and then through the loader of HotswapAgent itself for the
+     * agent classes the plugin's inserted code calls. Not through the thread context class loader, which
+     * {@link ClassPool#appendSystemPath()} uses on Java 9+: the transformation runs while the JVM holds the
+     * defining loader's lock, and the context loader is an unrelated one - during an application server's boot
+     * often a server loader whose lookups are synchronized and delegate back to the loader being defined into.
+     * Another thread holding that server loader and loading through the defining one then deadlocks with the
+     * transformation (seen with Payara Micro, where the Jackson plugin patching the server's own Jackson
+     * deadlocked against Hazelcast's bootstrap).
+     *
+     * @param classLoader the loader of the class being transformed, {@code null} for the bootstrap loader
+     * @return the class pool
+     */
+    static ClassPool createClassPool(ClassLoader classLoader) {
+        ClassPool cp = new ClassPool();
+        if (classLoader != null) {
+            cp.appendClassPath(new LoaderClassPath(classLoader));
+        }
+        ClassLoader agentClassLoader = PluginClassFileTransformer.class.getClassLoader();
+        cp.appendClassPath(new LoaderClassPath(agentClassLoader != null
+                ? agentClassLoader : ClassLoader.getSystemClassLoader()));
+        return cp;
     }
 
     /**
@@ -193,11 +215,8 @@ public class PluginClassFileTransformer implements HaClassFileTransformer {
             } else if (type.isAssignableFrom(byte[].class)) {
                 args.add(bytes);
             } else if (type.isAssignableFrom(ClassPool.class)) {
-                ClassPool classPool = new ClassPool();
-                classPool.appendSystemPath();
                 LOGGER.trace("Adding loader classpath " + classLoader);
-                classPool.appendClassPath(new LoaderClassPath(classLoader));
-                args.add(classPool);
+                args.add(createClassPool(classLoader));
             } else if (type.isAssignableFrom(CtClass.class)) {
                 try {
                     ctClass = createCtClass(bytes, classLoader);
