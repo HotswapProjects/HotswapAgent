@@ -226,6 +226,7 @@ public class PluginManager {
         pluginRegistry.closeClassLoader(classLoader);
         classLoaderConfigurations.remove(classLoader);
         hotswapTransformer.closeClassLoader(classLoader);
+        watcher.closeClassLoader(classLoader);
     }
 
 
