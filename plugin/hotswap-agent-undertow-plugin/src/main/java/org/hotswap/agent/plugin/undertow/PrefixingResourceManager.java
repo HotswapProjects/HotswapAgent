@@ -40,7 +40,11 @@ public class PrefixingResourceManager implements ResourceManager {
 
     private List<ResourceManager> delegates;
 
+    // resource manager of the deployment itself
+    private final ResourceManager original;
+
     public PrefixingResourceManager(ResourceManager delegate) {
+        this.original = delegate;
         this.delegates = new ArrayList<>();
         this.delegates.add(delegate);
     }
@@ -61,6 +65,15 @@ public class PrefixingResourceManager implements ResourceManager {
 
     @Override
     public Resource getResource(String path) throws IOException {
+        // The application root must stay the root of the deployment. Every extra directory has a "/" resource,
+        // so without this the first extra directory would become the root, and e.g. Mojarra (4.0.27+, 4.1.13+)
+        // rejects relative includes from the other extra directories as "not within the application root", see #684.
+        if (isRoot(path)) {
+            Resource res = original.getResource(path);
+            if (res != null) {
+                return res;
+            }
+        }
         for(ResourceManager d : delegates) {
             Resource res = d.getResource(path);
             if(res != null) {
@@ -68,6 +81,10 @@ public class PrefixingResourceManager implements ResourceManager {
             }
         }
         return null;
+    }
+
+    private static boolean isRoot(String path) {
+        return path == null || path.isEmpty() || "/".equals(path);
     }
 
     @Override

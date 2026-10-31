@@ -45,6 +45,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.mojarra.command.ReloadManagedBeanCommand;
 import org.hotswap.agent.plugin.mojarra.transformer.BeanManagerTransformer;
 import org.hotswap.agent.plugin.mojarra.transformer.LifecycleImplTransformer;
+import org.hotswap.agent.plugin.mojarra.transformer.DefaultFaceletFactoryTransformer;
 import org.hotswap.agent.plugin.mojarra.transformer.MojarraTransformer;
 import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.PluginManagerInvoker;
@@ -56,7 +57,8 @@ import org.hotswap.agent.util.PluginManagerInvoker;
         supportClass = {
     		MojarraTransformer.class,
     		BeanManagerTransformer.class,
-    		LifecycleImplTransformer.class
+    		LifecycleImplTransformer.class,
+    		DefaultFaceletFactoryTransformer.class
         }
 )
 public class MojarraPlugin {
