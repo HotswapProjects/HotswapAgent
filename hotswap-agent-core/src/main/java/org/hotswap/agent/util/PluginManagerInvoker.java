@@ -135,17 +135,18 @@ public class PluginManagerInvoker {
         b.append(pluginClass.getName());
         b.append(".class.getName(), ").append(appClassLoaderVar).append(");");
 
-        // Class __pluginClass = __pluginClassLoader.loadClass("org.hotswap.agent.plugin.TestPlugin");
+        // Class __pluginClass = Class.forName("org.hotswap.agent.plugin.TestPlugin", false, __pluginClassLoader);
+        // (not __pluginClassLoader.loadClass(), the loader is null if the agent is on the boot class path)
         b.append("Class __pluginClass = ");
-        b.append("__pluginClassLoader.loadClass(\"");
+        b.append("Class.forName(\"");
         b.append(pluginClass.getName());
-        b.append("\");");
+        b.append("\", false, __pluginClassLoader);");
 
         // param types
         b.append("Class[] paramTypes = new Class[").append(paramCount).append("];");
         for (int i = 0; i < paramCount; i++) {
-            // paramTypes[i] = = __pluginClassLoader.loadClass("my.test.TestClass").getClass();
-            b.append("paramTypes[").append(i).append("] = __pluginClassLoader.loadClass(\"").append(paramValueAndType[(i * 2) + 1]).append("\");");
+            // paramTypes[i] = Class.forName("my.test.TestClass", false, __pluginClassLoader);
+            b.append("paramTypes[").append(i).append("] = Class.forName(\"").append(paramValueAndType[(i * 2) + 1]).append("\", false, __pluginClassLoader);");
         }
 
         //   java.lang.reflect.Method __pluginMethod = __pluginClass.getDeclaredMethod("method", paramType1, paramType2);
