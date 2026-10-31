@@ -39,6 +39,12 @@ public class ProxyReplacer {
     public static final String FACTORY_METHOD_NAME = "getBean";
 
     /**
+     * Marker interface implemented by @Configuration classes enhanced by Spring's ConfigurationClassEnhancer
+     */
+    private static final String ENHANCED_CONFIGURATION_CLASS_NAME =
+            "org.springframework.context.annotation.ConfigurationClassEnhancer$EnhancedConfiguration";
+
+    /**
      * Clears the bean references inside all the proxies
      */
     public static void clearAllProxies() {
@@ -108,10 +114,32 @@ public class ProxyReplacer {
                 return bean;
             }
 
+            // @Configuration classes enhanced by Spring must not be wrapped: the proxy has no field state, so code
+            // reading fields of the configuration directly (e.g. a non-static inner @Configuration accessing the
+            // enclosing instance's fields through this$0) would get null, see #623. Configuration beans are
+            // singletons destroyed together with their dependents on reload, so the proxy is not needed.
+            if (isEnhancedConfiguration(bean.getClass())) {
+                return bean;
+            }
+
             return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
         }
 
         return bean;
+    }
+
+    /**
+     * Checks by name, so it does not depend on the class loader the Spring classes were loaded by.
+     */
+    static boolean isEnhancedConfiguration(Class<?> beanClass) {
+        for (Class<?> c = beanClass; c != null; c = c.getSuperclass()) {
+            for (Class<?> iface : c.getInterfaces()) {
+                if (ENHANCED_CONFIGURATION_CLASS_NAME.equals(iface.getName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static Class<?> getInfrastructureProxyClass() throws ClassNotFoundException {

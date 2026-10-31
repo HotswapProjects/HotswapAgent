@@ -30,6 +30,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,7 +67,8 @@ public abstract class AbstractNIO2Watcher implements Watcher {
 
     protected final static WatchEvent.Kind<?>[] KINDS = new WatchEvent.Kind<?>[] { ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY };
 
-    protected WatchService watcher;
+    // replaced by closeClassLoader() while the runner thread polls it
+    protected volatile WatchService watcher;
     protected final Map<WatchKey, Path> keys;
     private final Map<Path, List<WatchEventListener>> listeners = new ConcurrentHashMap<>();
 
@@ -216,7 +218,14 @@ public abstract class AbstractNIO2Watcher implements Watcher {
     private boolean processEvents() throws InterruptedException {
 
         // wait for key to be signaled
-        WatchKey key = watcher.poll(10, TimeUnit.MILLISECONDS);
+        WatchKey key;
+        try {
+            key = watcher.poll(10, TimeUnit.MILLISECONDS);
+        } catch (ClosedWatchServiceException e) {
+            // the watch service was released after all classloaders were closed and is being replaced
+            // by a new one, see closeClassLoader(). Keep running and poll the new instance.
+            return true;
+        }
         if (key == null) {
             return true;
         }
