@@ -46,13 +46,14 @@ public class URLClassPathHelper {
 
     static {
         Class<?> urlClassPathClass = null;
+        // null if the agent is on the boot class path (#635), so not classLoader.loadClass()
         ClassLoader classLoader = URLClassPathHelper.class.getClassLoader();
         try {
-            urlClassPathClass = classLoader.loadClass("sun.misc.URLClassPath");
+            urlClassPathClass = Class.forName("sun.misc.URLClassPath", false, classLoader);
         } catch (ClassNotFoundException e) {
             try {
                 // java9
-                urlClassPathClass = classLoader.loadClass("jdk.internal.loader.URLClassPath");
+                urlClassPathClass = Class.forName("jdk.internal.loader.URLClassPath", false, classLoader);
             } catch (ClassNotFoundException e1) {
                 LOGGER.error("Unable to loadClass URLClassPath!");
             }

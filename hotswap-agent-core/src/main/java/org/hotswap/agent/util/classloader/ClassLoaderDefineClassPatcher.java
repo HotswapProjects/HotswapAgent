@@ -76,7 +76,10 @@ public class ClassLoaderDefineClassPatcher {
         if (cache != null) {
 
             final ClassPool cp = new ClassPool();
-            cp.appendClassPath(new LoaderClassPath(getClass().getClassLoader()));
+            // the agent loader is null if the agent is on the boot class path (#635)
+            ClassLoader agentClassLoader = getClass().getClassLoader();
+            cp.appendClassPath(new LoaderClassPath(agentClassLoader != null
+                    ? agentClassLoader : ClassLoader.getSystemClassLoader()));
             Set<String> loadedClasses = new HashSet<>();
             String packagePrefix = pluginPath.replace('/', '.');
 
@@ -89,7 +92,8 @@ public class ClassLoaderDefineClassPatcher {
                     InputStream is = new ByteArrayInputStream(pluginBytes);
                     pluginClass = cp.makeClass(is, false);
                     try {
-                        classLoaderFrom.loadClass(pluginClass.getName());
+                        // not classLoaderFrom.loadClass(), it is null for the bootstrap loader
+                        Class.forName(pluginClass.getName(), false, classLoaderFrom);
                     } catch (NoClassDefFoundError e) {
                         LOGGER.trace("Skipping class loading {} in classloader {} - " +
                                 "class has probably unresolvable dependency.", pluginClass.getName(), classLoaderTo);
