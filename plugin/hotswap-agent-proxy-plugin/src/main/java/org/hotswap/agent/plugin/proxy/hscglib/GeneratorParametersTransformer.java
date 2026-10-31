@@ -19,6 +19,7 @@
 package org.hotswap.agent.plugin.proxy.hscglib;
 
 import java.lang.ref.WeakReference;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,8 @@ import org.hotswap.agent.util.classloader.ClassLoaderHelper;
 public class GeneratorParametersTransformer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(GeneratorParametersTransformer.class);
     private static Map<ClassLoader, WeakReference<Map<String, Object>>> classLoaderMaps = new WeakHashMap<>();
+
+    private static final Map<String, Object> NO_GENERATOR_PARAMS = Collections.emptyMap();
 
     /**
      * Adds bytecode generation call parameter recording
@@ -98,9 +101,17 @@ public class GeneratorParametersTransformer {
                 mapRef = classLoaderMaps.get(loader);
                 if (mapRef == null) {
                     if (ClassLoaderHelper.isClassLoderStarted(loader)) {
-                        Map<String, Object> map = (Map<String, Object>) loader
-                                .loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
-                                .get(null);
+                        Map<String, Object> map;
+                        try {
+                            map = (Map<String, Object>) loader
+                                    .loadClass(GeneratorParametersRecorder.class.getName()).getField("generatorParams")
+                                    .get(null);
+                        } catch (LinkageError e) {
+                            // the copied recorder class cannot be initialized where the agent core is not visible
+                            // (isolated class loader, #635). Nothing could be recorded there, so there is no proxy.
+                            LOGGER.debug("Proxy generator parameters not available in class loader {}: {}", loader, e);
+                            map = NO_GENERATOR_PARAMS;
+                        }
                         mapRef = new WeakReference<>(map);
                         classLoaderMaps.put(loader, mapRef);
                     }
