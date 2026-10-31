@@ -19,13 +19,20 @@
 package org.hotswap.agent.annotation.handler;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -35,6 +42,7 @@ import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.javassist.NotFoundException;
+import org.hotswap.agent.javassist.bytecode.ClassFile;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AppClassLoaderExecutor;
 import org.hotswap.agent.util.HaClassFileTransformer;
@@ -281,7 +289,89 @@ public class PluginClassFileTransformer implements HaClassFileTransformer {
                 classLoader != null ? classLoader.getClass().getName() : "");
         }
 
+        if (result != bytes && classLoader != null) {
+            String invisible = findInvisibleAgentClass(classLoader, bytes, result);
+            if (invisible != null) {
+                logInvisibleAgentClass(pluginAnnotation, className, classLoader, invisible);
+                return bytes;
+            }
+        }
+
         return result;
+    }
+
+    // class loaders already reported by logInvisibleAgentClass(), to warn only once per class loader
+    private static final Map<ClassLoader, Boolean> REPORTED_CLASS_LOADERS =
+            Collections.synchronizedMap(new WeakHashMap<ClassLoader, Boolean>());
+
+    /**
+     * Finds a HotswapAgent class the transformation added a reference to, which the class loader of the transformed
+     * class cannot load. Code calling the agent can only run where the agent classes are visible. Plugin classes are
+     * copied into each class loader (see {@link PluginManager#initClassLoader}), but the agent core classes are only
+     * reachable through parent delegation, which is missing in isolated class loaders, e.g. the servlet container
+     * class loader of Gretty (#635). Such a transformation would fail with NoClassDefFoundError when executed.
+     * <p>
+     * The agent core is always required: a copied plugin class can be loaded, but fails in its static initializer
+     * when the core classes it uses are not visible.
+     *
+     * @param classLoader loader of the transformed class
+     * @param original    bytes before the transformation
+     * @param transformed bytes after the transformation
+     * @return name of the first agent class the class loader cannot load, or null
+     */
+    static String findInvisibleAgentClass(ClassLoader classLoader, byte[] original, byte[] transformed) {
+        Set<String> referenced;
+        try {
+            referenced = agentClassNames(transformed);
+            if (referenced.isEmpty()) {
+                return null;
+            }
+            referenced.removeAll(agentClassNames(original));
+        } catch (IOException e) {
+            LOGGER.debug("Unable to read class file to check agent class references", e);
+            return null;
+        }
+        if (referenced.isEmpty()) {
+            return null;
+        }
+        Set<String> required = new LinkedHashSet<>();
+        required.add(PluginManager.class.getName());
+        required.addAll(referenced);
+        for (String name : required) {
+            try {
+                Class.forName(name, false, classLoader);
+            } catch (ClassNotFoundException | LinkageError e) {
+                return name;
+            }
+        }
+        return null;
+    }
+
+    private static Set<String> agentClassNames(byte[] bytes) throws IOException {
+        ClassFile classFile = new ClassFile(new DataInputStream(new ByteArrayInputStream(bytes)));
+        Set<String> result = new HashSet<>();
+        for (String name : classFile.getConstPool().getClassNames()) {
+            // array types are "[Lorg/hotswap/...;"
+            String elementName = name.replaceFirst("^\\[+L", "").replaceFirst(";$", "").replace('/', '.');
+            if (elementName.startsWith(AGENT_PACKAGE_PREFIX)) {
+                result.add(elementName);
+            }
+        }
+        return result;
+    }
+
+    private static final String AGENT_PACKAGE_PREFIX = "org.hotswap.agent.";
+
+    private static void logInvisibleAgentClass(PluginAnnotation<OnClassLoadEvent> pluginAnnotation, String className,
+                                               ClassLoader classLoader, String invisible) {
+        String message = "Plugin '{}' did not transform class '{}': its class loader '{}' cannot see HotswapAgent class '{}'. "
+                + "To enable the plugin for this class loader, add the agent jar also to the boot class path: "
+                + "-Xbootclasspath/a:<path>/hotswap-agent.jar";
+        if (REPORTED_CLASS_LOADERS.put(classLoader, Boolean.TRUE) == null) {
+            LOGGER.warning(message, pluginAnnotation.getPluginClass().getName(), className, classLoader.getClass().getName(), invisible);
+        } else {
+            LOGGER.debug(message, pluginAnnotation.getPluginClass().getName(), className, classLoader.getClass().getName(), invisible);
+        }
     }
 
 }
