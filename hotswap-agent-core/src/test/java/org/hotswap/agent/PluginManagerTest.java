@@ -31,6 +31,7 @@ import org.junit.Test;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.Collections;
+import java.util.function.Predicate;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -54,7 +55,7 @@ public class PluginManagerTest {
 
         context.checking(new Expectations() {{
             allowing(instrumentation).addTransformer(with(any(ClassFileTransformer.class)));
-            allowing(annotationScanner).scanPlugins(with(any(ClassLoader.class)), with(any(String.class)));
+            allowing(annotationScanner).scanPlugins(with(any(ClassLoader.class)), with(any(String.class)), with(any(Predicate.class)));
             will(returnValue(Collections.singletonList(SimplePlugin.class.getName())));
             allowing(annotationProcessor).processAnnotations(with(any(Class.class)), with(any(Class.class)));
             will(returnValue(true));
