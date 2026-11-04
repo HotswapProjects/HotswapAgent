@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.logging.AgentLogger.Level;
+import org.hotswap.agent.watch.HotswapAgentWatchEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
@@ -208,6 +209,31 @@ public abstract class AbstractNIO2Watcher implements Watcher {
     protected abstract void registerAll(final Path dir, boolean fromCreateEvent) throws IOException;
 
     /**
+     * Sends events for the files watched by the key of the given directory.
+     * Called when the watch service has dropped events of that key.
+     */
+    protected abstract void rescan(Path dir);
+
+    protected void registerCreatedDirectory(Path dir) {
+        try {
+            registerAll(dir, true);
+        } catch (IOException e) {
+            LOGGER.warning("Unable to register events for directory {}", e, dir);
+        }
+    }
+
+    protected void dispatchFakeEvent(WatchEvent.Kind<Path> kind, Path file) {
+        LOGGER.debug("Fake watch event '{}' on '{}'", kind.name(), file);
+        dispatcher.add(new HotswapAgentWatchEvent<>(kind, file.getFileName()), file);
+    }
+
+    protected void dispatchRescanEvents(Path file) {
+        // The dropped event could be either CREATE or MODIFY, and listeners usually handle only one of them.
+        dispatchFakeEvent(ENTRY_CREATE, file);
+        dispatchFakeEvent(ENTRY_MODIFY, file);
+    }
+
+    /**
      * Process all events for keys queued to the watcher
      *
      * @return true if should continue
@@ -232,7 +258,8 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             WatchEvent.Kind<?> kind = event.kind();
 
             if (kind == OVERFLOW) {
-                LOGGER.warning("WatchKey '{}' overflowed", key);
+                LOGGER.warning("WatchKey '{}' overflowed, rescanning {}", key, dir);
+                rescan(dir);
                 continue;
             }
 
@@ -247,14 +274,8 @@ public abstract class AbstractNIO2Watcher implements Watcher {
 
             // if directory is created, and watching recursively, then
             // register it and its sub-directories
-            if (kind == ENTRY_CREATE) {
-                try {
-                    if (Files.isDirectory(child, NOFOLLOW_LINKS)) {
-                        registerAll(child, true);
-                    }
-                } catch (IOException x) {
-                    LOGGER.warning("Unable to register events for directory {}", x, child);
-                }
+            if (kind == ENTRY_CREATE && Files.isDirectory(child, NOFOLLOW_LINKS)) {
+                registerCreatedDirectory(child);
             }
         }
 

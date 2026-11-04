@@ -20,9 +20,13 @@ package org.hotswap.agent.watch.nio;
 
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * <p>
@@ -102,5 +106,27 @@ public class TreeWatcherNIO extends AbstractNIO2Watcher {
     protected void registerAll(Path dir, boolean fromCreateEvent) throws IOException {
         LOGGER.info("Registering directory {} ", dir);
         register(dir);
+    }
+
+    @Override
+    protected void rescan(Path dir) {
+        try {
+            Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (attrs.isRegularFile()) {
+                        dispatchRescanEvents(file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException e) {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            LOGGER.warning("Unable to rescan directory {}", e, dir);
+        }
     }
 }

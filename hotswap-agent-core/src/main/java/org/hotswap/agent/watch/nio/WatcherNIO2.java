@@ -18,13 +18,15 @@
  */
 package org.hotswap.agent.watch.nio;
 
-import org.hotswap.agent.watch.HotswapAgentWatchEvent;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 
 /**
@@ -56,10 +58,11 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         Files.walkFileTree(dir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                // Register before listing the files. Otherwise files created in between get no event.
+                register(dir);
                 if (fromCreateEvent) {
                     sendFakeCreateEvents(dir);
                 }
-                register(dir);
                 return FileVisitResult.CONTINUE;
             }
         });
@@ -69,15 +72,42 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path entry : stream) {
                 if (Files.isRegularFile(entry)) {
-                    String name = entry.getFileName().toString();
-                    HotswapAgentWatchEvent<Path> ev = new HotswapAgentWatchEvent(ENTRY_CREATE, name);
-                    LOGGER.debug("Fake watch event '{}' on '{}' --> {}", ev.kind().name(), entry, name);
-                    dispatcher.add(ev, entry);
+                    dispatchFakeEvent(ENTRY_CREATE, entry);
                 }
             }
         } catch (IOException e) {
             LOGGER.warning("Unable to send fake create events for directory {}", e, dir);
         }
+    }
+
+    @Override
+    protected void rescan(Path dir) {
+        Set<Path> watchedDirs = watchedDirectories();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path entry : stream) {
+                if (Files.isDirectory(entry, NOFOLLOW_LINKS)) {
+                    // The CREATE event of a new directory may be dropped too.
+                    // Do not register watched ones again, as some JDKs reset the watch and lose events.
+                    if (!watchedDirs.contains(entry)) {
+                        registerCreatedDirectory(entry);
+                    }
+                } else if (Files.isRegularFile(entry)) {
+                    dispatchRescanEvents(entry);
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.warning("Unable to rescan directory {}", e, dir);
+        }
+    }
+
+    private Set<Path> watchedDirectories() {
+        Set<Path> dirs = new HashSet<>();
+        for (Map.Entry<WatchKey, Path> entry : keys.entrySet()) {
+            if (entry.getKey().isValid()) {
+                dirs.add(entry.getValue());
+            }
+        }
+        return dirs;
     }
 
     /**
