@@ -81,9 +81,12 @@ public class PluginManagerInvoker {
      * @param method         method name
      * @param paramTypes     param types (as required by reflection)
      * @param params         actual param values
-     * @return method return value
+     * @return method return value, null if the plugin is disabled in appClassLoader
      */
     public static Object callPluginMethod(Class pluginClass, ClassLoader appClassLoader, String method, Class[] paramTypes, Object[] params) {
+        if (PluginManager.getInstance().isPluginDisabled(pluginClass.getName(), appClassLoader)) {
+            return null;
+        }
         Object pluginInstance = PluginManager.getInstance().getPlugin(pluginClass.getName(), appClassLoader);
 
         try {
@@ -120,6 +123,9 @@ public class PluginManagerInvoker {
         int paramCount = paramValueAndType.length / 2;
 
         StringBuilder b = new StringBuilder();
+
+        // skip the call if the plugin is disabled in the app classloader (it was not initialized there)
+        b.append("if (!").append(buildIsPluginDisabled(pluginClass, appClassLoaderVar)).append(") {");
 
         // block to hide variables and catch checked exceptions
         b.append("try {");
@@ -166,6 +172,23 @@ public class PluginManagerInvoker {
         // catch (Exception e) {throw new Error(e);}
         b.append("} catch (Exception e) {throw new Error(e);}");
 
+        b.append("}");
+
         return b.toString();
+    }
+
+    /**
+     * Build a boolean expression, true if the plugin is disabled by the configuration of the app classloader.
+     * <p>
+     * Use it to guard inserted code that needs the plugin and runs in a class of another classloader than
+     * the app classloader (e.g. a server module), see {@link PluginManager#isPluginDisabled(String, ClassLoader)}.
+     *
+     * @param pluginClass       plugin to check
+     * @param appClassLoaderVar app classloader variable
+     * @return the expression source code
+     */
+    public static String buildIsPluginDisabled(Class pluginClass, String appClassLoaderVar) {
+        return PluginManager.class.getName() + ".getInstance().isPluginDisabled(\"" + pluginClass.getName() + "\", "
+                + appClassLoaderVar + ")";
     }
 }
