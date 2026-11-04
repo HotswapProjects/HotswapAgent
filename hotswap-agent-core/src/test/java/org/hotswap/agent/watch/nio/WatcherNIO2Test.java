@@ -191,7 +191,6 @@ public class WatcherNIO2Test {
 
     // On Mac OS X, 10.9.4, this would fail for under 10 seconds, succeeded with 10 seconds.  I didn't look
     // into it further.
-    // each 10 ms check if result is true, max 10000 ms
     private boolean waitUntil(BooleanSupplier condition, int secs) {
         for (int i = 0; i < 100 * secs; i++) {
             if (condition.getAsBoolean())
