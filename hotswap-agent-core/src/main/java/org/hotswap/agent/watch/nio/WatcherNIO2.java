@@ -22,9 +22,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -45,6 +44,8 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
     static {
         HIGH =  getWatchEventModifier("com.sun.nio.file.SensitivityWatchEventModifier","HIGH");
     }
+
+    private final Map<Path, WatchKey> dirKeys = new ConcurrentHashMap<>();
 
     public WatcherNIO2() throws IOException {
         super();
@@ -82,13 +83,12 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
 
     @Override
     protected void rescan(Path dir) {
-        Set<Path> watchedDirs = watchedDirectories();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path entry : stream) {
                 if (Files.isDirectory(entry, NOFOLLOW_LINKS)) {
                     // The CREATE event of a new directory may be dropped too.
                     // Do not register watched ones again, as some JDKs reset the watch and lose events.
-                    if (!watchedDirs.contains(entry)) {
+                    if (!isWatched(entry)) {
                         registerCreatedDirectory(entry);
                     }
                 } else if (Files.isRegularFile(entry)) {
@@ -100,14 +100,9 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         }
     }
 
-    private Set<Path> watchedDirectories() {
-        Set<Path> dirs = new HashSet<>();
-        for (Map.Entry<WatchKey, Path> entry : keys.entrySet()) {
-            if (entry.getKey().isValid()) {
-                dirs.add(entry.getValue());
-            }
-        }
-        return dirs;
+    private boolean isWatched(Path dir) {
+        WatchKey key = dirKeys.get(dir);
+        return key != null && key.isValid();
     }
 
     /**
@@ -117,5 +112,6 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         // try to set high sensitivity
         final WatchKey key = HIGH == null ? dir.register(watcher, KINDS) : dir.register(watcher, KINDS, HIGH);
         keys.put(key, dir);
+        dirKeys.put(dir, key);
     }
 }

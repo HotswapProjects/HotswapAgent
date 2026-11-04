@@ -211,8 +211,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
     protected abstract void registerAll(final Path dir, boolean fromCreateEvent) throws IOException;
 
     /**
-     * Sends events for the files watched by the key of the given directory.
-     * Called when the watch service has dropped events of that key.
+     * Recovers from the events that the watch service dropped for the key of the given directory.
      */
     protected abstract void rescan(Path dir);
 
