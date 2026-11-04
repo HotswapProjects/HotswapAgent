@@ -34,6 +34,7 @@ import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.DescriptiveResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
@@ -218,6 +219,12 @@ public class XmlBeanDefinitionScannerAgent {
             if (resource instanceof ByteArrayResource) {
                 LOGGER.debug("BeanDefinition [{}] has ByteArrayResource as resource, ignore. {}", beanDefinition,
                         new String(((ByteArrayResource) resource).getByteArray()));
+                return null;
+            }
+            if (resource instanceof DescriptiveResource) {
+                // only a description, e.g. set by Spring Data for repositories: "... defined in @EnableJpaRepositories"
+                LOGGER.debug("BeanDefinition [{}] has DescriptiveResource as resource, ignore. {}", beanDefinition,
+                        resource.getDescription());
                 return null;
             }
             String path = convertToClasspathURL(resource.getURL().getPath());
