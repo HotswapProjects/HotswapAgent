@@ -115,6 +115,25 @@ public class PluginManager {
     }
 
     /**
+     * Check if plugin is disabled by the configuration of classLoader (or of its nearest parent with a
+     * configuration).
+     * <p>
+     * Code inserted into a server class may serve an application class loader other than its own one, e.g. on
+     * WildFly a class of a Weld module initializes the plugin for a deployment. The transformation of the server
+     * class follows the configuration of the server class loader, so the inserted code has to check the
+     * configuration of the application class loader itself.
+     *
+     * @param pluginClassName type of the plugin
+     * @param classLoader application classloader
+     * @return true if the plugin is disabled in the classloader
+     */
+    public boolean isPluginDisabled(String pluginClassName, ClassLoader classLoader) {
+        PluginConfiguration pluginConfiguration = getPluginConfiguration(classLoader);
+        return pluginConfiguration != null
+                && pluginConfiguration.isDisabledPlugin(pluginRegistry.getPluginClass(pluginClassName));
+    }
+
+    /**
      * Initialize the singleton plugin manager.
      * <ul>
      * <li>Create a new resource watcher using WatcherFactory and start it in separate thread.</li>

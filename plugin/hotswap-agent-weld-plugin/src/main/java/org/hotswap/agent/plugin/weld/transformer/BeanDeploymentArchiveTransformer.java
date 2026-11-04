@@ -80,10 +80,13 @@ public class BeanDeploymentArchiveTransformer {
         StringBuilder src = new StringBuilder("{");
         src.append("if (beansXml!=null && beanArchiveType!=null && (\"EXPLICIT\".equals(beanArchiveType.toString()) || \"IMPLICIT\".equals(beanArchiveType.toString()))){");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "module.getClassLoader()"));
+        // the plugin is initialized for another classloader than this class, skip if it is disabled there
+        src.append("if (!" + PluginManagerInvoker.buildIsPluginDisabled(WeldPlugin.class, "module.getClassLoader()") + ") {");
         src.append(PluginManagerInvoker.buildCallPluginMethod("module.getClassLoader()", WeldPlugin.class, "initInJBossAS"));
         src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent\", true, module.getClassLoader());");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
         src.append("    agM.invoke(null, new Object[] { module.getClassLoader(),this, beanArchiveType.toString()});");
+        src.append("}");
         src.append("}}");
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
@@ -108,10 +111,13 @@ public class BeanDeploymentArchiveTransformer {
         }
         StringBuilder src = new StringBuilder("{");
         src.append(PluginManagerInvoker.buildInitializePlugin(WeldPlugin.class, "this.moduleClassLoaderForBDA"));
+        // the plugin is initialized for another classloader than this class, skip if it is disabled there
+        src.append("if (!" + PluginManagerInvoker.buildIsPluginDisabled(WeldPlugin.class, "this.moduleClassLoaderForBDA") + ") {");
         src.append(PluginManagerInvoker.buildCallPluginMethod("this.moduleClassLoaderForBDA", WeldPlugin.class, "initInGlassFish"));
         src.append("    Class agC = Class.forName(\"org.hotswap.agent.plugin.weld.command.BeanClassRefreshAgent\", true, this.moduleClassLoaderForBDA);");
         src.append("    java.lang.reflect.Method agM  = agC.getDeclaredMethod(\"registerArchive\", new Class[] {java.lang.ClassLoader.class, org.jboss.weld.bootstrap.spi.BeanDeploymentArchive.class, java.lang.String.class});");
         src.append("    agM.invoke(null, new Object[] { this.moduleClassLoaderForBDA, this, null});");
+        src.append("}");
         src.append("}");
 
         for (CtConstructor constructor : clazz.getDeclaredConstructors()) {
