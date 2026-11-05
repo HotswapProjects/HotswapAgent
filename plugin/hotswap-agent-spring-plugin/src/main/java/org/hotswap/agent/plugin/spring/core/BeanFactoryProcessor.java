@@ -49,13 +49,21 @@ public class BeanFactoryProcessor {
     /**
      * Drop all merged bean definitions, so the next getBean merges them again from the current bean definitions.
      * Merged definitions of created beans keep resolved classes, constructors and factory methods, which are
-     * stale after a class change.
+     * stale after a class change. They are removed, not marked stale, because Spring copies the resolved types
+     * of a stale definition into the new one.
+     * The bean definition holders cached for autowire candidate checks (Spring 5.2+) keep the old merged
+     * definitions, so they are removed too.
      */
     public static void clearMergedBeanDefinitions(DefaultListableBeanFactory beanFactory) {
         try {
             Field field = AbstractBeanFactory.class.getDeclaredField("mergedBeanDefinitions");
             field.setAccessible(true);
             ((java.util.Map<?, ?>) field.get(beanFactory)).clear();
+            Object holders = ReflectionHelper.getNoException(beanFactory, DefaultListableBeanFactory.class,
+                    "mergedBeanDefinitionHolders");
+            if (holders instanceof java.util.Map) {
+                ((java.util.Map<?, ?>) holders).clear();
+            }
         } catch (Exception e) {
             LOGGER.warning("Failed to clear merged bean definitions of {}", e, ObjectUtils.identityToString(beanFactory));
         }
