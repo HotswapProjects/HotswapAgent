@@ -29,7 +29,10 @@ import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The type Spring bean watch event listener.
@@ -47,6 +50,9 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
     private ClassLoader appClassLoader;
     private String basePackage;
 
+    // new class files that could not be read on CREATE, the content is written after the file is created
+    private final Set<URI> notWrittenNewFiles = ConcurrentHashMap.newKeySet();
+
     public SpringBeanWatchEventListener(Scheduler scheduler, ClassLoader appClassLoader, String basePackage) {
         this.scheduler = scheduler;
         this.appClassLoader = appClassLoader;
@@ -55,25 +61,36 @@ public class SpringBeanWatchEventListener implements WatchEventListener {
 
     @Override
     public void onEvent(WatchFileEvent event) {
-        // new File
-        if (event.getEventType() == FileEvent.CREATE && event.isFile() && event.getURI().toString().endsWith(".class")) {
-            // check that the class is not loaded by the classloader yet (avoid duplicate reload)
-            String className;
-            try {
-                className = IOUtils.urlToClassName(event.getURI());
-            } catch (IOException e) {
-                LOGGER.trace("Watch event on resource '{}' skipped, probably Ok because of delete/create event " +
-                        "sequence (compilation not finished yet).", e, event.getURI());
-                return;
-            }
-            if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
-                // refresh spring only for new classes
-                LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", className, appClassLoader);
-                scheduler.scheduleCommand(
-                    new SpringChangedReloadCommand(appClassLoader, new ClassPathBeanRefreshCommand(appClassLoader, basePackage, className, event, scheduler)),
-                    SpringReloadConfig.reloadDelayMillisForClass
-                );
-            }
+        if (!event.isFile() || !event.getURI().toString().endsWith(".class")) {
+            return;
+        }
+        if (event.getEventType() == FileEvent.DELETE) {
+            notWrittenNewFiles.remove(event.getURI());
+            return;
+        }
+        // new File, or the content of a new file that was empty or incomplete on CREATE
+        boolean newFile = event.getEventType() == FileEvent.CREATE;
+        if (!newFile && !(event.getEventType() == FileEvent.MODIFY && notWrittenNewFiles.contains(event.getURI()))) {
+            return;
+        }
+        // check that the class is not loaded by the classloader yet (avoid duplicate reload)
+        String className;
+        try {
+            className = IOUtils.urlToClassName(event.getURI());
+        } catch (IOException e) {
+            LOGGER.trace("Watch event on resource '{}' skipped, the class file is not written completely yet " +
+                    "(or a delete/create event sequence), waiting for modify event.", e, event.getURI());
+            notWrittenNewFiles.add(event.getURI());
+            return;
+        }
+        notWrittenNewFiles.remove(event.getURI());
+        if (!ClassLoaderHelper.isClassLoaded(appClassLoader, className)) {
+            // refresh spring only for new classes
+            LOGGER.trace("Scheduling Spring reload for class '{}' in classLoader {}", className, appClassLoader);
+            scheduler.scheduleCommand(
+                new SpringChangedReloadCommand(appClassLoader, new ClassPathBeanRefreshCommand(appClassLoader, basePackage, className, event, scheduler)),
+                SpringReloadConfig.reloadDelayMillisForClass
+            );
         }
     }
 
