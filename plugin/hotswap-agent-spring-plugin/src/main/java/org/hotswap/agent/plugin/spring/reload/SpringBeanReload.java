@@ -303,6 +303,10 @@ public class SpringBeanReload {
         processNewEntities(context);
         processNewRepositories(context);
 
+        Set<String> newBeanNames = new HashSet<>();
+        for (BeanDefinitionHolder beanDefinitionHolder : context.newScanBeanDefinitions) {
+            newBeanNames.add(beanDefinitionHolder.getBeanName());
+        }
         // 5. load new beans from scanning. The newBeanNames is used to print the suitable log.
         refreshNewBean(context);
         // 6. destroy bean including factory bean
@@ -331,6 +335,10 @@ public class SpringBeanReload {
 //        if (!checkHasChange()) {
             // 9 invoke getBean to instantiate singleton beans
             preInstantiateSingleton();
+            // 9.1 register @EventListener methods of the recreated and new beans
+            Set<String> listenerBeanNames = new HashSet<>(context.processedBeans);
+            listenerBeanNames.addAll(newBeanNames);
+            EventListenerReload.reloadEventListeners(beanFactory, listenerBeanNames);
             // 10 reset mvc initialized, it will update the mapping of url and handler
             refreshRequestMapping();
             // 11 clear all process cache
