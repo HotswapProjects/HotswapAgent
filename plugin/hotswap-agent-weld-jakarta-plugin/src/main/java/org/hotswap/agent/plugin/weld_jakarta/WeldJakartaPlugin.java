@@ -218,6 +218,12 @@ public class WeldJakartaPlugin {
      */
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void classReload(ClassLoader classLoader, CtClass ctClass, Class<?> original) {
+        // the method is called on each plugin instance (e.g. one per deployment in WildFly), handle only
+        // classes of this application, otherwise each bean is reloaded once per instance
+        if (!isAppClassLoaderOf(classLoader)) {
+            return;
+        }
+
         if (AnnotationHelper.hasAnnotation(ctClass, VETOED_ANNOTATION)) {
             LOGGER.trace("Skipping @Vetoed class {}.", ctClass.getName());
             return;
@@ -253,6 +259,15 @@ public class WeldJakartaPlugin {
         } catch (Exception e) {
             LOGGER.error("classReload() exception {}.", e, e.getMessage());
         }
+    }
+
+    private boolean isAppClassLoaderOf(ClassLoader classLoader) {
+        for (ClassLoader loader = classLoader; loader != null; loader = loader.getParent()) {
+            if (loader == appClassLoader) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String getArchivePath(ClassLoader classLoader, CtClass ctClass, String knownClassName) throws NotFoundException {
