@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.nio.file.Files;
 
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
@@ -102,6 +103,8 @@ public class ComponentScanWithWildcardsTest {
             // When
             file = copyClassFileAndWaitForReload(NewHelloServiceImpl.class,
                     "org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.NewHelloServiceImpl");
+            // the number of reloads may be reached by another reload, wait for the bean too
+            waitForBean("newHelloServiceImpl");
 
             // Then
             assertEquals("Hello from Repository NewHelloServiceWithAspect",
@@ -117,6 +120,48 @@ public class ComponentScanWithWildcardsTest {
                 }
             }
         }
+    }
+
+    /**
+     * The watcher reports a new class file as soon as it is created, a compiler writes the content after that.
+     */
+    @Test
+    public void testNewServiceClassFileWrittenAfterCreate() throws Exception {
+        String newName = "org.hotswap.agent.plugin.spring.wildcardstest.beans.testbeans.NewHelloServiceWrittenLaterImpl";
+        String directoryName = NewHelloServiceImpl.class.getClassLoader().getResource("").getPath();
+        File file = new File(directoryName + File.separatorChar + newName.replace('.', File.separatorChar) + ".class");
+        try {
+            ClassPool classPool = new ClassPool();
+            classPool.appendClassPath(new LoaderClassPath(NewHelloServiceImpl.class.getClassLoader()));
+            byte[] bytecode = classPool.getAndRename(NewHelloServiceImpl.class.getName(), newName).toBytecode();
+
+            // When: the file is created empty and written later
+            assertTrue(file.createNewFile());
+            Thread.sleep(500);
+            Files.write(file.toPath(), bytecode);
+            // wait for the bean, not for a number of reloads: other reloads may be counted too
+            waitForBean("newHelloServiceWrittenLaterImpl");
+
+            // Then
+            assertEquals("Hello from Repository NewHelloServiceWithAspect",
+                    ((NewHelloService) factory.getBean("newHelloServiceWrittenLaterImpl")).hello());
+        } finally {
+            if (file.exists()) {
+                System.gc();
+                if (!file.delete()) {
+                    System.err.println("Warning - unable to delete class file " + file.getAbsolutePath());
+                }
+            }
+        }
+    }
+
+    private void waitForBean(final String beanName) {
+        assertTrue("bean " + beanName + " not registered", WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() {
+                return factory.containsBean(beanName);
+            }
+        }, 10000));
     }
 
     private void assertNoBean(Class<?> clazz) {
