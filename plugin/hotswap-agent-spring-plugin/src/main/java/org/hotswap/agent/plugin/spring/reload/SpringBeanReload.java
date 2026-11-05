@@ -463,14 +463,43 @@ public class SpringBeanReload {
         }
     }
 
+    private static final String SCOPED_TARGET_NAME_PREFIX = "scopedTarget.";
+
     private void resetConfigurationBeanDefinition(Set<String> configurationBeansToReload) {
         for (String beanName : beanFactory.getBeanDefinitionNames()) {
+            if (!beanFactory.containsBeanDefinition(beanName)) {
+                // already removed, e.g. a scoped proxy
+                continue;
+            }
             BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
             String factoryBeanName = beanDefinition.getFactoryBeanName();
             if (factoryBeanName != null && configurationBeansToReload.contains(factoryBeanName)) {
                 LOGGER.debug("the bean '{}' will be recreating because the factory bean '{}' is changed", beanName, factoryBeanName);
                 beanFactory.removeBeanDefinition(beanName);
+                removeScopedProxyDefinition(beanName);
             }
+        }
+    }
+
+    /**
+     * A scoped proxy @Bean (e.g. @SessionScope) is registered as "scopedTarget.name" with the factory method and as
+     * "name" for the proxy. If only the target is removed, the proxy definition stays and the @Configuration class is
+     * not processed for this @Bean again, so "scopedTarget.name" is missing. Remove the proxy too.
+     */
+    private void removeScopedProxyDefinition(String targetBeanName) {
+        // ScopedProxyUtils.TARGET_NAME_PREFIX, spring-aop is not a dependency of the plugin
+        if (!targetBeanName.startsWith(SCOPED_TARGET_NAME_PREFIX)) {
+            return;
+        }
+        String proxyBeanName = targetBeanName.substring(SCOPED_TARGET_NAME_PREFIX.length());
+        if (!beanFactory.containsBeanDefinition(proxyBeanName)) {
+            return;
+        }
+        BeanDefinition proxyDefinition = beanFactory.getBeanDefinition(proxyBeanName);
+        PropertyValue targetBeanNameValue = proxyDefinition.getPropertyValues().getPropertyValue("targetBeanName");
+        if (targetBeanNameValue != null && targetBeanName.equals(targetBeanNameValue.getValue())) {
+            LOGGER.debug("the scoped proxy '{}' of bean '{}' will be recreated too", proxyBeanName, targetBeanName);
+            beanFactory.removeBeanDefinition(proxyBeanName);
         }
     }
 
