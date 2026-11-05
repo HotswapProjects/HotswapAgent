@@ -31,6 +31,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Spring Bean post processors contain various caches for performance reasons. Clear the caches on reload.
@@ -118,7 +119,19 @@ public class ResetBeanPostProcessorCaches {
     public static void resetAutowiredAnnotationBeanPostProcessorCache(AutowiredAnnotationBeanPostProcessor bpp) {
         getAutowiredAnnotationBeanPostProcessorConstructorCache(bpp).clear();
         LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache");
+        resetLookupMethodsChecked(bpp);
         resetAnnotationBeanPostProcessorCache(bpp, AutowiredAnnotationBeanPostProcessor.class);
+    }
+
+    // @Lookup methods are registered as method overrides of the merged bean definition only once per bean name,
+    // the merged bean definitions are cleared on reload
+    private static void resetLookupMethodsChecked(AutowiredAnnotationBeanPostProcessor bpp) {
+        Object lookupMethodsChecked = ReflectionHelper.getNoException(bpp, AutowiredAnnotationBeanPostProcessor.class,
+                "lookupMethodsChecked");
+        if (lookupMethodsChecked instanceof Set) {
+            ((Set<?>) lookupMethodsChecked).clear();
+            LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.lookupMethodsChecked");
+        }
     }
 
     private static Map<Class<?>, Constructor<?>[]> getAutowiredAnnotationBeanPostProcessorConstructorCache(
