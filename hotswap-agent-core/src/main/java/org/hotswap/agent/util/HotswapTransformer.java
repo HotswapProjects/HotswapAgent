@@ -23,6 +23,7 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import org.hotswap.agent.annotation.handler.PluginClassFileTransformer;
@@ -66,8 +68,13 @@ public class HotswapTransformer implements ClassFileTransformer {
 
     private static class RegisteredTransformersRecord {
         Pattern pattern;
-        List<HaClassFileTransformer> transformerList = new LinkedList<>();
+        // read by transform() without a lock
+        List<HaClassFileTransformer> transformerList = new CopyOnWriteArrayList<>();
     }
+
+    // Transformers are registered and removed by plugins while other threads load classes (e.g. parallel deployments
+    // in WildFly). Changes of the maps below are done with this lock, transform() reads a copy taken with it.
+    private final Object transformersLock = new Object();
 
     protected Map<String, RegisteredTransformersRecord> redefinitionTransformers = new LinkedHashMap<>();
     protected Map<String, RegisteredTransformersRecord> otherTransformers = new LinkedHashMap<>();
@@ -75,7 +82,7 @@ public class HotswapTransformer implements ClassFileTransformer {
     // keep track about which classloader requested which transformer
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<>();
 
-    protected Map<ClassLoader, Boolean> seenClassLoaders = new WeakHashMap<>();
+    protected Map<ClassLoader, Boolean> seenClassLoaders = Collections.synchronizedMap(new WeakHashMap<>());
     private List<Pattern> includedClassLoaderPatterns;
     private List<Pattern> excludedClassLoaderPatterns;
     public List<Pattern> getIncludedClassLoaderPatterns() {
@@ -115,22 +122,24 @@ public class HotswapTransformer implements ClassFileTransformer {
 
         String normalizeRegexp = normalizeTypeRegexp(classNameRegexp);
 
-        Map<String, RegisteredTransformersRecord> transformersMap = getTransformerMap(transformer);
+        synchronized (transformersLock) {
+            Map<String, RegisteredTransformersRecord> transformersMap = getTransformerMap(transformer);
 
-        RegisteredTransformersRecord transformerRecord = transformersMap.get(normalizeRegexp);
-        if (transformerRecord == null) {
-            transformerRecord = new RegisteredTransformersRecord();
-            transformerRecord.pattern = Pattern.compile(normalizeRegexp);
-            transformersMap.put(normalizeRegexp, transformerRecord);
-        }
+            RegisteredTransformersRecord transformerRecord = transformersMap.get(normalizeRegexp);
+            if (transformerRecord == null) {
+                transformerRecord = new RegisteredTransformersRecord();
+                transformerRecord.pattern = Pattern.compile(normalizeRegexp);
+                transformersMap.put(normalizeRegexp, transformerRecord);
+            }
 
-        if (!transformerRecord.transformerList.contains(transformer)) {
-            transformerRecord.transformerList.add(transformer);
-        }
+            if (!transformerRecord.transformerList.contains(transformer)) {
+                transformerRecord.transformerList.add(transformer);
+            }
 
-        // register classloader association to allow classloader unregistration
-        if (classLoader != null) {
-            classLoaderTransformers.put(transformer, classLoader);
+            // register classloader association to allow classloader unregistration
+            if (classLoader != null) {
+                classLoaderTransformers.put(transformer, classLoader);
+            }
         }
     }
 
@@ -149,10 +158,12 @@ public class HotswapTransformer implements ClassFileTransformer {
      */
     public void removeTransformer(String classNameRegexp, HaClassFileTransformer transformer) {
         String normalizeRegexp = normalizeTypeRegexp(classNameRegexp);
-        Map<String, RegisteredTransformersRecord> transformersMap = getTransformerMap(transformer);
-        RegisteredTransformersRecord transformerRecord = transformersMap.get(normalizeRegexp);
-        if (transformerRecord != null) {
-            transformerRecord.transformerList.remove(transformer);
+        synchronized (transformersLock) {
+            Map<String, RegisteredTransformersRecord> transformersMap = getTransformerMap(transformer);
+            RegisteredTransformersRecord transformerRecord = transformersMap.get(normalizeRegexp);
+            if (transformerRecord != null) {
+                transformerRecord.transformerList.remove(transformer);
+            }
         }
     }
 
@@ -161,16 +172,18 @@ public class HotswapTransformer implements ClassFileTransformer {
      * @param classLoader
      */
     public void closeClassLoader(ClassLoader classLoader) {
-        for (Iterator<Map.Entry<ClassFileTransformer, ClassLoader>> entryIterator = classLoaderTransformers.entrySet().iterator();
-                entryIterator.hasNext(); ) {
-            Map.Entry<ClassFileTransformer, ClassLoader> entry = entryIterator.next();
-            if (entry.getValue().equals(classLoader)) {
-                entryIterator.remove();
-                for (RegisteredTransformersRecord transformerRecord : redefinitionTransformers.values()) {
-                    transformerRecord.transformerList.remove(entry.getKey());
-                }
-                for (RegisteredTransformersRecord transformerRecord : otherTransformers.values()) {
-                    transformerRecord.transformerList.remove(entry.getKey());
+        synchronized (transformersLock) {
+            for (Iterator<Map.Entry<ClassFileTransformer, ClassLoader>> entryIterator = classLoaderTransformers.entrySet().iterator();
+                    entryIterator.hasNext(); ) {
+                Map.Entry<ClassFileTransformer, ClassLoader> entry = entryIterator.next();
+                if (entry.getValue().equals(classLoader)) {
+                    entryIterator.remove();
+                    for (RegisteredTransformersRecord transformerRecord : redefinitionTransformers.values()) {
+                        transformerRecord.transformerList.remove(entry.getKey());
+                    }
+                    for (RegisteredTransformersRecord transformerRecord : otherTransformers.values()) {
+                        transformerRecord.transformerList.remove(entry.getKey());
+                    }
                 }
             }
         }
@@ -202,14 +215,22 @@ public class HotswapTransformer implements ClassFileTransformer {
 
         List<ClassFileTransformer> toApply = new ArrayList<>();
         List<PluginClassFileTransformer> pluginTransformers = new ArrayList<>();
+        List<RegisteredTransformersRecord> otherRecords;
+        List<RegisteredTransformersRecord> redefinitionRecords;
+        synchronized (transformersLock) {
+            otherRecords = new ArrayList<>(otherTransformers.values());
+            redefinitionRecords = redefiningClass != null && className != null
+                    ? new ArrayList<>(redefinitionTransformers.values())
+                    : Collections.emptyList();
+        }
         try {
             // 1. call transform method of defining transformers
-            for (RegisteredTransformersRecord transformerRecord : new ArrayList<>(otherTransformers.values())) {
+            for (RegisteredTransformersRecord transformerRecord : otherRecords) {
                 if ((className != null && transformerRecord.pattern.matcher(className).matches()) ||
                         (redefiningClass != null && transformerRecord.pattern.matcher(redefiningClass.getName()).matches())) {
-                    for (ClassFileTransformer transformer : new ArrayList<ClassFileTransformer>(transformerRecord.transformerList)) {
+                    for (ClassFileTransformer transformer : transformerRecord.transformerList) {
                         if(transformer instanceof PluginClassFileTransformer) {
-                            PluginClassFileTransformer pcft = PluginClassFileTransformer.class.cast(transformer);
+                            PluginClassFileTransformer pcft = (PluginClassFileTransformer) transformer;
                             if(!pcft.isPluginDisabled(classLoader)) {
                                 pluginTransformers.add(pcft);
                             }
@@ -221,11 +242,11 @@ public class HotswapTransformer implements ClassFileTransformer {
             }
             // 2. call transform method of redefining transformers
             if (redefiningClass != null && className != null) {
-                for (RegisteredTransformersRecord transformerRecord : new ArrayList<>(redefinitionTransformers.values())) {
+                for (RegisteredTransformersRecord transformerRecord : redefinitionRecords) {
                     if (transformerRecord.pattern.matcher(className).matches()) {
-                        for (ClassFileTransformer transformer : new ArrayList<ClassFileTransformer>(transformerRecord.transformerList)) {
+                        for (ClassFileTransformer transformer : transformerRecord.transformerList) {
                             if(transformer instanceof PluginClassFileTransformer) {
-                                PluginClassFileTransformer pcft = PluginClassFileTransformer.class.cast(transformer);
+                                PluginClassFileTransformer pcft = (PluginClassFileTransformer) transformer;
                                 if(!pcft.isPluginDisabled(classLoader)) {
                                     pluginTransformers.add(pcft);
                                 }
