@@ -319,6 +319,8 @@ public class SpringBeanReload {
         // 7. invoke the Bean lifecycle steps
         // 7.1 invoke BeanFactoryPostProcessor
         invokeBeanFactoryPostProcessors(beanFactory);
+        // post processors may have changed bean definitions in place, e.g. resolved placeholders
+        BeanFactoryProcessor.clearMergedBeanDefinitions(beanFactory);
         addBeanPostProcessors(beanFactory);
         // 7.2 process @Value and @Autowired of singleton beans excluding destroyed beans
         processAutowiredAnnotationBeans();
@@ -556,6 +558,7 @@ public class SpringBeanReload {
 //        ResetBeanFactoryCaches.reset(beanFactory);
         ConfigurationClassPostProcessorEnhance.getInstance(beanFactory).resetConfigurationClassPostProcessor(beanFactory);
         ResetAnnotationCache.resetAnnotationScanner(beanFactory);
+        BeanFactoryProcessor.clearMergedBeanDefinitions(beanFactory);
     }
 
     private void clearLocalCache() {

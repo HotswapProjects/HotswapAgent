@@ -46,6 +46,21 @@ public class BeanFactoryProcessor {
         beanFactory.removeBeanDefinition(beanName);
     }
 
+    /**
+     * Drop all merged bean definitions, so the next getBean merges them again from the current bean definitions.
+     * Merged definitions of created beans keep resolved classes, constructors and factory methods, which are
+     * stale after a class change.
+     */
+    public static void clearMergedBeanDefinitions(DefaultListableBeanFactory beanFactory) {
+        try {
+            Field field = AbstractBeanFactory.class.getDeclaredField("mergedBeanDefinitions");
+            field.setAccessible(true);
+            ((java.util.Map<?, ?>) field.get(beanFactory)).clear();
+        } catch (Exception e) {
+            LOGGER.warning("Failed to clear merged bean definitions of {}", e, ObjectUtils.identityToString(beanFactory));
+        }
+    }
+
     public static void destroySingleton(DefaultListableBeanFactory beanFactory, String beanName) {
         // remove embeddedValueResolvers cache in PlaceholderConfigurerSupport
         resetEmbeddedValueResolvers(beanFactory, beanName);
