@@ -61,8 +61,22 @@ public class HotswapAgent {
         premain(args, inst);
     }
 
+    /**
+     * The agent was already initialized in this JVM.
+     */
+    private static boolean initialized = false;
+
     public static void premain(String args, Instrumentation inst) {
         parseArgs(args);
+        synchronized (HotswapAgent.class) {
+            if (initialized) {
+                // a second init would register the transformer twice and every class would be patched twice
+                LOGGER.warning("Hotswap agent is already loaded, ignoring the second load. Use either "
+                        + "-XX:HotswapAgent or -javaagent, not both.");
+                return;
+            }
+            initialized = true;
+        }
         LOGGER.info("Loading Hotswap agent {} - unlimited runtime class redefinition.", Version.version());
         fixJboss7Modules();
         PluginManager.getInstance().init(inst);
