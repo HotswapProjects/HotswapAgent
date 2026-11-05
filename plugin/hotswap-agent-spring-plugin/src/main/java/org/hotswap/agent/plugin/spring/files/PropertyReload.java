@@ -26,6 +26,7 @@ import org.hotswap.agent.plugin.spring.transformers.api.ReloadableResourceProper
 import org.hotswap.agent.plugin.spring.utils.AnnotatedBeanDefinitionUtils;
 import org.hotswap.agent.util.ReflectionHelper;
 import org.hotswap.agent.util.spring.util.ObjectUtils;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
@@ -55,7 +56,7 @@ public class PropertyReload {
 
 
     public static void reloadPropertySource(DefaultListableBeanFactory beanFactory) {
-        ConfigurableEnvironment environment = beanFactory.getBean(ConfigurableEnvironment.class);
+        ConfigurableEnvironment environment = getEnvironment(beanFactory);
         if (environment != null) {
             Map<String, String> oldValueMap = getPropertyOfPropertySource(environment);
             // reload
@@ -65,6 +66,18 @@ public class PropertyReload {
         }
 
         refreshPlaceholderConfigurerSupport(beanFactory);
+    }
+
+    private static ConfigurableEnvironment getEnvironment(DefaultListableBeanFactory beanFactory) {
+        try {
+            return beanFactory.getBean(ConfigurableEnvironment.class);
+        } catch (NoSuchBeanDefinitionException e) {
+            // e.g. a bean factory created without an application context. All bean factories are reloaded
+            // after a property change, so an exception here would stop the reload of the others too.
+            LOGGER.debug("No ConfigurableEnvironment in {}, skip reloading of its property sources",
+                    ObjectUtils.identityToString(beanFactory));
+            return null;
+        }
     }
 
     private static Map<String, String> getPropertyOfPropertySource(ConfigurableEnvironment environment) {
