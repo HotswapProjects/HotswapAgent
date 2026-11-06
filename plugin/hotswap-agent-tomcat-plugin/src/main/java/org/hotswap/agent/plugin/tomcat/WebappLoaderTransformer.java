@@ -136,9 +136,9 @@ public class WebappLoaderTransformer {
         String constrParams;
 
         if (constructorTypes.length == 4)
-            constrParams = "this, path, file, false";
+            constrParams = "this, $1, file, false";
         else if (constructorTypes.length == 5)
-            constrParams = "this, path, file, false, null";
+            constrParams = "this, $1, file, false, null";
         else {
             LOGGER.warning("org.apache.catalina.webresources.FileResource unknown constructor. Tomcat plugin will not work properly.");
             return;
@@ -146,7 +146,7 @@ public class WebappLoaderTransformer {
 
         try {
             ctClass.getDeclaredMethod("getResourceInternal", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertBefore(
-                    "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, path);" +
+                    "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, $1);" +
                             "if (file != null) return new org.apache.catalina.webresources.FileResource(" + constrParams + ");"
             );
         } catch (NotFoundException e) {
@@ -157,7 +157,7 @@ public class WebappLoaderTransformer {
         // if getResources() should contain extraClasspath, expand the original returned array and prepend extraClasspath result
         try {
             ctClass.getDeclaredMethod("getResources", new CtClass[]{classPool.get(String.class.getName()), CtPrimitiveType.booleanType}).insertAfter(
-                    "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, path);" +
+                    "java.io.File file = " + TomcatPlugin.class.getName() + ".getExtraResourceFile(this, $1);" +
                     "if (file != null) {" +
                             "org.apache.catalina.WebResource[] ret = new org.apache.catalina.WebResource[$_.length + 1];" +
                             "ret[0] = new org.apache.catalina.webresources.FileResource(" + constrParams + ");" +
@@ -182,12 +182,12 @@ public class WebappLoaderTransformer {
 
         try {
             ctClass.getDeclaredMethod("lookup", new CtClass[] {classPool.get(String.class.getName())}).insertBefore(
-                    "java.io.InputStream is = " + TomcatPlugin.class.getName() + ".getExtraResource(this, name);" +
+                    "java.io.InputStream is = " + TomcatPlugin.class.getName() + ".getExtraResource(this, $1);" +
                             "if (is != null) return new org.apache.naming.resources.Resource(is);"
             );
 
             ctClass.getDeclaredMethod("getAttributes", new CtClass[] {classPool.get(String.class.getName())}).insertBefore(
-                    "long length = " + TomcatPlugin.class.getName() + ".getExtraResourceLength(this, name);" +
+                    "long length = " + TomcatPlugin.class.getName() + ".getExtraResourceLength(this, $1);" +
                             "if (length > 0) {" +
                             "  org.apache.naming.resources.ResourceAttributes a = new org.apache.naming.resources.ResourceAttributes();" +
                             "  a.setContentLength(length); return a;" +
