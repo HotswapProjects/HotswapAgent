@@ -20,8 +20,10 @@ package org.hotswap.agent.plugin.spring.files;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.logging.AgentLoggerHandler;
+import org.hotswap.agent.plugin.spring.utils.ResourceUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.core.io.UrlResource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +42,40 @@ public class XmlBeanDefinitionScannerAgentTest {
         beanDefinition.setResourceDescription(
                 "app.PersonRepository defined in @EnableJpaRepositories declared on DatabaseConfiguration");
 
+        List<String> warnings = warningsLoggedBy(() -> XmlBeanDefinitionScannerAgent.registerBean("personRepository", beanDefinition));
+
+        assertEquals(new ArrayList<String>(), warnings);
+    }
+
+    /**
+     * Spring Security 6.2 registers bean definitions whose resource is a configuration class in its jar (#581).
+     */
+    @Test
+    public void registerBeanWithClassInJarDoesNotWarn() throws Exception {
+        RootBeanDefinition beanDefinition = new RootBeanDefinition(Object.class);
+        beanDefinition.setResource(new UrlResource("jar:file:/repo/spring-security-config-6.2.4.jar!/org/springframework/"
+                + "security/config/annotation/method/configuration/PrePostMethodSecurityConfiguration.class"));
+
+        List<String> warnings = warningsLoggedBy(() -> XmlBeanDefinitionScannerAgent.registerBean("preFilterAuthorizationMethodInterceptor", beanDefinition));
+
+        assertEquals(new ArrayList<String>(), warnings);
+    }
+
+    /**
+     * An XML file in an unknown output folder may be a Spring bean definition file that cannot be reloaded.
+     */
+    @Test
+    public void xmlFileInUnknownOutputFolderWarns() {
+        String path = "/project/build/resources/main/applicationContext.xml";
+
+        List<String> warnings = warningsLoggedBy(() -> assertEquals(path, ResourceUtils.convertToClasspathURL(path)));
+
+        assertEquals(1, warnings.size());
+    }
+
+    private static List<String> warningsLoggedBy(Runnable action) {
+        // ResourceUtils logs with the logger of XmlBeanDefinitionScannerAgent, make sure warnings are enabled
+        AgentLogger.setLevel(XmlBeanDefinitionScannerAgent.class.getName(), AgentLogger.Level.TRACE);
         List<String> warnings = new ArrayList<>();
         AgentLoggerHandler originalHandler = AgentLogger.getHandler();
         AgentLogger.setHandler(new AgentLoggerHandler() {
@@ -52,11 +88,10 @@ public class XmlBeanDefinitionScannerAgentTest {
             }
         });
         try {
-            XmlBeanDefinitionScannerAgent.registerBean("personRepository", beanDefinition);
+            action.run();
         } finally {
             AgentLogger.setHandler(originalHandler);
         }
-
-        assertEquals(new ArrayList<String>(), warnings);
+        return warnings;
     }
 }
