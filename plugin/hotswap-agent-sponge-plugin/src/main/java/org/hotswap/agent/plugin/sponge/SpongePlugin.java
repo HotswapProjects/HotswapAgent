@@ -63,7 +63,7 @@ public final class SpongePlugin {
         ctClass.getDeclaredConstructor(new CtClass[0]).insertAfter(initialization.toString());
 
         StringBuilder captureHandleLookup = new StringBuilder("{");
-        captureHandleLookup.append(PluginManagerInvoker.buildCallPluginMethod(SpongePlugin.class, "captureHandleLookup", "listenerObject", "java.lang.Object", "customLookup", "java.lang.invoke.MethodHandles$Lookup"));
+        captureHandleLookup.append(PluginManagerInvoker.buildCallPluginMethod(SpongePlugin.class, "captureHandleLookup", "$2", "java.lang.Object", "$3", "java.lang.invoke.MethodHandles$Lookup"));
         captureHandleLookup.append("}");
 
         ctClass.getDeclaredMethod("registerListener", new CtClass[] {

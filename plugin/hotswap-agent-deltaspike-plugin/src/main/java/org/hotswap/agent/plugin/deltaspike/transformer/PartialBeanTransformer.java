@@ -54,10 +54,10 @@ public class PartialBeanTransformer {
 
         CtMethod createPartialBeanMethod = ctClass.getDeclaredMethod("createPartialBean");
         createPartialBeanMethod.insertAfter(
-            "if (" + PluginManager.class.getName() + ".getInstance().isPluginInitialized(\"" + DeltaSpikePlugin.class.getName() + "\", beanClass.getClassLoader())) {" +
+            "if (" + PluginManager.class.getName() + ".getInstance().isPluginInitialized(\"" + DeltaSpikePlugin.class.getName() + "\", $1.getClassLoader())) {" +
                 PluginManagerInvoker.buildCallPluginMethod(DeltaSpikePlugin.class, "registerPartialBean",
                         "$_", "java.lang.Object",
-                        "beanClass", "java.lang.Class"
+                        "$1", "java.lang.Class"
                         ) +
             "}" +
             "return $_;"

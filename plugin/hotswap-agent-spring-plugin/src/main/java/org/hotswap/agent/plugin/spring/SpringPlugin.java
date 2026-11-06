@@ -340,7 +340,7 @@ public class SpringPlugin {
         LOGGER.trace("Setting up code for storing reference to RepositoryConfigurationDelegate");
         CtMethod method = ctClass.getDeclaredMethod("registerRepositoriesIn");
         method.insertBefore(
-                "org.hotswap.agent.plugin.spring.reload.ReloadRepositories.storeReferences(this, registry, extension);");
+                "org.hotswap.agent.plugin.spring.reload.ReloadRepositories.storeReferences(this, $1, $2);");
 
     }
 
@@ -350,7 +350,7 @@ public class SpringPlugin {
         LOGGER.trace("Setting up code for storing reference to PersistenceManagedTypesScanner");
         CtMethod method = ctClass.getDeclaredMethod("scan");
         method.insertBefore(
-                "org.hotswap.agent.plugin.spring.reload.ScanNewEntities.storeScanner(this, packagesToScan);");
+                "org.hotswap.agent.plugin.spring.reload.ScanNewEntities.storeScanner(this, $1);");
 
     }
 }

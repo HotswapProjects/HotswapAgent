@@ -79,7 +79,7 @@ public class ZkPlugin {
     }
 
     private static void defaultLibraryPropertyFalse(CtMethod m, String setPropertyFalse) throws CannotCompileException {
-        m.insertAfter("if (_props.get(key) == null && \"" + setPropertyFalse + "\".equals(key)) return \"false\";");
+        m.insertAfter("if (_props.get($1) == null && \"" + setPropertyFalse + "\".equals($1)) return \"false\";");
     }
 
     @OnResourceFileEvent(path = "/", filter = ".*.properties")
