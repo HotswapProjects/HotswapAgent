@@ -183,6 +183,11 @@ public class Jersey2Plugin {
      */
     private Command reloadJerseyContainers = new Command() {
         public void executeCommand() {
+            // Jersey and its extensions use the context class loader, e.g. to find services with ServiceLoader
+            // (Krazo). The command runs in the agent thread, so use the application class loader as at startup.
+            Thread thread = Thread.currentThread();
+            ClassLoader oldContextClassLoader = thread.getContextClassLoader();
+            thread.setContextClassLoader(appClassLoader);
             try {
                 Class<?> containerClass = resolveClass("org.glassfish.jersey.server.spi.Container");
                 Method reloadMethod = containerClass.getDeclaredMethod("reload");
@@ -193,6 +198,8 @@ public class Jersey2Plugin {
                 LOGGER.info("Reloaded Jersey Containers");
             } catch (Exception e) {
                 LOGGER.error("Error reloading Jersey Container.", e);
+            } finally {
+                thread.setContextClassLoader(oldContextClassLoader);
             }
         }
     };
