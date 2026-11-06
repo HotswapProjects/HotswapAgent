@@ -77,15 +77,16 @@ public class URLClassPathHelper {
      *
      * @param classLoader    classloader
      * @param extraClassPath path to prepend
+     * @return true if the classpath was prepended
      */
-    public static void prependClassPath(ClassLoader classLoader, URL[] extraClassPath) {
+    public static boolean prependClassPath(ClassLoader classLoader, URL[] extraClassPath) {
         synchronized (classLoader) {
             // set new URLClassPath to the classloader via reflection
             try {
                 Field ucpField = getUcpField(classLoader);
                 if (ucpField == null) {
                     LOGGER.debug("Unable to find ucp field in classLoader {}", classLoader);
-                    return;
+                    return false;
                 }
 
                 ucpField.setAccessible(true);
@@ -104,8 +105,10 @@ public class URLClassPathHelper {
                 setUcpFieldOfAllClassLoader(classLoader, ucpField, urlClassPath);
 
                 LOGGER.debug("Added extraClassPath URLs {} to classLoader {}", Arrays.toString(extraClassPath), classLoader);
+                return true;
             } catch (Exception e) {
                 LOGGER.error("Unable to add extraClassPath URLs {} to classLoader {}", e, Arrays.toString(extraClassPath), classLoader);
+                return false;
             }
         }
     }
