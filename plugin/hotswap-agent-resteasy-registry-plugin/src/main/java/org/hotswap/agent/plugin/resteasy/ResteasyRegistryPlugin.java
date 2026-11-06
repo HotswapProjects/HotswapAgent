@@ -94,7 +94,7 @@ public class ResteasyRegistryPlugin {
             CtMethod init = ctClass.getDeclaredMethod("init");
             init.insertAfter(""//
                     +"java.lang.ClassLoader $$cl = Thread.currentThread().getContextClassLoader();" //
-                    +"java.lang.Object $$servletContext = servletConfig.getServletContext();"//
+                    +"java.lang.Object $$servletContext = $1.getServletContext();"//
                     + PluginManagerInvoker.buildInitializePlugin(ResteasyRegistryPlugin.class, "$$cl")//
                     + PluginManagerInvoker.buildCallPluginMethod("$$cl", ResteasyRegistryPlugin.class,
                             "registerContext", "$$servletContext", "java.lang.Object")//
@@ -112,7 +112,7 @@ public class ResteasyRegistryPlugin {
             CtMethod init = ctClass.getDeclaredMethod("init");
 
             init.insertAfter(""//
-                    + "java.lang.Object $$servletContext = servletConfig.getServletContext();" //
+                    + "java.lang.Object $$servletContext = $1.getServletContext();" //
                     + "java.lang.ClassLoader $$cl = Thread.currentThread().getContextClassLoader();"//
                     + PluginManagerInvoker.buildInitializePlugin(ResteasyRegistryPlugin.class, "$$cl") //
                     + PluginManagerInvoker.buildCallPluginMethod("$$cl", ResteasyRegistryPlugin.class,

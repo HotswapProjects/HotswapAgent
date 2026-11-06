@@ -137,7 +137,7 @@ public class LogbackPlugin {
         m.insertAfter(PluginManagerInvoker.buildInitializePlugin(LogbackPlugin.class));
         m.insertAfter(PluginManagerInvoker.buildCallPluginMethod(LogbackPlugin.class, "initLogback",
                 "this", "java.lang.Object",
-                "url", "java.net.URL"));
+                "$1", "java.net.URL"));
     }
 
 }

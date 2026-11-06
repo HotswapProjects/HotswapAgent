@@ -147,7 +147,7 @@ public class MyBatisTransformers {
                 new CtClass[]{classPool.get("org.apache.ibatis.session.Configuration")});
         buildMethod.insertBefore("{" +
                 "if (this." + FACTORYBEAN_FIELD + " != null) {" +
-                "config = " + SqlSessionFactoryBeanCaller.class.getName() + ".proxyConfiguration(this." + FACTORYBEAN_FIELD + ", config);" +
+                "$1 = " + SqlSessionFactoryBeanCaller.class.getName() + ".proxyConfiguration(this." + FACTORYBEAN_FIELD + ", $1);" +
                 "}" +
                 "}"
         );

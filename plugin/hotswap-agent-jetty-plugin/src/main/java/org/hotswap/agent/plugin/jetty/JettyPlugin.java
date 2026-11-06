@@ -77,9 +77,9 @@ public class JettyPlugin {
             CtMethod doStart = ctClass.getDeclaredMethod("configure");
 
             // init the plugin
-            String src = PluginManagerInvoker.buildInitializePlugin(JettyPlugin.class, "context.getClassLoader()");
-            src += PluginManagerInvoker.buildCallPluginMethod("context.getClassLoader()", JettyPlugin.class,
-                    "init", "context", "java.lang.Object");
+            String src = PluginManagerInvoker.buildInitializePlugin(JettyPlugin.class, "$1.getClassLoader()");
+            src += PluginManagerInvoker.buildCallPluginMethod("$1.getClassLoader()", JettyPlugin.class,
+                    "init", "$1", "java.lang.Object");
 
             doStart.insertBefore(src);
         } catch (NotFoundException e) {
