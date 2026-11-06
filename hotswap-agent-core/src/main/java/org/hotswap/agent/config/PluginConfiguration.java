@@ -71,6 +71,9 @@ public class PluginConfiguration {
     // is property file defined directly in this classloader?
     boolean containsPropertyFileDirectly = false;
 
+    // was extraClasspath added to this classloader?
+    volatile boolean extraClasspathApplied = false;
+
 
     public PluginConfiguration(ClassLoader classLoader) {
         this(null, classLoader);
@@ -219,8 +222,9 @@ public class PluginConfiguration {
         if (extraClassPath.length > 0 && !checkExcluded()) {
             if (classLoader instanceof HotswapAgentClassLoaderExt) {
                 ((HotswapAgentClassLoaderExt) classLoader).$$ha$setExtraClassPath(extraClassPath);
+                extraClasspathApplied = true;
             } else if (URLClassPathHelper.isApplicable(classLoader)) {
-                URLClassPathHelper.prependClassPath(classLoader, extraClassPath);
+                extraClasspathApplied = URLClassPathHelper.prependClassPath(classLoader, extraClassPath);
             } else {
                 LOGGER.debug("Unable to set extraClasspath to {} on classLoader {}. Only classLoader with 'ucp' " +
                                 "field present is supported.\n*** extraClasspath configuration property will not be " +
@@ -415,6 +419,16 @@ public class PluginConfiguration {
      */
     public ClassLoader getClassLoader() {
         return classLoader;
+    }
+
+    /**
+     * Was extraClasspath added to the classloader of this configuration? The classloader may not return it from
+     * getResources() yet, e.g. the Tomcat plugin makes the webapp classloader return it only later.
+     *
+     * @return true if extraClasspath was added
+     */
+    public boolean isExtraClasspathApplied() {
+        return extraClasspathApplied;
     }
 
     /**

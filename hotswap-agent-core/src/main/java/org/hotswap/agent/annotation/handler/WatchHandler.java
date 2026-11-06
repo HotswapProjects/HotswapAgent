@@ -27,7 +27,10 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.hotswap.agent.config.PluginConfiguration;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchEventListener;
@@ -74,8 +77,11 @@ public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
 
     /**
      * Register resource change listener on URI:
-     * - classpath (already should contain extraClasspath)
+     * - classpath
+     * - plugin configuration - extraClasspath, if it was added to the class loader (getResources() may not return
+     *   it yet, e.g. the Tomcat plugin makes the webapp class loader return it after its plugins were initialized)
      * - plugin configuration - watchResources property
+     * Each directory is registered only once.
      */
     private void registerResources(final PluginAnnotation<T> pluginAnnotation, final ClassLoader classLoader) throws IOException {
         final T annot = pluginAnnotation.getAnnotation();
@@ -84,27 +90,36 @@ public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
         String path = watchEventDTO.getPath();
 
         // normalize
-        if (path == null || path.equals(".") || path.equals("/"))
+        if (path == null || path.equals("."))
             path = "";
-        if (path.endsWith("/"))
-            path = path.substring(0, path.length() - 2);
+        while (path.startsWith("/"))
+            path = path.substring(1);
+        while (path.endsWith("/"))
+            path = path.substring(0, path.length() - 1);
+
+        PluginConfiguration pluginConfiguration = pluginManager.getPluginConfiguration(classLoader);
 
 
-        // classpath resources (already should contain extraClasspath)
+        Set<Path> registeredPaths = new HashSet<>();
+
+        // classpath resources
         Enumeration<URL> en = classLoader.getResources(path);
         while (en.hasMoreElements()) {
             try {
                 URI uri = en.nextElement().toURI();
 
                 // check that this is a local accessible file (not vfs inside JAR etc.)
+                File file;
                 try {
-                    new File(uri);
+                    file = new File(uri);
                 } catch (Exception e) {
                     LOGGER.trace("Skipping uri {}, not a local file.", uri);
                     continue;
                 }
 
-
+                if (!registeredPaths.add(registrationKey(file.toPath()))) {
+                    continue;
+                }
                 LOGGER.debug("Registering resource listener on classpath URI {}", uri);
                 registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, uri);
             } catch (URISyntaxException e) {
@@ -112,20 +127,72 @@ public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
             }
         }
 
-        // add extra directories for watchResources property
-        if (!watchEventDTO.isClassFileEvent()) {
-            for (URL url : pluginManager.getPluginConfiguration(classLoader).getWatchResources()) {
-                try {
-                    Path watchResourcePath = Paths.get(url.toURI());
-                    Path pathInWatchResource = watchResourcePath.resolve(path);
-                    if (pathInWatchResource.toFile().exists()) {
-                        LOGGER.debug("Registering resource listener on watchResources URI {}", pathInWatchResource.toUri());
-                        registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, pathInWatchResource.toUri());
-                    }
-                } catch (URISyntaxException e) {
-                    LOGGER.error("Unable convert watch resource path URL {} to URI", e, url);
+        // extraClasspath
+        if (pluginConfiguration != null && pluginConfiguration.isExtraClasspathApplied()) {
+            for (URL url : pluginConfiguration.getExtraClasspath()) {
+                Path extraClasspathDir = toLocalPath(url);
+                if (extraClasspathDir == null || !extraClasspathDir.toFile().isDirectory()) {
+                    continue; // JAR or missing directory
+                }
+                Path pathInExtraClasspath = resolve(extraClasspathDir, path);
+                if (pathInExtraClasspath != null && pathInExtraClasspath.toFile().exists()
+                        && registeredPaths.add(registrationKey(pathInExtraClasspath))) {
+                    LOGGER.debug("Registering resource listener on extraClasspath URI {}", pathInExtraClasspath.toUri());
+                    registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, pathInExtraClasspath.toUri());
                 }
             }
+        }
+
+        // add extra directories for watchResources property
+        if (pluginConfiguration != null && !watchEventDTO.isClassFileEvent()) {
+            for (URL url : pluginConfiguration.getWatchResources()) {
+                Path watchResource = toLocalPath(url);
+                Path pathInWatchResource = watchResource != null ? resolve(watchResource, path) : null;
+                if (pathInWatchResource != null && pathInWatchResource.toFile().exists()
+                        && registeredPaths.add(registrationKey(pathInWatchResource))) {
+                    LOGGER.debug("Registering resource listener on watchResources URI {}", pathInWatchResource.toUri());
+                    registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, pathInWatchResource.toUri());
+                }
+            }
+        }
+    }
+
+    /**
+     * Convert a configured URL to a path, or return null if the URL is not a local file.
+     */
+    private static Path toLocalPath(URL url) {
+        if (!"file".equals(url.getProtocol())) {
+            LOGGER.debug("Skipping URL {}, not a local file.", url);
+            return null;
+        }
+        try {
+            return Paths.get(url.toURI()).toAbsolutePath().normalize();
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            LOGGER.error("Unable convert URL {} to path", e, url);
+            return null;
+        }
+    }
+
+    /**
+     * Resolve the watched path in a configured directory, or return null if it is not a valid path.
+     */
+    private static Path resolve(Path dir, String path) {
+        try {
+            return dir.resolve(path).normalize();
+        } catch (IllegalArgumentException e) {
+            LOGGER.debug("Unable to resolve path {} in {}", path, dir);
+            return null;
+        }
+    }
+
+    /**
+     * The same directory may be reached by different paths (symbolic links, letter case on Windows).
+     */
+    private static Path registrationKey(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            return path.toAbsolutePath().normalize();
         }
     }
 

@@ -18,11 +18,19 @@
  */
 package org.hotswap.agent.config;
 
+import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
+import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.net.URL;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Basic tests for configuration.
@@ -30,6 +38,51 @@ import static org.junit.Assert.assertEquals;
  * @author Jiri Bubnik
  */
 public class PluginConfigurationTest {
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
+    static class ExtClassLoader extends ClassLoader implements HotswapAgentClassLoaderExt {
+        URL[] extraClassPath;
+
+        ExtClassLoader() {
+            super(null);
+        }
+
+        @Override
+        public void $$ha$setExtraClassPath(URL[] extraClassPath) {
+            this.extraClassPath = extraClassPath;
+        }
+
+        @Override
+        public void $$ha$setWatchResourceLoader(WatchResourcesClassLoader watchResourceLoader) {
+        }
+    }
+
+    @Test
+    public void extraClasspathAppliedToHotswapAgentClassLoaderExt() throws Exception {
+        File extra = folder.newFolder("extra");
+        ExtClassLoader classLoader = new ExtClassLoader();
+        PluginConfiguration pluginConfiguration = initWithExtraClasspath(classLoader, extra);
+
+        assertTrue(pluginConfiguration.isExtraClasspathApplied());
+        assertArrayEquals(new URL[]{extra.getCanonicalFile().toURI().toURL()}, classLoader.extraClassPath);
+    }
+
+    @Test
+    public void extraClasspathNotAppliedToClassLoaderWithoutUcp() throws Exception {
+        File extra = folder.newFolder("extra");
+        PluginConfiguration pluginConfiguration = initWithExtraClasspath(new ClassLoader(null) {}, extra);
+
+        assertFalse(pluginConfiguration.isExtraClasspathApplied());
+    }
+
+    private static PluginConfiguration initWithExtraClasspath(ClassLoader classLoader, File extra) {
+        PluginConfiguration pluginConfiguration = new PluginConfiguration(null, classLoader, false);
+        pluginConfiguration.properties.setProperty("extraClasspath", extra.getAbsolutePath());
+        pluginConfiguration.init();
+        return pluginConfiguration;
+    }
 
     @Test
     public void testGetWatchResources() throws Exception {
