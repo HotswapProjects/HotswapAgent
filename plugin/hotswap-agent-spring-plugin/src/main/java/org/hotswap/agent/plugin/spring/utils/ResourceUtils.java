@@ -83,8 +83,21 @@ public class ResourceUtils {
             return paths[1];
         }
 
-        LOGGER.error("failed to convert filePath {} to classPath path", filePath);
+        logConversionFailure(filePath);
         return filePath;
+    }
+
+    /**
+     * The path is used as it is. Files in archives (e.g. classes in jars registered as bean definition resources)
+     * and files other than XML are never reloaded, so they are logged at debug level only. An XML file in an unknown
+     * output folder (e.g. Gradle build/resources/main) may be a Spring bean definition file which cannot be reloaded.
+     */
+    private static void logConversionFailure(String filePath) {
+        if (filePath.contains("!/") || !filePath.endsWith(".xml")) {
+            LOGGER.debug("failed to convert filePath {} to classPath path", filePath);
+        } else {
+            LOGGER.warning("failed to convert filePath {} to classPath path", filePath);
+        }
     }
 
     /**
@@ -109,7 +122,7 @@ public class ResourceUtils {
             }
         }
 
-        LOGGER.error("failed to convert filePath {} to classPath path", filePath);
+        logConversionFailure(filePath);
         return filePath;
     }
 }
