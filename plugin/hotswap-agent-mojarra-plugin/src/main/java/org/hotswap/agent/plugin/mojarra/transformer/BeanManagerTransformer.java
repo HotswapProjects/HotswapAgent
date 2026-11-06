@@ -35,6 +35,12 @@ public class BeanManagerTransformer {
 
     @OnClassLoadEvent(classNameRegexp = BEAN_MANAGER_CLASS)
     public static void init(CtClass ctClass, ClassLoader classLoader) throws CannotCompileException, NotFoundException {
+        if (ctClass.getClassPool().getOrNull(MojarraConstants.MANAGED_BEAN_ANNOTATION) == null) {
+            // Mojarra 3 has the bean manager in jakarta namespace, managed beans are reloaded only with javax
+            LOGGER.debug("{} not found, bean manager is not patched. Class loader: {}",
+                    MojarraConstants.MANAGED_BEAN_ANNOTATION, classLoader);
+            return;
+        }
         LOGGER.info("Patching bean manager. Class loader: {}", classLoader);
 
         initClassPool(ctClass);
