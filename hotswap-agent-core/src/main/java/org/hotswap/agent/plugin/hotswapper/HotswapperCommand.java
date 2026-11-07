@@ -64,9 +64,11 @@ public class HotswapperCommand {
                     reloadMapClassNames.put(entry.getKey().getName(), entry.getValue());
                 }
                 // actual hotswap via JPDA
-                hotSwapper.reload(reloadMapClassNames);
-
-                reloadMap.clear();
+                try {
+                    hotSwapper.reload(reloadMapClassNames);
+                } finally {
+                    reloadMap.clear();
+                }
                 LOGGER.debug("HotSwapperJpda agent reload complete.");
             }
         }
