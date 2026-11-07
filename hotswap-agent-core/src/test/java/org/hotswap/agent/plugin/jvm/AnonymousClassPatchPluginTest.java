@@ -20,10 +20,13 @@ package org.hotswap.agent.plugin.jvm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.regex.Pattern;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.LoaderClassPath;
 import org.junit.Test;
 
 public class AnonymousClassPatchPluginTest {
@@ -63,5 +66,20 @@ public class AnonymousClassPatchPluginTest {
     @Test
     public void nullClassNameIsNotSynthetic() {
         assertFalse(AnonymousClassPatchPlugin.isSyntheticClass(null));
+    }
+
+    @Test
+    public void skipsAnonymousClassWithoutMainClassFile() throws Exception {
+        ClassLoader classLoader = getClass().getClassLoader();
+        ClassPool classPool = new ClassPool();
+        classPool.appendClassPath(new LoaderClassPath(classLoader));
+        Class<?> anonymous = function$1.class;
+
+        assertNull(AnonymousClassPatchPlugin.patchAnonymousClass(classLoader, classPool,
+                anonymous.getName().replace('.', '/'), anonymous));
+    }
+
+    // Kotlin names an anonymous class in a function after the function too, and there is no class for the function.
+    static class function$1 {
     }
 }
