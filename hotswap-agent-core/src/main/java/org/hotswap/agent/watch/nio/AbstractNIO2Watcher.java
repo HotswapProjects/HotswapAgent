@@ -223,6 +223,13 @@ public abstract class AbstractNIO2Watcher implements Watcher {
      */
     protected abstract void rescan(Path dir);
 
+    /**
+     * Returns true if the given directory has a valid watch registration.
+     */
+    protected boolean isWatched(Path dir) {
+        return true;
+    }
+
     protected void registerCreatedDirectory(Path dir) {
         try {
             registerAll(dir, true);
@@ -291,6 +298,10 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             // if directory is created, and watching recursively, then
             // register it and its sub-directories
             if (kind == ENTRY_CREATE && Files.isDirectory(child, NOFOLLOW_LINKS)) {
+                registerCreatedDirectory(child);
+            } else if (kind == ENTRY_MODIFY && Files.isDirectory(child, NOFOLLOW_LINKS) && !isWatched(child)) {
+                // A directory deleted and created again quickly can be reported only as modified
+                // (e.g. by a polling watch service), while the key of the old directory is invalid.
                 registerCreatedDirectory(child);
             }
         }

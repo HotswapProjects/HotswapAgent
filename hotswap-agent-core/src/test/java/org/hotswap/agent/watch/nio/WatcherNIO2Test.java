@@ -24,6 +24,7 @@ import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 import org.hotswap.agent.watch.WatcherFactory;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,12 +32,16 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.WatchKey;
+import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
@@ -190,6 +195,33 @@ public class WatcherNIO2Test {
         } finally {
             registeringWatcher.stop();
         }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void registerModifiedDirectoryWithInvalidKey() throws Exception {
+        Assume.assumeTrue(watcher instanceof WatcherNIO2);
+        Path dir = tempFolder.newFolder().toPath();
+        Path subDir = Files.createDirectory(dir.resolve(TESTDIR));
+        Set<String> created = ConcurrentHashMap.newKeySet();
+        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), dir.toUri(), event -> {
+            if (event.getEventType() == FileEvent.CREATE) {
+                created.add(Paths.get(event.getURI()).getFileName().toString());
+            }
+        });
+        WatcherNIO2 nio2Watcher = (WatcherNIO2) watcher;
+        assertTrue(nio2Watcher.isWatched(subDir));
+
+        // A polling watch service cancels the key of a directory polled while it is deleted, and reports
+        // the directory as modified if it is created again before the parent directory is polled.
+        Field dirKeysField = WatcherNIO2.class.getDeclaredField("dirKeys");
+        dirKeysField.setAccessible(true);
+        ((Map<Path, WatchKey>) dirKeysField.get(watcher)).get(subDir).cancel();
+        Files.setLastModifiedTime(subDir, FileTime.fromMillis(System.currentTimeMillis() + 10000));
+
+        assertTrue("directory registered again", waitUntil(() -> nio2Watcher.isWatched(subDir), 10));
+        Files.createFile(subDir.resolve(TEST_FILE));
+        assertTrue("CREATE event for a file in the directory", waitUntil(() -> created.contains(TEST_FILE), 10));
     }
 
     // ensure it works on file:/ URIs as returned by classloader
