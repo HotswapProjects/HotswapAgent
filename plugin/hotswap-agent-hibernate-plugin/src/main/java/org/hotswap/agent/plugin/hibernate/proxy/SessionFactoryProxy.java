@@ -74,18 +74,39 @@ public class SessionFactoryProxy {
     private SessionFactory currentInstance;
     private ServiceRegistry serviceRegistry;
 
+    /**
+     * Spring binds transaction resources by the session factory, unwrapped if it is an InfrastructureProxy. The proxy
+     * is the bean, but the session context inside Hibernate looks the resources up by the real session factory, so
+     * without unwrapping a transaction started by HibernateTransactionManager was not found ("no transaction is in
+     * progress" on flush).
+     */
+    private static Class<?> getInfrastructureProxyClass(SessionFactory sessionFactory) {
+        try {
+            return Class.forName("org.springframework.core.InfrastructureProxy", false,
+                    sessionFactory.getClass().getClassLoader());
+        } catch (ClassNotFoundException | LinkageError e) {
+            return null;
+        }
+    }
+
     public SessionFactory proxy(SessionFactory sessionFactory, ServiceRegistry serviceRegistry) {
         this.currentInstance = sessionFactory;
         this.serviceRegistry = serviceRegistry;
 
         ProxyFactory factory = new ProxyFactory();
         factory.setSuperclass(SessionFactoryImpl.class);
-        factory.setInterfaces(new Class[]{SessionFactory.class});
+        final Class<?> infrastructureProxy = getInfrastructureProxyClass(sessionFactory);
+        factory.setInterfaces(infrastructureProxy != null
+                ? new Class[]{SessionFactory.class, infrastructureProxy}
+                : new Class[]{SessionFactory.class});
 
         MethodHandler handler = new MethodHandler() {
             @Override
             public Object invoke(Object self, Method overridden, Method forwarder,
                                  Object[] args) throws Throwable {
+                if (infrastructureProxy != null && overridden.getDeclaringClass() == infrastructureProxy) {
+                    return currentInstance; // InfrastructureProxy.getWrappedObject()
+                }
                 try {
                     return overridden.invoke(currentInstance, args);
                 } catch(InvocationTargetException e) {
