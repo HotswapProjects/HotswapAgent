@@ -34,8 +34,10 @@ import org.jboss.resteasy.core.ResourceInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.core.registry.RootClassNode;
 import org.jboss.resteasy.core.registry.RootNode;
+import org.jboss.resteasy.plugins.server.resourcefactory.POJOResourceFactory;
 import org.jboss.resteasy.plugins.server.servlet.ServletContainerDispatcher;
 import org.jboss.resteasy.spi.Registry;
+import org.jboss.resteasy.spi.ResourceFactory;
 
 /**
  * Resteasy registers methods based the class path. Since the redefined class
@@ -83,6 +85,10 @@ public class RefreshRegistryCommand extends MergeableCommand {
             if (registry == null) {
                 registry = servletContainerDispatcher.getDispatcher().getRegistry();
             }
+            // Keep how the resource was created, e.g. as a Spring bean by resteasy-spring. Registered again as
+            // a plain per-request resource, its dependencies would not be injected anymore.
+            ResourceFactory resourceFactory = findResourceFactory(registry);
+
             //Does original actually represent the... original class????
             if(original != null) {
                 registry.removeRegistrations(original);
@@ -112,12 +118,55 @@ public class RefreshRegistryCommand extends MergeableCommand {
             }
 
             //Add the new resource
-            registry.addPerRequestResource(c);
+            if (resourceFactory != null && !(resourceFactory instanceof POJOResourceFactory)) {
+                LOGGER.debug("Registering {} again with {}", className, resourceFactory);
+                registry.addResourceFactory(resourceFactory);
+            } else {
+                registry.addPerRequestResource(c);
+            }
         } catch (Exception e) {
             LOGGER.error("Could not reload rest class {}", e, className);
         } finally {
             Thread.currentThread().setContextClassLoader(oldClassLoader);
         }
+    }
+
+    /**
+     * Returns the resource factory of the registered methods of the class, or null if none is registered.
+     */
+    private ResourceFactory findResourceFactory(Registry registry) {
+        if (!(registry instanceof ResourceMethodRegistry)) {
+            return null;
+        }
+        for (List<ResourceInvoker> invokers : ((ResourceMethodRegistry) registry).getBounded().values()) {
+            for (ResourceInvoker invoker : invokers) {
+                if (invoker.getMethod().getDeclaringClass().getName().equals(className)) {
+                    ResourceFactory resourceFactory = getResourceFactory(invoker);
+                    if (resourceFactory != null) {
+                        return resourceFactory;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private ResourceFactory getResourceFactory(ResourceInvoker invoker) {
+        // ResourceMethodInvoker and ResourceLocatorInvoker keep it in the field "resource"
+        for (Class<?> c = invoker.getClass(); c != null; c = c.getSuperclass()) {
+            try {
+                Field f = c.getDeclaredField("resource");
+                f.setAccessible(true);
+                Object value = f.get(invoker);
+                return value instanceof ResourceFactory ? (ResourceFactory) value : null;
+            } catch (NoSuchFieldException e) {
+                // try the superclass
+            } catch (Exception e) {
+                LOGGER.debug("Unable to get the resource factory of {}", e, invoker);
+                return null;
+            }
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
