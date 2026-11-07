@@ -161,7 +161,9 @@ public class IOUtils {
      * @throws IOException any exception on class instantiation
      */
     public static String urlToClassName(URI uri) throws IOException {
-        return ClassPool.getDefault().makeClass(uri.toURL().openStream()).getName();
+        try (InputStream is = uri.toURL().openStream()) {
+            return ClassPool.getDefault().makeClass(is).getName();
+        }
     }
 
     /**
