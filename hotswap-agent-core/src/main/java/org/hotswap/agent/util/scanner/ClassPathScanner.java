@@ -27,6 +27,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -52,6 +54,10 @@ public class ClassPathScanner implements Scanner {
         LOGGER.trace("Scanning path {}", path);
         // find all directories - classpath directory or JAR
         Enumeration<URL> en = classLoader == null ? ClassLoader.getSystemResources(path) : classLoader.getResources(path);
+        if (!en.hasMoreElements()) {
+            scanJarsWithoutDirectoryEntries(classLoader, path, visitor);
+            return;
+        }
 
         while (en.hasMoreElements()) {
             URL pluginDirURL = en.nextElement();
@@ -84,6 +90,33 @@ public class ClassPathScanner implements Scanner {
                 scanJar(jarFile, visitor);
             } else {
                 LOGGER.warning("Unknown resource type of file " + uri);
+            }
+        }
+    }
+
+    /**
+     * A JAR file created without directory entries (e.g. {@code jar cf x.jar com/example/Foo.class}) is not found
+     * by {@code getResources(path)} for a directory. Look for the path in all JAR files with a manifest.
+     */
+    private void scanJarsWithoutDirectoryEntries(ClassLoader classLoader, String path, ScannerVisitor visitor)
+            throws IOException {
+        String manifest = "META-INF/MANIFEST.MF";
+        Enumeration<URL> manifests = classLoader == null ? ClassLoader.getSystemResources(manifest) :
+                classLoader.getResources(manifest);
+        Set<String> scannedJars = new HashSet<>();
+        while (manifests.hasMoreElements()) {
+            String uri;
+            try {
+                uri = manifests.nextElement().toURI().toString();
+            } catch (URISyntaxException e) {
+                continue;
+            }
+            if ((uri.startsWith(JAR_URL_PREFIX) || uri.startsWith(ZIP_URL_PREFIX)) && uri.endsWith(JAR_URL_SEPARATOR + manifest)) {
+                String jarFileUrl = uri.substring(uri.indexOf(':') + 1, uri.length() - manifest.length());
+                if (scannedJars.add(jarFileUrl)) {
+                    LOGGER.trace("Path {} not found as a directory, scanning JAR file {}", path, jarFileUrl);
+                    scanJar(jarFileUrl + path, visitor);
+                }
             }
         }
     }
