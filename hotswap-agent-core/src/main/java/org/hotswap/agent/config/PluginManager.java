@@ -332,10 +332,12 @@ public class PluginManager {
                 }
                 LOGGER.debug("... reloaded classes {} (autoHotswap)", Arrays.toString(classNames));
             } catch (Exception e) {
-                LOGGER.debug("... Fail to reload classes {} (autoHotswap), msg is {}", Arrays.toString(classNames), e);
+                LOGGER.error("... Fail to reload classes {} (autoHotswap), msg is {}", Arrays.toString(classNames), e);
                 throw new IllegalStateException("Unable to redefine classes", e);
+            } finally {
+                // a rejected class must not stay in the map, otherwise every later reload fails too
+                reloadMap.clear();
             }
-            reloadMap.clear();
         }
     }
 
