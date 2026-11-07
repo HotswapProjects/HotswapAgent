@@ -160,6 +160,32 @@ public class WatcherNIO2Test {
         }
     }
 
+    @Test
+    public void deliverEventsDuringRegistration() throws Exception {
+        Path dir = tempFolder.newFolder().toPath();
+        Set<String> created = ConcurrentHashMap.newKeySet();
+        // A file created while the directories of a new listener are registered, e.g. by a build still running.
+        WatcherNIO2 registeringWatcher = new WatcherNIO2() {
+            @Override
+            public void addDirectory(Path path) throws IOException {
+                super.addDirectory(path);
+                Files.createFile(path.resolve(TEST_FILE));
+                waitUntil(() -> created.contains(TEST_FILE), 2);
+            }
+        };
+        registeringWatcher.run();
+        try {
+            registeringWatcher.addEventListener(Thread.currentThread().getContextClassLoader(), dir.toUri(), event -> {
+                if (event.getEventType() == FileEvent.CREATE) {
+                    created.add(Paths.get(event.getURI()).getFileName().toString());
+                }
+            });
+            assertTrue("CREATE event during registration", waitUntil(() -> created.contains(TEST_FILE), 5));
+        } finally {
+            registeringWatcher.stop();
+        }
+    }
+
     // ensure it works on file:/ URIs as returned by classloader
     //@Test
     public void testTargetClasses() throws Exception {

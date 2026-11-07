@@ -110,21 +110,29 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             return;
         }
 
+        // Add the listener first, events from the directories registered below can be dispatched right away.
+        Path listenerPath = Paths.get(pathPrefix);
+        List<WatchEventListener> list = listeners.computeIfAbsent(listenerPath, k -> new ArrayList<>());
+        boolean added = !list.contains(listener);
+        if (added) {
+            list.add(listener);
+        }
+
         try {
             addDirectory(path.toPath());
         } catch (IOException e) {
+            if (added) {
+                list.remove(listener);
+                if (list.isEmpty()) {
+                    listeners.remove(listenerPath, list);
+                }
+            }
             if (!LOGGER.isLevelEnabled(Level.TRACE)) {
                 LOGGER.warning("Unable to watch for path {}, not a local regular file or directory.", pathPrefix);
             } else {
                 LOGGER.trace("Unable to watch path with prefix '{}' for changes.", e, pathPrefix);
             }
             return;
-        }
-
-        List<WatchEventListener> list = listeners.computeIfAbsent(Paths.get(pathPrefix), k -> new ArrayList<>());
-
-        if (!list.contains(listener)) {
-            list.add(listener);
         }
 
         if (classLoader != null) {
