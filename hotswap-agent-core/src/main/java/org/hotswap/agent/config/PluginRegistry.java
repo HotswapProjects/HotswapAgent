@@ -99,7 +99,13 @@ public class PluginRegistry {
         ClassLoader agentClassLoader = getClass().getClassLoader();
 
         try {
-            List<String> discoveredPlugins = annotationScanner.scanPlugins(classLoader, pluginPath);
+            List<String> discoveredPlugins = annotationScanner.scanPlugins(classLoader, pluginPath, pluginName -> {
+                if (HotswapAgent.isPluginDisabled(pluginName)) {
+                    LOGGER.debug("Plugin {} is disabled, skipping...", pluginName);
+                    return false;
+                }
+                return true;
+            });
             List<String> discoveredPluginNames = new ArrayList<>();
 
             // Plugin class must be always defined directly in the agent classloader, otherwise it will not be available
@@ -117,11 +123,6 @@ public class PluginRegistry {
                     continue;
                 }
                 String pluginName = pluginAnnotation.name();
-
-                if (HotswapAgent.isPluginDisabled(pluginName)) {
-                    LOGGER.debug("Plugin {} is disabled, skipping...", pluginName);
-                    continue;
-                }
 
                 // check for duplicate plugin definition. It may happen if class directory AND the JAR file
                 // are both available.

@@ -21,6 +21,8 @@ package org.hotswap.agent.util.scanner;
 import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute;
 import org.hotswap.agent.javassist.bytecode.ClassFile;
 import org.hotswap.agent.javassist.bytecode.annotation.Annotation;
+import org.hotswap.agent.javassist.bytecode.annotation.MemberValue;
+import org.hotswap.agent.javassist.bytecode.annotation.StringMemberValue;
 import org.hotswap.agent.logging.AgentLogger;
 
 import java.io.DataInputStream;
@@ -28,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Scan a directory for annotation returning class names.
@@ -61,6 +64,19 @@ public class ClassPathAnnotationScanner {
      * @throws IOException scan exception.
      */
     public List<String> scanPlugins(ClassLoader classLoader, String path) throws IOException {
+        return scanPlugins(classLoader, path, name -> true);
+    }
+
+    /**
+     * Run the scan - search path for files containing annotation with an accepted name.
+     *
+     * @param classLoader classloader to resolve path
+     * @param path        path to scan {@link org.hotswap.agent.util.scanner.Scanner#scan(ClassLoader, String, ScannerVisitor)}
+     * @param nameFilter  accepts the value of the annotation's name element
+     * @return list of class names containing the annotation
+     * @throws IOException scan exception.
+     */
+    public List<String> scanPlugins(ClassLoader classLoader, String path, Predicate<String> nameFilter) throws IOException {
         final List<String> files = new LinkedList<>();
         scanner.scan(classLoader, path, new ScannerVisitor() {
             @Override
@@ -73,27 +89,23 @@ public class ClassPathAnnotationScanner {
                     throw new IOException("Stream not a valid classFile", e);
                 }
 
-                if (hasAnnotation(cf))
+                Annotation ann = findAnnotation(cf);
+                if (ann != null && nameFilter.test(getName(ann))) {
                     files.add(cf.getName());
+                }
             }
         });
         return files;
     }
 
-    /**
-     * Check if the file contains annotation.
-     */
-    protected boolean hasAnnotation(ClassFile cf) throws IOException {
-
+    private Annotation findAnnotation(ClassFile cf) {
         AnnotationsAttribute visible = (AnnotationsAttribute) cf.getAttribute(AnnotationsAttribute.visibleTag);
-        if (visible != null) {
-            for (Annotation ann : visible.getAnnotations()) {
-                if (annotation.equals(ann.getTypeName())) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return visible == null ? null : visible.getAnnotation(annotation);
+    }
+
+    private static String getName(Annotation ann) {
+        MemberValue name = ann.getMemberValue("name");
+        return name instanceof StringMemberValue ? ((StringMemberValue) name).getValue() : "";
     }
 
 
