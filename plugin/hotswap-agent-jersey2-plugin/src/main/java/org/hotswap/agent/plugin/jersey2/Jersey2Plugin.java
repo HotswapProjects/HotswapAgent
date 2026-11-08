@@ -33,7 +33,10 @@ import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
+import org.hotswap.agent.javassist.CtNewMethod;
+import org.hotswap.agent.javassist.Modifier;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.AnnotationHelper;
@@ -45,6 +48,9 @@ import org.hotswap.agent.util.PluginManagerInvoker;
         expectedVersions = {"2.10.1"})
 public class Jersey2Plugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(Jersey2Plugin.class);
+
+    private static final String RELOAD_PENDING_FIELD = "__haReloadPending";
+    private static final String MARK_FOR_RELOAD_METHOD = "__haMarkForReload";
 
     @Init
     Scheduler scheduler;
@@ -75,6 +81,31 @@ public class Jersey2Plugin {
         // Workaround a Jersey issue where ServletContainer cannot be reloaded since it is in an immutable state
         CtMethod reload = ctClass.getDeclaredMethod("reload", new CtClass[] { classPool.get("org.glassfish.jersey.server.ResourceConfig") });
         reload.insertBefore("$1 = new org.glassfish.jersey.server.ResourceConfig($1);");
+
+        // The container is reloaded at the start of the next request, in the request thread. There the application
+        // server provides the same context as at startup, e.g. java:comp/BeanManager used by Jersey CDI on Payara.
+        ctClass.addField(CtField.make("private volatile boolean " + RELOAD_PENDING_FIELD + ";", ctClass));
+        ctClass.addMethod(CtNewMethod.make("public void " + MARK_FOR_RELOAD_METHOD + "() { "
+                + "this." + RELOAD_PENDING_FIELD + " = true; }", ctClass));
+        String reloadIfPending = "if (this." + RELOAD_PENDING_FIELD + ") { synchronized (this) { "
+                + "if (this." + RELOAD_PENDING_FIELD + ") { this." + RELOAD_PENDING_FIELD + " = false; reload(); } } }";
+        for (CtMethod method : ctClass.getDeclaredMethods()) {
+            if (isRequestEntryPoint(method)) {
+                method.insertBefore(reloadIfPending);
+            }
+        }
+    }
+
+    // service(ServletRequest, ServletResponse) and doFilter(ServletRequest, ServletResponse, FilterChain),
+    // javax or jakarta
+    private static boolean isRequestEntryPoint(CtMethod method) throws NotFoundException {
+        if (!Modifier.isPublic(method.getModifiers())) {
+            return false;
+        }
+        CtClass[] params = method.getParameterTypes();
+        boolean service = method.getName().equals("service") && params.length == 2;
+        boolean doFilter = method.getName().equals("doFilter") && params.length == 3;
+        return (service || doFilter) && params[0].getSimpleName().equals("ServletRequest");
     }
 
     /**
@@ -179,27 +210,17 @@ public class Jersey2Plugin {
     }
 
     /**
-     * Call reload on the Jersey Application
+     * Mark the Jersey containers for reload. Each container reloads itself at the start of its next request.
      */
     private Command reloadJerseyContainers = new Command() {
         public void executeCommand() {
-            // Jersey and its extensions use the context class loader, e.g. to find services with ServiceLoader
-            // (Krazo). The command runs in the agent thread, so use the application class loader as at startup.
-            Thread thread = Thread.currentThread();
-            ClassLoader oldContextClassLoader = thread.getContextClassLoader();
-            thread.setContextClassLoader(appClassLoader);
             try {
-                Class<?> containerClass = resolveClass("org.glassfish.jersey.server.spi.Container");
-                Method reloadMethod = containerClass.getDeclaredMethod("reload");
-
                 for (Object jerseyContainer : registeredJerseyContainers) {
-                    reloadMethod.invoke(jerseyContainer);
+                    jerseyContainer.getClass().getMethod(MARK_FOR_RELOAD_METHOD).invoke(jerseyContainer);
                 }
-                LOGGER.info("Reloaded Jersey Containers");
+                LOGGER.info("Jersey Containers will be reloaded on the next request");
             } catch (Exception e) {
                 LOGGER.error("Error reloading Jersey Container.", e);
-            } finally {
-                thread.setContextClassLoader(oldContextClassLoader);
             }
         }
     };
