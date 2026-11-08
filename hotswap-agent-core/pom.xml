@@ -159,7 +159,7 @@
         </dependency>
         <dependency>
             <groupId>org.jmock</groupId>
-            <artifactId>jmock-legacy</artifactId>
+            <artifactId>jmock-imposters</artifactId>
         </dependency>
     </dependencies>
 

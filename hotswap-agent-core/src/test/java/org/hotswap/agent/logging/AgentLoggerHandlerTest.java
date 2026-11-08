@@ -22,7 +22,7 @@ import org.hamcrest.core.StringContains;
 import org.hotswap.agent.config.PluginManager;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
 
 import java.io.PrintStream;
@@ -32,7 +32,7 @@ import java.io.PrintStream;
  */
 public class AgentLoggerHandlerTest {
     Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
+        setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
     }};
 
     PrintStream printStream = context.mock(PrintStream.class);

@@ -28,7 +28,7 @@ import org.hotswap.agent.annotation.handler.OnClassLoadedHandler;
 import org.hotswap.agent.testData.SimplePlugin;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
 
 /**
@@ -37,7 +37,7 @@ import org.junit.Test;
 public class AnnotationProcessorTest {
 
     Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
+        setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
     }};
 
     PluginManager pluginManager = context.mock(PluginManager.class);

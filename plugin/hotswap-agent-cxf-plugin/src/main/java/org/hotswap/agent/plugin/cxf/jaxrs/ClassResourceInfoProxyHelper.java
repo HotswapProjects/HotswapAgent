@@ -69,7 +69,7 @@ public class ClassResourceInfoProxyHelper {
         if (!DISABLE_PROXY_GENERATION.get()) {
             try {
                 createProxyClass(classResourceInfo);
-                ClassResourceInfo result = (ClassResourceInfo) classResourceInfoProxyClass.newInstance();
+                ClassResourceInfo result = (ClassResourceInfo) classResourceInfoProxyClass.getDeclaredConstructor().newInstance();
                 CriProxyMethodHandler methodHandler = new CriProxyMethodHandler(result, generatorTypes, generatorParams);
                 ((Proxy)result).setHandler(methodHandler);
                 methodHandler.delegate = classResourceInfo;

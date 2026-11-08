@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.config;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -318,11 +319,11 @@ public class PluginRegistry {
      */
     protected Object instantiate(Class<Object> plugin) {
         try {
-            return plugin.newInstance();
-        } catch (InstantiationException e) {
-            LOGGER.error("Error instantiating plugin: " + plugin.getClass().getName(), e);
-        } catch (IllegalAccessException e) {
-            LOGGER.error("Plugin: " + plugin.getClass().getName()
+            return plugin.getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | InvocationTargetException e) {
+            LOGGER.error("Error instantiating plugin: " + plugin.getName(), e);
+        } catch (IllegalAccessException | NoSuchMethodException e) {
+            LOGGER.error("Plugin: " + plugin.getName()
                     + " does not contain public no param constructor", e);
         }
         return null;

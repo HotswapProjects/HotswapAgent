@@ -318,7 +318,7 @@
             </dependency>
             <dependency>
                 <groupId>org.jmock</groupId>
-                <artifactId>jmock-legacy</artifactId>
+                <artifactId>jmock-imposters</artifactId>
                 <version>2.13.1</version>
                 <scope>test</scope>
             </dependency>

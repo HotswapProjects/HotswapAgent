@@ -25,7 +25,7 @@ import org.hotswap.agent.testData.SimplePlugin;
 import org.hotswap.agent.util.scanner.ClassPathAnnotationScanner;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
 
 import java.lang.instrument.ClassFileTransformer;
@@ -33,8 +33,8 @@ import java.lang.instrument.Instrumentation;
 import java.util.Collections;
 import java.util.function.Predicate;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Jiri Bubnik
@@ -42,7 +42,7 @@ import static junit.framework.Assert.assertTrue;
 public class PluginManagerTest {
 
     Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
+        setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
     }};
 
     ClassPathAnnotationScanner annotationScanner = context.mock(ClassPathAnnotationScanner.class);
