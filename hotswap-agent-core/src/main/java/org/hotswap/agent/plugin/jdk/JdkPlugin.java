@@ -82,10 +82,40 @@ public class JdkPlugin {
                 ReflectionHelper.invoke(null, introspectorClass, "flushFromCaches",
                     new Class[] { Class.class }, clazz);
             }
+            flushClassInfoCache(classLoader, clazz);
         } catch (Exception e) {
             LOGGER.error("flushBeanIntrospectorCaches() exception {}.", e.getMessage());
         } finally {
             reloadFlag = false;
+        }
+    }
+
+    private static boolean classInfoCacheWarned;
+
+    /**
+     * Introspector builds bean info from com.sun.beans.introspect.ClassInfo (Java 9+), which caches the methods of
+     * the class. Introspector.flushFromCaches() removes the class from it only since Java 17, so on Java 9 - 16
+     * a new getter or setter was not visible to introspection (e.g. EL property not found).
+     */
+    private static void flushClassInfoCache(ClassLoader classLoader, Class<?> clazz) {
+        Class<?> classInfo;
+        try {
+            classInfo = classLoader.loadClass("com.sun.beans.introspect.ClassInfo");
+        } catch (ClassNotFoundException e) {
+            return; // Java 8
+        }
+        try {
+            Object cache = ReflectionHelper.get(null, classInfo, "CACHE");
+            if (cache != null) {
+                ReflectionHelper.invoke(cache, cache.getClass(), "remove", new Class[] { Object.class }, clazz);
+            }
+        } catch (Exception e) {
+            if (!classInfoCacheWarned) {
+                classInfoCacheWarned = true;
+                LOGGER.warning("Unable to flush com.sun.beans.introspect.ClassInfo cache, new bean properties may not be " +
+                        "visible until restart. Add --add-opens java.desktop/com.sun.beans.introspect=ALL-UNNAMED " +
+                        "--add-opens java.desktop/com.sun.beans.util=ALL-UNNAMED. {}", e.getMessage());
+            }
         }
     }
 
