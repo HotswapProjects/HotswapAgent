@@ -20,18 +20,22 @@ package org.hotswap.agent.watch.nio;
 
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * <p>
  * NIO2 watcher implementation for systems which support
- * ExtendedWatchEventModifier.FILE_TREE (windows)
+ * ExtendedWatchEventModifier.FILE_TREE (Windows, and macOS with the native watch service of JBR)
  * </p>
  * <p>
  * Java 7 (NIO2) watch a directory (or tree) for changes to files.
@@ -52,10 +56,30 @@ public class TreeWatcherNIO extends AbstractNIO2Watcher {
         // try to set file tree modifier
         FILE_TREE = getWatchEventModifier("com.sun.nio.file.ExtendedWatchEventModifier", "FILE_TREE");
 
-        if(FILE_TREE != null) {
-            MODIFIERS =  new WatchEvent.Modifier[] { FILE_TREE, HIGH };
-        } else {
-            MODIFIERS =  new WatchEvent.Modifier[] { HIGH };
+        MODIFIERS = Stream.of(FILE_TREE, HIGH).filter(Objects::nonNull).toArray(WatchEvent.Modifier[]::new);
+    }
+
+    /**
+     * Check if the default watch service supports FILE_TREE.
+     *
+     * @return true if a directory tree can be watched with a single registration
+     */
+    public static boolean isSupported() {
+        if (FILE_TREE == null) {
+            return false;
+        }
+        // an empty directory, because JBR on macOS walks the whole registered tree
+        Path dir = null;
+        try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
+            dir = Files.createTempDirectory("hotswap-watch-probe");
+            dir.register(watchService, KINDS, MODIFIERS);
+            return true;
+        } catch (UnsupportedOperationException | IOException e) {
+            return false;
+        } finally {
+            if (dir != null) {
+                dir.toFile().delete();
+            }
         }
     }
     /**
