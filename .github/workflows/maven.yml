@@ -14,9 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache DCEVM 11
+      - name: Restore DCEVM 11
         id: cache-dcevm
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: dcevm-11.0.15+1
           key: dcevm-11.0.15+1-linux-x64
@@ -39,6 +39,14 @@ jobs:
           export PATH=$JAVA_HOME/bin:$PATH
           java -version
         shell: bash
+
+      # saved right away, so that the JDK is cached also when the build fails
+      - name: Save DCEVM 11
+        if: steps.cache-dcevm.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: dcevm-11.0.15+1
+          key: dcevm-11.0.15+1-linux-x64
 
       - name: Maven install
         run: |
