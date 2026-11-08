@@ -23,8 +23,17 @@ jobs:
 
       - name: Set up DCEVM 11
         if: steps.cache-dcevm.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -fL --retry 5 --retry-all-errors --retry-delay 10 -o jdk.tar.gz https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases/download/dcevm-11.0.15%2B1/Openjdk11u-dcevm-linux-x64.tar.gz
+          # the authenticated API download is more reliable from the runners than the release download URL
+          downloaded=
+          for i in 1 2 3 4 5; do
+            gh release download dcevm-11.0.15+1 --repo TravaOpenJDK/trava-jdk-11-dcevm \
+              --pattern Openjdk11u-dcevm-linux-x64.tar.gz --output jdk.tar.gz --clobber && { downloaded=1; break; }
+            sleep 10
+          done
+          [ -n "$downloaded" ] || curl -fL --retry 5 --retry-all-errors --retry-delay 10 -o jdk.tar.gz https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases/download/dcevm-11.0.15%2B1/Openjdk11u-dcevm-linux-x64.tar.gz
           tar -xzf jdk.tar.gz
           export JAVA_HOME=$PWD/dcevm-11.0.15+1
           export PATH=$JAVA_HOME/bin:$PATH
