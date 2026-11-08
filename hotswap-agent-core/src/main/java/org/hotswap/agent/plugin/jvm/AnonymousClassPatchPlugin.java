@@ -106,6 +106,9 @@ public class AnonymousClassPatchPlugin {
             return null;
 
         AnonymousClassInfos info = getStateInfo(classLoader, classPool, mainClass);
+        if (info == null) {
+            return null;
+        }
 
         String compatibleName = info.getCompatibleTransition(javaClass);
 
@@ -196,6 +199,10 @@ public class AnonymousClassPatchPlugin {
 
 
         AnonymousClassInfos stateInfo = getStateInfo(classLoader, classPool, javaClassName);
+        if (stateInfo == null) {
+            return null;
+        }
+
         Map<AnonymousClassInfo, AnonymousClassInfo> transitions = stateInfo.getCompatibleTransitions();
 
         ClassMap replaceClassNameMap = new ClassMap();
@@ -241,6 +248,8 @@ public class AnonymousClassPatchPlugin {
      * <p/>
      * <p/>Note: Synchronized may be too restrictive, in case of performance issues consider synchronization
      * only on a classloader and class.
+     *
+     * @return null if the main class file is not found
      */
     private static synchronized AnonymousClassInfos getStateInfo(ClassLoader classLoader, ClassPool classPool, String className) {
         Map<String, AnonymousClassInfos> classInfosMap = getClassInfosMapForClassLoader(classLoader);
@@ -248,6 +257,13 @@ public class AnonymousClassPatchPlugin {
         AnonymousClassInfos infos = classInfosMap.get(className);
 
         if (infos == null || !infos.isCurrent(classPool)) {
+            // For example, Kotlin names an anonymous class in function bar of class Foo as Foo$bar$1,
+            // and Foo$bar is not a class.
+            if (classPool.find(className) == null) {
+                LOGGER.debug("Class file of '{}' not found, anonymous classes are not patched.", className);
+                return null;
+            }
+
             if (infos == null)
                 LOGGER.trace("Creating new infos for className {}", className);
             else
