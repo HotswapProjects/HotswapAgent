@@ -30,8 +30,13 @@ import org.hotswap.agent.watch.WatchFileEvent;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.Watcher;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -92,7 +97,7 @@ public class LogbackPlugin {
     /**
      * Do the reload using logback configurator.
      *
-     * @param configurator ch.qos.logback.core.joran.GenericConfigurator instance
+     * @param configurator ch.qos.logback.core.joran.GenericConfigurator (GenericXMLConfigurator) instance
      * @param url          URL with configuration file
      */
     protected void reload(Object configurator, URL url) {
@@ -109,16 +114,21 @@ public class LogbackPlugin {
             synchronized (configurator) {
                 ClassLoader classLoader = configurator.getClass().getClassLoader();
 
-                Class<?> configuratorClass = classLoader.loadClass("ch.qos.logback.core.joran.GenericConfigurator");
                 Class<?> contextAwareBaseClass = classLoader.loadClass("ch.qos.logback.core.spi.ContextAwareBase");
+                Class<?> contextInterface = classLoader.loadClass("ch.qos.logback.core.Context");
                 Class<?> contextClass = classLoader.loadClass("ch.qos.logback.classic.LoggerContext");
 
-                // reset current context
+                // a configurator can be used only once since Logback 1.3, so configure with a new one, as Logback
+                // itself does on a configuration change
                 Object context = contextAwareBaseClass.getDeclaredMethod("getContext").invoke(configurator);
+                Object newConfigurator = newConfigurator(configurator);
+                contextAwareBaseClass.getMethod("setContext", contextInterface).invoke(newConfigurator, context);
+
+                // reset current context
                 contextClass.getDeclaredMethod("reset").invoke(context);
 
-                // configure the URL
-                configuratorClass.getDeclaredMethod("doConfigure", URL.class).invoke(configurator, url);
+                // configure the URL, doConfigure(URL) is public in GenericConfigurator (GenericXMLConfigurator since 1.3)
+                newConfigurator.getClass().getMethod("doConfigure", URL.class).invoke(newConfigurator, url);
 
                 LOGGER.reload("Logback configuration reloaded from url '{}'.", url);
             }
@@ -128,9 +138,49 @@ public class LogbackPlugin {
     }
 
     /**
-     * Transform configurator class to register logback config URL.
+     * Create a new configurator of the same class. Constructor parameters (e.g. Spring Boot passes its
+     * LoggingInitializationContext) are taken from the fields of the current configurator.
      */
-    @OnClassLoadEvent(classNameRegexp = "ch.qos.logback.core.joran.GenericConfigurator")
+    private static Object newConfigurator(Object configurator) throws Exception {
+        Class<?> configuratorClass = configurator.getClass();
+        Constructor<?>[] constructors = configuratorClass.getDeclaredConstructors();
+        Arrays.sort(constructors, Comparator.comparingInt(Constructor::getParameterCount));
+        for (Constructor<?> constructor : constructors) {
+            Class<?>[] parameterTypes = constructor.getParameterTypes();
+            Object[] args = new Object[parameterTypes.length];
+            boolean resolved = true;
+            for (int i = 0; i < parameterTypes.length && resolved; i++) {
+                args[i] = findFieldValue(configurator, parameterTypes[i]);
+                resolved = args[i] != null;
+            }
+            if (resolved) {
+                constructor.setAccessible(true);
+                return constructor.newInstance(args);
+            }
+        }
+        throw new IllegalStateException("Unable to create a new " + configuratorClass.getName());
+    }
+
+    private static Object findFieldValue(Object target, Class<?> type) throws IllegalAccessException {
+        for (Class<?> c = target.getClass(); c != null; c = c.getSuperclass()) {
+            for (Field field : c.getDeclaredFields()) {
+                if (!Modifier.isStatic(field.getModifiers()) && type.isAssignableFrom(field.getType())) {
+                    field.setAccessible(true);
+                    Object value = field.get(target);
+                    if (value != null) {
+                        return value;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Transform configurator class to register logback config URL.
+     * The class is GenericConfigurator in Logback 1.2 and older, and GenericXMLConfigurator since 1.3.
+     */
+    @OnClassLoadEvent(classNameRegexp = "ch.qos.logback.core.joran.(GenericConfigurator|GenericXMLConfigurator)")
     public static void registerConfigurator(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
         CtMethod m = ctClass.getDeclaredMethod("doConfigure", new CtClass[]{classPool.get("java.net.URL")});
 
