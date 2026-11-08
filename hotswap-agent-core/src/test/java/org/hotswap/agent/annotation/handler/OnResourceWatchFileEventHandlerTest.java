@@ -20,7 +20,7 @@ package org.hotswap.agent.annotation.handler;
 
 import org.hotswap.agent.config.PluginManager;
 import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
 
 /**
@@ -29,7 +29,7 @@ import org.junit.Test;
 public class OnResourceWatchFileEventHandlerTest {
 
     Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
+        setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
     }};
 
     PluginManager pluginManager = context.mock(PluginManager.class);

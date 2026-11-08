@@ -31,6 +31,7 @@ import org.objectweb.asm.ByteVector;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AnnotationRemapper;
 import org.objectweb.asm.commons.ClassRemapper;
@@ -50,7 +51,7 @@ public class TestClassAdapter extends ClassRemapper {
 
     public TestClassAdapter(ClassVisitor cv,
             final Map<String, String> typeMappings) {
-        super(cv, new Remapper() {
+        super(cv, new Remapper(Opcodes.ASM9) {
             @Override
             public String map(String type) {
                 return typeMappings.containsKey(type) ? typeMappings.get(type)
@@ -115,7 +116,7 @@ public class TestClassAdapter extends ClassRemapper {
         AnnotationVisitor av = super.visitAnnotation(remapper.mapDesc(desc),
                 visible);
         return av == null ? null
-                : new AnnotationRemapper(av, remapper) {
+                : new AnnotationRemapper(Opcodes.ASM9, av, remapper) {
                     @Override
                     public void visitEnum(String name, String enumDesc,
                             String value) {

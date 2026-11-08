@@ -24,7 +24,7 @@ import org.hibernate.service.ServiceRegistry;
 import org.hotswap.agent.plugin.hibernate_jakarta.proxy.SessionFactoryProxy;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 
 /**
  * @author Jiri Bubnik
@@ -32,7 +32,7 @@ import org.jmock.lib.legacy.ClassImposteriser;
 public class SessionFactoryProxyTest {
 
     Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
+        setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
     }};
 
     final SessionFactory sessionFactory = context.mock(SessionFactory.class);

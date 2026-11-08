@@ -18,7 +18,7 @@
  */
 package org.hotswap.agent.annotation.handler;
 
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Method;
 
@@ -30,7 +30,7 @@ import org.hotswap.agent.util.HaClassFileTransformer;
 import org.hotswap.agent.util.HotswapTransformer;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
 
 /**
@@ -39,7 +39,7 @@ import org.junit.Test;
 public class OnClassLoadEventHandlerTest {
 
     Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
+        setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
     }};
 
     PluginManager pluginManager = context.mock(PluginManager.class);

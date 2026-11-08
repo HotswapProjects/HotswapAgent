@@ -21,7 +21,7 @@ package org.hotswap.agent.logging;
 import org.hotswap.agent.testData.SimplePlugin;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
 
 /**
@@ -29,7 +29,7 @@ import org.junit.Test;
  */
 public class AgentLoggerTest {
     Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
+        setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
     }};
 
     AgentLoggerHandler handler = context.mock(AgentLoggerHandler.class);

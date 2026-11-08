@@ -137,7 +137,7 @@ public class CxfJAXRSPlugin {
                 return;
             }
             Class<?> cmdClass = Class.forName(CxfJAXRSCommand.class.getName(), true, appClassLoader);
-            Command cmd = (Command) cmdClass.newInstance();
+            Command cmd = (Command) cmdClass.getDeclaredConstructor().newInstance();
             ReflectionHelper.invoke(cmd, cmdClass, "setupCmd", new Class[] { ClassLoader.class, Object.class },
                     classLoader, classResourceInfoProxy);
             scheduler.scheduleCommandOnClassesRedefinedOrTimeout(cmd, timeout);

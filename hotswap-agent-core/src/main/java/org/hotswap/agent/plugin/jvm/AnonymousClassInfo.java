@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.plugin.jvm;
 
+import org.hotswap.agent.javassist.CtBehavior;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtField;
 import org.hotswap.agent.javassist.CtMethod;
@@ -120,9 +121,10 @@ public class AnonymousClassInfo {
 
             StringBuilder enclosingMethodSignature = new StringBuilder();
             try {
-                CtMethod enclosingMethod = c.getEnclosingMethod();
-                if (enclosingMethod != null) {
-                    getMethodSignature(enclosingMethodSignature, enclosingMethod);
+                // only methods, as CtClass.getEnclosingMethod() did
+                CtBehavior enclosingBehavior = c.getEnclosingBehavior();
+                if (enclosingBehavior instanceof CtMethod) {
+                    getMethodSignature(enclosingMethodSignature, (CtMethod) enclosingBehavior);
                 }
             } catch (Exception e) {
                 // OK, enclosing method not defined or out of scope

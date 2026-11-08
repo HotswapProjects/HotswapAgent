@@ -164,7 +164,7 @@ public class EntityManagerFactoryProxy {
         try {
             Class<?> ejb3ConfigurationClazz = loadClass("org.hibernate.ejb.Ejb3Configuration");
             LOGGER.trace("new Ejb3Configuration()");
-            Object cfg = ejb3ConfigurationClazz.newInstance();
+            Object cfg = ejb3ConfigurationClazz.getDeclaredConstructor().newInstance();
 
             LOGGER.trace("cfg.configure( info, properties );");
 

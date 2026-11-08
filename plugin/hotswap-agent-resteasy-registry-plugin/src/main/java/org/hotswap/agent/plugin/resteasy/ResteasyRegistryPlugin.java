@@ -160,7 +160,7 @@ public class ResteasyRegistryPlugin {
     private void refreshClass(ClassLoader classLoader, String name, Class<?> original, int timeout) {
         try {
             Class<?> cmdClass = Class.forName(RefreshRegistryCommand.class.getName(), true, appClassLoader);
-            Command cmd = (Command) cmdClass.newInstance();
+            Command cmd = (Command) cmdClass.getDeclaredConstructor().newInstance();
             ReflectionHelper.invoke(cmd, cmdClass, "setupCmd",
                     new Class[] { ClassLoader.class, Object.class, Object.class, String.class, java.lang.Class.class },
                     classLoader, servletContext, servletContainerDispatcher, name, original);
