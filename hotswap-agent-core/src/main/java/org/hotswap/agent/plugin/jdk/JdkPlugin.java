@@ -18,6 +18,8 @@
  */
 package org.hotswap.agent.plugin.jdk;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.hotswap.agent.annotation.LoadEvent;
@@ -82,7 +84,7 @@ public class JdkPlugin {
                 ReflectionHelper.invoke(null, introspectorClass, "flushFromCaches",
                     new Class[] { Class.class }, clazz);
             }
-            flushClassInfoCache(classLoader, clazz);
+            flushClassInfoCache(clazz);
         } catch (Exception e) {
             LOGGER.error("flushBeanIntrospectorCaches() exception {}.", e.getMessage());
         } finally {
@@ -90,33 +92,67 @@ public class JdkPlugin {
         }
     }
 
-    private static boolean classInfoCacheWarned;
+    // Introspector.flushFromCaches() removes the class from com.sun.beans.introspect.ClassInfo only since Java 17,
+    // Java 8 has no ClassInfo
+    private static final boolean FLUSH_CLASS_INFO_CACHE = isJava9To16();
+
+    // resolved once, on the first redefinition
+    private static boolean classInfoCacheResolved;
+    private static Object classInfoCache;
+    private static Method classInfoCacheRemove;
+
+    private static boolean isJava9To16() {
+        try {
+            int version = Integer.parseInt(System.getProperty("java.specification.version"));
+            return version >= 9 && version <= 16;
+        } catch (NumberFormatException e) {
+            return false; // 1.8
+        }
+    }
 
     /**
      * Introspector builds bean info from com.sun.beans.introspect.ClassInfo (Java 9+), which caches the methods of
      * the class. Introspector.flushFromCaches() removes the class from it only since Java 17, so on Java 9 - 16
      * a new getter or setter was not visible to introspection (e.g. EL property not found).
      */
-    private static void flushClassInfoCache(ClassLoader classLoader, Class<?> clazz) {
-        Class<?> classInfo;
-        try {
-            classInfo = classLoader.loadClass("com.sun.beans.introspect.ClassInfo");
-        } catch (ClassNotFoundException e) {
-            return; // Java 8
+    private static synchronized void flushClassInfoCache(Class<?> clazz) {
+        if (!FLUSH_CLASS_INFO_CACHE) {
+            return;
         }
-        try {
-            Object cache = ReflectionHelper.get(null, classInfo, "CACHE");
-            if (cache != null) {
-                ReflectionHelper.invoke(cache, cache.getClass(), "remove", new Class[] { Object.class }, clazz);
-            }
-        } catch (Exception e) {
-            if (!classInfoCacheWarned) {
-                classInfoCacheWarned = true;
+        if (!classInfoCacheResolved) {
+            classInfoCacheResolved = true;
+            try {
+                Field cacheField = Class.forName("com.sun.beans.introspect.ClassInfo").getDeclaredField("CACHE");
+                cacheField.setAccessible(true);
+                Object cache = cacheField.get(null);
+                Method remove = findMethod(cache.getClass(), "remove", Object.class);
+                remove.setAccessible(true);
+                classInfoCache = cache;
+                classInfoCacheRemove = remove;
+            } catch (Exception e) {
                 LOGGER.warning("Unable to flush com.sun.beans.introspect.ClassInfo cache, new bean properties may not be " +
                         "visible until restart. Add --add-opens java.desktop/com.sun.beans.introspect=ALL-UNNAMED " +
                         "--add-opens java.desktop/com.sun.beans.util=ALL-UNNAMED. {}", e.getMessage());
             }
         }
+        if (classInfoCacheRemove != null) {
+            try {
+                classInfoCacheRemove.invoke(classInfoCache, clazz);
+            } catch (Exception e) {
+                LOGGER.debug("Unable to flush com.sun.beans.introspect.ClassInfo cache of {}", e, clazz.getName());
+            }
+        }
+    }
+
+    private static Method findMethod(Class<?> clazz, String name, Class<?>... parameterTypes) throws NoSuchMethodException {
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+            try {
+                return c.getDeclaredMethod(name, parameterTypes);
+            } catch (NoSuchMethodException e) {
+                // try superclass
+            }
+        }
+        throw new NoSuchMethodException(clazz.getName() + "." + name);
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic=false)
