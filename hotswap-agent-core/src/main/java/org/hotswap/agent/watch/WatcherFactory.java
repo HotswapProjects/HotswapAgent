@@ -57,7 +57,8 @@ public class WatcherFactory {
 
     public Watcher getWatcher() throws IOException {
         if (JAVA_VERSION >= 1.7) {
-            if (IS_WINDOWS) {
+            // per-directory registration runs out of FSEvents streams on macOS (#673)
+            if (IS_WINDOWS || TreeWatcherNIO.isSupported()) {
                 return new TreeWatcherNIO();
             } else {
                 return new WatcherNIO2();

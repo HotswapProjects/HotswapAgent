@@ -90,20 +90,17 @@ public class WatcherNIO2Test {
     }
 
     @Test
-    public void recreateDirWithFile() throws IOException {
-        final ResultHolder resultHolder = new ResultHolder();
+    public void recreateDirWithFile() throws Exception {
+        Set<FileEvent> events = ConcurrentHashMap.newKeySet();
 
         Path testDir = temp.resolve(TESTDIR);
         Files.createDirectories(testDir);
         File testFile = new File(testDir.toFile(), TEST_FILE);
         testFile.createNewFile();
 
-        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), temp.toUri(), new WatchEventListener() {
-            @Override
-            public void onEvent(WatchFileEvent event) {
-                if (event.getEventType() == FileEvent.CREATE && event.getURI().toString().endsWith(TEST_FILE)) {
-                    resultHolder.result = true;
-                }
+        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), temp.toUri(), event -> {
+            if (event.getURI().toString().endsWith(TEST_FILE)) {
+                events.add(event.getEventType());
             }
         });
 
@@ -121,7 +118,16 @@ public class WatcherNIO2Test {
         testFile = new File(testDir.toFile(), TEST_FILE);
         testFile.createNewFile();
 
-        assertTrue("Event FileEvent.CREATE for " + TEST_FILE + "  called", waitForResult(resultHolder, 5));
+        // FSEvents on macOS reports a file that is recreated quickly as modified
+        assertTrue("Event FileEvent.CREATE or MODIFY for " + TEST_FILE + " called",
+                waitUntil(() -> events.contains(FileEvent.CREATE) || events.contains(FileEvent.MODIFY), 5));
+
+        // let the remaining events of the recreation arrive
+        Thread.sleep(1000);
+        events.clear();
+        Files.write(testFile.toPath(), "changed".getBytes());
+        assertTrue("Event FileEvent.MODIFY for " + TEST_FILE + " in the recreated directory called",
+                waitUntil(() -> events.contains(FileEvent.MODIFY), 5));
     }
 
     @Test
@@ -182,11 +188,7 @@ public class WatcherNIO2Test {
     }
 
     private boolean waitForResult(ResultHolder resultHolder) {
-        return waitForResult(resultHolder, 10);
-    }
-
-    private boolean waitForResult(ResultHolder resultHolder, int secs) {
-        return waitUntil(() -> resultHolder.result, secs);
+        return waitUntil(() -> resultHolder.result, 10);
     }
 
     // On Mac OS X, 10.9.4, this would fail for under 10 seconds, succeeded with 10 seconds.  I didn't look
