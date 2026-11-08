@@ -39,6 +39,10 @@ import java.util.WeakHashMap;
 public class ZkPlugin {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ZkPlugin.class);
 
+    // DHtmlLayoutServlet is not used e.g. by zkspringboot in a jar, so initialize the plugin also before registering
+    // ZK objects. The initialization is done only once per class loader.
+    private static final String INITIALIZE_PLUGIN = PluginManagerInvoker.buildInitializePlugin(ZkPlugin.class);
+
     // clear labels cache
     ReflectionCommand refreshLabels = new ReflectionCommand(this, "org.zkoss.util.resource.Labels", "reset");
 
@@ -97,7 +101,7 @@ public class ZkPlugin {
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(ZkPlugin.class, "registerBeanELResolver",
                 "this", "java.lang.Object");
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
-            constructor.insertAfter(registerThis);
+            constructor.insertAfter(INITIALIZE_PLUGIN + registerThis);
         }
 
         try {
@@ -127,7 +131,7 @@ public class ZkPlugin {
         String registerThis = PluginManagerInvoker.buildCallPluginMethod(ZkPlugin.class, "registerBinderImpl",
                 "this", "java.lang.Object");
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
-            constructor.insertAfter(registerThis);
+            constructor.insertAfter(INITIALIZE_PLUGIN + registerThis);
         }
 
         ctClass.addMethod(CtNewMethod.make("public void __resetCache() {" +
