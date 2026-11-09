@@ -231,6 +231,13 @@ public abstract class AbstractNIO2Watcher implements Watcher {
         }
     }
 
+    /**
+     * Registers a directory that exists but has lost its watch, as a directory that was deleted and created again
+     * has. On macOS such a directory is reported as modified, not created.
+     */
+    protected void registerIfNotWatched(Path dir) {
+    }
+
     protected void dispatchFakeEvent(WatchEvent.Kind<Path> kind, Path file) {
         LOGGER.debug("Fake watch event '{}' on '{}'", kind.name(), file);
         dispatcher.add(new HotswapAgentWatchEvent<>(kind, file.getFileName()), file);
@@ -292,6 +299,9 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             // register it and its sub-directories
             if (kind == ENTRY_CREATE && Files.isDirectory(child, NOFOLLOW_LINKS)) {
                 registerCreatedDirectory(child);
+            } else if (kind == ENTRY_MODIFY && Files.isDirectory(child, NOFOLLOW_LINKS)) {
+                // macOS reports a directory that was deleted and created again as modified, not created
+                registerIfNotWatched(child);
             }
         }
 
@@ -300,6 +310,10 @@ public abstract class AbstractNIO2Watcher implements Watcher {
         if (!valid) {
             LOGGER.debug("Watcher on {} not valid, removing path=", keys.get(key));
             keys.remove(key);
+            // the directory may have been created again before its watch reported that it was deleted
+            if (!classLoaderListeners.isEmpty() && Files.isDirectory(dir, NOFOLLOW_LINKS)) {
+                registerIfNotWatched(dir);
+            }
             // all directories are inaccessible
             if (keys.isEmpty()) {
                 return false;

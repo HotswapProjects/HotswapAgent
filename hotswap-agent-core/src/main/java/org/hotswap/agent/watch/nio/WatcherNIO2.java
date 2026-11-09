@@ -100,6 +100,13 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
         }
     }
 
+    @Override
+    protected void registerIfNotWatched(Path dir) {
+        if (!isWatched(dir)) {
+            registerCreatedDirectory(dir);
+        }
+    }
+
     private boolean isWatched(Path dir) {
         WatchKey key = dirKeys.get(dir);
         return key != null && key.isValid();
