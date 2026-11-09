@@ -32,6 +32,8 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -128,6 +130,34 @@ public class WatcherNIO2Test {
         Files.write(testFile.toPath(), "changed".getBytes());
         assertTrue("Event FileEvent.MODIFY for " + TEST_FILE + " in the recreated directory called",
                 waitUntil(() -> events.contains(FileEvent.MODIFY), 5));
+    }
+
+    @Test
+    public void modifyFileJustBeforeAnotherClassLoaderRegisters() throws Exception {
+        final ResultHolder resultHolder = new ResultHolder();
+        File testFile = new File(temp.toFile(), "test.class");
+        testFile.createNewFile();
+
+        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), temp.toUri(), new WatchEventListener() {
+            @Override
+            public void onEvent(WatchFileEvent event) {
+                if (event.getEventType() == FileEvent.MODIFY && event.getURI().toString().endsWith("test.class")) {
+                    resultHolder.result = true;
+                }
+            }
+        });
+
+        // Let the modification time differ from the one the watch service recorded when it registered the directory.
+        Thread.sleep(1100);
+        Files.write(testFile.toPath(), new byte[] {1});
+        // Another classloader with the directory on its classpath registers it straight away, as a class reload does.
+        watcher.addEventListener(new URLClassLoader(new URL[0]), temp.toUri(), new WatchEventListener() {
+            @Override
+            public void onEvent(WatchFileEvent event) {
+            }
+        });
+
+        assertTrue("Event FileEvent.MODIFY for test.class called", waitForResult(resultHolder));
     }
 
     @Test
