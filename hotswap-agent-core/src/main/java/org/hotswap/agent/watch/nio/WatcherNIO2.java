@@ -109,6 +109,12 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
      * Register the given directory with the WatchService
      */
     private void register(Path dir) throws IOException {
+        // Each classloader with the directory on its classpath registers it. Some watch services, such as the
+        // native one of the JetBrains Runtime on macOS, reset a watch registered again and lose a change made
+        // just before, so a watched directory keeps the key it has.
+        if (isWatched(dir)) {
+            return;
+        }
         // try to set high sensitivity
         final WatchKey key = HIGH == null ? dir.register(watcher, KINDS) : dir.register(watcher, KINDS, HIGH);
         keys.put(key, dir);
