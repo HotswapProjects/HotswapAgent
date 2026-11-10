@@ -29,5 +29,3 @@ It is also necessary to setup following hotswap-agent.properties:
 then connect the IDE debugger (eclipse, netbeans or idea) to port 8000 and happy hotswapping!
 
 #### Implementation notes:
-
-## TODO:

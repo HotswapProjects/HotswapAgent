@@ -18,6 +18,3 @@ Setup extraClasspath property in hotswap-agent.properties.
 #### Implementation notes:
 Plugin is initialized when `loadModule` of `org.jboss.modules.ModuleLoader'` is called. Plugin is unload when
 `unloadModule` is called.
-
-TODO
-----

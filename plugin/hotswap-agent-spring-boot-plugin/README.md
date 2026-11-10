@@ -75,6 +75,3 @@ public class PropertiesChangeMockListener implements SpringListener<SpringEvent<
         }
     }
 ```
-
-# TODO:
-* ... a lot to do ...

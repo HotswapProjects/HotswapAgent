@@ -106,8 +106,5 @@ public class JdkPluginTest {
                 return !JdkPlugin.reloadFlag;
             }
         }));
-
-        // TODO do not know why sleep is needed, maybe a separate thread in weld refresh?
-        Thread.sleep(100);
     }
 }
