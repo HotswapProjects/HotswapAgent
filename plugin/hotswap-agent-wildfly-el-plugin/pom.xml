@@ -15,6 +15,9 @@
 
 	<properties>
 		<version.org.jboss.spec.javax.el>1.0.5.Final</version.org.jboss.spec.javax.el>
+		<!-- versions of WildFly 37 -->
+		<version.org.jboss.spec.jakarta.el>4.0.1.Final</version.org.jboss.spec.jakarta.el>
+		<version.org.glassfish.expressly>5.0.0</version.org.glassfish.expressly>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -28,5 +31,43 @@
 			<version>${version.org.jboss.spec.javax.el}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.spec.jakarta.el</groupId>
+			<artifactId>jboss-el-api_5.0_spec</artifactId>
+			<version>${version.org.jboss.spec.jakarta.el}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.expressly</groupId>
+			<artifactId>expressly</artifactId>
+			<version>${version.org.glassfish.expressly}</version>
+			<scope>test</scope>
+			<exclusions>
+				<!-- the API is provided by jboss-el-api_5.0_spec, as in WildFly -->
+				<exclusion>
+					<groupId>jakarta.el</groupId>
+					<artifactId>jakarta.el-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<!-- contains org.jboss.el.cache.BeanPropertiesCache of javax.el too -->
+					<classpathDependencyExcludes>
+						<classpathDependencyExclude>org.jboss.spec.javax.el:jboss-el-api_3.0_spec</classpathDependencyExclude>
+					</classpathDependencyExcludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

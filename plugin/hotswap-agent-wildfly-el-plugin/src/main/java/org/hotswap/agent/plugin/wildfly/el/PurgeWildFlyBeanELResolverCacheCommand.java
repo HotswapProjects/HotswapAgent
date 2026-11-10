@@ -19,108 +19,44 @@
 package org.hotswap.agent.plugin.wildfly.el;
 
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.Map;
 
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.logging.AgentLogger;
 
 /**
- * Purge BeanPropertiesCache && FactoryFinderCache.
+ * Purge org.jboss.el.cache.BeanPropertiesCache of the classes of a class loader.
  *
  * @author alpapad@gmail.com
  */
 public class PurgeWildFlyBeanELResolverCacheCommand extends MergeableCommand {
 
-    /** The logger. */
     private static AgentLogger LOGGER = AgentLogger.getLogger(PurgeWildFlyBeanELResolverCacheCommand.class);
 
-    /** The app class loader. */
-    private ClassLoader appClassLoader;
+    /** The class loader which resolves BeanPropertiesCache. */
+    private final ClassLoader appClassLoader;
 
-    /** The class name. */
-    private String className;
+    /** The class loader of the classes to remove from the cache. */
+    private final ClassLoader classLoader;
 
-    /**
-     * Instantiates a new purge wild fly bean el resolver cache command.
-     *
-     * @param appClassLoader the app class loader
-     * @param className the class name
-     */
-    public PurgeWildFlyBeanELResolverCacheCommand(ClassLoader appClassLoader, String className) {
+    public PurgeWildFlyBeanELResolverCacheCommand(ClassLoader appClassLoader, ClassLoader classLoader) {
         this.appClassLoader = appClassLoader;
-        this.className = className;
+        this.classLoader = classLoader;
     }
 
-    /* (non-Javadoc)
-     * @see org.hotswap.agent.command.Command#executeCommand()
-     */
     @Override
     public void executeCommand() {
-        LOGGER.info("Cleaning  BeanPropertiesCache {} {}.", className, appClassLoader);
-        if (className != null) {
-            try {
-                ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
-
-                try {
-                    Thread.currentThread().setContextClassLoader(appClassLoader);
-                    Class<?> cacheClazz = Class.forName("org.jboss.el.cache.BeanPropertiesCache", true, appClassLoader);
-                    Method beanElResolverMethod = cacheClazz.getDeclaredMethod("getProperties", new Class<?>[] {});
-                    Object o = beanElResolverMethod.invoke(null);
-
-                    @SuppressWarnings("unchecked")
-                    Map<Class<?>, Object> m = Map.class.cast(o);
-
-                    Iterator<Map.Entry<Class<?>, Object>> it = m.entrySet().iterator();
-                    while (it.hasNext()) {
-                        Map.Entry<Class<?>, Object> entry = it.next();
-                        if(entry.getKey().getClassLoader() == appClassLoader) {
-                            if (entry.getKey().getName().equals(className) || (entry.getKey().getName()).equals(className + "$Proxy$_$$_WeldSubclass")) {
-                                it.remove();
-                            }
-                        }
-                    }
-                } finally {
-                    Thread.currentThread().setContextClassLoader(oldContextClassLoader);
-                }
-            } catch (Exception e) {
-                LOGGER.error("Error cleaning BeanPropertiesCache. {}", e, className);
-            }
-        } else {
-
-            try {
-                LOGGER.info("Cleaning  BeanPropertiesCache {}.", appClassLoader);
-                Method beanElResolverMethod = resolveClass("org.jboss.el.cache.BeanPropertiesCache").getDeclaredMethod("clear", ClassLoader.class);
-                beanElResolverMethod.setAccessible(true);
-                beanElResolverMethod.invoke(null, appClassLoader);
-            } catch (Exception e) {
-                LOGGER.error("Error cleaning BeanPropertiesCache. {}", e, appClassLoader);
-            }
-            try {
-                LOGGER.info("Cleaning  FactoryFinderCache {}.", appClassLoader);
-                Method beanElResolverMethod = resolveClass("org.jboss.el.cache.FactoryFinderCache").getDeclaredMethod("clearClassLoader", ClassLoader.class);
-                beanElResolverMethod.setAccessible(true);
-                beanElResolverMethod.invoke(null, appClassLoader);
-            } catch (Exception e) {
-                LOGGER.error("Error cleaning FactoryFinderCache. {}", e, appClassLoader);
-            }
+        LOGGER.debug("Cleaning BeanPropertiesCache of {}.", classLoader);
+        try {
+            Class<?> cacheClass = Class.forName("org.jboss.el.cache.BeanPropertiesCache", true, appClassLoader);
+            // SoftConcurrentHashMap keeps the entries in an inner map, getProperties().clear() would not remove them
+            Method clear = cacheClass.getDeclaredMethod("clear", ClassLoader.class);
+            clear.setAccessible(true);
+            clear.invoke(null, classLoader);
+        } catch (Exception e) {
+            LOGGER.error("Error cleaning BeanPropertiesCache of {}.", e, classLoader);
         }
     }
 
-    /**
-     * Resolve class.
-     *
-     * @param name the name
-     * @return the class
-     * @throws ClassNotFoundException the class not found exception
-     */
-    private Class<?> resolveClass(String name) throws ClassNotFoundException {
-        return Class.forName(name, true, appClassLoader);
-    }
-
-    /* (non-Javadoc)
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -129,27 +65,16 @@ public class PurgeWildFlyBeanELResolverCacheCommand extends MergeableCommand {
             return false;
 
         PurgeWildFlyBeanELResolverCacheCommand that = (PurgeWildFlyBeanELResolverCacheCommand) o;
-
-        if (!appClassLoader.equals(that.appClassLoader))
-            return false;
-
-        return true;
+        return appClassLoader.equals(that.appClassLoader) && classLoader.equals(that.classLoader);
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
-        int result = appClassLoader.hashCode();
-        return result;
+        return 31 * appClassLoader.hashCode() + classLoader.hashCode();
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
-        return "PurgeWildFlyBeanELResolverCacheCommand{" + "appClassLoader=" + appClassLoader + '}';
+        return "PurgeWildFlyBeanELResolverCacheCommand{appClassLoader=" + appClassLoader + ", classLoader=" + classLoader + '}';
     }
 }
