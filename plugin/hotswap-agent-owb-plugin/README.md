@@ -16,5 +16,3 @@ in `hotswap-agent.properties config`: file using parameter `owb.beanReloadStrate
 * CLASS_CHANGE - reload bean instances after any class change and any modification from previous strategies.
 
 #### Implementation notes:
-
-# TODO:

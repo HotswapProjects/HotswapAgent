@@ -91,7 +91,7 @@ public class ProxyFactoryTransformer {
 
         // Weld 5
         CtMethod oldMethod = ctClass.getDeclaredMethod("toClass");
-        oldMethod.setName("$$ha$toClass"); // TODO: use another convention for renamed?
+        oldMethod.setName("$$ha$toClass");
         oldMethod.setModifiers(Modifier.PUBLIC);
         CtMethod newMethod = CtNewMethod.make(
                 "protected java.lang.Class toClass(org.jboss.classfilewriter.ClassFile ct, java.lang.Class originalClass, " +

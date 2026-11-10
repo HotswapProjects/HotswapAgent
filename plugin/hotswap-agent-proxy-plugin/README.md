@@ -11,5 +11,3 @@ Cglib proxy replacement is two-step process. For Cglib proxies you may recieve e
 Cglib proxy replacement does not use package names to detect proxy Class definition generators. This done so to support frameworks that repackage libraries
 (for example the Spring Framework repackages Cglib). The plugin just checks the interface name and method name to detect a Cglib proxy Class definition generator.
 This may cause problems if you have a interface named GeneratorStrategy that also has a method named generate.
-
-# TODO:

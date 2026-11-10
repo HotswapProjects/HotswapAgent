@@ -233,9 +233,6 @@ public class AnonymousClassPatchPlugin {
         }
 
         // rename all class names according to the map
-
-        // TODO: it could be done via classPool but it doesn't work
-//        CtClass ctClass = classPool.get(javaClassName);
         ctClass.replaceClassName(replaceClassNameMap);
 
         LOGGER.reload("Class '{}' has been enhanced with anonymous classes for hotswap.", className);

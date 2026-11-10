@@ -170,14 +170,7 @@ public class ClassLoaderDefineClassPatcher {
                         @Override
                         public void visit(InputStream file) throws IOException {
 
-                            // skip plugin classes
-                            // TODO this should be skipped only in patching application classloader. To copy
-                             // classes into agent classloader, Plugin class must be copied as well
-    //                        if (patchClass.hasAnnotation(Plugin.class)) {
-    //                            LOGGER.trace("Skipping plugin class: " + patchClass.getName());
-    //                            return;
-    //                        }
-
+                            // plugin classes are not skipped, copying the classes into the agent classloader needs them
                             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
                             int readBytes;

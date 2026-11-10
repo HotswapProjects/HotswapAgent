@@ -90,33 +90,8 @@ public class CdiContextsTransformer {
                 "return $_;"
         );
 
-        //addDestroyMethod(clazz, classPool);
-
         LOGGER.debug("Class '{}' patched with hot-swapping support", clazz.getName() );
     }
-
-    /*
-    static void addDestroyMethod(CtClass clazz, ClassPool classPool) {
-        CtMethod destroy = null;
-        try {
-            destroy = clazz.getDeclaredMethod("destroy", new CtClass[] {classPool.get("jakarta.enterprise.context.spi.Contextual")});
-        } catch (NotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        if(destroy == null) {
-            try {
-                clazz.addMethod(CtMethod.make(//
-                        "public void destroy(jakarta.enterprise.context.spi.Contextual c) {\n"+//
-                         ContextualReloadHelper.class.getName() +".reinitialize(this, c);\n"+
-                        "}\n", clazz));
-            } catch (CannotCompileException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-    }
-    */
 
     @OnClassLoadEvent(classNameRegexp = "org.apache.webbeans.context.AbstractContext")
     public static void transformAbstractContext(ClassPool classPool, CtClass ctClass) throws NotFoundException, CannotCompileException {
