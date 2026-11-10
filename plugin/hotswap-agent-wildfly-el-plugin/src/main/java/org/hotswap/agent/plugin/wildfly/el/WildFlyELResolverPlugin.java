@@ -31,13 +31,13 @@ import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.CtConstructor;
-import org.hotswap.agent.javassist.CtMethod;
 import org.hotswap.agent.javassist.NotFoundException;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.PluginManagerInvoker;
 
 /**
- * Clear javax.el.BeanELResolver cache after any class redefinition.
+ * Clear the bean properties cache of javax.el.BeanELResolver and jakarta.el.BeanELResolver
+ * (org.jboss.el.cache.BeanPropertiesCache) after any class redefinition.
  *
  * @author alpapad@gmail.com
  *
@@ -78,7 +78,7 @@ public class WildFlyELResolverPlugin {
      * @throws NotFoundException
      *             the not found exception
      */
-    @OnClassLoadEvent(classNameRegexp = "javax.el.BeanELResolver")
+    @OnClassLoadEvent(classNameRegexp = "(javax|jakarta).el.BeanELResolver")
     public static void beanELResolverRegisterVariable(CtClass ctClass, ClassPool classPool) throws CannotCompileException, NotFoundException {
         for (CtConstructor constructor : ctClass.getDeclaredConstructors()) {
             constructor.insertAfter("java.lang.ClassLoader $$cl = Thread.currentThread().getContextClassLoader();" + PluginManagerInvoker.buildInitializePlugin(WildFlyELResolverPlugin.class, "$$cl"));
@@ -106,26 +106,6 @@ public class WildFlyELResolverPlugin {
             constructor.insertAfter("java.lang.ClassLoader $$cl = Thread.currentThread().getContextClassLoader();" + PluginManagerInvoker.buildInitializePlugin(WildFlyELResolverPlugin.class, "$$cl"));
         }
         LOGGER.info("Patched org.jboss.el.cache.BeanPropertiesCache");
-    }
-
-    /**
-     * Hook on org.jboss.el.cache.BeanPropertiesCache.SoftConcurrentHashMap
-     * class and for each instance: - ensure plugin is initialized - register
-     * instances using registerBeanELResolver() method
-     *
-     * @param ctClass
-     *            the ct class
-     * @param classPool
-     *            the class pool
-     * @throws CannotCompileException
-     *             the cannot compile exception
-     * @throws NotFoundException
-     *             the not found exception
-     */
-    @OnClassLoadEvent(classNameRegexp = "org.jboss.el.cache.BeanPropertiesCache.SoftConcurrentHashMap")
-    public static void beanPropertiesCacheSoftConcurrentHashMap(CtClass ctClass, ClassPool classPool) throws CannotCompileException, NotFoundException {
-        ctClass.addMethod(CtMethod.make("public java.util.Set entrySet() { return map.entrySet();}", ctClass));
-        LOGGER.info("Patched org.jboss.el.cache.BeanPropertiesCache$SoftConcurrentHashMap");
     }
 
     /**
@@ -161,7 +141,12 @@ public class WildFlyELResolverPlugin {
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE)
     public void invalidateClassCache(Class<?> original) throws Exception {
         LOGGER.trace("Running invalidateClassCache {}", appClassLoader);
-        PurgeWildFlyBeanELResolverCacheCommand cmd = new PurgeWildFlyBeanELResolverCacheCommand(appClassLoader, original.getName());
+        if (original.getClassLoader() == null) {
+            return;
+        }
+        // Clear all classes of the class loader, the properties of other classes (subclasses, proxies) may change too.
+        // The commands of classes reloaded together are equal, the first one clears them all.
+        PurgeWildFlyBeanELResolverCacheCommand cmd = new PurgeWildFlyBeanELResolverCacheCommand(appClassLoader, original.getClassLoader());
         scheduler.scheduleCommand(cmd, 250, DuplicateSheduleBehaviour.SKIP);
     }
 
