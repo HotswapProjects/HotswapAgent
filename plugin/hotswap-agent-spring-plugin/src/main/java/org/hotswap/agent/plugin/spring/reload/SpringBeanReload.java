@@ -161,6 +161,11 @@ public class SpringBeanReload {
         if (xml == null) {
             return;
         }
+        if (!XmlBeanDefinitionScannerAgent.isBeanDefinitionXml(beanFactory, xml)) {
+            LOGGER.debug("xml '{}' is not a bean definition file of {}, ignore it", xml,
+                    ObjectUtils.identityToString(beanFactory));
+            return;
+        }
         synchronized (contextLock) {
             if (reloadContext.xmls.add(xml)) {
                 LOGGER.info("try to add xml '{}' into {}", xml, ObjectUtils.identityToString(beanFactory));
