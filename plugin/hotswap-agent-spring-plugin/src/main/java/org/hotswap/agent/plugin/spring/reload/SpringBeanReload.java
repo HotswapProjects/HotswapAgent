@@ -49,11 +49,11 @@ import static org.hotswap.agent.plugin.spring.utils.RegistryUtils.maybeRegistryT
  * Reload spring beans.
  */
 public class SpringBeanReload {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(SpringBeanReload.class);
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringBeanReload.class);
 
     DefaultListableBeanFactory beanFactory;
 
-    private Object contextLock = new Object();
+    private final Object contextLock = new Object();
     private SpringBeanReloadContext reloadContext = new SpringBeanReloadContext();
 
     private final BeanNameGenerator beanNameGenerator;
