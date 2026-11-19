@@ -187,6 +187,14 @@ public class XmlBeanDefinitionScannerAgent {
         return beanNames;
     }
 
+    /**
+     * Checks if the XML file was loaded as Spring bean definitions. Other XML files on the classpath,
+     * e.g. MyBatis mappers or logback.xml, are not.
+     */
+    public static boolean isBeanDefinitionXml(DefaultListableBeanFactory beanFactory, URL url) {
+        return getAgent(beanFactory, convertToClasspathURL(url.getPath())) != null;
+    }
+
     private static XmlBeanDefinitionScannerAgent getAgent(DefaultListableBeanFactory beanFactory, String path) {
         Map<String, XmlBeanDefinitionScannerAgent> instances = beanFactoryToAgentMap.get(beanFactory);
         if (instances != null) {
