@@ -18,10 +18,15 @@
  */
 package org.hotswap.agent.plugin.proxy;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
@@ -64,7 +69,7 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
             Class<?> clazz = classLoader.loadClass(className);
             Map<String, String> signatureMap = ProxyClassSignatureHelper.getNonSyntheticSignatureMap(clazz);
             LOGGER.debug("executeSingleCommand class:{}, signature equals:{}", className, signatureMap.equals(signatureMapOrig));
-            if (!signatureMap.equals(signatureMapOrig) || !isImplementInterface(signatureMap, clazz)) {
+            if (!signatureMap.equals(signatureMapOrig) || !implementsInterfaces(clazz, clazz.getInterfaces())) {
                 byte[] generateProxyClass = ProxyGenerator.generateProxyClass(className, clazz.getInterfaces());
                 Map<Class<?>, byte[]> reloadMap = new HashMap<>();
                 reloadMap.put(clazz, generateProxyClass);
@@ -76,28 +81,40 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
         }
     }
 
-    // Whether all methods of the interface are implemented
-    private boolean isImplementInterface(Map<String, String> signatureMap, Class<?> clazz) {
-        String clazzSignature = "";
+    /**
+     * Checks if the proxy class declares every abstract method of the interfaces with the same parameter types,
+     * return type and exceptions, e.g. a method added to an interface is missing in the proxy until it is generated
+     * again. Java proxies have no bridge methods, so the return type must be the same. A method declared by more
+     * interfaces with other exceptions is reported as not implemented, which only generates the proxy again.
+     */
+    static boolean implementsInterfaces(Class<?> proxyClass, Class<?>[] interfaces) {
         try {
-            clazzSignature = ProxyClassSignatureHelper.getJavaClassSignature(clazz).replaceAll("final ", "");
-            LOGGER.debug("clazzSignature: {}", clazzSignature);
-        } catch (Exception e) {
-            LOGGER.error("Error getJavaClassSignature {}", clazz, e);
-            return true;
-        }
-        for (Map.Entry<String, String> entry : signatureMap.entrySet()) {
-            if(clazzSignature.contains(entry.getKey()) && entry.getValue().contains("public abstract")) {
-                LOGGER.debug("{} Signature: {}", entry.getKey(), entry.getValue());
-                String[] methodSignatures = entry.getValue().replaceAll("abstract ", "").split(";");
-                for (String methodSignature : methodSignatures) {
-                    if(!clazzSignature.contains(methodSignature)) {
+            Map<String, Set<Class<?>>> proxyMethods = new HashMap<>();
+            for (Method proxyMethod : proxyClass.getDeclaredMethods()) {
+                proxyMethods.put(methodKey(proxyMethod), new HashSet<>(Arrays.asList(proxyMethod.getExceptionTypes())));
+            }
+            for (Class<?> interfaceClass : interfaces) {
+                for (Method method : interfaceClass.getMethods()) {
+                    if (!Modifier.isAbstract(method.getModifiers())) {
+                        continue;
+                    }
+                    Set<Class<?>> proxyExceptions = proxyMethods.get(methodKey(method));
+                    if (proxyExceptions == null
+                            || !proxyExceptions.equals(new HashSet<>(Arrays.asList(method.getExceptionTypes())))) {
+                        LOGGER.debug("Proxy {} does not implement {}", proxyClass.getName(), method);
                         return false;
                     }
                 }
             }
+            return true;
+        } catch (Exception | LinkageError e) {
+            LOGGER.error("Error checking methods of proxy {}", e, proxyClass.getName());
+            return true;
         }
-        return true;
+    }
+
+    private static String methodKey(Method method) {
+        return method.getName() + Arrays.toString(method.getParameterTypes()) + method.getReturnType().getName();
     }
 
     public boolean shiftScheduleTime() {
