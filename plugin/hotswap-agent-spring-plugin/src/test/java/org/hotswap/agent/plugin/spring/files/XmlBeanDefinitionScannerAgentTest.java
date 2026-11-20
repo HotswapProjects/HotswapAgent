@@ -62,15 +62,15 @@ public class XmlBeanDefinitionScannerAgentTest {
     }
 
     /**
-     * An XML file in an unknown output folder may be a Spring bean definition file that cannot be reloaded.
+     * An XML file in an unknown output folder is matched by its file, so the path is used as it is (#397).
      */
     @Test
-    public void xmlFileInUnknownOutputFolderWarns() {
+    public void xmlFileInUnknownOutputFolderDoesNotWarn() {
         String path = "/project/build/resources/main/applicationContext.xml";
 
         List<String> warnings = warningsLoggedBy(() -> assertEquals(path, ResourceUtils.convertToClasspathURL(path)));
 
-        assertEquals(1, warnings.size());
+        assertEquals(new ArrayList<String>(), warnings);
     }
 
     private static List<String> warningsLoggedBy(Runnable action) {
