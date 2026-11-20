@@ -321,6 +321,9 @@ public class EnhancerProxyCreater {
                     "if(method != null && method.getName().equals(\"$$ha$setTarget\")) {" +
                         "setTarget(args[0]); return null;" +
                     "}" +
+                    "if (" + DetachableBeanHolder.class.getName() + ".isInvokedByReflection(method)) {" +
+                        "return " + DetachableBeanHolder.class.getName() + ".invokeByReflection(method, getBean(), args);" +
+                    "}" +
                     "return proxy.invoke(getBean(), args);" +
                 "}";
         String body = rawBody.replaceAll("\\{0\\}", proxyPackage);

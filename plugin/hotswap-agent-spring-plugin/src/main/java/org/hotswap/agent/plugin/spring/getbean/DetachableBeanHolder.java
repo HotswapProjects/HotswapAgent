@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -150,6 +151,46 @@ public class DetachableBeanHolder implements Serializable {
             }
         }
         return beanCopy;
+    }
+
+    /**
+     * Checks if a call of the method intercepted by the proxy goes to the target bean by reflection instead of
+     * the CGLIB MethodProxy. The FastClass of the MethodProxy in older CGLIB (Spring before 4.2.x) is generated for
+     * the bean class and misses the protected methods inherited from another package, so it fails with
+     * "IllegalArgumentException: Protected method", see #316. Public methods keep using the faster MethodProxy.
+     *
+     * @param method the intercepted method
+     * @return true if the method is not public and it can be made accessible
+     */
+    public static boolean isInvokedByReflection(Method method) {
+        if (method == null || Modifier.isPublic(method.getModifiers())) {
+            return false;
+        }
+        try {
+            method.setAccessible(true);
+            return true;
+        } catch (RuntimeException e) {
+            // e.g. a protected method of a class from a module that is not open on Java 9+
+            LOGGER.trace("Cannot make {} accessible, calling it through the CGLIB MethodProxy", e, method);
+            return false;
+        }
+    }
+
+    /**
+     * Calls the method on the target bean by reflection and rethrows the exception thrown by the method itself.
+     *
+     * @param method the method made accessible by {@link #isInvokedByReflection(Method)}
+     * @param target the target bean
+     * @param args the method arguments
+     * @return the method result
+     * @throws Throwable the exception thrown by the method
+     */
+    public static Object invokeByReflection(Method method, Object target, Object[] args) throws Throwable {
+        try {
+            return method.invoke(target, args);
+        } catch (InvocationTargetException e) {
+            throw e.getTargetException();
+        }
     }
 
     protected boolean isBeanLoaded(){
