@@ -141,7 +141,9 @@ public class XmlBeanDefinitionScannerAgent {
             // ignore
         }
 
-        if (!instances.containsKey(path)) {
+        // A reload reads the XML as a file. In an unknown output folder the path of that file is not the path the
+        // XML was first loaded with, but the file must keep its agent and the beans registered with it.
+        if (!instances.containsKey(path) && findAgentByFile(instances.values(), resourceUrl) == null) {
             instances.put(path, new XmlBeanDefinitionScannerAgent(reader, resourceUrl));
         }
     }
@@ -201,21 +203,24 @@ public class XmlBeanDefinitionScannerAgent {
 
     /**
      * Find the agent of a changed XML file by its classpath path, or by the file the agent was loaded from
-     * if the path cannot be converted, e.g. for the Eclipse bin folder.
+     * if the path cannot be converted, e.g. for the Eclipse bin folder. The agents of the bean factory are searched
+     * first, another context may have loaded the same file.
      */
     private static XmlBeanDefinitionScannerAgent getAgent(DefaultListableBeanFactory beanFactory, URL url) {
-        XmlBeanDefinitionScannerAgent agent = getAgent(beanFactory, convertToClasspathURL(url.getPath()));
-        if (agent != null) {
-            return agent;
-        }
+        String path = convertToClasspathURL(url.getPath());
         Map<String, XmlBeanDefinitionScannerAgent> instances = beanFactoryToAgentMap.get(beanFactory);
         if (instances != null) {
-            agent = findAgentByFile(instances.values(), url);
+            XmlBeanDefinitionScannerAgent agent = findAgent(instances, path, url);
             if (agent != null) {
                 return agent;
             }
         }
-        return findAgentByFile(pathToAgent.values(), url);
+        return findAgent(pathToAgent, path, url);
+    }
+
+    private static XmlBeanDefinitionScannerAgent findAgent(Map<String, XmlBeanDefinitionScannerAgent> instances, String path, URL url) {
+        XmlBeanDefinitionScannerAgent agent = instances.get(path);
+        return agent != null ? agent : findAgentByFile(instances.values(), url);
     }
 
     private static XmlBeanDefinitionScannerAgent findAgentByFile(Collection<XmlBeanDefinitionScannerAgent> agents, URL url) {
@@ -287,8 +292,7 @@ public class XmlBeanDefinitionScannerAgent {
                 return null;
             }
             URL url = resource.getURL();
-            XmlBeanDefinitionScannerAgent agent = pathToAgent.get(convertToClasspathURL(url.getPath()));
-            return agent != null ? agent : findAgentByFile(pathToAgent.values(), url);
+            return findAgent(pathToAgent, convertToClasspathURL(url.getPath()), url);
         } catch (IOException e) {
             LOGGER.warning("Fail to fetch url from resource: {}", resource);
             return null;

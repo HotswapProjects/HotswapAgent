@@ -29,6 +29,7 @@ import org.junit.rules.TemporaryFolder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
+import org.springframework.core.io.FileSystemResource;
 
 import java.io.File;
 import java.net.URL;
@@ -39,6 +40,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -46,23 +48,25 @@ import static org.junit.Assert.assertTrue;
  */
 public class XmlInUnknownOutputFolderTest {
 
-    private static final String XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    private static final String XML_START = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             + "<beans xmlns=\"http://www.springframework.org/schema/beans\"\n"
             + "       xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
             + "       xsi:schemaLocation=\"http://www.springframework.org/schema/beans "
-            + "http://www.springframework.org/schema/beans/spring-beans.xsd\">\n"
-            + "    <bean id=\"binBean\" class=\"java.lang.Object\"/>\n"
-            + "</beans>\n";
+            + "http://www.springframework.org/schema/beans/spring-beans.xsd\">\n";
+    private static final String XML_END = "</beans>\n";
 
     @ClassRule
     public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     // XML agents are registered once per path, so all tests use the same contexts
+    private static File bin;
     private static URLClassLoader classLoader;
     // the registry of the XML reader is the context, its agent is kept in the global map
     private static GenericXmlApplicationContext context;
     private static DefaultListableBeanFactory beanFactory;
     private static URL xmlUrl;
+    // reloaded by one test only, so that the test sees the first reload of the file
+    private static URL registeredBeansXmlUrl;
     // the registry of the XML reader is the bean factory, its agent is kept in a map of the bean factory
     private static ClassPathXmlApplicationContext factoryContext;
     private static DefaultListableBeanFactory factoryBeanFactory;
@@ -71,14 +75,16 @@ public class XmlInUnknownOutputFolderTest {
     @BeforeClass
     public static void before() throws Exception {
         BaseTestUtil.configMaxReloadTimes();
-        File bin = temporaryFolder.newFolder("my project", "bin");
-        xmlUrl = writeXml(bin, "unknown-output-folder/context.xml");
-        factoryXmlUrl = writeXml(bin, "unknown-output-folder/factory-context.xml");
+        bin = temporaryFolder.newFolder("my project", "bin");
+        xmlUrl = writeXml("unknown-output-folder/context.xml", "binBean");
+        registeredBeansXmlUrl = writeXml("unknown-output-folder/registered-beans-context.xml", "registeredBean");
+        factoryXmlUrl = writeXml("unknown-output-folder/factory-context.xml", "binBean");
 
         classLoader = new URLClassLoader(new URL[]{bin.toURI().toURL()}, XmlInUnknownOutputFolderTest.class.getClassLoader());
         context = new GenericXmlApplicationContext();
         context.setClassLoader(classLoader);
-        context.load("classpath:unknown-output-folder/context.xml");
+        context.load("classpath:unknown-output-folder/context.xml",
+                "classpath:unknown-output-folder/registered-beans-context.xml");
         context.refresh();
         beanFactory = context.getDefaultListableBeanFactory();
         SpringChangedAgent.getInstance(beanFactory);
@@ -91,11 +97,17 @@ public class XmlInUnknownOutputFolderTest {
         SpringChangedAgent.getInstance(factoryBeanFactory);
     }
 
-    private static URL writeXml(File folder, String path) throws Exception {
-        File xml = new File(folder, path);
-        xml.getParentFile().mkdirs();
-        Files.write(xml.toPath(), XML.getBytes(StandardCharsets.UTF_8));
-        return xml.toURI().toURL();
+    private static URL writeXml(String path, String... beanNames) throws Exception {
+        StringBuilder xml = new StringBuilder(XML_START);
+        for (String beanName : beanNames) {
+            xml.append("    <bean id=\"").append(beanName).append("\" class=\"java.lang.Object\"/>\n");
+        }
+        xml.append(XML_END);
+
+        File file = new File(bin, path);
+        file.getParentFile().mkdirs();
+        Files.write(file.toPath(), xml.toString().getBytes(StandardCharsets.UTF_8));
+        return file.toURI().toURL();
     }
 
     @AfterClass
@@ -129,12 +141,49 @@ public class XmlInUnknownOutputFolderTest {
         assertEquals(reloadTimes + 1, reloadTimes(factoryBeanFactory));
     }
 
+    /**
+     * The reload reads the XML as a file, whose path is not the classpath path the agent is registered with.
+     * The beans must stay registered with that agent, also after the first reload.
+     */
     @Test
     public void beansAreRegisteredWithTheXml() {
-        Set<String> beanNames = XmlBeanDefinitionScannerAgent.reloadXmls(beanFactory,
-                Collections.singleton(xmlUrl), Collections.<String>emptySet());
+        for (int reload = 1; reload <= 2; reload++) {
+            Set<String> beanNames = XmlBeanDefinitionScannerAgent.reloadXmls(beanFactory,
+                    Collections.singleton(registeredBeansXmlUrl), Collections.<String>emptySet());
 
-        assertEquals(Collections.singleton("binBean"), beanNames);
+            assertEquals("reload " + reload, Collections.singleton("registeredBean"), beanNames);
+        }
+    }
+
+    /**
+     * Two contexts load the same file. The one which loads it as a file registers its agent with the path of the
+     * file, the bean factory of the other one must still find its own agent.
+     */
+    @Test
+    public void xmlOfTwoContextsIsReloadedIntoItsOwnBeanFactory() throws Exception {
+        String path = "unknown-output-folder/shared-context.xml";
+        URL sharedXmlUrl = writeXml(path, "sharedBean");
+
+        GenericXmlApplicationContext fileContext = new GenericXmlApplicationContext();
+        ClassPathXmlApplicationContext classPathContext = new ClassPathXmlApplicationContext(
+                new String[]{"classpath:" + path}, false);
+        try {
+            fileContext.load(new FileSystemResource(new File(bin, path)));
+            fileContext.refresh();
+            classPathContext.setClassLoader(classLoader);
+            classPathContext.refresh();
+            DefaultListableBeanFactory classPathBeanFactory = (DefaultListableBeanFactory) classPathContext.getBeanFactory();
+
+            writeXml(path, "sharedBean", "addedBean");
+            XmlBeanDefinitionScannerAgent.reloadXmls(classPathBeanFactory,
+                    Collections.singleton(sharedXmlUrl), Collections.<String>emptySet());
+
+            assertTrue(classPathBeanFactory.containsBeanDefinition("addedBean"));
+            assertFalse(fileContext.containsBeanDefinition("addedBean"));
+        } finally {
+            fileContext.close();
+            classPathContext.close();
+        }
     }
 
     private int reloadTimes() {

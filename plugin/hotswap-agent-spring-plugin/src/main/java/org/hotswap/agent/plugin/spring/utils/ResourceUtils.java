@@ -88,8 +88,9 @@ public class ResourceUtils {
     }
 
     /**
-     * The path is used as it is. XML files in other folders are still matched by their file (see
-     * XmlBeanDefinitionScannerAgent), files in archives and files other than XML are never reloaded.
+     * The path is used as it is. A changed XML file in another folder is still reloaded if it is the file the bean
+     * definitions were loaded from (see XmlBeanDefinitionScannerAgent), a copy of it in a third folder is not.
+     * Files in archives and files other than XML are never reloaded.
      */
     private static void logConversionFailure(String filePath) {
         LOGGER.debug("failed to convert filePath {} to classPath path", filePath);
