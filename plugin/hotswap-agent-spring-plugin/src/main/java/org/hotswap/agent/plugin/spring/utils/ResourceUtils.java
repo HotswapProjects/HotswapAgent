@@ -20,13 +20,13 @@ package org.hotswap.agent.plugin.spring.utils;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
-import org.hotswap.agent.util.spring.util.StringUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
-import java.net.URL;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 
 public class ResourceUtils {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(XmlBeanDefinitionScannerAgent.class);
@@ -88,41 +88,21 @@ public class ResourceUtils {
     }
 
     /**
-     * The path is used as it is. Files in archives (e.g. classes in jars registered as bean definition resources)
-     * and files other than XML are never reloaded, so they are logged at debug level only. An XML file in an unknown
-     * output folder (e.g. Gradle build/resources/main) may be a Spring bean definition file which cannot be reloaded.
+     * The path is used as it is. XML files in other folders are still matched by their file (see
+     * XmlBeanDefinitionScannerAgent), files in archives and files other than XML are never reloaded.
      */
     private static void logConversionFailure(String filePath) {
-        if (filePath.contains("!/") || !filePath.endsWith(".xml")) {
-            LOGGER.debug("failed to convert filePath {} to classPath path", filePath);
-        } else {
-            LOGGER.warning("failed to convert filePath {} to classPath path", filePath);
-        }
+        LOGGER.debug("failed to convert filePath {} to classPath path", filePath);
     }
 
     /**
-     * convert src/main/resources/xxx.xml and classes/xxx.xml to xxx.xml
-     *
-     * @param extraClassPaths the extra class paths
-     * @param filePath        the file path to convert
-     * @return if convert succeed, return classpath path, or else return file path
+     * Decode a URL path, e.g. %20 to a space.
      */
-    public static String convertToClasspathURL(URL[] extraClassPaths, String filePath) {
-        String path = convertToClasspathURL(filePath);
-        if (!StringUtils.isEmpty(path)) {
+    public static String decode(String path) {
+        try {
+            return URLDecoder.decode(path.replace("+", "%2B"), "UTF-8");
+        } catch (UnsupportedEncodingException | IllegalArgumentException e) {
             return path;
         }
-        if (extraClassPaths != null && extraClassPaths.length != 0) {
-            for (URL extraClassPath : extraClassPaths) {
-                String extraClassPathStr = extraClassPath.getPath();
-                String[] paths = filePath.split(extraClassPathStr);
-                if (paths.length == 2) {
-                    return paths[1];
-                }
-            }
-        }
-
-        logConversionFailure(filePath);
-        return filePath;
     }
 }
