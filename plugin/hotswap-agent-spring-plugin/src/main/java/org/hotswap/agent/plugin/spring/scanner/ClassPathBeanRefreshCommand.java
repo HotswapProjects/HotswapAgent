@@ -23,8 +23,6 @@ import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.MergeableCommand;
 import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.logging.AgentLogger;
-import org.hotswap.agent.plugin.spring.reload.SpringChangedReloadCommand;
-import org.hotswap.agent.plugin.spring.reload.SpringReloadConfig;
 import org.hotswap.agent.util.IOUtils;
 import org.hotswap.agent.watch.WatchFileEvent;
 
@@ -32,7 +30,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Do refresh Spring class (scanned by classpath scanner) based on URI or byte[] definition.
@@ -40,7 +37,7 @@ import java.util.concurrent.TimeUnit;
  * This commands merges events of watcher.event(CREATE) and transformer hotswap reload to a single refresh command.
  */
 public class ClassPathBeanRefreshCommand extends MergeableCommand {
-    private static AgentLogger LOGGER = AgentLogger.getLogger(ClassPathBeanRefreshCommand.class);
+    private static final AgentLogger LOGGER = AgentLogger.getLogger(ClassPathBeanRefreshCommand.class);
 
     ClassLoader appClassLoader;
 
