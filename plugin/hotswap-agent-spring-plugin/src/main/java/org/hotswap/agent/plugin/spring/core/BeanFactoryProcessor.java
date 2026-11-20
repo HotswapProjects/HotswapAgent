@@ -19,6 +19,7 @@
 package org.hotswap.agent.plugin.spring.core;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.getbean.JdkProxyRefresher;
 import org.hotswap.agent.plugin.spring.reload.BeanFactoryAssistant;
 import org.hotswap.agent.plugin.spring.transformers.api.BeanFactoryLifecycle;
 import org.hotswap.agent.plugin.spring.transformers.api.ValueResolverSupport;
@@ -89,6 +90,7 @@ public class BeanFactoryProcessor {
         if (beanFactory instanceof BeanFactoryLifecycle) {
             ((BeanFactoryLifecycle)beanFactory).hotswapAgent$destroyBean(beanName);
         }
+        JdkProxyRefresher.beanDestroyed(beanFactory, beanName);
     }
 
     /**

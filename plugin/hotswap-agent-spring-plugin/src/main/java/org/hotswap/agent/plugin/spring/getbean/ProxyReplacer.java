@@ -18,9 +18,7 @@
  */
 package org.hotswap.agent.plugin.spring.getbean;
 
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
-import java.util.Arrays;
 
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
@@ -32,7 +30,6 @@ import org.hotswap.agent.logging.AgentLogger;
  */
 public class ProxyReplacer {
     private static AgentLogger LOGGER = AgentLogger.getLogger(ProxyReplacer.class);
-    private static Class<?> infrastructureProxyClass;
     /**
      * Name of the Spring beanFactory method, which returns a bean
      */
@@ -43,6 +40,40 @@ public class ProxyReplacer {
      */
     private static final String ENHANCED_CONFIGURATION_CLASS_NAME =
             "org.springframework.context.annotation.ConfigurationClassEnhancer$EnhancedConfiguration";
+
+    /**
+     * Interface of Spring AOP proxies, which knows the class of their target
+     */
+    private static final String ADVISED_CLASS_NAME = "org.springframework.aop.framework.Advised";
+
+    private static boolean isInBasePackage(String[] basePackagePrefixes, Class<?>... classes) {
+        for (Class<?> clazz : classes) {
+            for (String basePackagePrefix : basePackagePrefixes) {
+                if (clazz.getName().startsWith(basePackagePrefix)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks the target class of a Spring AOP proxy. By name and reflection, Spring AOP may not be available.
+     */
+    private static boolean isTargetClassInBasePackage(String[] basePackagePrefixes, Object proxy) {
+        for (Class<?> proxyInterface : proxy.getClass().getInterfaces()) {
+            if (ADVISED_CLASS_NAME.equals(proxyInterface.getName())) {
+                try {
+                    // answered by the proxy itself, the target is not called
+                    Object targetClass = proxyInterface.getMethod("getTargetClass").invoke(proxy);
+                    return targetClass instanceof Class && isInBasePackage(basePackagePrefixes, (Class<?>) targetClass);
+                } catch (ReflectiveOperationException | RuntimeException e) {
+                    LOGGER.debug("Unable to get the target class of the proxy {}", e, proxy.getClass().getName());
+                }
+            }
+        }
+        return false;
+    }
 
     /**
      * Clears the bean references inside all the proxies
@@ -66,6 +97,7 @@ public class ProxyReplacer {
         if (bean == null) {
             return bean;
         }
+
         String[] basePackagePrefixes;
         try {
             basePackagePrefixes = (String[]) PluginManager.getInstance().getPlugin("org.hotswap.agent.plugin.spring.SpringPlugin",
@@ -76,39 +108,30 @@ public class ProxyReplacer {
             return bean;
         }
 
-        if (basePackagePrefixes != null) {
-            boolean hasMatch = false;
-            for (String basePackagePrefix : basePackagePrefixes) {
-                if (bean.getClass().getName().startsWith(basePackagePrefix)) {
-                    hasMatch = true;
-                    break;
-                }
-            }
-
-            // bean from other package
-            if (!hasMatch) {
-                LOGGER.info("{} not in basePackagePrefix", bean.getClass().getName());
+        // JDK proxies (e.g. Spring AOP proxies of beans with interfaces) are not wrapped, their invocation handler is
+        // replaced after a reload. They are recognized by Proxy.isProxyClass(), as their class name is
+        // com.sun.proxy.$ProxyN up to Java 15, but jdk.proxyN.$ProxyM since Java 16. basePackagePrefix is checked
+        // against their interfaces, and against the target class of a Spring AOP proxy, which may implement only
+        // interfaces of libraries.
+        if (Proxy.isProxyClass(bean.getClass())) {
+            if (Proxy.getInvocationHandler(bean) instanceof RefreshingInvocationHandler) {
+                // Tracked already. It gets its bean with this method when it is called, also to tell its target class.
                 return bean;
             }
+            if (basePackagePrefixes == null || isInBasePackage(basePackagePrefixes, bean.getClass().getInterfaces())
+                    || isTargetClassInBasePackage(basePackagePrefixes, bean)) {
+                JdkProxyRefresher.track(beanFactry, bean, paramClasses, paramValues);
+            }
+            return bean;
         }
 
-        // create proxy for prototype-scope beans and apsect proxied beans
-        if (bean.getClass().getName().startsWith("com.sun.proxy.$Proxy")) {
-            InvocationHandler handler = new HotswapSpringInvocationHandler(bean, beanFactry, paramClasses, paramValues);
-            Class<?>[] interfaces = bean.getClass().getInterfaces();
-            try {
-                if (!Arrays.asList(interfaces).contains(getInfrastructureProxyClass())) {
-                    interfaces = Arrays.copyOf(interfaces, interfaces.length + 1);
-                    interfaces[interfaces.length - 1] = getInfrastructureProxyClass();
-                }
-            } catch (ClassNotFoundException e) {
-                LOGGER.error("error adding org.springframework.core.InfrastructureProxy to proxy class", e);
-            }
-            // fix: it should be the classloader of the bean,
-            // or org.springframework.beans.factory.support.AbstractBeanFactory.getBeanClassLoader,
-            // but not the classLoader of the beanFactry
-            return Proxy.newProxyInstance(bean.getClass().getClassLoader(), interfaces, handler);
-        } else if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
+        if (basePackagePrefixes != null && !isInBasePackage(basePackagePrefixes, bean.getClass())) {
+            // bean from other package
+            LOGGER.info("{} not in basePackagePrefix", bean.getClass().getName());
+            return bean;
+        }
+
+        if (EnhancerProxyCreater.isSupportedCglibProxy(bean)) {
             // already a proxy, skip..
             if (bean.getClass().getName().contains("$HOTSWAPAGENT_")) {
                 return bean;
@@ -140,12 +163,5 @@ public class ProxyReplacer {
             }
         }
         return false;
-    }
-
-    private static Class<?> getInfrastructureProxyClass() throws ClassNotFoundException {
-        if (infrastructureProxyClass == null) {
-            infrastructureProxyClass = ProxyReplacer.class.getClassLoader().loadClass("org.springframework.core.InfrastructureProxy");
-        }
-        return infrastructureProxyClass;
     }
 }
