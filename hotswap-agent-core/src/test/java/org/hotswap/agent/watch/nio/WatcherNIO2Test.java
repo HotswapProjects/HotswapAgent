@@ -34,13 +34,18 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 import static junit.framework.Assert.assertEquals;
@@ -220,6 +225,99 @@ public class WatcherNIO2Test {
         } finally {
             registeringWatcher.stop();
         }
+    }
+
+    @Test
+    public void secondOverflowSkipsUnchangedFiles() throws Exception {
+        // The test polls the watcher itself, so that the events pile up until it polls.
+        AbstractNIO2Watcher idleWatcher = (AbstractNIO2Watcher) new WatcherFactory().getWatcher();
+        idleWatcher.dispatcher.start();
+        Path dir = tempFolder.newFolder().toPath();
+        Set<String> reported = ConcurrentHashMap.newKeySet();
+        Set<String> deleted = ConcurrentHashMap.newKeySet();
+        AtomicInteger eventCount = new AtomicInteger();
+        idleWatcher.addEventListener(Thread.currentThread().getContextClassLoader(), dir.toUri(), event -> {
+            String name = Paths.get(event.getURI()).getFileName().toString();
+            reported.add(name);
+            if (event.getEventType() == FileEvent.DELETE) {
+                deleted.add(name);
+            }
+            eventCount.incrementAndGet();
+        });
+        try {
+            // The JDK watch key holds at most 512 events before it reports OVERFLOW.
+            Set<String> unchanged = createFiles(dir, "first", 1000);
+            Path sameSize = dir.resolve("same-size.txt");
+            Files.write(sameSize, "aaaa".getBytes());
+            unchanged.add("same-size.txt");
+            pollAfterOverflow(idleWatcher);
+            assertTrue("events for all files after the first overflow", waitUntil(() -> reported.containsAll(unchanged), 10));
+            waitUntilQuiet(eventCount);
+            reported.clear();
+
+            Path modified = dir.resolve("first0.txt");
+            Files.write(modified, "changed".getBytes());
+            unchanged.remove("first0.txt");
+            // the DELETE event of a file is dropped by the overflow too
+            Files.delete(dir.resolve("first1.txt"));
+            unchanged.remove("first1.txt");
+            Set<String> expected = createFiles(dir, "second", 1000);
+            expected.add("first0.txt");
+            expected.add("first1.txt");
+            if (FileSystems.getDefault().supportedFileAttributeViews().contains("unix")) {
+                // a change that keeps the size and the modification time is found by the change time (ctime)
+                FileTime lastModified = Files.getLastModifiedTime(sameSize);
+                Files.write(sameSize, "bbbb".getBytes());
+                Files.setLastModifiedTime(sameSize, lastModified);
+                unchanged.remove("same-size.txt");
+                expected.add("same-size.txt");
+            }
+            pollAfterOverflow(idleWatcher);
+
+            assertTrue("events for the changed files after the second overflow", waitUntil(() -> reported.containsAll(expected), 10));
+            waitUntilQuiet(eventCount);
+            Set<String> reportedUnchanged = new HashSet<>(reported);
+            reportedUnchanged.retainAll(unchanged);
+            assertEquals(new HashSet<String>(), reportedUnchanged);
+            assertEquals("DELETE events after the second overflow", Collections.singleton("first1.txt"), deleted);
+        } finally {
+            idleWatcher.dispatcher.stop();
+            idleWatcher.closeClassLoader(Thread.currentThread().getContextClassLoader());
+            // closeClassLoader() opened a new watch service for the next classloader
+            idleWatcher.watcher.close();
+        }
+    }
+
+    private static Set<String> createFiles(Path dir, String prefix, int count) throws IOException {
+        Set<String> names = new HashSet<>();
+        for (int i = 0; i < count; i++) {
+            String name = prefix + i + ".txt";
+            Files.createFile(dir.resolve(name));
+            names.add(name);
+        }
+        return names;
+    }
+
+    private static void pollAfterOverflow(AbstractNIO2Watcher watcher) throws InterruptedException {
+        int overflowCount = watcher.overflowCount;
+        // Wait until the watch service queues the events. The polling watch service scans every 2 seconds.
+        // The rescan must also not take the state of the files as racy, so that it trusts it the next time.
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(AbstractNIO2Watcher.FileState.RACY_MARGIN_NANOS) + 1000);
+        // each call polls the watch service for 10 ms
+        for (int i = 0; i < 300; i++) {
+            watcher.processEvents();
+        }
+        // a native watch service may report more than one overflow
+        assertTrue("overflow", watcher.overflowCount > overflowCount);
+    }
+
+    // waits until no event came for 300 ms
+    private static void waitUntilQuiet(AtomicInteger eventCount) throws InterruptedException {
+        int count;
+        do {
+            count = eventCount.get();
+            Thread.sleep(300);
+        } while (count != eventCount.get());
     }
 
     // ensure it works on file:/ URIs as returned by classloader

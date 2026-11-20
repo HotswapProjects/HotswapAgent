@@ -82,7 +82,7 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
     }
 
     @Override
-    protected void rescan(Path dir) {
+    protected void rescan(Path dir, Snapshot previous, Snapshot current) {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path entry : stream) {
                 if (Files.isDirectory(entry, NOFOLLOW_LINKS)) {
@@ -91,8 +91,8 @@ public class WatcherNIO2 extends AbstractNIO2Watcher {
                     if (!isWatched(entry)) {
                         registerCreatedDirectory(entry);
                     }
-                } else if (Files.isRegularFile(entry)) {
-                    dispatchRescanEvents(entry);
+                } else {
+                    rescanFile(entry, null, previous, current);
                 }
             }
         } catch (IOException e) {

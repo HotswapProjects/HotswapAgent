@@ -133,13 +133,13 @@ public class TreeWatcherNIO extends AbstractNIO2Watcher {
     }
 
     @Override
-    protected void rescan(Path dir) {
+    protected void rescan(Path dir, Snapshot previous, Snapshot current) {
         try {
             Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (attrs.isRegularFile()) {
-                        dispatchRescanEvents(file);
+                        rescanFile(file, attrs, previous, current);
                     }
                     return FileVisitResult.CONTINUE;
                 }
