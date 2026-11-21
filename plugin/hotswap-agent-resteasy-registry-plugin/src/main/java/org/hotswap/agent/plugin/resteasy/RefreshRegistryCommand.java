@@ -138,7 +138,14 @@ public class RefreshRegistryCommand extends MergeableCommand {
             boolean perRequest = resourceFactories.isEmpty();
             for (ResourceFactory resourceFactory : resourceFactories) {
                 if (resourceFactory instanceof POJOResourceFactory) {
-                    perRequest = true;
+                    // its own class, which may implement or extend the reloaded class with @Path
+                    Class<?> resourceClass = resourceFactory.getScannableClass();
+                    if (resourceClass.getName().equals(className)) {
+                        perRequest = true;
+                    } else {
+                        LOGGER.debug("Registering {} again per request", resourceClass.getName());
+                        registry.addPerRequestResource(resourceClass);
+                    }
                 } else if (resourceFactory instanceof SingletonResource) {
                     // the same instance, with the metadata of the redefined class (e.g. a new @Context field)
                     LOGGER.debug("Registering the singleton {} again", className);
@@ -186,9 +193,14 @@ public class RefreshRegistryCommand extends MergeableCommand {
         return resourceFactories;
     }
 
-    // the context of a SpringResourceFactory of resteasy-spring (the base path of a ResteasyRegistration), else null
+    // the context of a SpringResourceFactory of resteasy-spring or a subclass (the base path of a
+    // ResteasyRegistration), else null
     private static String getContext(ResourceFactory resourceFactory) {
-        if (!resourceFactory.getClass().getName().equals(SPRING_RESOURCE_FACTORY)) {
+        boolean springResourceFactory = false;
+        for (Class<?> c = resourceFactory.getClass(); c != null && !springResourceFactory; c = c.getSuperclass()) {
+            springResourceFactory = c.getName().equals(SPRING_RESOURCE_FACTORY);
+        }
+        if (!springResourceFactory) {
             return null;
         }
         try {
@@ -202,24 +214,44 @@ public class RefreshRegistryCommand extends MergeableCommand {
     }
 
     /**
-     * Checks if the invoker was registered for the class: by the root resource class (with @Path) of the class its
-     * resource factory registered, as its methods may be declared by a superclass or inherited by a registered
-     * subclass, else by the class declaring its method.
+     * Checks if the invoker was registered for the class: by the root resource class (with @Path) it was registered
+     * for, as its methods may be declared by a superclass or inherited by a registered subclass, and a Spring bean
+     * class may extend the class with @Path, else by the class declaring its method.
      */
     private boolean isRegisteredFor(ResourceInvoker invoker) {
-        ResourceFactory resourceFactory = getResourceFactory(invoker);
-        Class<?> registeredClass = null;
-        if (resourceFactory != null && resourceFactory.getScannableClass() != null) {
-            // RESTEasy registers it under the class with @Path, e.g. the superclass of a Spring bean class
-            registeredClass = GetRestful.getRootResourceClass(resourceFactory.getScannableClass());
-            if (registeredClass == null) {
-                registeredClass = resourceFactory.getScannableClass();
-            }
-        }
+        Class<?> registeredClass = getRegisteredClass(invoker);
         if (registeredClass == null) {
             registeredClass = invoker.getMethod().getDeclaringClass();
         }
         return registeredClass.getName().equals(className);
+    }
+
+    // The class the invoker was registered for, kept by its ResourceMethod or ResourceLocator: the root resource class
+    // (with @Path) of the class of the factory. Not taken from the factory, which may e.g. look it up in JNDI.
+    private static Class<?> getRegisteredClass(ResourceInvoker invoker) {
+        try {
+            Object method = null;
+            for (Class<?> c = invoker.getClass(); c != null && method == null; c = c.getSuperclass()) {
+                try {
+                    Field field = c.getDeclaredField("method");
+                    field.setAccessible(true);
+                    method = field.get(invoker);
+                } catch (NoSuchFieldException e) {
+                    // try the superclass
+                }
+            }
+            if (method == null) {
+                return null;
+            }
+            Object resourceClass = method.getClass().getMethod("getResourceClass").invoke(method);
+            if (resourceClass == null) {
+                return null;
+            }
+            return (Class<?>) resourceClass.getClass().getMethod("getClazz").invoke(resourceClass);
+        } catch (Exception e) {
+            LOGGER.debug("Unable to get the registered class of {}", e, invoker);
+            return null;
+        }
     }
 
     private ResourceFactory getResourceFactory(ResourceInvoker invoker) {
