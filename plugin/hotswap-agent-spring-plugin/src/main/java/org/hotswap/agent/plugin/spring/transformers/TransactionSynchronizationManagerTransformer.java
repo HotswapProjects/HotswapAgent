@@ -18,6 +18,9 @@
  */
 package org.hotswap.agent.plugin.spring.transformers;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.hotswap.agent.annotation.OnClassLoadEvent;
 import org.hotswap.agent.javassist.CannotCompileException;
 import org.hotswap.agent.javassist.CtClass;
@@ -32,37 +35,40 @@ import org.hotswap.agent.plugin.spring.core.TransactionResourceMap;
  */
 public class TransactionSynchronizationManagerTransformer {
     private static final AgentLogger LOGGER = AgentLogger.getLogger(TransactionSynchronizationManagerTransformer.class);
+    private static final String GET_SIGNATURE = "(Ljava/lang/Object;)Ljava/lang/Object;";
+    private static final String PUT_SIGNATURE = "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
 
     /**
-     * The manager keeps its resources in a map. The lookups in it go through TransactionResourceMap: Map.get() and
-     * Map.remove() in doGetResource and doUnbindResource, the same from Spring 3.1 to 7.0, also in the manager of
-     * reactive transactions.
-     * <p>
-     * Map.put() in bindResource is left as it is: a key that is still bound after its hash code has changed is
-     * bound again without the error "Already value [...] bound to thread", and bindSynchronizedResource of Spring 7
-     * does not replace its old value. The old value stays bound until the key is unbound twice.
+     * The manager keeps its resources in a map. The calls of it go through TransactionResourceMap: Map.get() and
+     * Map.remove() in doGetResource, Map.remove() in doUnbindResource and Map.put() in bindResource (doBindResource
+     * in Spring 7), the same from Spring 3.1 to 7.0, also in the manager of reactive transactions.
      */
     @OnClassLoadEvent(classNameRegexp = "org.springframework.transaction.(support|reactive).TransactionSynchronizationManager")
     public static void transform(CtClass clazz) throws CannotCompileException {
         final String resourceMap = TransactionResourceMap.class.getName();
-        final int[] replaced = new int[2];
+        final Set<String> patched = new HashSet<>();
         clazz.instrument(new ExprEditor() {
             @Override
             public void edit(MethodCall m) throws CannotCompileException {
-                if (!"java.util.Map".equals(m.getClassName())
-                        || !"(Ljava/lang/Object;)Ljava/lang/Object;".equals(m.getSignature())) {
+                if (!"java.util.Map".equals(m.getClassName())) {
                     return;
                 }
-                if ("get".equals(m.getMethodName())) {
+                String name = m.getMethodName();
+                String signature = m.getSignature();
+                if ("get".equals(name) && GET_SIGNATURE.equals(signature)) {
                     m.replace("{ $_ = " + resourceMap + ".get($0, $1); }");
-                    replaced[0]++;
-                } else if ("remove".equals(m.getMethodName())) {
+                } else if ("remove".equals(name) && GET_SIGNATURE.equals(signature)) {
                     m.replace("{ $_ = " + resourceMap + ".remove($0, $1); }");
-                    replaced[1]++;
+                } else if ("put".equals(name) && PUT_SIGNATURE.equals(signature)) {
+                    m.replace("{ $_ = " + resourceMap + ".put($0, $1, $2); }");
+                } else {
+                    return;
                 }
+                patched.add(m.where().getName() + "." + name);
             }
         });
-        if (replaced[0] == 0 || replaced[1] == 0) {
+        boolean bind = patched.contains("bindResource.put") || patched.contains("doBindResource.put");
+        if (!patched.contains("doGetResource.get") || !patched.contains("doUnbindResource.remove") || !bind) {
             LOGGER.warning("The lookup of transaction resources was not found in the class '{}' of this Spring version. "
                     + "A transaction may fail after a reload that recreates its data source.", clazz.getName());
         } else {

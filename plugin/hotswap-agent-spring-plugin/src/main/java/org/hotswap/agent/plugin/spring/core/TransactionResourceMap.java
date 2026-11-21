@@ -39,14 +39,14 @@ import org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy;
  * <ul>
  * <li>the proxy of the agent around a CGLIB proxy bean takes it from the bean, which it gets again after a
  * reload,</li>
- * <li>a JDK proxy takes it from its invocation handler, which a reload may replace, see
- * {@link #hashCodeChanged(Object)}.</li>
+ * <li>a JDK proxy takes it from its invocation handler, which a reload may replace.</li>
  * </ul>
+ * The agent reports such a key by {@link #hashCodeChanged(Object)} before its hash code changes.
  * The map does not find the key anymore then, although it is the same object: the commit of the transaction fails
  * with "No value for key [...] bound to thread", and the connection of the transaction is not used. So a key that is
- * not found is looked up again among the bound keys which the agent may have changed, by its identity. A JDK proxy
- * is also found by a key that is equal to it, i.e. by the new proxy of its bean. Other keys are found by their hash
- * code only, as before: a proxy may change it on purpose.
+ * not found is looked up again among the reported keys, by its identity. A JDK proxy is also found by a key that is
+ * equal to it, i.e. by the new proxy of its bean. Other keys are found by their hash code only, as before: a proxy
+ * may change it on purpose, e.g. one that calls the data source of the current tenant.
  * <p>
  * Called by the code which TransactionSynchronizationManagerTransformer puts into the manager.
  */
@@ -91,8 +91,8 @@ public class TransactionResourceMap {
     }
 
     /**
-     * Tells that the hash code of a proxy may change, as a reload replaces its invocation handler. It must be called
-     * before the handler is replaced: a transaction of another thread may look its resource up right after it.
+     * Tells that the hash code of a proxy may change, as a reload replaces its invocation handler or its bean. It must
+     * be called before the change: a transaction of another thread may look its resource up right after it.
      */
     public static void hashCodeChanged(Object proxy) {
         synchronized (collectedProxies) {
@@ -143,7 +143,7 @@ public class TransactionResourceMap {
         return false;
     }
 
-    private static boolean isChangedJdkProxy(Object key) {
+    private static boolean isChangedKey(Object key) {
         return anyChangedProxy && isChangedProxy(key);
     }
 
@@ -153,6 +153,23 @@ public class TransactionResourceMap {
     public static Object get(Map<Object, Object> resources, Object key) {
         Object value = resources.get(key);
         return value != null ? value : lookup(resources, key, false);
+    }
+
+    /**
+     * Replaces Map.put(key, value). A reported key that is still bound under its old hash code replaces its entry,
+     * so the manager reports "Already value [...] bound to thread" as for any other key.
+     */
+    public static Object put(Map<Object, Object> resources, Object key, Object value) {
+        if (anyChangedProxy && key != null && !resources.containsKey(key)) {
+            Object boundKey = findBoundKey(resources, key);
+            if (boundKey != null) {
+                Object oldValue = valueOf(resources, boundKey);
+                removeEntry(resources, boundKey, ITERATOR_REMOVES_CHANGED_KEY);
+                resources.put(key, value);
+                return oldValue;
+            }
+        }
+        return resources.put(key, value);
     }
 
     /**
@@ -171,18 +188,21 @@ public class TransactionResourceMap {
         if (boundKey == null) {
             return null;
         }
-        Object value = null;
-        for (Map.Entry<Object, Object> entry : resources.entrySet()) {
-            if (entry.getKey() == boundKey) {
-                value = entry.getValue();
-                break;
-            }
-        }
+        Object value = valueOf(resources, boundKey);
         if (remove && !removeEntry(resources, boundKey, ITERATOR_REMOVES_CHANGED_KEY)) {
             // It is still bound, so the caller must not take the resource as unbound.
             return null;
         }
         return value;
+    }
+
+    private static Object valueOf(Map<Object, Object> resources, Object boundKey) {
+        for (Map.Entry<Object, Object> entry : resources.entrySet()) {
+            if (entry.getKey() == boundKey) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     /**
@@ -193,9 +213,9 @@ public class TransactionResourceMap {
         List<Object> changedJdkProxies = null;
         for (Object boundKey : resources.keySet()) {
             if (boundKey == key) {
-                return key instanceof SpringHotswapAgentProxy || isChangedJdkProxy(key) ? key : null;
+                return isChangedKey(key) ? key : null;
             }
-            if (isChangedJdkProxy(boundKey)) {
+            if (!(boundKey instanceof SpringHotswapAgentProxy) && isChangedKey(boundKey)) {
                 if (changedJdkProxies == null) {
                     changedJdkProxies = new ArrayList<>(1);
                 }
@@ -203,7 +223,7 @@ public class TransactionResourceMap {
             }
         }
         // The new proxy of a bean, which is equal to the old one that got its invocation handler. equals() may get
-        // a bean and so bind a resource, so it is not called while the map is read. It is never called for the proxy
+        // a bean and so bind a resource, so it is not called while the map is read. It is never called on the proxy
         // of the agent: it would get its bean from the bean factory, and it is equal to no other key anyway.
         if (changedJdkProxies != null && !(key instanceof SpringHotswapAgentProxy)) {
             for (Object boundKey : changedJdkProxies) {
@@ -233,6 +253,8 @@ public class TransactionResourceMap {
         }
         // The map is filled again without the entry. The other keys get their hash code first: if one of them
         // fails (the proxy of the agent of a bean that is gone), or two of them are equal now, nothing is removed.
+        // The other keys are bound under their current hash code then. Only on Java 8, and only after a reload has
+        // changed the hash code of a bound key.
         int size = resources.size();
         Map<Object, Object> others = new HashMap<>();
         boolean found = false;
@@ -251,7 +273,13 @@ public class TransactionResourceMap {
             return false;
         }
         resources.clear();
-        resources.putAll(others);
+        for (Map.Entry<Object, Object> entry : others.entrySet()) {
+            try {
+                resources.put(entry.getKey(), entry.getValue());
+            } catch (Exception e) {
+                // hashCode() of the key fails now, its bean is gone meanwhile: the map cannot find it anyway
+            }
+        }
         return true;
     }
 

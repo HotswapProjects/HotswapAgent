@@ -18,22 +18,25 @@
  */
 package org.hotswap.agent.plugin.spring.transaction;
 
+import java.lang.reflect.Field;
+
 import javax.sql.DataSource;
 
-import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
-import org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy;
+import org.hotswap.agent.plugin.spring.BaseTestUtil;
+import org.hotswap.agent.plugin.spring.ClassSwappingRule;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.aop.framework.ProxyFactoryBean;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -42,70 +45,79 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * A transaction is committed after a reload has recreated its data source, if the data source is a CGLIB proxy
- * (e.g. it has an aspect), which the agent wraps in its own proxy. The transaction manager binds the connection to
- * that proxy, whose hash code comes from the bean. Without the lookup of the changed key the commit failed with
- * "No value for key [...] bound to thread", see #287.
+ * Regression test for https://github.com/HotswapProjects/HotswapAgent/issues/287 with a class-based proxy. A reload
+ * recreates a data source in a CGLIB proxy while a transaction runs. The transaction manager got the proxy
+ * of the agent around it, which takes its hash code from the bean, the transaction must still find its connection.
  */
 public class ClassProxiedDataSourceTransactionTest {
 
     @Configuration
-    public static class DataSourceConfiguration {
-
-        // a CGLIB proxy of the data source
+    public static class TransactionConfiguration {
         @Bean
-        public ProxyFactoryBean dataSource() {
-            SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
-            dataSource.setDriverClass(org.h2.Driver.class);
-            dataSource.setUrl("jdbc:h2:mem:classProxiedDataSourceTransactionTest;DB_CLOSE_DELAY=-1");
-            dataSource.setUsername("sa");
+        public ClassProxiedDataSource targetDataSource() {
+            return new ClassProxiedDataSource();
+        }
+
+        // a class-based proxy of Spring AOP, e.g. of an aspect with proxyTargetClass
+        @Bean
+        public ProxyFactoryBean dataSource(ClassProxiedDataSource targetDataSource) {
             ProxyFactoryBean factory = new ProxyFactoryBean();
-            factory.setTarget(dataSource);
+            factory.setTarget(targetDataSource);
             factory.setProxyTargetClass(true);
             return factory;
         }
 
         @Bean
-        public DataSourceTransactionManager transactionManager(DataSource dataSource) {
+        public DataSourceTransactionManager transactionManager(@Qualifier("dataSource") DataSource dataSource) {
             return new DataSourceTransactionManager(dataSource);
         }
     }
 
+    @Rule
+    public ClassSwappingRule swappingRule = new ClassSwappingRule();
+
     private AnnotationConfigApplicationContext context;
-    private DefaultListableBeanFactory beanFactory;
 
     @Before
-    public void setUp() {
-        context = new AnnotationConfigApplicationContext(DataSourceConfiguration.class);
-        beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
+    public void before() {
+        BaseTestUtil.configMaxReloadTimes();
+        context = new AnnotationConfigApplicationContext(TransactionConfiguration.class);
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
+        SpringChangedAgent.getInstance(beanFactory);
+        swappingRule.setBeanFactory(beanFactory);
     }
 
     @After
-    public void tearDown() {
+    public void after() throws Exception {
+        // a failed test may leave the resource bound, which a key that has changed its hash code cannot unbind
+        Field resources = TransactionSynchronizationManager.class.getDeclaredField("resources");
+        resources.setAccessible(true);
+        ((ThreadLocal<?>) resources.get(null)).remove();
+        TransactionSynchronizationManager.clear();
         // unregister before close, so later reloads in other tests do not hit this closed context
-        SpringChangedAgent.destroyBeanFactory(beanFactory);
+        SpringChangedAgent.destroyBeanFactory((DefaultListableBeanFactory) context.getBeanFactory());
         context.close();
     }
 
     @Test
-    public void commitAfterDataSourceRecreatedDuringTransaction() {
+    public void commitAfterReloadDuringTransaction() throws Exception {
         DataSourceTransactionManager transactionManager = context.getBean(DataSourceTransactionManager.class);
-        final DataSource dataSource = transactionManager.getDataSource();
-        assertTrue(dataSource.getClass().getName(), dataSource instanceof SpringHotswapAgentProxy);
+        DataSource dataSource = transactionManager.getDataSource();
+        assertTrue(dataSource.getClass().getName().contains("$HOTSWAPAGENT_"));
 
         Integer result = new TransactionTemplate(transactionManager).execute(status -> {
-            int hashCode = dataSource.hashCode();
-            // what a reload does when the data source bean is recreated while the transaction runs
-            ProxyReplacer.clearAllProxies();
-            beanFactory.destroySingleton("dataSource");
-            assertFalse(hashCode == dataSource.hashCode());
-
-            // the connection of the transaction is still used
+            try {
+                swappingRule.swapClasses(ClassProxiedDataSource.class, ClassProxiedDataSourceBak.class, 1);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            // the connection of the transaction is still found by the proxy
             assertTrue(TransactionSynchronizationManager.hasResource(dataSource));
             return new JdbcTemplate(dataSource).queryForObject("select 1", Integer.class);
         });
 
         assertEquals(Integer.valueOf(1), result);
         assertFalse(TransactionSynchronizationManager.hasResource(dataSource));
+        swappingRule.swapClasses(ClassProxiedDataSource.class, ClassProxiedDataSource.class, 2);
     }
 }

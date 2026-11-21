@@ -321,7 +321,7 @@ public class EnhancerProxyCreater {
                     "if(method != null && method.getName().equals(\"$$ha$setTarget\")) {" +
                         "setTarget(args[0]); return null;" +
                     "}" +
-                    "return proxy.invoke(getBean(), args);" +
+                    "return proxy.invoke(getBean(obj), args);" +
                 "}";
         String body = rawBody.replaceAll("\\{0\\}", proxyPackage);
 

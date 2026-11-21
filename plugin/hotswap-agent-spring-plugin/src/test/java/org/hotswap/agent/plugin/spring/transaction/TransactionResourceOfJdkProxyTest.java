@@ -92,6 +92,32 @@ public class TransactionResourceOfJdkProxyTest {
         }
     }
 
+    // takes its hash code from the current tenant
+    public static class TenantService {
+        static volatile int tenant;
+
+        @Override
+        public int hashCode() {
+            return tenant;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other == this;
+        }
+    }
+
+    @Configuration
+    public static class TenantConfiguration {
+        @Bean
+        public ProxyFactoryBean service() {
+            ProxyFactoryBean factory = new ProxyFactoryBean();
+            factory.setTarget(new TenantService());
+            factory.setProxyTargetClass(true);
+            return factory;
+        }
+    }
+
     private final TargetHandler handler = new TargetHandler();
     private final Object key = newProxy(handler);
 
@@ -168,6 +194,48 @@ public class TransactionResourceOfJdkProxyTest {
         } finally {
             // for the cleanup
             TransactionResourceMap.hashCodeChanged(key);
+        }
+    }
+
+    @Test
+    public void keyBoundAgainAfterItsHashCodeHasChangedReplacesItsEntry() {
+        TransactionSynchronizationManager.bindResource(key, "connection");
+        handler.target = new Object();
+        TransactionResourceMap.hashCodeChanged(key);
+
+        try {
+            TransactionSynchronizationManager.bindResource(key, "again");
+            fail("the key is bound already");
+        } catch (IllegalStateException expected) {
+            // Already value bound to thread
+        }
+
+        assertEquals(1, TransactionSynchronizationManager.getResourceMap().size());
+        assertEquals("again", TransactionSynchronizationManager.unbindResource(key));
+        assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
+    }
+
+    @Test
+    public void resourceOfProxyOfTheAgentIsNotFoundIfItsBeanHasChangedItsHashCode() {
+        TenantService.tenant = 1;
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
+                TenantConfiguration.class);
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
+        Object service = context.getBean("service");
+        try {
+            assertTrue(service instanceof SpringHotswapAgentProxy);
+            TransactionSynchronizationManager.bindResource(service, "connection");
+
+            // another tenant, and a reload that does not recreate the bean
+            TenantService.tenant = 2;
+            ProxyReplacer.clearAllProxies();
+
+            assertNull(TransactionSynchronizationManager.getResource(service));
+        } finally {
+            TenantService.tenant = 1;
+            TransactionSynchronizationManager.unbindResourceIfPossible(service);
+            SpringChangedAgent.destroyBeanFactory(beanFactory);
+            context.close();
         }
     }
 
