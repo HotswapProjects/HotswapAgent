@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.core.TransactionResourceMap;
 
 /**
  * Loadable detachable Spring bean holder
@@ -40,6 +41,8 @@ public class DetachableBeanHolder implements Serializable {
     private static final long serialVersionUID = -7443802320153815102L;
 
     private Object bean;
+    // the bean before the last detach(), to tell whether the proxy gets another one
+    private transient volatile WeakReference<Object> detachedBean;
     private Object beanFactory;
     private Class<?>[] paramClasses;
     private Object[] paramValues;
@@ -94,12 +97,17 @@ public class DetachableBeanHolder implements Serializable {
      * Clear the bean for this proxy
      */
     public void detach() {
+        Object beanCopy = bean;
+        if (beanCopy != null) {
+            detachedBean = new WeakReference<>(beanCopy);
+        }
         bean = null;
     }
 
 
     /**
-     * Sets current target bean.
+     * Sets current target bean. It must be the bean of the proxy, not another one: the hash code of the proxy would
+     * change without being reported to TransactionResourceMap, see {@link #getBean(Object)}.
      * @return current target bean.
      */
     public void setTarget(Object bean) {
@@ -122,6 +130,15 @@ public class DetachableBeanHolder implements Serializable {
      * @throws InvocationTargetException
      */
     public Object getBean() throws IllegalAccessException, InvocationTargetException {
+        return getBean(null);
+    }
+
+    /**
+     * Returns the bean, see {@link #getBean()}.
+     *
+     * @param proxy the proxy of the agent that is called, its hash code changes if it gets another bean
+     */
+    public Object getBean(Object proxy) throws IllegalAccessException, InvocationTargetException {
         Object beanCopy = bean;
         if (beanCopy == null) {
             Method[] methods = beanFactory.getClass().getMethods();
@@ -139,10 +156,15 @@ public class DetachableBeanHolder implements Serializable {
                     if (freshBean instanceof SpringHotswapAgentProxy) {
                         freshBean = ((SpringHotswapAgentProxy) freshBean).$$ha$getTarget();
                     }
+                    WeakReference<Object> detached = detachedBean;
+                    if (proxy != null && freshBean != null && (detached == null || detached.get() != freshBean)) {
+                        // before the proxy takes the hash code of the other bean, see TransactionResourceMap
+                        TransactionResourceMap.hashCodeChanged(proxy);
+                    }
                     bean = freshBean;
                     beanCopy = bean;
                     if (beanCopy == null) {
-                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
+                        LOGGER.debug("Bean not loaded, {} ", Arrays.toString(paramValues));
                         break;
                     }
                     LOGGER.debug("Bean '{}' loaded", bean.getClass().getName());

@@ -322,9 +322,9 @@ public class EnhancerProxyCreater {
                         "setTarget(args[0]); return null;" +
                     "}" +
                     "if (" + DetachableBeanHolder.class.getName() + ".isInvokedByReflection(method)) {" +
-                        "return " + DetachableBeanHolder.class.getName() + ".invokeByReflection(method, getBean(), args);" +
+                        "return " + DetachableBeanHolder.class.getName() + ".invokeByReflection(method, getBean(obj), args);" +
                     "}" +
-                    "return proxy.invoke(getBean(), args);" +
+                    "return proxy.invoke(getBean(obj), args);" +
                 "}";
         String body = rawBody.replaceAll("\\{0\\}", proxyPackage);
 
