@@ -21,6 +21,7 @@ package org.hotswap.agent.plugin.jvm;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -216,7 +217,8 @@ public class ClassInitPlugin {
     private static boolean isSyntheticClass(Class<?> classBeingRedefined) {
         return classBeingRedefined.getSimpleName().contains("$$_javassist")
                 || classBeingRedefined.getSimpleName().contains("$$_jvst")
-                || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
+                // JDK proxy, com.sun.proxy.$ProxyN up to Java 15 and jdk.proxyN.$ProxyM since Java 16
+                || Proxy.isProxyClass(classBeingRedefined)
                 || classBeingRedefined.getSimpleName().contains("$$");
     }
 

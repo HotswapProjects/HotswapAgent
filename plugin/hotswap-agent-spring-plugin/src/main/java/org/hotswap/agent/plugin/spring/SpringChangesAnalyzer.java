@@ -18,6 +18,8 @@
  */
 package org.hotswap.agent.plugin.spring;
 
+import java.lang.reflect.Proxy;
+
 import org.hotswap.agent.javassist.ClassPool;
 import org.hotswap.agent.javassist.CtClass;
 import org.hotswap.agent.javassist.LoaderClassPath;
@@ -71,7 +73,8 @@ public class SpringChangesAnalyzer {
 
     protected boolean isSyntheticClass(Class<?> classBeingRedefined) {
         return classBeingRedefined.getSimpleName().contains("$$_javassist")
-                || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
+                // JDK proxy, com.sun.proxy.$ProxyN up to Java 15 and jdk.proxyN.$ProxyM since Java 16
+                || Proxy.isProxyClass(classBeingRedefined)
                 || classBeingRedefined.getSimpleName().contains("$$Enhancer")
                 || classBeingRedefined.getSimpleName().contains("$$_jvst") // javassist proxy
                 || classBeingRedefined.getSimpleName().contains("$HibernateProxy$")
