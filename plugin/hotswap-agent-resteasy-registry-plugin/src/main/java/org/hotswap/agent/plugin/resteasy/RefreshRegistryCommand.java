@@ -61,6 +61,8 @@ public class RefreshRegistryCommand extends MergeableCommand {
 
     private static AgentLogger LOGGER = AgentLogger.getLogger(RefreshRegistryCommand.class);
 
+    private static final String SPRING_RESOURCE_FACTORY = "org.jboss.resteasy.plugins.spring.SpringResourceFactory";
+
     private ClassLoader classLoader;
 
     private ServletContext context;
@@ -95,15 +97,19 @@ public class RefreshRegistryCommand extends MergeableCommand {
             // a plain per-request resource, its dependencies would not be injected anymore.
             List<ResourceFactory> resourceFactories = findResourceFactories(registry);
 
+            Class<?> c = classLoader.loadClass(className);
+            // without @Path anymore, removeRegistrations() would fail; its bindings are removed below
+            boolean rootResource = GetRestful.isRootResource(c);
+
             //Does original actually represent the... original class????
-            if(original != null) {
+            if (original != null && GetRestful.isRootResource(original)) {
                 registry.removeRegistrations(original);
             }
 
-            Class<?> c = classLoader.loadClass(className);
-
             //Remove all matching registrations (between old and new class..)
-            registry.removeRegistrations(c);
+            if (rootResource) {
+                registry.removeRegistrations(c);
+            }
 
             //Iterate over all known methods for this className
             if (registry instanceof ResourceMethodRegistry) {
@@ -124,7 +130,7 @@ public class RefreshRegistryCommand extends MergeableCommand {
             }
 
             //Add the new resource
-            if (!GetRestful.isRootResource(c)) {
+            if (!rootResource) {
                 // e.g. its @Path was removed
                 LOGGER.debug("{} is not a root resource anymore, it is not registered again", className);
                 return;
@@ -136,11 +142,14 @@ public class RefreshRegistryCommand extends MergeableCommand {
                 } else if (resourceFactory instanceof SingletonResource) {
                     // the same instance, with the metadata of the redefined class (e.g. a new @Context field)
                     LOGGER.debug("Registering the singleton {} again", className);
-                    registry.addSingletonResource(resourceFactory.createResource(null, null, null));
+                    Object singleton = resourceFactory.createResource(null, null, null);
+                    resourceFactory.unregistered();
+                    registry.addSingletonResource(singleton);
                 } else {
                     // e.g. the context of a SpringResourceFactory set by a ResteasyRegistration of resteasy-spring;
                     // the base path of other registrations is not known, as for a per-request resource
                     LOGGER.debug("Registering {} again with {}", className, resourceFactory);
+                    resourceFactory.unregistered();
                     registry.addResourceFactory(resourceFactory, getContext(resourceFactory));
                 }
             }
@@ -177,29 +186,36 @@ public class RefreshRegistryCommand extends MergeableCommand {
         return resourceFactories;
     }
 
-    // the base path of a factory that has one, e.g. SpringResourceFactory.getContext(), else null
+    // the context of a SpringResourceFactory of resteasy-spring (the base path of a ResteasyRegistration), else null
     private static String getContext(ResourceFactory resourceFactory) {
+        if (!resourceFactory.getClass().getName().equals(SPRING_RESOURCE_FACTORY)) {
+            return null;
+        }
         try {
             Method getContext = resourceFactory.getClass().getMethod("getContext");
-            if (getContext.getReturnType() == String.class) {
-                return (String) getContext.invoke(resourceFactory);
-            }
-        } catch (NoSuchMethodException e) {
-            // no base path
+            getContext.setAccessible(true);
+            return (String) getContext.invoke(resourceFactory);
         } catch (Exception e) {
             LOGGER.debug("Unable to get the context of resource factory {}", e, resourceFactory);
+            return null;
         }
-        return null;
     }
 
     /**
-     * Checks if the invoker was registered for the class: by the class its resource factory registered, as its
-     * methods may be declared by a superclass or inherited by a registered subclass, else by the class declaring its
-     * method.
+     * Checks if the invoker was registered for the class: by the root resource class (with @Path) of the class its
+     * resource factory registered, as its methods may be declared by a superclass or inherited by a registered
+     * subclass, else by the class declaring its method.
      */
     private boolean isRegisteredFor(ResourceInvoker invoker) {
         ResourceFactory resourceFactory = getResourceFactory(invoker);
-        Class<?> registeredClass = resourceFactory != null ? resourceFactory.getScannableClass() : null;
+        Class<?> registeredClass = null;
+        if (resourceFactory != null && resourceFactory.getScannableClass() != null) {
+            // RESTEasy registers it under the class with @Path, e.g. the superclass of a Spring bean class
+            registeredClass = GetRestful.getRootResourceClass(resourceFactory.getScannableClass());
+            if (registeredClass == null) {
+                registeredClass = resourceFactory.getScannableClass();
+            }
+        }
         if (registeredClass == null) {
             registeredClass = invoker.getMethod().getDeclaringClass();
         }
