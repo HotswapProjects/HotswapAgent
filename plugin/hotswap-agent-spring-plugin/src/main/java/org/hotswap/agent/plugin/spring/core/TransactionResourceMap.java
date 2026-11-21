@@ -158,18 +158,18 @@ public class TransactionResourceMap {
     }
 
     /**
-     * Replaces Map.put(key, value). A reported key that is still bound under its old hash code replaces its entry,
-     * so the manager reports "Already value [...] bound to thread" as for any other key.
+     * Replaces Map.put(key, value). A reported key that is still bound under its old hash code replaces its entry and
+     * returns its old value, so the manager reports "Already value [...] bound to thread" as for any other key.
      */
     public static Object put(Map<Object, Object> resources, Object key, Object value) {
         if (anyChangedProxy && key != null && !resources.containsKey(key)) {
             Object boundKey = findBoundKey(resources, key);
             if (boundKey != null) {
                 Object oldValue = valueOf(resources, boundKey);
-                if (removeEntry(resources, boundKey, ITERATOR_REMOVES_CHANGED_KEY)) {
-                    resources.put(key, value);
-                }
-                // the manager reports that the key is bound already
+                // The value is put also if the old entry cannot be removed (Java 8): the manager takes a void old
+                // value as unbound and goes on with the new one. The old entry stays under its old hash code then.
+                removeEntry(resources, boundKey, ITERATOR_REMOVES_CHANGED_KEY);
+                resources.put(key, value);
                 return oldValue;
             }
         }
@@ -247,10 +247,12 @@ public class TransactionResourceMap {
      */
     static boolean removeEntry(Map<Object, Object> resources, Object boundKey, boolean byIterator) {
         if (byIterator) {
+            int size = resources.size();
             for (Iterator<Object> it = resources.keySet().iterator(); it.hasNext(); ) {
                 if (it.next() == boundKey) {
                     it.remove();
-                    return true;
+                    // another kind of map may look the entry up by the current hash code
+                    return resources.size() < size;
                 }
             }
             return false;

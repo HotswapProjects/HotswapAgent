@@ -163,7 +163,7 @@ public class DetachableBeanHolder implements Serializable {
                     bean = freshBean;
                     beanCopy = bean;
                     if (beanCopy == null) {
-                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
+                        LOGGER.debug("Bean not loaded, {} ", Arrays.toString(paramValues));
                         break;
                     }
                     LOGGER.debug("Bean '{}' loaded", bean.getClass().getName());
