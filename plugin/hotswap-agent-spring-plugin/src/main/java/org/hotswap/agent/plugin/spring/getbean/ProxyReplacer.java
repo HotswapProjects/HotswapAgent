@@ -22,7 +22,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import org.hotswap.agent.config.PluginManager;
@@ -48,17 +48,11 @@ public class ProxyReplacer {
             "org.springframework.context.annotation.ConfigurationClassEnhancer$EnhancedConfiguration";
 
     /**
-     * Spring creates a CGLIB subclass of a bean with lookup or replaced methods, its callbacks are inner classes of
-     * CglibSubclassingInstantiationStrategy
+     * The CGLIB subclasses Spring has created for beans with lookup or replaced methods, see
+     * CglibSubclassingInstantiationStrategyTransformer
      */
-    private static final String METHOD_INJECTION_CALLBACK_PREFIX =
-            "org.springframework.beans.factory.support.CglibSubclassingInstantiationStrategy$";
-
-    /**
-     * CGLIB bean classes checked by isMethodInjectionSubclass(), getBean() is called often
-     */
-    private static final Map<Class<?>, Boolean> METHOD_INJECTION_SUBCLASSES =
-            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Set<Class<?>> METHOD_INJECTION_SUBCLASSES =
+            Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>()));
 
     /**
      * Clears the bean references inside all the proxies
@@ -142,7 +136,8 @@ public class ProxyReplacer {
             // itself and holds its fields. The proxy of HotswapAgent has no fields, so a final method or a direct field
             // access would see null, see #259. Like a plain bean, it is not wrapped. So, also like a plain bean, a
             // reference to it that a reload does not inject again still calls the old bean: e.g. one held by a
-            // prototype or by a bean of a session, or one that a singleton got with getBean().
+            // prototype, by a bean of a session or by a bean of a child context, or one that a singleton got with
+            // getBean().
             if (isMethodInjectionSubclass(bean)) {
                 return bean;
             }
@@ -168,55 +163,22 @@ public class ProxyReplacer {
     }
 
     /**
-     * Checks the callbacks of the CGLIB class by name, so it does not depend on the class loader the Spring classes
-     * were loaded by, nor on the package of CGLIB (repackaged in Spring, or net.sf.cglib).
+     * Remembers the class of a bean which Spring has created as a CGLIB subclass with lookup or replaced methods.
+     * Called by the code which CglibSubclassingInstantiationStrategyTransformer puts into Spring.
      */
-    static boolean isMethodInjectionSubclass(Object bean) {
-        Class<?> beanClass = bean.getClass();
-        Boolean result = METHOD_INJECTION_SUBCLASSES.get(beanClass);
-        if (result == null) {
-            // Spring sets the same callbacks on every instance of the subclass, so the result is kept per class
-            result = hasMethodInjectionCallback(bean);
-            METHOD_INJECTION_SUBCLASSES.put(beanClass, result);
+    public static void registerMethodInjectionSubclass(Object bean) {
+        if (bean != null) {
+            METHOD_INJECTION_SUBCLASSES.add(bean.getClass());
         }
-        return result;
-    }
-
-    private static boolean hasMethodInjectionCallback(Object bean) {
-        Class<?> factoryInterface = getCglibFactoryInterface(bean.getClass());
-        if (factoryInterface == null) {
-            return false;
-        }
-        try {
-            Object[] callbacks = (Object[]) factoryInterface.getMethod("getCallbacks").invoke(bean);
-            if (callbacks != null) {
-                for (Object callback : callbacks) {
-                    if (callback != null && callback.getClass().getName().startsWith(METHOD_INJECTION_CALLBACK_PREFIX)) {
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warning("Unable to get the CGLIB callbacks of {}, it is wrapped by the proxy of HotswapAgent "
-                    + "even if it has lookup or replaced methods", e, bean.getClass().getName());
-        }
-        return false;
     }
 
     /**
-     * The CGLIB Factory interface of the bean class or of a superclass: the bean may be an instance of a subclass
-     * of the class Spring has created, e.g. a Mockito spy. An AOP proxy of the bean implements it itself and
-     * returns its own callbacks.
+     * Checks if the bean is an instance of a class which Spring has created for lookup or replaced methods. Spring
+     * tells it when it creates the bean, so nothing is guessed from the bean or its class name: an AOP proxy of such
+     * a bean has another class.
      */
-    private static Class<?> getCglibFactoryInterface(Class<?> beanClass) {
-        for (Class<?> c = beanClass; c != null; c = c.getSuperclass()) {
-            for (Class<?> iface : c.getInterfaces()) {
-                if (iface.getName().endsWith(".cglib.proxy.Factory")) {
-                    return iface;
-                }
-            }
-        }
-        return null;
+    static boolean isMethodInjectionSubclass(Object bean) {
+        return METHOD_INJECTION_SUBCLASSES.contains(bean.getClass());
     }
 
     private static Class<?> getInfrastructureProxyClass() throws ClassNotFoundException {
