@@ -35,6 +35,7 @@ import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.core.registry.RootClassNode;
 import org.jboss.resteasy.core.registry.RootNode;
 import org.jboss.resteasy.plugins.server.resourcefactory.POJOResourceFactory;
+import org.jboss.resteasy.plugins.server.resourcefactory.SingletonResource;
 import org.jboss.resteasy.plugins.server.servlet.ServletContainerDispatcher;
 import org.jboss.resteasy.spi.Registry;
 import org.jboss.resteasy.spi.ResourceFactory;
@@ -110,7 +111,7 @@ public class RefreshRegistryCommand extends MergeableCommand {
                             LOGGER.debug("Examining {} for method {} in class {}", e.getKey(), r.getMethod().getName(),
                                     r.getMethod().getDeclaringClass());
                         }
-                        if (r.getMethod().getDeclaringClass().getName().equals(className)) {
+                        if (isRegisteredFor(r)) {
                             removeRegistration(rm, e.getKey(), r.getMethod());
                         }
                     }
@@ -118,7 +119,11 @@ public class RefreshRegistryCommand extends MergeableCommand {
             }
 
             //Add the new resource
-            if (resourceFactory != null && !(resourceFactory instanceof POJOResourceFactory)) {
+            if (resourceFactory instanceof SingletonResource) {
+                // the same instance, with the metadata of the redefined class (e.g. a new @Context field)
+                LOGGER.debug("Registering the singleton {} again", className);
+                registry.addSingletonResource(resourceFactory.createResource(null, null, null));
+            } else if (resourceFactory != null && !(resourceFactory instanceof POJOResourceFactory)) {
                 LOGGER.debug("Registering {} again with {}", className, resourceFactory);
                 registry.addResourceFactory(resourceFactory);
             } else {
@@ -132,7 +137,8 @@ public class RefreshRegistryCommand extends MergeableCommand {
     }
 
     /**
-     * Returns the resource factory of the registered methods of the class, or null if none is registered.
+     * Returns the resource factory registered for the class, or null if none is registered. Matched by the class the
+     * factory registered, the methods may be declared by a superclass, or inherited by a registered subclass.
      */
     private ResourceFactory findResourceFactory(Registry registry) {
         if (!(registry instanceof ResourceMethodRegistry)) {
@@ -140,15 +146,27 @@ public class RefreshRegistryCommand extends MergeableCommand {
         }
         for (List<ResourceInvoker> invokers : ((ResourceMethodRegistry) registry).getBounded().values()) {
             for (ResourceInvoker invoker : invokers) {
-                if (invoker.getMethod().getDeclaringClass().getName().equals(className)) {
-                    ResourceFactory resourceFactory = getResourceFactory(invoker);
-                    if (resourceFactory != null) {
-                        return resourceFactory;
-                    }
+                ResourceFactory resourceFactory = getResourceFactory(invoker);
+                if (resourceFactory != null && isRegisteredFor(invoker)) {
+                    return resourceFactory;
                 }
             }
         }
         return null;
+    }
+
+    /**
+     * Checks if the invoker was registered for the class: by the class its resource factory registered, as its
+     * methods may be declared by a superclass or inherited by a registered subclass, else by the class declaring its
+     * method.
+     */
+    private boolean isRegisteredFor(ResourceInvoker invoker) {
+        ResourceFactory resourceFactory = getResourceFactory(invoker);
+        Class<?> registeredClass = resourceFactory != null ? resourceFactory.getScannableClass() : null;
+        if (registeredClass == null) {
+            registeredClass = invoker.getMethod().getDeclaringClass();
+        }
+        return registeredClass.getName().equals(className);
     }
 
     private ResourceFactory getResourceFactory(ResourceInvoker invoker) {
@@ -190,10 +208,12 @@ public class RefreshRegistryCommand extends MergeableCommand {
                 RootNode rootNode = get(rm, "rootNode");
                 rootNode.removeBinding(path, method);
             } else {
-                String methodpath = method.getAnnotation(Path.class).value();
+                // a resource method without @Path is bound to the path of its class
+                Path methodPathAnnotation = method.getAnnotation(Path.class);
+                String methodpath = methodPathAnnotation != null ? methodPathAnnotation.value() : "";
                 String classExpression = path.replace(methodpath, "");
                 if (classExpression.endsWith("/")) {
-                    classExpression.substring(0, classExpression.length() - 1);
+                    classExpression = classExpression.substring(0, classExpression.length() - 1);
                 }
                 RootClassNode root = get(rm, "root");
                 root.removeBinding(classExpression, path, method);
