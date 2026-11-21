@@ -34,6 +34,10 @@ import javax.servlet.ServletContext;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import org.hotswap.agent.javassist.ClassPool;
+import org.hotswap.agent.javassist.CtClass;
+import org.hotswap.agent.javassist.LoaderClassPath;
+import org.hotswap.agent.javassist.bytecode.AnnotationsAttribute;
 import org.jboss.resteasy.core.ResourceInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.plugins.server.resourcefactory.POJOResourceFactory;
@@ -46,6 +50,9 @@ import org.jboss.resteasy.spi.ResourceFactory;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.Test;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+
+import resteasytest.BeanOfRemovedPathResource;
+import resteasytest.RemovedPathResource;
 
 public class RefreshRegistryCommandTest {
 
@@ -119,6 +126,19 @@ public class RefreshRegistryCommandTest {
      * The class of a Spring bean, without @Path itself.
      */
     public static class BeanOfResource extends ResourceOfBean {
+    }
+
+    @Path("/api")
+    public interface Api {
+        @GET
+        String get();
+    }
+
+    public static class ApiImpl implements Api {
+        @Override
+        public String get() {
+            return "api";
+        }
     }
 
     @Path("/twice")
@@ -274,21 +294,60 @@ public class RefreshRegistryCommandTest {
     }
 
     /**
-     * A class without @Path anymore is not registered again, and its old bindings are removed without an error.
+     * A per-request resource implementing a reloaded @Path interface is registered again with its own class.
+     */
+    @Test
+    public void implementationOfReloadedInterfaceStaysPerRequest() throws Exception {
+        ResourceMethodRegistry registry = new ResourceMethodRegistry(new ResteasyProviderFactory());
+        registry.addPerRequestResource(ApiImpl.class);
+
+        refresh(registry, Api.class);
+
+        List<ResourceFactory> factories = resourceFactories(registry, "/api");
+        assertEquals(1, factories.size());
+        assertTrue(factories.get(0) instanceof POJOResourceFactory);
+        assertSame(ApiImpl.class, factories.get(0).getScannableClass());
+    }
+
+    /**
+     * A class without @Path anymore is not registered again, and its old bindings are removed without an error, also
+     * those of a Spring bean class extending it.
      */
     @Test
     public void classWithoutPathIsNotRegisteredAgain() throws Exception {
         ResourceMethodRegistry registry = new ResourceMethodRegistry(new ResteasyProviderFactory());
+        registry.addResourceFactory(new ManagedFactory(BeanOfRemovedPathResource.class));
+        assertEquals(1, resourceFactories(registry, "/removed").size());
+
+        // the class as redefined without @Path
+        ClassPool classPool = new ClassPool();
+        classPool.appendClassPath(new LoaderClassPath(getClass().getClassLoader()));
+        CtClass ctClass = classPool.get(RemovedPathResource.class.getName());
+        ctClass.getClassFile().getAttributes().removeIf(attribute -> attribute instanceof AnnotationsAttribute);
+        byte[] bytes = ctClass.toBytecode();
+        ClassLoader redefined = new ClassLoader(getClass().getClassLoader()) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if (name.equals(RemovedPathResource.class.getName())) {
+                    synchronized (getClassLoadingLock(name)) {
+                        Class<?> loaded = findLoadedClass(name);
+                        return loaded != null ? loaded : defineClass(name, bytes, 0, bytes.length);
+                    }
+                }
+                return super.loadClass(name, resolve);
+            }
+        };
+
         PrintStream out = System.out;
         ByteArrayOutputStream log = new ByteArrayOutputStream();
         System.setOut(new PrintStream(log, true));
         try {
-            refresh(registry, ResourceMethods.class);
+            refresh(registry, redefined, RemovedPathResource.class.getName());
         } finally {
             System.setOut(out);
         }
-        assertTrue(registry.getBounded().isEmpty());
-        assertFalse(log.toString(), log.toString().contains("Could not reload"));
+        assertEquals(0, resourceFactories(registry, "/removed").size());
+        assertFalse(log.toString(), log.toString().contains("Could not"));
     }
 
     /**
@@ -322,12 +381,21 @@ public class RefreshRegistryCommandTest {
     }
 
     private static void refresh(Registry registry, Class<?> resourceClass) {
+        refresh(registry, resourceClass.getClassLoader(), resourceClass.getName(), resourceClass);
+    }
+
+    // with the class loaded by the class loader, the original not known
+    private static void refresh(Registry registry, ClassLoader classLoader, String className) {
+        refresh(registry, classLoader, className, null);
+    }
+
+    private static void refresh(Registry registry, ClassLoader classLoader, String className, Class<?> original) {
         ServletContext context = (ServletContext) Proxy.newProxyInstance(RefreshRegistryCommandTest.class.getClassLoader(),
                 new Class[]{ServletContext.class},
                 (proxy, method, args) -> method.getName().equals("getAttribute") && Registry.class.getName().equals(args[0])
                         ? registry : null);
         RefreshRegistryCommand command = new RefreshRegistryCommand();
-        command.setupCmd(resourceClass.getClassLoader(), context, null, resourceClass.getName(), resourceClass);
+        command.setupCmd(classLoader, context, null, className, original);
         command.executeCommand();
     }
 
