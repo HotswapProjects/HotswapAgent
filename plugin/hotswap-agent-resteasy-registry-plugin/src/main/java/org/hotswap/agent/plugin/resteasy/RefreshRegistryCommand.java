@@ -20,9 +20,13 @@ package org.hotswap.agent.plugin.resteasy;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.Path;
@@ -39,6 +43,7 @@ import org.jboss.resteasy.plugins.server.resourcefactory.SingletonResource;
 import org.jboss.resteasy.plugins.server.servlet.ServletContainerDispatcher;
 import org.jboss.resteasy.spi.Registry;
 import org.jboss.resteasy.spi.ResourceFactory;
+import org.jboss.resteasy.util.GetRestful;
 
 /**
  * Resteasy registers methods based the class path. Since the redefined class
@@ -88,7 +93,7 @@ public class RefreshRegistryCommand extends MergeableCommand {
             }
             // Keep how the resource was created, e.g. as a Spring bean by resteasy-spring. Registered again as
             // a plain per-request resource, its dependencies would not be injected anymore.
-            ResourceFactory resourceFactory = findResourceFactory(registry);
+            List<ResourceFactory> resourceFactories = findResourceFactories(registry);
 
             //Does original actually represent the... original class????
             if(original != null) {
@@ -119,14 +124,27 @@ public class RefreshRegistryCommand extends MergeableCommand {
             }
 
             //Add the new resource
-            if (resourceFactory instanceof SingletonResource) {
-                // the same instance, with the metadata of the redefined class (e.g. a new @Context field)
-                LOGGER.debug("Registering the singleton {} again", className);
-                registry.addSingletonResource(resourceFactory.createResource(null, null, null));
-            } else if (resourceFactory != null && !(resourceFactory instanceof POJOResourceFactory)) {
-                LOGGER.debug("Registering {} again with {}", className, resourceFactory);
-                registry.addResourceFactory(resourceFactory);
-            } else {
+            if (!GetRestful.isRootResource(c)) {
+                // e.g. its @Path was removed
+                LOGGER.debug("{} is not a root resource anymore, it is not registered again", className);
+                return;
+            }
+            boolean perRequest = resourceFactories.isEmpty();
+            for (ResourceFactory resourceFactory : resourceFactories) {
+                if (resourceFactory instanceof POJOResourceFactory) {
+                    perRequest = true;
+                } else if (resourceFactory instanceof SingletonResource) {
+                    // the same instance, with the metadata of the redefined class (e.g. a new @Context field)
+                    LOGGER.debug("Registering the singleton {} again", className);
+                    registry.addSingletonResource(resourceFactory.createResource(null, null, null));
+                } else {
+                    // e.g. the context of a SpringResourceFactory set by a ResteasyRegistration of resteasy-spring;
+                    // the base path of other registrations is not known, as for a per-request resource
+                    LOGGER.debug("Registering {} again with {}", className, resourceFactory);
+                    registry.addResourceFactory(resourceFactory, getContext(resourceFactory));
+                }
+            }
+            if (perRequest) {
                 registry.addPerRequestResource(c);
             }
         } catch (Exception e) {
@@ -137,20 +155,39 @@ public class RefreshRegistryCommand extends MergeableCommand {
     }
 
     /**
-     * Returns the resource factory registered for the class, or null if none is registered. Matched by the class the
-     * factory registered, the methods may be declared by a superclass, or inherited by a registered subclass.
+     * Returns the resource factories registered for the class, each once, in the order they are found. Matched by the
+     * class the factory registered, the methods may be declared by a superclass, or inherited by a registered
+     * subclass. A resource registered with its own ResourceClass (built with ResourceBuilder) is registered again
+     * from its annotations, such a resource usually has no @Path and is not reloaded by the plugin.
      */
-    private ResourceFactory findResourceFactory(Registry registry) {
+    private List<ResourceFactory> findResourceFactories(Registry registry) {
+        List<ResourceFactory> resourceFactories = new ArrayList<>();
         if (!(registry instanceof ResourceMethodRegistry)) {
-            return null;
+            return resourceFactories;
         }
+        Set<ResourceFactory> found = Collections.newSetFromMap(new IdentityHashMap<>());
         for (List<ResourceInvoker> invokers : ((ResourceMethodRegistry) registry).getBounded().values()) {
             for (ResourceInvoker invoker : invokers) {
                 ResourceFactory resourceFactory = getResourceFactory(invoker);
-                if (resourceFactory != null && isRegisteredFor(invoker)) {
-                    return resourceFactory;
+                if (resourceFactory != null && isRegisteredFor(invoker) && found.add(resourceFactory)) {
+                    resourceFactories.add(resourceFactory);
                 }
             }
+        }
+        return resourceFactories;
+    }
+
+    // the base path of a factory that has one, e.g. SpringResourceFactory.getContext(), else null
+    private static String getContext(ResourceFactory resourceFactory) {
+        try {
+            Method getContext = resourceFactory.getClass().getMethod("getContext");
+            if (getContext.getReturnType() == String.class) {
+                return (String) getContext.invoke(resourceFactory);
+            }
+        } catch (NoSuchMethodException e) {
+            // no base path
+        } catch (Exception e) {
+            LOGGER.debug("Unable to get the context of resource factory {}", e, resourceFactory);
         }
         return null;
     }
@@ -211,7 +248,9 @@ public class RefreshRegistryCommand extends MergeableCommand {
                 // a resource method without @Path is bound to the path of its class
                 Path methodPathAnnotation = method.getAnnotation(Path.class);
                 String methodpath = methodPathAnnotation != null ? methodPathAnnotation.value() : "";
-                String classExpression = path.replace(methodpath, "");
+                // the method path ends the path, it may also appear in the path of the class
+                String classExpression = path.endsWith(methodpath)
+                        ? path.substring(0, path.length() - methodpath.length()) : path;
                 if (classExpression.endsWith("/")) {
                     classExpression = classExpression.substring(0, classExpression.length() - 1);
                 }

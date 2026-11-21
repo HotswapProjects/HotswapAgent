@@ -94,6 +94,22 @@ public class RefreshRegistryCommandTest {
     public static class SubResource extends BaseResource {
     }
 
+    @Path("/context")
+    public static class ContextResource {
+        @GET
+        public String get() {
+            return "context";
+        }
+    }
+
+    @Path("/twice")
+    public static class TwiceResource {
+        @GET
+        public String get() {
+            return "twice";
+        }
+    }
+
     /**
      * Creates the resource another way than RESTEasy itself, as SpringResourceFactory of resteasy-spring.
      */
@@ -128,6 +144,19 @@ public class RefreshRegistryCommandTest {
 
         @Override
         public void unregistered() {
+        }
+    }
+
+    /**
+     * A factory with a base path, as SpringResourceFactory with the context of a ResteasyRegistration.
+     */
+    public static class ContextFactory extends ManagedFactory {
+        ContextFactory(Class<?> resourceClass) {
+            super(resourceClass);
+        }
+
+        public String getContext() {
+            return "/v1";
         }
     }
 
@@ -200,6 +229,41 @@ public class RefreshRegistryCommandTest {
         assertEquals(1, factories.size());
         assertTrue(factories.get(0) instanceof SingletonResource);
         assertSame(instance, factories.get(0).createResource(null, null, null));
+    }
+
+    /**
+     * A factory with a base path is registered again under it.
+     */
+    @Test
+    public void keepContextOfResourceFactory() throws Exception {
+        ResourceMethodRegistry registry = new ResourceMethodRegistry(new ResteasyProviderFactory());
+        ContextFactory factory = new ContextFactory(ContextResource.class);
+        registry.addResourceFactory(factory, factory.getContext());
+
+        refresh(registry, ContextResource.class);
+
+        List<ResourceFactory> factories = resourceFactories(registry, "/v1/context");
+        assertEquals(1, factories.size());
+        assertSame(factory, factories.get(0));
+        assertEquals(0, resourceFactories(registry, "/context").size());
+    }
+
+    /**
+     * All the factories registered for the class are registered again.
+     */
+    @Test
+    public void keepAllResourceFactories() throws Exception {
+        ResourceMethodRegistry registry = new ResourceMethodRegistry(new ResteasyProviderFactory());
+        ResourceFactory factory = new ManagedFactory(TwiceResource.class);
+        registry.addResourceFactory(factory);
+        registry.addPerRequestResource(TwiceResource.class);
+
+        refresh(registry, TwiceResource.class);
+
+        List<ResourceFactory> factories = resourceFactories(registry, "/twice");
+        assertEquals(2, factories.size());
+        assertTrue(factories.contains(factory));
+        assertTrue(factories.get(0) instanceof POJOResourceFactory || factories.get(1) instanceof POJOResourceFactory);
     }
 
     @Test
