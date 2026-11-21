@@ -116,11 +116,25 @@ public class EventListenerReload {
             if (processBean.getParameterTypes().length == 2) {
                 processBean.invoke(processor, beanName, targetType);
             } else {
-                Object factories = processor.getClass().getMethod("getEventListenerFactories").invoke(processor);
+                Object factories = findEventListenerFactories(processor.getClass()).invoke(processor);
                 processBean.invoke(processor, factories, beanName, targetType);
             }
             LOGGER.debug("@EventListener methods of bean '{}' reloaded", beanName);
         }
+    }
+
+    // Spring 4.2 to 5.0: protected getEventListenerFactories(), not found by getMethod()
+    private static Method findEventListenerFactories(Class<?> processorClass) throws NoSuchMethodException {
+        for (Class<?> clazz = processorClass; clazz != null; clazz = clazz.getSuperclass()) {
+            try {
+                Method method = clazz.getDeclaredMethod("getEventListenerFactories");
+                method.setAccessible(true);
+                return method;
+            } catch (NoSuchMethodException e) {
+                // try the superclass
+            }
+        }
+        throw new NoSuchMethodException(processorClass.getName() + ".getEventListenerFactories()");
     }
 
     private static Method findProcessBean(Class<?> processorClass) {
