@@ -41,12 +41,14 @@ import org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy;
  * reload,</li>
  * <li>a JDK proxy takes it from its invocation handler, which a reload may replace.</li>
  * </ul>
- * The agent reports such a key by {@link #hashCodeChanged(Object)} before its hash code changes.
+ * The agent reports such a key by {@link #hashCodeChanged(Object)} before its hash code changes: the proxy of the
+ * agent when it gets another bean, a JDK proxy when the agent replaces its invocation handler.
  * The map does not find the key anymore then, although it is the same object: the commit of the transaction fails
  * with "No value for key [...] bound to thread", and the connection of the transaction is not used. So a key that is
  * not found is looked up again among the reported keys, by its identity. A JDK proxy is also found by a key that is
  * equal to it, i.e. by the new proxy of its bean. Other keys are found by their hash code only, as before: a proxy
- * may change it on purpose, e.g. one that calls the data source of the current tenant.
+ * may change it on purpose, e.g. one that calls the data source of the current tenant. A reported key stays reported,
+ * so such a proxy is found by its identity after a reload has changed it once.
  * <p>
  * Called by the code which TransactionSynchronizationManagerTransformer puts into the manager.
  */
@@ -164,8 +166,10 @@ public class TransactionResourceMap {
             Object boundKey = findBoundKey(resources, key);
             if (boundKey != null) {
                 Object oldValue = valueOf(resources, boundKey);
-                removeEntry(resources, boundKey, ITERATOR_REMOVES_CHANGED_KEY);
-                resources.put(key, value);
+                if (removeEntry(resources, boundKey, ITERATOR_REMOVES_CHANGED_KEY)) {
+                    resources.put(key, value);
+                }
+                // the manager reports that the key is bound already
                 return oldValue;
             }
         }
@@ -181,7 +185,7 @@ public class TransactionResourceMap {
     }
 
     private static Object lookup(Map<Object, Object> resources, Object key, boolean remove) {
-        if (key == null) {
+        if (!anyChangedProxy || key == null) {
             return null;
         }
         Object boundKey = findBoundKey(resources, key);

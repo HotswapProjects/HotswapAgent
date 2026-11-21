@@ -105,7 +105,8 @@ public class DetachableBeanHolder implements Serializable {
 
 
     /**
-     * Sets current target bean.
+     * Sets current target bean. It must be the bean of the proxy, not another one: the hash code of the proxy would
+     * change without being reported to TransactionResourceMap, see {@link #getBean(Object)}.
      * @return current target bean.
      */
     public void setTarget(Object bean) {
