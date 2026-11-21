@@ -21,6 +21,7 @@ package org.hotswap.agent.plugin.spring.lookup;
 import org.hotswap.agent.plugin.hotswapper.HotSwapper;
 import org.hotswap.agent.plugin.spring.BaseTestUtil;
 import org.hotswap.agent.plugin.spring.lookup.beans.LookupBean;
+import org.hotswap.agent.plugin.spring.lookup.beans.LookupConsumer;
 import org.hotswap.agent.plugin.spring.lookup.beansbak.LookupBeanBak;
 import org.hotswap.agent.plugin.spring.reload.SpringChangedAgent;
 import org.hotswap.agent.util.test.WaitHelper;
@@ -45,6 +46,7 @@ public class LookupMethodTest {
             LookupBean bean = context.getBean(LookupBean.class);
             Assert.assertEquals("lookup", bean.name());
             Assert.assertNotNull(bean.prototype());
+            Assert.assertSame(bean, context.getBean(LookupConsumer.class).lookupBean());
 
             HotSwapper.swapClasses(LookupBean.class, LookupBeanBak.class.getName());
             Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
@@ -58,6 +60,8 @@ public class LookupMethodTest {
             Assert.assertNotSame(bean, reloaded);
             Assert.assertEquals("lookup-changed", reloaded.name());
             Assert.assertNotNull(reloaded.prototype());
+            // The bean is not wrapped in a proxy, so the reload has to create the bean it is injected into again
+            Assert.assertSame(reloaded, context.getBean(LookupConsumer.class).lookupBean());
         } finally {
             HotSwapper.swapClasses(LookupBean.class, LookupBean.class.getName());
             SpringChangedAgent.destroyBeanFactory(beanFactory);

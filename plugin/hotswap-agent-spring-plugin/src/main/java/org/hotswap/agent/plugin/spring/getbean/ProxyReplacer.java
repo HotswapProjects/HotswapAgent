@@ -140,7 +140,9 @@ public class ProxyReplacer {
 
             // The subclass Spring creates for lookup-method, @Lookup or replaced-method is not a proxy but the bean
             // itself and holds its fields. The proxy of HotswapAgent has no fields, so a final method or a direct field
-            // access would see null, see #259. Like a plain bean, it is not wrapped.
+            // access would see null, see #259. Like a plain bean, it is not wrapped. So, also like a plain bean, a
+            // reference to it that a reload does not inject again still calls the old bean: e.g. one held by a
+            // prototype or by a bean of a session, or one that a singleton got with getBean().
             if (isMethodInjectionSubclass(bean)) {
                 return bean;
             }
@@ -181,26 +183,40 @@ public class ProxyReplacer {
     }
 
     private static boolean hasMethodInjectionCallback(Object bean) {
-        for (Class<?> iface : bean.getClass().getInterfaces()) {
-            if (!iface.getName().endsWith(".cglib.proxy.Factory")) {
-                continue;
-            }
-            try {
-                Object[] callbacks = (Object[]) iface.getMethod("getCallbacks").invoke(bean);
-                if (callbacks != null) {
-                    for (Object callback : callbacks) {
-                        if (callback != null && callback.getClass().getName().startsWith(METHOD_INJECTION_CALLBACK_PREFIX)) {
-                            return true;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.warning("Unable to get the CGLIB callbacks of {}, it is wrapped by the proxy of HotswapAgent "
-                        + "even if it has lookup or replaced methods", e, bean.getClass().getName());
-            }
+        Class<?> factoryInterface = getCglibFactoryInterface(bean.getClass());
+        if (factoryInterface == null) {
             return false;
         }
+        try {
+            Object[] callbacks = (Object[]) factoryInterface.getMethod("getCallbacks").invoke(bean);
+            if (callbacks != null) {
+                for (Object callback : callbacks) {
+                    if (callback != null && callback.getClass().getName().startsWith(METHOD_INJECTION_CALLBACK_PREFIX)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warning("Unable to get the CGLIB callbacks of {}, it is wrapped by the proxy of HotswapAgent "
+                    + "even if it has lookup or replaced methods", e, bean.getClass().getName());
+        }
         return false;
+    }
+
+    /**
+     * The CGLIB Factory interface of the bean class or of a superclass: the bean may be an instance of a subclass
+     * of the class Spring has created, e.g. a Mockito spy. An AOP proxy of the bean implements it itself and
+     * returns its own callbacks.
+     */
+    private static Class<?> getCglibFactoryInterface(Class<?> beanClass) {
+        for (Class<?> c = beanClass; c != null; c = c.getSuperclass()) {
+            for (Class<?> iface : c.getInterfaces()) {
+                if (iface.getName().endsWith(".cglib.proxy.Factory")) {
+                    return iface;
+                }
+            }
+        }
+        return null;
     }
 
     private static Class<?> getInfrastructureProxyClass() throws ClassNotFoundException {

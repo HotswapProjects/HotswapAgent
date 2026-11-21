@@ -33,6 +33,9 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.MethodReplacer;
 import org.springframework.beans.factory.support.ReplaceOverride;
 import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.Factory;
+import org.springframework.cglib.proxy.NoOp;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -101,9 +104,20 @@ public class LookupMethodBeanProxyTest {
         }
     }
 
+    public static class AdvisedLookupBean {
+        @Lookup
+        public Prototype createPrototype() {
+            return null;
+        }
+
+        public String hello() {
+            return "hello";
+        }
+    }
+
     @Aspect
     public static class AdvisedBeanAspect {
-        @Around("execution(* org.hotswap.agent.plugin.spring.getbean.LookupMethodBeanProxyTest.AdvisedBean.hello(..))")
+        @Around("execution(* org.hotswap.agent.plugin.spring.getbean.LookupMethodBeanProxyTest.Advised*.hello(..))")
         public Object around(ProceedingJoinPoint pjp) throws Throwable {
             return pjp.proceed() + "WithAspect";
         }
@@ -145,7 +159,7 @@ public class LookupMethodBeanProxyTest {
     public void setUp() {
         // LookupBean is registered as a class, a lookup method of a bean returned by a @Bean method is not used
         context = new AnnotationConfigApplicationContext();
-        context.register(LookupConfiguration.class, LookupBean.class);
+        context.register(LookupConfiguration.class, LookupBean.class, AdvisedLookupBean.class);
         // what <replaced-method> in XML defines
         RootBeanDefinition replacedMethodBean = new RootBeanDefinition(ReplacedMethodBean.class);
         replacedMethodBean.getMethodOverrides().addOverride(new ReplaceOverride("replaced", "replacer"));
@@ -178,6 +192,31 @@ public class LookupMethodBeanProxyTest {
         assertNotNull(bean.dependency);
         assertEquals("dependency", bean.finalName());
         assertEquals("replaced", bean.replaced());
+    }
+
+    @Test
+    public void subclassOfLookupMethodBeanIsNotWrapped() {
+        LookupBean bean = context.getBean(LookupBean.class);
+        // e.g. a Mockito spy: an instance of a subclass of the class Spring has created, with the callbacks of the bean
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(bean.getClass());
+        enhancer.setUseFactory(false);
+        enhancer.setCallback(NoOp.INSTANCE);
+        Object subclassBean = enhancer.create();
+        ((Factory) subclassBean).setCallbacks(((Factory) bean).getCallbacks());
+
+        assertNotSame(bean.getClass(), subclassBean.getClass());
+        assertTrue(subclassBean.getClass().getName(), EnhancerProxyCreater.isSupportedCglibProxy(subclassBean));
+        assertTrue(subclassBean.getClass().getName(), ProxyReplacer.isMethodInjectionSubclass(subclassBean));
+    }
+
+    @Test
+    public void aopProxyOfLookupMethodBeanIsWrapped() {
+        // the AOP proxy has no fields either, and the reload refreshes it through the proxy of HotswapAgent
+        AdvisedLookupBean bean = context.getBean(AdvisedLookupBean.class);
+        assertTrue(bean.getClass().getName(), bean instanceof SpringHotswapAgentProxy);
+        assertEquals("helloWithAspect", bean.hello());
+        assertNotSame(bean.createPrototype(), bean.createPrototype());
     }
 
     @Test
