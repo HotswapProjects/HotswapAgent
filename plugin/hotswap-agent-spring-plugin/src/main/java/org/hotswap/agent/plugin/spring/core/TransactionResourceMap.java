@@ -162,7 +162,8 @@ public class TransactionResourceMap {
      * returns its old value, so the manager reports "Already value [...] bound to thread" as for any other key.
      */
     public static Object put(Map<Object, Object> resources, Object key, Object value) {
-        if (anyChangedProxy && key != null && !resources.containsKey(key)) {
+        // hashCode() first: the proxy of the agent reports itself when it computes it with another bean
+        if (key != null && !resources.containsKey(key) && anyChangedProxy) {
             Object boundKey = findBoundKey(resources, key);
             if (boundKey != null) {
                 Object oldValue = valueOf(resources, boundKey);

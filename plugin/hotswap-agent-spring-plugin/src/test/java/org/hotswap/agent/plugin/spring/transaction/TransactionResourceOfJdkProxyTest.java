@@ -216,6 +216,35 @@ public class TransactionResourceOfJdkProxyTest {
     }
 
     @Test
+    public void proxyOfTheAgentBoundAgainAfterItsBeanWasRecreatedReplacesItsEntry() {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
+                CglibProxyConfiguration.class);
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
+        Object service = context.getBean("service");
+        try {
+            TransactionSynchronizationManager.bindResource(service, "connection");
+            ProxyReplacer.clearAllProxies();
+            beanFactory.destroySingleton("service");
+
+            // the proxy computes its hash code with the new bean first here
+            try {
+                TransactionSynchronizationManager.bindResource(service, "again");
+                fail("the key is bound already");
+            } catch (IllegalStateException expected) {
+                // Already value bound to thread
+            }
+
+            assertEquals(1, TransactionSynchronizationManager.getResourceMap().size());
+            assertEquals("again", TransactionSynchronizationManager.unbindResource(service));
+            assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
+        } finally {
+            clearResources();
+            SpringChangedAgent.destroyBeanFactory(beanFactory);
+            context.close();
+        }
+    }
+
+    @Test
     public void resourceOfProxyOfTheAgentIsNotFoundIfItsBeanHasChangedItsHashCode() {
         TenantService.tenant = 1;
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
