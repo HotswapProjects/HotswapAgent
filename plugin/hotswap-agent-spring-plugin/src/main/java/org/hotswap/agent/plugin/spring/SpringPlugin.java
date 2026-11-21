@@ -60,6 +60,7 @@ import org.hotswap.agent.plugin.spring.transformers.PlaceholderConfigurerSupport
 import org.hotswap.agent.plugin.spring.transformers.PostProcessorRegistrationDelegateTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ProxyReplacerTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ResourcePropertySourceTransformer;
+import org.hotswap.agent.plugin.spring.transformers.TransactionSynchronizationManagerTransformer;
 import org.hotswap.agent.plugin.spring.transformers.XmlBeanDefinitionScannerTransformer;
 import org.hotswap.agent.util.AnnotationHelper;
 import org.hotswap.agent.util.HotswapTransformer;
@@ -83,7 +84,8 @@ import org.hotswap.agent.watch.Watcher;
                 XmlBeanDefinitionScannerTransformer.class,
                 PostProcessorRegistrationDelegateTransformer.class,
                 BeanFactoryTransformer.class,
-                InitDestroyAnnotationBeanPostProcessorTransformer.class})
+                InitDestroyAnnotationBeanPostProcessorTransformer.class,
+                TransactionSynchronizationManagerTransformer.class})
 @Versions(manifest = {@Manifest(value = "[3.1.0,)", versionName= Name.ImplementationVersion, names={
         @Name(key=Name.ImplementationTitle,value="spring-core")})})
 public class SpringPlugin {
