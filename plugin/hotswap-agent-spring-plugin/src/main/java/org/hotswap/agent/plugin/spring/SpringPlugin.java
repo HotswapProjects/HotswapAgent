@@ -53,6 +53,7 @@ import org.hotswap.agent.plugin.spring.reload.XmlsChangedCommand;
 import org.hotswap.agent.plugin.spring.reload.YamlChangedCommand;
 import org.hotswap.agent.plugin.spring.scanner.SpringBeanWatchEventListener;
 import org.hotswap.agent.plugin.spring.transformers.BeanFactoryTransformer;
+import org.hotswap.agent.plugin.spring.transformers.CglibSubclassingInstantiationStrategyTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ClassPathBeanDefinitionScannerTransformer;
 import org.hotswap.agent.plugin.spring.transformers.ConfigurationClassPostProcessorTransformer;
 import org.hotswap.agent.plugin.spring.transformers.InitDestroyAnnotationBeanPostProcessorTransformer;
@@ -83,7 +84,8 @@ import org.hotswap.agent.watch.Watcher;
                 XmlBeanDefinitionScannerTransformer.class,
                 PostProcessorRegistrationDelegateTransformer.class,
                 BeanFactoryTransformer.class,
-                InitDestroyAnnotationBeanPostProcessorTransformer.class})
+                InitDestroyAnnotationBeanPostProcessorTransformer.class,
+                CglibSubclassingInstantiationStrategyTransformer.class})
 @Versions(manifest = {@Manifest(value = "[3.1.0,)", versionName= Name.ImplementationVersion, names={
         @Name(key=Name.ImplementationTitle,value="spring-core")})})
 public class SpringPlugin {

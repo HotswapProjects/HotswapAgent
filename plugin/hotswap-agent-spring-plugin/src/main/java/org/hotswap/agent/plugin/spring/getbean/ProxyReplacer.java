@@ -21,6 +21,9 @@ package org.hotswap.agent.plugin.spring.getbean;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
@@ -43,6 +46,13 @@ public class ProxyReplacer {
      */
     private static final String ENHANCED_CONFIGURATION_CLASS_NAME =
             "org.springframework.context.annotation.ConfigurationClassEnhancer$EnhancedConfiguration";
+
+    /**
+     * The CGLIB subclasses Spring has created for beans with lookup or replaced methods, see
+     * CglibSubclassingInstantiationStrategyTransformer
+     */
+    private static final Set<Class<?>> METHOD_INJECTION_SUBCLASSES =
+            Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<Class<?>, Boolean>()));
 
     /**
      * Clears the bean references inside all the proxies
@@ -122,6 +132,16 @@ public class ProxyReplacer {
                 return bean;
             }
 
+            // The subclass Spring creates for lookup-method, @Lookup or replaced-method is not a proxy but the bean
+            // itself and holds its fields. The proxy of HotswapAgent has no fields, so a final method or a direct field
+            // access would see null, see #259. Like a plain bean, it is not wrapped. So, also like a plain bean, a
+            // reference to it that a reload does not inject again still calls the old bean: e.g. one held by a
+            // prototype, by a bean of a session or by a bean of a child context, or one that a singleton got with
+            // getBean().
+            if (isMethodInjectionSubclass(bean)) {
+                return bean;
+            }
+
             return EnhancerProxyCreater.createProxy(beanFactry, bean, paramClasses, paramValues);
         }
 
@@ -140,6 +160,25 @@ public class ProxyReplacer {
             }
         }
         return false;
+    }
+
+    /**
+     * Remembers the class of a bean which Spring has created as a CGLIB subclass with lookup or replaced methods.
+     * Called by the code which CglibSubclassingInstantiationStrategyTransformer puts into Spring.
+     */
+    public static void registerMethodInjectionSubclass(Object bean) {
+        if (bean != null) {
+            METHOD_INJECTION_SUBCLASSES.add(bean.getClass());
+        }
+    }
+
+    /**
+     * Checks if the bean is an instance of a class which Spring has created for lookup or replaced methods. Spring
+     * tells it when it creates the bean, so nothing is guessed from the bean or its class name: an AOP proxy of such
+     * a bean has another class.
+     */
+    static boolean isMethodInjectionSubclass(Object bean) {
+        return METHOD_INJECTION_SUBCLASSES.contains(bean.getClass());
     }
 
     private static Class<?> getInfrastructureProxyClass() throws ClassNotFoundException {
