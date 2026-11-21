@@ -19,9 +19,12 @@
 package org.hotswap.agent.plugin.resteasy;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -34,6 +37,7 @@ import javax.ws.rs.Path;
 import org.jboss.resteasy.core.ResourceInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.plugins.server.resourcefactory.POJOResourceFactory;
+import org.jboss.resteasy.plugins.spring.SpringResourceFactory;
 import org.jboss.resteasy.plugins.server.resourcefactory.SingletonResource;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
@@ -41,6 +45,7 @@ import org.jboss.resteasy.spi.Registry;
 import org.jboss.resteasy.spi.ResourceFactory;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.Test;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 public class RefreshRegistryCommandTest {
 
@@ -102,6 +107,20 @@ public class RefreshRegistryCommandTest {
         }
     }
 
+    @Path("/bean")
+    public static class ResourceOfBean {
+        @GET
+        public String get() {
+            return "bean";
+        }
+    }
+
+    /**
+     * The class of a Spring bean, without @Path itself.
+     */
+    public static class BeanOfResource extends ResourceOfBean {
+    }
+
     @Path("/twice")
     public static class TwiceResource {
         @GET
@@ -144,19 +163,6 @@ public class RefreshRegistryCommandTest {
 
         @Override
         public void unregistered() {
-        }
-    }
-
-    /**
-     * A factory with a base path, as SpringResourceFactory with the context of a ResteasyRegistration.
-     */
-    public static class ContextFactory extends ManagedFactory {
-        ContextFactory(Class<?> resourceClass) {
-            super(resourceClass);
-        }
-
-        public String getContext() {
-            return "/v1";
         }
     }
 
@@ -232,12 +238,15 @@ public class RefreshRegistryCommandTest {
     }
 
     /**
-     * A factory with a base path is registered again under it.
+     * A SpringResourceFactory with a context (the base path of a ResteasyRegistration) is registered again under it.
      */
     @Test
-    public void keepContextOfResourceFactory() throws Exception {
+    public void keepContextOfSpringResourceFactory() throws Exception {
         ResourceMethodRegistry registry = new ResourceMethodRegistry(new ResteasyProviderFactory());
-        ContextFactory factory = new ContextFactory(ContextResource.class);
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        beanFactory.registerSingleton("contextResource", new ContextResource());
+        SpringResourceFactory factory = new SpringResourceFactory("contextResource", beanFactory, ContextResource.class);
+        factory.setContext("/v1");
         registry.addResourceFactory(factory, factory.getContext());
 
         refresh(registry, ContextResource.class);
@@ -246,6 +255,40 @@ public class RefreshRegistryCommandTest {
         assertEquals(1, factories.size());
         assertSame(factory, factories.get(0));
         assertEquals(0, resourceFactories(registry, "/context").size());
+    }
+
+    /**
+     * The class of a Spring bean may extend the resource class with @Path, RESTEasy registers it under that class.
+     */
+    @Test
+    public void keepResourceFactoryOfSubclassBean() throws Exception {
+        ResourceMethodRegistry registry = new ResourceMethodRegistry(new ResteasyProviderFactory());
+        ResourceFactory factory = new ManagedFactory(BeanOfResource.class);
+        registry.addResourceFactory(factory);
+
+        refresh(registry, ResourceOfBean.class);
+
+        List<ResourceFactory> factories = resourceFactories(registry, "/bean");
+        assertEquals(1, factories.size());
+        assertSame(factory, factories.get(0));
+    }
+
+    /**
+     * A class without @Path anymore is not registered again, and its old bindings are removed without an error.
+     */
+    @Test
+    public void classWithoutPathIsNotRegisteredAgain() throws Exception {
+        ResourceMethodRegistry registry = new ResourceMethodRegistry(new ResteasyProviderFactory());
+        PrintStream out = System.out;
+        ByteArrayOutputStream log = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(log, true));
+        try {
+            refresh(registry, ResourceMethods.class);
+        } finally {
+            System.setOut(out);
+        }
+        assertTrue(registry.getBounded().isEmpty());
+        assertFalse(log.toString(), log.toString().contains("Could not reload"));
     }
 
     /**
