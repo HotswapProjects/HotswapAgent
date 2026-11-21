@@ -91,9 +91,8 @@ public class EventListenerReload {
             return;
         }
 
-        // Spring 4.2/4.3: the factories are passed to processBean, looked up once for all the beans
-        Object factories = processBean.getParameterTypes().length == 2 ? null
-                : findEventListenerFactories(processor.getClass()).invoke(processor);
+        // Spring 4.2 to 5.0: the factories are passed to processBean, looked up once, for the first bean processed
+        Object factories = null;
         for (String beanName : beanNames) {
             if (!beanFactory.containsBeanDefinition(beanName) || beanName.startsWith("scopedTarget.")) {
                 continue;
@@ -119,6 +118,9 @@ public class EventListenerReload {
             if (processBean.getParameterTypes().length == 2) {
                 processBean.invoke(processor, beanName, targetType);
             } else {
+                if (factories == null) {
+                    factories = findEventListenerFactories(processor.getClass()).invoke(processor);
+                }
                 processBean.invoke(processor, factories, beanName, targetType);
             }
             LOGGER.debug("@EventListener methods of bean '{}' reloaded", beanName);
