@@ -146,7 +146,7 @@ public class EventListenerReload {
             for (Method method : clazz.getDeclaredMethods()) {
                 Class<?>[] types = method.getParameterTypes();
                 if (method.getName().equals("processBean")) {
-                    // Spring 5+: processBean(String, Class), Spring 4.2/4.3: processBean(List, String, Class)
+                    // Spring 5.1+: processBean(String, Class), Spring 4.2 to 5.0: processBean(List, String, Class)
                     if ((types.length == 2 && types[0] == String.class && types[1] == Class.class)
                             || (types.length == 3 && types[0] == List.class && types[1] == String.class)) {
                         method.setAccessible(true);
