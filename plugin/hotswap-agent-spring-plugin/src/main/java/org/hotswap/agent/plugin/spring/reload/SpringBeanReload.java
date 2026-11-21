@@ -22,6 +22,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.*;
 import org.hotswap.agent.plugin.spring.files.PropertyReload;
 import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
+import org.hotswap.agent.plugin.spring.getbean.JdkProxyRefresher;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
 import org.hotswap.agent.plugin.spring.transformers.api.BeanFactoryLifecycle;
@@ -272,12 +273,26 @@ public class SpringBeanReload {
             } while (checkHasChange() && printReloadLog());
 
             return true;
+        } catch (RuntimeException | Error e) {
+            // The reload may have destroyed beans already. The JDK proxies kept by the application must not call
+            // them, they get the beans again when they are called.
+            refreshJdkProxiesAfterFailure();
+            throw e;
         } finally {
             ClassUtils.overrideThreadContextClassLoader(origContextClassLoader);
             beanFactoryAssistant.increaseReloadTimes();
             BeanFactoryProcessor.setAllowBeanDefinitionOverriding(beanFactory, allowBeanDefinitionOverriding);
             LOGGER.debug("##### [{}th] finish reloading '{}', it cost {}ms", beanFactoryAssistant.getReloadTimes(),
                     ObjectUtils.identityToString(beanFactory), System.currentTimeMillis() - now);
+        }
+    }
+
+    private void refreshJdkProxiesAfterFailure() {
+        try {
+            JdkProxyRefresher.refresh(beanFactory);
+        } catch (RuntimeException | LinkageError e) {
+            // the failure of the reload is thrown, not this one
+            LOGGER.debug("Unable to refresh the JDK proxies after the failed reload", e);
         }
     }
 
@@ -344,6 +359,8 @@ public class SpringBeanReload {
             Set<String> listenerBeanNames = new HashSet<>(context.processedBeans);
             listenerBeanNames.addAll(newBeanNames);
             EventListenerReload.reloadEventListeners(beanFactory, listenerBeanNames);
+            // 9.2 point the JDK proxy beans kept by the application to the new beans
+            JdkProxyRefresher.refresh(beanFactory);
             // 10 reset mvc initialized, it will update the mapping of url and handler
             refreshRequestMapping();
             // 11 clear all process cache

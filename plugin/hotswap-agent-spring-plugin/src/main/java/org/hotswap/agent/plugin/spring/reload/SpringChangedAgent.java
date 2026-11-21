@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.hotswap.agent.logging.AgentLogger;
+import org.hotswap.agent.plugin.spring.getbean.JdkProxyRefresher;
 import org.hotswap.agent.plugin.spring.listener.SpringEvent;
 import org.hotswap.agent.plugin.spring.listener.SpringEventSource;
 import org.hotswap.agent.plugin.spring.listener.SpringListener;
@@ -161,6 +162,7 @@ public class SpringChangedAgent implements SpringListener<SpringEvent<?>>, Compa
             SpringEventSource.INSTANCE.removeListener(springChangedAgent);
         }
         springChangeAgents.remove(beanFactory);
+        JdkProxyRefresher.removeBeanFactory(beanFactory);
     }
 
     boolean addClass(Class clazz) {
