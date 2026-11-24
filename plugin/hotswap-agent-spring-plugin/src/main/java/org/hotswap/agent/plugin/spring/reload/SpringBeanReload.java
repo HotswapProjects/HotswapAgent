@@ -254,6 +254,8 @@ public class SpringBeanReload {
 
     public boolean reload(long changeTimeStamps) {
         if (!checkHasChange()) {
+            // every registered bean factory is asked to reload, most of them usually have nothing to do
+            LOGGER.debug("no change, ignore reloading '{}'", ObjectUtils.identityToString(beanFactory));
             return false;
         }
         boolean allowBeanDefinitionOverriding = BeanFactoryProcessor.isAllowBeanDefinitionOverriding(beanFactory);
@@ -293,6 +295,7 @@ public class SpringBeanReload {
         filterSpringClasses(context);
 
         if (first && !context.hasChange(beanFactory)) {
+            LOGGER.info("no change, ignore reloading '{}'", ObjectUtils.identityToString(beanFactory));
             return;
         }
 
@@ -349,6 +352,8 @@ public class SpringBeanReload {
             // 11 clear all process cache
             clearLocalCache();
 //        }
+        LOGGER.reload("Spring beans of '{}' reloaded, recreated: {}, new: {}", ObjectUtils.identityToString(beanFactory),
+                new TreeSet<>(context.processedBeans), new TreeSet<>(newBeanNames));
     }
 
     private void filterSpringClasses(SpringBeanReloadContext context) {

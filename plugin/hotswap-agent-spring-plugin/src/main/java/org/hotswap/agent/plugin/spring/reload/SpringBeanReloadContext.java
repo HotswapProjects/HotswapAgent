@@ -51,10 +51,9 @@ public class SpringBeanReloadContext {
         && yamls.isEmpty()
         && changedBeanNames.isEmpty()
         && newEntities.isEmpty()) {
-      LOGGER.info("no change, ignore reloading '{}'", ObjectUtils.identityToString(beanFactory));
       return false;
     }
-    LOGGER.trace("has change, start reloading '{}', {}", ObjectUtils.identityToString(beanFactory), this);
+    LOGGER.trace("has change in '{}', {}", ObjectUtils.identityToString(beanFactory), this);
     return true;
   }
 }
