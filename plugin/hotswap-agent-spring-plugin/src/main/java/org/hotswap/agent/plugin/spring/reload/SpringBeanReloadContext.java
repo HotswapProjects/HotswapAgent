@@ -28,7 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class SpringBeanReloadContext {
-  private static AgentLogger LOGGER = AgentLogger.getLogger(SpringBeanReload.class);
+  private static final AgentLogger LOGGER = AgentLogger.getLogger(SpringBeanReload.class);
 
   public Set<Class<?>> classes = new HashSet<>();
   public Set<URL> properties = new HashSet<>();
