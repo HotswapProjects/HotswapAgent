@@ -209,6 +209,7 @@ uses HA services to:
 * [iBatis](plugin/hotswap-agent-ibatis-plugin/README.md) - iBatis configuration reload.
 * [IDEA](plugin/hotswap-agent-idea-plugin/README.md) - support for IntelliJ IDEA development in IDEA
 * [Jackson](plugin/hotswap-agent-jackson-plugin/README.md) - clears jackson internal caches when class redefined.
+* [Jackson 3](plugin/hotswap-agent-jackson3-plugin/README.md) - clears Jackson 3 internal caches (Spring Boot 4) when class redefined.
 * [Jersey1](plugin/hotswap-agent-jersey1-plugin/README.md) - reload Jersey1 container after root resource or provider class definition or redefinition.
 * [Jersey2](plugin/hotswap-agent-jersey2-plugin/README.md) - reload Jersey2 container after root resource or provider class definition or redefinition.
 * [Logback](plugin/hotswap-agent-logback-plugin/README.md) - Logback configuration reload.
