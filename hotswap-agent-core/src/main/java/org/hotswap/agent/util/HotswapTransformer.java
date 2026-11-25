@@ -83,6 +83,7 @@ public class HotswapTransformer implements ClassFileTransformer {
     protected Map<ClassFileTransformer, ClassLoader> classLoaderTransformers = new LinkedHashMap<>();
 
     protected Map<ClassLoader, Boolean> seenClassLoaders = Collections.synchronizedMap(new WeakHashMap<>());
+    private final RedefinedClassRegistry redefinedClasses = new RedefinedClassRegistry();
     private List<Pattern> includedClassLoaderPatterns;
     private List<Pattern> excludedClassLoaderPatterns;
     public List<Pattern> getIncludedClassLoaderPatterns() {
@@ -205,6 +206,11 @@ public class HotswapTransformer implements ClassFileTransformer {
     public byte[] transform(final ClassLoader classLoader, String className, Class<?> redefiningClass,
                             final ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
 
+        if (redefiningClass != null && bytes != null) {
+            // a redefinition by a debugger or a failing one of autoHotswap must not leave a stale digest
+            redefinedClasses.redefining(redefiningClass, bytes);
+        }
+
         // Skip delegating classloaders used for reflection
         String classLoaderClassName = classLoader != null ? classLoader.getClass().getName() : null;
         if (skippedClassLoaders.contains(classLoaderClassName)) {
@@ -271,6 +277,11 @@ public class HotswapTransformer implements ClassFileTransformer {
            LOGGER.trace("Skipping className '{}' classloader '{}' transform", className, classLoader);
            return bytes;
        }
+
+        if (redefiningClass == null && bytes != null) {
+            // after the class loader initialization, which may enable the registry
+            redefinedClasses.loaded(classLoader, className, protectionDomain, bytes);
+        }
 
         if(toApply.isEmpty() && pluginTransformers.isEmpty()) {
             LOGGER.trace("No transformers define for {} ", className);
@@ -411,4 +422,10 @@ public class HotswapTransformer implements ClassFileTransformer {
         return regexp;
     }
 
+    /**
+     * @return the digests of the bytecode the classes are defined with, used by autoHotswap
+     */
+    public RedefinedClassRegistry getRedefinedClasses() {
+        return redefinedClasses;
+    }
 }

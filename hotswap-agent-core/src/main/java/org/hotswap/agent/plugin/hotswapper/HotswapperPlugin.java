@@ -66,6 +66,9 @@ public class HotswapperPlugin {
     // command to do actual hotswap. Single command to merge possible multiple reload actions.
     Command hotswapCommand;
 
+    // set after the watcher is registered, read by the watcher thread
+    volatile boolean skipUnchangedClasses;
+
     /**
      * For each changed class create a reload command.
      */
@@ -75,8 +78,6 @@ public class HotswapperPlugin {
             LOGGER.trace("Class {} not loaded yet, no need for autoHotswap, skipped URL {}", ctClass.getName(), url);
             return;
         }
-
-        LOGGER.debug("Class {} will be reloaded from URL {}", ctClass.getName(), url);
 
         // search for a class to reload
         Class clazz;
@@ -88,9 +89,18 @@ public class HotswapperPlugin {
             return;
         }
 
+        byte[] bytecode = ctClass.toBytecode();
         synchronized (reloadMap) {
-            reloadMap.put(clazz, ctClass.toBytecode());
+            if (skipUnchangedClasses
+                    && pluginManager.getHotswapTransformer().getRedefinedClasses().isCurrent(clazz, bytecode)) {
+                LOGGER.debug("Class {} has the bytecode it is defined with, skipped URL {}", ctClass.getName(), url);
+                // a pending change written over with the current bytecode again
+                reloadMap.remove(clazz);
+                return;
+            }
+            reloadMap.put(clazz, bytecode);
         }
+        LOGGER.debug("Class {} will be reloaded from URL {}", ctClass.getName(), url);
         scheduler.scheduleCommand(hotswapCommand, 100, Scheduler.DuplicateSheduleBehaviour.SKIP);
     }
 
@@ -151,6 +161,12 @@ public class HotswapperPlugin {
         HotswapperPlugin plugin = PluginManagerInvoker.callInitializePlugin(HotswapperPlugin.class, appClassLoader);
         if (plugin != null) {
             plugin.initHotswapCommand(appClassLoader, port);
+            // the JPDA connection redefines the classes on its own, the digests would not be kept up to date
+            plugin.skipUnchangedClasses = (port == null || port.isEmpty())
+                    && pluginConfiguration.getPropertyBoolean("autoHotswap.skipUnchangedClasses");
+            if (plugin.skipUnchangedClasses) {
+                PluginManager.getInstance().getHotswapTransformer().getRedefinedClasses().setEnabled(true);
+            }
         } else {
             LOGGER.debug("Hotswapper is disabled in {}", appClassLoader);
         }
