@@ -81,7 +81,7 @@ public class RedefinedClassRegistry {
 
     /**
      * Record the classes the agent redefined. Call it only after the redefinition succeeded: the classes of a failed
-     * one stay forgotten by {@link #redefining(Class, byte[])}.
+     * one stay forgotten by {@link #forget(Class)}.
      */
     public void redefined(Map<Class<?>, byte[]> definitions) {
         if (!enabled) {
