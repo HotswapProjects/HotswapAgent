@@ -19,8 +19,10 @@
 package org.hotswap.agent.watch.nio;
 
 import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.watch.WatchEventListener;
 import org.hotswap.agent.watch.WatchFileEvent;
+import org.hotswap.agent.watch.nio.AbstractNIO2Watcher.FileState;
 
 /**
  * The EventDispatcher holds a queue of all events collected by the watcher but
@@ -104,6 +107,11 @@ public class EventDispatcher implements Runnable {
     private final ArrayList<Event> working = new ArrayList<>();
     private final LinkedHashSet<EventKey> dedupSet = new LinkedHashSet<>();
 
+    private volatile boolean skipUnchangedResources;
+
+    /** The state of the files at their last modification event, used only by the dispatcher thread. */
+    private final Map<Path, FileState> notifiedStates = new HashMap<>();
+
     /** The runnable. */
     private Thread runnable = null;
 
@@ -137,7 +145,7 @@ public class EventDispatcher implements Runnable {
 
                 for (Event e : working) {
                     EventKey key = new EventKey(e.event.kind(), e.path);
-                    if (dedupSet.add(key)) {
+                    if (dedupSet.add(key) && !isUnchanged(e)) {
                         callListeners(e.event, e.path);
                     }
                 }
@@ -148,6 +156,47 @@ public class EventDispatcher implements Runnable {
                 return;
             }
         }
+    }
+
+    /**
+     * Do not notify the listeners of a modification that changed only the attributes of a resource. It applies to
+     * the resources of all applications in the JVM.
+     */
+    public void skipUnchangedResources() {
+        skipUnchangedResources = true;
+    }
+
+    /**
+     * Tells whether a modification changed only the attributes of the file, e.g. chmod: the watch service reports it
+     * as ENTRY_MODIFY too. The first modification of a file, and the first one after the file was written, are always
+     * passed on: there is no state to compare with, or it is not trusted yet. Class files are not checked, they have
+     * autoHotswap.skipUnchangedClasses.
+     */
+    private boolean isUnchanged(Event e) {
+        if (!skipUnchangedResources || e.path.toString().endsWith(".class")) {
+            return false;
+        }
+        boolean modified = e.event.kind() == StandardWatchEventKinds.ENTRY_MODIFY;
+        FileState state;
+        try {
+            state = modified ? FileState.read(e.path, null) : null;
+        } catch (RuntimeException ex) {
+            // must not stop the dispatcher thread
+            LOGGER.debug("Unable to read the state of '{}'", ex, e.path);
+            state = null;
+        }
+        if (state == null) {
+            // created, deleted or not a regular file
+            notifiedStates.remove(e.path);
+            return false;
+        }
+        FileState previous = notifiedStates.put(e.path, state);
+        if (previous == null || !state.hasContentOf(previous)) {
+            return false;
+        }
+        LOGGER.debug("Watch event '{}' on '{}' skipped, only the attributes of the file changed",
+                e.event.kind().name(), e.path);
+        return true;
     }
 
     /**

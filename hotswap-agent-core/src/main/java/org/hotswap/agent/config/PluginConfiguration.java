@@ -36,6 +36,7 @@ import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.util.HotswapProperties;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
 import org.hotswap.agent.util.classloader.URLClassPathHelper;
+import org.hotswap.agent.watch.Watcher;
 
 /**
  * Plugin configuration.
@@ -196,6 +197,14 @@ public class PluginConfiguration {
         initIncludedClassLoaderPatterns();
         initExcludedClassLoaderPatterns();
         initExtraClassPath();
+        initSkipUnchangedResources();
+    }
+
+    private void initSkipUnchangedResources() {
+        Watcher watcher = PluginManager.getInstance().getWatcher();
+        if (watcher != null && getPropertyBoolean("skipUnchangedResources")) {
+            watcher.skipUnchangedResources();
+        }
     }
 
     private void initPluginPackage() {
