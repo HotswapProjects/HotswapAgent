@@ -99,8 +99,7 @@ public class PluginManagerHotswapTest {
                         throw new UnsupportedOperationException(method.getName());
                     }
                     ClassDefinition definition = ((ClassDefinition[]) args[0])[0];
-                    holder[0].getHotswapTransformer().getRedefinedClasses()
-                            .redefining(definition.getDefinitionClass(), definition.getDefinitionClassFile());
+                    holder[0].getHotswapTransformer().getRedefinedClasses().forget(definition.getDefinitionClass());
                     if (Arrays.equals(definition.getDefinitionClassFile(), rejected)) {
                         throw new UnsupportedOperationException("class redefinition failed: attempted to add a method");
                     }
