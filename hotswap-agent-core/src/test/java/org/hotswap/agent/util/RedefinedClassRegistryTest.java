@@ -90,24 +90,14 @@ public class RedefinedClassRegistryTest {
     }
 
     @Test
-    public void redefiningWithSameBytecodeKeepsClass() {
-        redefine(V1);
-
-        registry.redefining(String.class, V1.clone());
-
-        assertTrue(registry.isCurrent(String.class, V1));
-    }
-
-    @Test
-    public void redefiningWithOtherBytecodeForgetsClass() {
+    public void redefinitionForgetsClass() {
         redefine(V1);
 
         // e.g. a debugger redefines the class with V2, then the class file is rewritten with V1 again, or
-        // a redefinition by the agent with V2 fails after the transformer saw it
-        registry.redefining(String.class, V2);
+        // a redefinition by the agent fails after the transformer saw it
+        registry.forget(String.class);
 
         assertFalse(registry.isCurrent(String.class, V1));
-        assertFalse(registry.isCurrent(String.class, V2));
     }
 
     @Test
