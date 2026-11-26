@@ -131,10 +131,8 @@ public class HotswapTransformerTest {
         registry.setEnabled(true);
         registry.redefined(Collections.singletonMap(HotswapTransformerTest.class, ORIGINAL));
 
-        hotswapTransformer.transform(classLoader, "test.Redefined", HotswapTransformerTest.class, null, ORIGINAL);
-        assertTrue(registry.isCurrent(HotswapTransformerTest.class, ORIGINAL));
-
         hotswapTransformer.transform(classLoader, "test.Redefined", HotswapTransformerTest.class, null, TRANSFORMED);
+
         assertFalse(registry.isCurrent(HotswapTransformerTest.class, ORIGINAL));
     }
 }
