@@ -34,9 +34,13 @@ import java.util.WeakHashMap;
  * <p>
  * Nothing is recorded until {@link #setEnabled(boolean)} is called, e.g. by autoHotswap with
  * autoHotswap.skipUnchangedClasses=true. Then the classes loaded from class directories and the successful
- * redefinitions done by the agent are recorded. Any redefinition of a recorded class with other bytecode, e.g. by a
- * debugger or a failing one of the agent, forgets the class, so the next change of its class file is always reloaded.
- * The first change of a class that is not known, e.g. one loaded from a jar, is always reloaded too.
+ * redefinitions done by the agent are recorded. Any other redefinition, e.g. by a debugger or a failing one of the agent,
+ * forgets the class, so the next change of its class file is always reloaded.
+ * The first change of a class that is not known, e.g. one loaded from a jar or changed at loading by another Java agent
+ * registered before HotswapAgent, is always reloaded too.
+ * <p>
+ * One registry is shared by all applications in the JVM: once one enables it, the classes of all are recorded. When a
+ * debugger redefines a class at the same moment as the agent, its version may stay until the next change of the class.
  */
 public class RedefinedClassRegistry {
 
