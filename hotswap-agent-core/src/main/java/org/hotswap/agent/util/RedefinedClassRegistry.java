@@ -93,16 +93,16 @@ public class RedefinedClassRegistry {
     }
 
     /**
-     * Called for every redefinition before it is done. A recorded class redefined with other bytecode is forgotten.
+     * Called for every redefinition before it is done. The class is forgotten, a successful redefinition by the agent
+     * records it again by {@link #redefined(Map)}.
      */
-    public void redefining(Class<?> clazz, byte[] bytecode) {
+    public void forget(Class<?> clazz) {
         if (!enabled) {
             return;
         }
-        byte[] digest = digest(bytecode);
         synchronized (digests) {
             Map<String, byte[]> classes = digests.get(clazz.getClassLoader());
-            if (classes != null && !Arrays.equals(classes.get(clazz.getName()), digest)) {
+            if (classes != null) {
                 classes.remove(clazz.getName());
             }
         }
