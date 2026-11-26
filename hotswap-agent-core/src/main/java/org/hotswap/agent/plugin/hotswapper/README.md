@@ -47,6 +47,15 @@ To configure the plugin to attach to the process, you need to enable it in hotsw
 If you enable the `autoHotswap=true` in your application, all class files that are on the classpath of the application
 (same classloader as hotswap-agent.properties) will be watched for changes and reloaded in the JVM by hotswap command.
 
+Every rewritten class file is reloaded, also with unchanged bytecode, e.g. when Maven recompiles the whole module
+after a change of one source file, and the plugins react to it, e.g. Spring recreates the beans of the class. To skip
+such class files, set
+
+     autoHotswap.skipUnchangedClasses=true
+
+The first change of a class loaded from a jar is always reloaded. The option is ignored with the JPDA connection
+(`autoHotswap.port`).
+
 Note that you can have multiple applications and hotswap-agent.properties for an application server and you need
 to enable autoHotswap for each application (classloader) separately.
 

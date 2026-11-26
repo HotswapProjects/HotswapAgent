@@ -318,6 +318,9 @@ public class PluginManager {
         }
 
         synchronized (reloadMap) {
+            if (reloadMap.isEmpty()) {
+                return;
+            }
             ClassDefinition[] definitions = new ClassDefinition[reloadMap.size()];
             String[] classNames = new String[reloadMap.size()];
             int i = 0;
@@ -329,6 +332,8 @@ public class PluginManager {
                 LOGGER.reload("Reloading classes {} (autoHotswap)", Arrays.toString(classNames));
                 synchronized (hotswapLock) {
                     instrumentation.redefineClasses(definitions);
+                    // under the lock, so that another hotswap of the same class cannot finish in between
+                    hotswapTransformer.getRedefinedClasses().redefined(reloadMap);
                 }
                 LOGGER.debug("... reloaded classes {} (autoHotswap)", Arrays.toString(classNames));
             } catch (Exception e) {

@@ -19,6 +19,7 @@
 package org.hotswap.agent.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -28,11 +29,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hotswap.agent.util.RedefinedClassRegistry;
 import org.junit.Test;
 
 public class PluginManagerHotswapTest {
@@ -79,6 +82,78 @@ public class PluginManagerHotswapTest {
         assertEquals(2, redefined.size());
         assertEquals(Collections.<Class<?>>singletonList(B.class), redefined.get(1));
         assertTrue(reloadMap.isEmpty());
+    }
+
+    /**
+     * Only a successful redefinition is recorded. The JVM passes the new bytecode to the transformer before it rejects
+     * it, so a class whose redefinition failed is forgotten and its class file is reloaded at the next rewrite, also
+     * with the bytecode recorded before (issue #747).
+     */
+    @Test
+    public void onlySuccessfulRedefinitionIsRecorded() throws Exception {
+        final PluginManager[] holder = new PluginManager[1];
+        final byte[] rejected = {2};
+        Instrumentation instrumentation = (Instrumentation) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[]{Instrumentation.class}, (proxy, method, args) -> {
+                    if (!method.getName().equals("redefineClasses")) {
+                        throw new UnsupportedOperationException(method.getName());
+                    }
+                    ClassDefinition definition = ((ClassDefinition[]) args[0])[0];
+                    holder[0].getHotswapTransformer().getRedefinedClasses().forget(definition.getDefinitionClass());
+                    if (Arrays.equals(definition.getDefinitionClassFile(), rejected)) {
+                        throw new UnsupportedOperationException("class redefinition failed: attempted to add a method");
+                    }
+                    return null;
+                });
+        PluginManager pluginManager = newPluginManager(instrumentation);
+        holder[0] = pluginManager;
+        RedefinedClassRegistry registry = pluginManager.getHotswapTransformer().getRedefinedClasses();
+        registry.setEnabled(true);
+        byte[] bytecode = {1};
+
+        pluginManager.hotswap(new HashMap<>(Collections.<Class<?>, byte[]>singletonMap(A.class, bytecode)));
+        assertTrue(registry.isCurrent(A.class, bytecode));
+
+        try {
+            pluginManager.hotswap(new HashMap<>(Collections.<Class<?>, byte[]>singletonMap(A.class, rejected)));
+            fail("redefinition of A should fail");
+        } catch (IllegalStateException expected) {
+            // expected
+        }
+
+        assertFalse(registry.isCurrent(A.class, rejected));
+        assertFalse(registry.isCurrent(A.class, bytecode));
+    }
+
+    @Test
+    public void bytecodeRejectedWithErrorIsNotRecorded() throws Exception {
+        Instrumentation instrumentation = (Instrumentation) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[]{Instrumentation.class}, (proxy, method, args) -> {
+                    throw new VerifyError("Bad type on operand stack");
+                });
+        PluginManager pluginManager = newPluginManager(instrumentation);
+        RedefinedClassRegistry registry = pluginManager.getHotswapTransformer().getRedefinedClasses();
+        registry.setEnabled(true);
+        byte[] bytecode = {1};
+
+        try {
+            pluginManager.hotswap(new HashMap<>(Collections.<Class<?>, byte[]>singletonMap(A.class, bytecode)));
+            fail("redefinition of A should fail");
+        } catch (VerifyError expected) {
+            // expected
+        }
+
+        assertFalse(registry.isCurrent(A.class, bytecode));
+    }
+
+    @Test
+    public void emptyReloadMapIsNotRedefined() throws Exception {
+        Instrumentation instrumentation = (Instrumentation) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[]{Instrumentation.class}, (proxy, method, args) -> {
+                    throw new UnsupportedOperationException(method.getName());
+                });
+
+        newPluginManager(instrumentation).hotswap(new HashMap<>());
     }
 
     private static PluginManager newPluginManager(Instrumentation instrumentation) throws Exception {

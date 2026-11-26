@@ -24,9 +24,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 public class HotswapTransformerTest {
@@ -114,5 +116,23 @@ public class HotswapTransformerTest {
             // the other transformers keep the bytes
             return result != null ? result : classfileBuffer;
         }
+    }
+
+    /**
+     * A redefinition done outside autoHotswap, e.g. by a debugger, passes the transformer and must forget the bytecode
+     * autoHotswap recorded, otherwise rewriting the class file with that bytecode again would be skipped.
+     */
+    @Test
+    public void otherRedefinitionForgetsRecordedBytecode() throws Exception {
+        HotswapTransformer hotswapTransformer = new HotswapTransformer();
+        ClassLoader classLoader = new URLClassLoader(new URL[0], null);
+        hotswapTransformer.seenClassLoaders.put(classLoader, true);
+        RedefinedClassRegistry registry = hotswapTransformer.getRedefinedClasses();
+        registry.setEnabled(true);
+        registry.redefined(Collections.singletonMap(HotswapTransformerTest.class, ORIGINAL));
+
+        hotswapTransformer.transform(classLoader, "test.Redefined", HotswapTransformerTest.class, null, TRANSFORMED);
+
+        assertFalse(registry.isCurrent(HotswapTransformerTest.class, ORIGINAL));
     }
 }
