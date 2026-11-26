@@ -206,9 +206,9 @@ public class HotswapTransformer implements ClassFileTransformer {
     public byte[] transform(final ClassLoader classLoader, String className, Class<?> redefiningClass,
                             final ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
 
-        if (redefiningClass != null && bytes != null) {
-            // a redefinition by a debugger or a failing one of autoHotswap must not leave a stale digest
-            redefinedClasses.redefining(redefiningClass, bytes);
+        if (redefiningClass != null) {
+            // autoHotswap records the class again after its redefinition succeeded
+            redefinedClasses.forget(redefiningClass);
         }
 
         // Skip delegating classloaders used for reflection
