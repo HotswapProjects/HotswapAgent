@@ -265,6 +265,12 @@
 
         <dependency>
             <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-jackson3-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
             <artifactId>hotswap-agent-idea-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
