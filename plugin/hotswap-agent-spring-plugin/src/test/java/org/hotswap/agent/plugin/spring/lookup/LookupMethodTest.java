@@ -36,6 +36,15 @@ public class LookupMethodTest {
 
     @Test
     public void lookupMethodWorksAfterReload() throws Exception {
+        reloadLookupBean(false);
+    }
+
+    @Test
+    public void lookupMethodWorksAfterReloadWithChangedProperties() throws Exception {
+        reloadLookupBean(true);
+    }
+
+    private void reloadLookupBean(boolean propertiesChanged) throws Exception {
         BaseTestUtil.configMaxReloadTimes();
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
         final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
@@ -46,13 +55,12 @@ public class LookupMethodTest {
             Assert.assertEquals("lookup", bean.name());
             Assert.assertNotNull(bean.prototype());
 
+            if (propertiesChanged) {
+                // reloaded together with the class
+                SpringChangedAgent.addChangedProperty(getClass().getResource("/hotswap-agent.properties"));
+            }
             HotSwapper.swapClasses(LookupBean.class, LookupBeanBak.class.getName());
-            Assert.assertTrue(WaitHelper.waitForCommand(new WaitHelper.Command() {
-                @Override
-                public boolean result() throws Exception {
-                    return BaseTestUtil.finishReloading(beanFactory, 1);
-                }
-            }, 11000));
+            Assert.assertTrue(waitForReload(beanFactory, 1));
 
             LookupBean reloaded = context.getBean(LookupBean.class);
             Assert.assertNotSame(bean, reloaded);
@@ -60,8 +68,19 @@ public class LookupMethodTest {
             Assert.assertNotNull(reloaded.prototype());
         } finally {
             HotSwapper.swapClasses(LookupBean.class, LookupBean.class.getName());
+            // so that this reload does not run during the next test
+            waitForReload(beanFactory, 2);
             SpringChangedAgent.destroyBeanFactory(beanFactory);
             context.close();
         }
+    }
+
+    private static boolean waitForReload(final DefaultListableBeanFactory beanFactory, final int reloadTimes) {
+        return WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() throws Exception {
+                return BaseTestUtil.finishReloading(beanFactory, reloadTimes);
+            }
+        }, 11000);
     }
 }

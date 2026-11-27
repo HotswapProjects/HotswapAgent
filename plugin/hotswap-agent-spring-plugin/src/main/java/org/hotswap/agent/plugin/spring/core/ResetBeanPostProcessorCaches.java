@@ -119,18 +119,22 @@ public class ResetBeanPostProcessorCaches {
     public static void resetAutowiredAnnotationBeanPostProcessorCache(AutowiredAnnotationBeanPostProcessor bpp) {
         getAutowiredAnnotationBeanPostProcessorConstructorCache(bpp).clear();
         LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.candidateConstructorsCache");
-        resetLookupMethodsChecked(bpp);
         resetAnnotationBeanPostProcessorCache(bpp, AutowiredAnnotationBeanPostProcessor.class);
     }
 
-    // @Lookup methods are registered as method overrides of the merged bean definition only once per bean name,
-    // the merged bean definitions are cleared on reload
-    private static void resetLookupMethodsChecked(AutowiredAnnotationBeanPostProcessor bpp) {
-        Object lookupMethodsChecked = ReflectionHelper.getNoException(bpp, AutowiredAnnotationBeanPostProcessor.class,
-                "lookupMethodsChecked");
-        if (lookupMethodsChecked instanceof Set) {
-            ((Set<?>) lookupMethodsChecked).clear();
-            LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.lookupMethodsChecked");
+    /**
+     * Methods with {@code @Lookup} are registered as method overrides of the merged bean definition only once per
+     * bean name. The names have to be forgotten whenever the merged bean definitions are cleared.
+     */
+    public static void resetLookupMethodsChecked(DefaultListableBeanFactory beanFactory) {
+        for (BeanPostProcessor bpp : beanFactory.getBeanPostProcessors()) {
+            Object lookupMethodsChecked = bpp instanceof AutowiredAnnotationBeanPostProcessor
+                    ? ReflectionHelper.getNoException(bpp, AutowiredAnnotationBeanPostProcessor.class, "lookupMethodsChecked")
+                    : null;
+            if (lookupMethodsChecked instanceof Set) {
+                ((Set<?>) lookupMethodsChecked).clear();
+                LOGGER.trace("Cache cleared: AutowiredAnnotationBeanPostProcessor.lookupMethodsChecked");
+            }
         }
     }
 

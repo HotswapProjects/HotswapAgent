@@ -52,7 +52,8 @@ public class BeanFactoryProcessor {
      * stale after a class change. They are removed, not marked stale, because Spring copies the resolved types
      * of a stale definition into the new one.
      * The bean definition holders cached for autowire candidate checks (Spring 5.2+) keep the old merged
-     * definitions, so they are removed too.
+     * definitions, so they are removed too. The @Lookup methods are registered in the merged definitions, so
+     * the beans checked for them are forgotten too.
      */
     public static void clearMergedBeanDefinitions(DefaultListableBeanFactory beanFactory) {
         try {
@@ -64,6 +65,7 @@ public class BeanFactoryProcessor {
             if (holders instanceof java.util.Map) {
                 ((java.util.Map<?, ?>) holders).clear();
             }
+            ResetBeanPostProcessorCaches.resetLookupMethodsChecked(beanFactory);
         } catch (Exception e) {
             LOGGER.warning("Failed to clear merged bean definitions of {}", e, ObjectUtils.identityToString(beanFactory));
         }
