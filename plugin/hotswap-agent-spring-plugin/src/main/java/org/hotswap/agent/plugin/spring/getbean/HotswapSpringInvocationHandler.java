@@ -21,6 +21,9 @@ package org.hotswap.agent.plugin.spring.getbean;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+import org.springframework.core.InfrastructureProxy;
 
 /**
  * MethodInterceptor for java.lang.reflect bean Proxies. If the bean inside the proxy is cleared, it will be retrieved
@@ -33,6 +36,9 @@ public class HotswapSpringInvocationHandler extends DetachableBeanHolder impleme
 
     private static final long serialVersionUID = 8037007940960065166L;
 
+    // whether the bean is an InfrastructureProxy itself, then it is asked for the wrapped object
+    private final boolean infrastructureProxy;
+
     /**
      * @param beanFactry   Spring beanFactory
      * @param bean         Spring bean
@@ -43,20 +49,29 @@ public class HotswapSpringInvocationHandler extends DetachableBeanHolder impleme
      */
     public HotswapSpringInvocationHandler(Object bean, Object beanFactry, Class<?>[] paramClasses, Object[] paramValues) {
         super(bean, beanFactry, paramClasses, paramValues);
+        this.infrastructureProxy = bean instanceof InfrastructureProxy;
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        if (method.getName().equals("getWrappedObject")
-                && method.getDeclaringClass().getName().equals("org.springframework.core.InfrastructureProxy")) {
-            for (Class<?> beanInterface : getBean().getClass().getInterfaces()) {
-                if (beanInterface.getName().equals("org.springframework.core.InfrastructureProxy")) {
-                    return doInvoke(method, args);
-                }
-            }
-            return getBean();
+        if (method.getDeclaringClass() == InfrastructureProxy.class && !infrastructureProxy) {
+            // The key of the resources of a transaction, e.g. of the connection bound to a data source. Not the
+            // bean: a reload gives the proxy another one, and a running transaction must still find its resources.
+            return this;
+        }
+        if (method.getDeclaringClass() == Object.class && method.getName().equals("equals")) {
+            // the bean does not know the proxies of the agent, it is compared with the bean of the other proxy
+            return proxy == args[0] || (Boolean) doInvoke(method, new Object[] {unwrap(args[0])});
         }
         return doInvoke(method, args);
+    }
+
+    private static Object unwrap(Object other) throws Throwable {
+        if (other != null && Proxy.isProxyClass(other.getClass())
+                && Proxy.getInvocationHandler(other) instanceof HotswapSpringInvocationHandler) {
+            return ((HotswapSpringInvocationHandler) Proxy.getInvocationHandler(other)).getBean();
+        }
+        return other;
     }
 
     private Object doInvoke(Method method, Object[] args) throws Throwable {

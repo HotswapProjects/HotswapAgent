@@ -195,12 +195,16 @@ public class EnhancerProxyCreater {
                         "{2} handler = new {2}(bean, beanFactry, classes, params);" +
                         "{0}Enhancer e = new {0}Enhancer();" +
                         "e.setUseCache(false);" +
-                        "Class[] proxyInterfaces = new Class[bean.getClass().getInterfaces().length+1];" +
+                        "boolean infrastructureProxy = bean instanceof org.springframework.core.InfrastructureProxy;" +
                         "Class[] classInterfaces = bean.getClass().getInterfaces();" +
+                        "Class[] proxyInterfaces = new Class[classInterfaces.length + (infrastructureProxy ? 1 : 2)];" +
                         "for (int i = 0; i < classInterfaces.length; i++) {" +
                             "proxyInterfaces[i] = classInterfaces[i];" +
                          "}" +
-                         "proxyInterfaces[proxyInterfaces.length-1] = org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy.class;" +
+                         "proxyInterfaces[classInterfaces.length] = org.hotswap.agent.plugin.spring.getbean.SpringHotswapAgentProxy.class;" +
+                         "if (!infrastructureProxy) {" +
+                             "proxyInterfaces[classInterfaces.length + 1] = org.springframework.core.InfrastructureProxy.class;" +
+                         "}" +
                          "e.setInterfaces(proxyInterfaces);" +
                          "e.setSuperclass(bean.getClass().getSuperclass());" +
                          "e.setNamingPolicy(new {3}());" +
@@ -320,6 +324,17 @@ public class EnhancerProxyCreater {
                     "}" +
                     "if(method != null && method.getName().equals(\"$$ha$setTarget\")) {" +
                         "setTarget(args[0]); return null;" +
+                    "}" +
+                    // the key of the resources of a transaction and equals(), see HotswapSpringInvocationHandler
+                    "if(method != null && method.getDeclaringClass() == org.springframework.core.InfrastructureProxy.class) {" +
+                        "return this;" +
+                    "}" +
+                    "if(method != null && method.getName().equals(\"equals\") && args.length == 1" +
+                            " && args[0] instanceof " + SpringHotswapAgentProxy.class.getName() + ") {" +
+                        "if(obj == args[0]) {" +
+                            "return Boolean.TRUE;" +
+                        "}" +
+                        "args = new Object[] {((" + SpringHotswapAgentProxy.class.getName() + ") args[0]).$$ha$getTarget()};" +
                     "}" +
                     "if (" + DetachableBeanHolder.class.getName() + ".isInvokedByReflection(method)) {" +
                         "return " + DetachableBeanHolder.class.getName() + ".invokeByReflection(method, getBean(), args);" +
