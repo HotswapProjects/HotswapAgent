@@ -165,6 +165,40 @@ public class WatcherNIO2Test {
         assertTrue("Event FileEvent.MODIFY for test.class called", waitForResult(resultHolder));
     }
 
+    /**
+     * The watch service reports a change of the attributes of a file as a modification, e.g. chmod on Linux.
+     */
+    @Test
+    public void skipModificationOfAttributesOnly() throws Exception {
+        Path testFile = temp.resolve("application.properties");
+        Files.write(testFile, new byte[] {1});
+        Path otherFile = temp.resolve("other.properties");
+        Files.write(otherFile, new byte[] {1});
+        ConcurrentHashMap<String, Integer> modified = new ConcurrentHashMap<>();
+
+        watcher.skipUnchangedResources();
+        watcher.addEventListener(Thread.currentThread().getContextClassLoader(), temp.toUri(), event -> {
+            if (event.getEventType() == FileEvent.MODIFY) {
+                modified.merge(Paths.get(event.getURI()).getFileName().toString(), 1, Integer::sum);
+            }
+        });
+
+        // the first modification is passed on, and the file is not modified recently
+        Files.setLastModifiedTime(testFile, FileTime.fromMillis(System.currentTimeMillis() - 60_000));
+        assertTrue("Event FileEvent.MODIFY for application.properties called",
+                waitUntil(() -> modified.containsKey("application.properties"), 10));
+
+        assertTrue(testFile.toFile().setWritable(false));
+        assertTrue(testFile.toFile().setWritable(true));
+        // the events are handled in order
+        Files.write(otherFile, new byte[] {2});
+        assertTrue("Event FileEvent.MODIFY for other.properties called",
+                waitUntil(() -> modified.containsKey("other.properties"), 10));
+
+        assertEquals("FileEvent.MODIFY for application.properties", Integer.valueOf(1),
+                modified.get("application.properties"));
+    }
+
     @Test
     public void recoverFromOverflow() throws Exception {
         // Do not start this watcher yet, so events pile up in the watch key.

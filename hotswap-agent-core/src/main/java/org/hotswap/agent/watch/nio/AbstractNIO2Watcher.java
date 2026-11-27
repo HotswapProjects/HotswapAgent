@@ -156,6 +156,11 @@ public abstract class AbstractNIO2Watcher implements Watcher {
     }
 
     @Override
+    public void skipUnchangedResources() {
+        dispatcher.skipUnchangedResources();
+    }
+
+    @Override
     public void addEventListener(ClassLoader classLoader, URL pathPrefix, WatchEventListener listener) {
         if (pathPrefix == null) {
             return;
@@ -452,20 +457,23 @@ public abstract class AbstractNIO2Watcher implements Watcher {
          * again. Its attributes are not read: the file may still be written, and the file times of a network file
          * system may come from another clock, so the racy margin cannot be trusted for it.
          */
-        static final FileState DIRTY = new FileState(-1, -1, -1, -1, true);
+        static final FileState DIRTY = new FileState(-1, -1, -1, -1, true, true);
 
         private final long size;
         private final long modified;
         private final long created;
         private final long changed;
         private final boolean racy;
+        // by the modification time only, chmod sets the change time
+        private final boolean modifiedRacy;
 
-        private FileState(long size, long modified, long created, long changed, boolean racy) {
+        private FileState(long size, long modified, long created, long changed, boolean racy, boolean modifiedRacy) {
             this.size = size;
             this.modified = modified;
             this.created = created;
             this.changed = changed;
             this.racy = racy;
+            this.modifiedRacy = modifiedRacy;
         }
 
         private FileState(long size, FileTime modified, FileTime created, FileTime changed, long readAt) {
@@ -474,6 +482,7 @@ public abstract class AbstractNIO2Watcher implements Watcher {
             this.created = toNanos(created);
             this.changed = changed == null ? -1 : toNanos(changed);
             this.racy = Math.max(this.modified, Math.max(this.created, this.changed)) >= readAt - RACY_MARGIN_NANOS;
+            this.modifiedRacy = this.modified >= readAt - RACY_MARGIN_NANOS;
         }
 
         /**
@@ -514,6 +523,16 @@ public abstract class AbstractNIO2Watcher implements Watcher {
 
         boolean isRacy() {
             return racy;
+        }
+
+        /**
+         * Tells whether at most the attributes of the file changed since the previous state, e.g. by chmod: the
+         * change time is not compared. A previous state read short after the file was modified is not trusted.
+         * A file written again with the same size and its old modification time, e.g. by cp -p, is not recognized.
+         */
+        boolean hasContentOf(FileState previous) {
+            return !previous.modifiedRacy && size == previous.size && modified == previous.modified
+                    && created == previous.created;
         }
 
         private static long toNanos(FileTime time) {

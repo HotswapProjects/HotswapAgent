@@ -63,4 +63,10 @@ public interface Watcher {
      * Stop the watcher agent thread.
      */
     void stop();
+
+    /**
+     * Do not notify the listeners of a modification that changed only the attributes of a resource, not its content.
+     */
+    default void skipUnchangedResources() {
+    }
 }
