@@ -50,13 +50,20 @@ public class SchedulerImpl implements Scheduler {
     // a redefinition, the end of which the JVM does not report, is supposed to be finished after this time
     private static final int REDEFINITION_TIMEOUT = 10000;
 
+    // 0 for no limit
+    private volatile int maxCommandThreads;
+    private final AtomicInteger commandThreads = new AtomicInteger();
+    private boolean threadStartFailed;
+    // the scheduler waits on it for the next cycle
+    private final Object cycle = new Object();
+
     private final AtomicInteger redefinitionSteps = new AtomicInteger();
     private volatile long redefinitionStepFinished;
     // JBR reports the end of a redefinition only with the enhanced class redefinition
     private volatile boolean redefinitionReported;
     private volatile long redefinitionEndExpected;
     Thread runner;
-    boolean stopped;
+    volatile boolean stopped;
 
     public SchedulerImpl(boolean isOnClsRedefinedSupported) {
         this.isOnClsRedefinedSupported = isOnClsRedefinedSupported;
@@ -116,8 +123,7 @@ public class SchedulerImpl implements Scheduler {
         Long currentTime = System.currentTimeMillis();
         boolean useOnClassRedefined = isOnClsRedefinedSupported && isOnClassRedefined;
         synchronized (scheduledCommands) {
-            for (Iterator<Map.Entry<Command, ScheduleCommandConfig>> it = scheduledCommands.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<Command, ScheduleCommandConfig> entry = it.next();
+            for (Map.Entry<Command, ScheduleCommandConfig> entry : commandsToProcess()) {
                 ScheduleCommandConfig config = entry.getValue();
                 Command command = entry.getKey();
 
@@ -128,20 +134,34 @@ public class SchedulerImpl implements Scheduler {
                     if (runningCommands.contains(command)) {
                         if (config.getBehaviour().equals(DuplicateSheduleBehaviour.SKIP)) {
                             LOGGER.debug("Skipping duplicate running command {}", command);
-                            it.remove();
+                            scheduledCommands.remove(command);
                         } else if (config.getBehaviour().equals(DuplicateSheduleBehaviour.RUN_DUPLICATE)) {
-                            executeCommand(command);
-                            it.remove();
+                            if (!executeCommand(command)) {
+                                break;
+                            }
+                            scheduledCommands.remove(command);
                         }
                     } else {
-                        executeCommand(command);
-                        it.remove();
+                        if (!executeCommand(command)) {
+                            break;
+                        }
+                        scheduledCommands.remove(command);
                     }
                 }
             }
         }
 
         return true;
+    }
+
+    // with a limit of threads commands have to wait, the ones scheduled for an earlier time go first then
+    private Collection<Map.Entry<Command, ScheduleCommandConfig>> commandsToProcess() {
+        if (maxCommandThreads <= 0) {
+            return scheduledCommands.entrySet();
+        }
+        List<Map.Entry<Command, ScheduleCommandConfig>> commands = new ArrayList<>(scheduledCommands.entrySet());
+        commands.sort(Comparator.comparingLong(entry -> entry.getValue().getTime()));
+        return commands;
     }
 
     private boolean isRedefining(ScheduleCommandConfig config, long currentTime) {
@@ -153,20 +173,60 @@ public class SchedulerImpl implements Scheduler {
      * Execute this command in a separate thread.
      *
      * @param command the command to execute
+     * @return false if the command has to wait for the next cycle: the limit of threads is reached or the thread
+     * was not started
      */
-    private void executeCommand(Command command) {
+    private boolean executeCommand(Command command) {
+        int limit = maxCommandThreads;
+        if (limit > 0 && commandThreads.get() >= limit) {
+            return false;
+        }
+        commandThreads.incrementAndGet();
+        boolean added = false;
+        try {
+            added = runningCommands.add(command);
+            start(new CommandExecutor(command) {
+                @Override
+                public void finished() {
+                    commandThreads.decrementAndGet();
+                    runningCommands.remove(command);
+                    if (maxCommandThreads > 0) {
+                        // the thread is free for the next command
+                        synchronized (cycle) {
+                            cycle.notify();
+                        }
+                    }
+                }
+            });
+        } catch (Throwable t) {
+            // e.g. OutOfMemoryError: unable to create native thread, it must not stop the scheduler
+            commandThreads.decrementAndGet();
+            if (added) {
+                runningCommands.remove(command);
+            }
+            if (threadStartFailed) {
+                LOGGER.debug("Unable to start the thread of {}, the command stays scheduled", t, command);
+            } else {
+                LOGGER.error("Unable to start the thread of {}, the command stays scheduled", t, command);
+            }
+            threadStartFailed = true;
+            return false;
+        }
+        threadStartFailed = false;
         if (command instanceof WatchEventCommand)
             LOGGER.trace("Executing {}", command); // too much output for debug
         else
             LOGGER.debug("Executing {}", command);
+        return true;
+    }
 
-        runningCommands.add(command);
-        new CommandExecutor(command) {
-            @Override
-            public void finished() {
-                runningCommands.remove(command);
-            }
-        }.start();
+    void start(CommandExecutor executor) {
+        executor.start();
+    }
+
+    @Override
+    public void setMaxCommandThreads(int maxCommandThreads) {
+        this.maxCommandThreads = maxCommandThreads;
     }
 
     @Override
@@ -175,12 +235,18 @@ public class SchedulerImpl implements Scheduler {
             @Override
             public void run() {
             for (; ; ) {
-                if (stopped || !processCommands(false))
-                    break;
-
-                // wait for 100 ms
                 try {
-                    sleep(100);
+                    if (stopped || !processCommands(false))
+                        break;
+                } catch (Throwable t) {
+                    LOGGER.error("Error processing the scheduled commands, the scheduler continues", t);
+                }
+
+                // wait for 100 ms, or for a thread of a finished command
+                try {
+                    synchronized (cycle) {
+                        cycle.wait(100);
+                    }
                 } catch (InterruptedException e) {
                     break;
                 }

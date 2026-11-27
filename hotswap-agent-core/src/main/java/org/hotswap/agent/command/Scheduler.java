@@ -83,6 +83,15 @@ public interface Scheduler {
     void scheduleCommandOnClassesRedefinedOrTimeout(Command command, int timeout, DuplicateSheduleBehaviour behaviour);
 
     /**
+     * Set the maximum number of commands executed at the same time, each one runs in a thread of its own.
+     * The other commands wait for the next cycle of the scheduler.
+     *
+     * @param maxCommandThreads the limit, 0 for no limit
+     */
+    default void setMaxCommandThreads(int maxCommandThreads) {
+    }
+
+    /**
      * Run the scheduler agent thread.
      */
     void run();
