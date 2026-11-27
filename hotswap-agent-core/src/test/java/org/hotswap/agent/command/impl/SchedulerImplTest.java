@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -71,5 +72,38 @@ public class SchedulerImplTest {
         scheduler.scheduleCommand(command);
 
         assertTrue("Event listener not called", WaitHelper.waitForResult(resultHolder));
+    }
+
+    @Test
+    public void commandWaitsForTheEndOfRedefinition() throws Exception {
+        final WaitHelper.ResultHolder resultHolder = new WaitHelper.ResultHolder();
+        command.setCommandExecutionListener(result -> resultHolder.result = true);
+
+        scheduler.onRedefinitionStepStarted();
+        scheduler.scheduleCommandOnClassesRedefinedOrTimeout(command, 0);
+        Thread.sleep(500);
+        assertFalse("Command executed during the redefinition", resultHolder.result);
+
+        scheduler.onRedefinitionStepFinished();
+        assertTrue("Command not executed after the redefinition", WaitHelper.waitForResult(resultHolder));
+    }
+
+    @Test
+    public void commandWaitsForTheRedefinitionReportedByJvm() throws Exception {
+        scheduler.stop();
+        scheduler = new SchedulerImpl(true);
+        scheduler.run();
+        scheduler.onClassesRedefined();
+        final WaitHelper.ResultHolder resultHolder = new WaitHelper.ResultHolder();
+        command.setCommandExecutionListener(result -> resultHolder.result = true);
+
+        scheduler.onRedefinitionStepStarted();
+        scheduler.scheduleCommandOnClassesRedefinedOrTimeout(command, 0);
+        scheduler.onRedefinitionStepFinished();
+        Thread.sleep(500);
+        assertFalse("Command executed during the redefinition", resultHolder.result);
+
+        scheduler.onClassesRedefined();
+        assertTrue("Command not executed after the redefinition", WaitHelper.waitForResult(resultHolder));
     }
 }

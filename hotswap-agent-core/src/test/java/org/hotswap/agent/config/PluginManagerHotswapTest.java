@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hotswap.agent.command.impl.SchedulerImpl;
 import org.hotswap.agent.util.RedefinedClassRegistry;
 import org.junit.Test;
 
@@ -163,6 +164,9 @@ public class PluginManagerHotswapTest {
         Field field = PluginManager.class.getDeclaredField("instrumentation");
         field.setAccessible(true);
         field.set(pluginManager, instrumentation);
+        field = PluginManager.class.getDeclaredField("scheduler");
+        field.setAccessible(true);
+        field.set(pluginManager, new SchedulerImpl(false));
         return pluginManager;
     }
 }

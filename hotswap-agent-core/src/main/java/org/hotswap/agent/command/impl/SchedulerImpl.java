@@ -26,6 +26,7 @@ import org.hotswap.agent.logging.AgentLogger;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Default command scheduler implementation.
@@ -45,6 +46,15 @@ public class SchedulerImpl implements Scheduler {
     final Set<Command> runningCommands = Collections.synchronizedSet(new HashSet<>());
 
     final boolean isOnClsRedefinedSupported;
+
+    // a redefinition, the end of which the JVM does not report, is supposed to be finished after this time
+    private static final int REDEFINITION_TIMEOUT = 10000;
+
+    private final AtomicInteger redefinitionSteps = new AtomicInteger();
+    private volatile long redefinitionStepFinished;
+    // JBR reports the end of a redefinition only with the enhanced class redefinition
+    private volatile boolean redefinitionReported;
+    private volatile long redefinitionEndExpected;
     Thread runner;
     boolean stopped;
 
@@ -91,7 +101,7 @@ public class SchedulerImpl implements Scheduler {
             }
 
             // map may already contain equals command, put will replace it and reset timer
-            scheduledCommands.put(targetCommand, new ScheduleCommandConfig(System.currentTimeMillis() + timeout, behaviour, isOnClassRedefined));
+            scheduledCommands.put(targetCommand, new ScheduleCommandConfig(timeout, behaviour, isOnClassRedefined));
             LOGGER.trace("{} scheduled for execution in {}ms", targetCommand, timeout);
         }
     }
@@ -112,7 +122,8 @@ public class SchedulerImpl implements Scheduler {
                 Command command = entry.getKey();
 
                 // if timeout
-                if (useOnClassRedefined && config.isOnClassRedefined || config.getTime() < currentTime) {
+                if (useOnClassRedefined && config.isOnClassRedefined
+                        || config.getTime() < currentTime && !isRedefining(config, currentTime)) {
                     // command is currently running
                     if (runningCommands.contains(command)) {
                         if (config.getBehaviour().equals(DuplicateSheduleBehaviour.SKIP)) {
@@ -131,6 +142,11 @@ public class SchedulerImpl implements Scheduler {
         }
 
         return true;
+    }
+
+    private boolean isRedefining(ScheduleCommandConfig config, long currentTime) {
+        return config.isOnClassRedefined && (redefinitionSteps.get() > 0 || currentTime < redefinitionEndExpected
+                || currentTime <= redefinitionStepFinished + config.timeout);
     }
 
     /**
@@ -182,11 +198,29 @@ public class SchedulerImpl implements Scheduler {
     }
 
     @Override
+    public void onRedefinitionStepStarted() {
+        redefinitionSteps.incrementAndGet();
+        if (redefinitionReported) {
+            redefinitionEndExpected = System.currentTimeMillis() + REDEFINITION_TIMEOUT;
+        }
+    }
+
+    @Override
+    public void onRedefinitionStepFinished() {
+        redefinitionStepFinished = System.currentTimeMillis();
+        redefinitionSteps.decrementAndGet();
+    }
+
+    @Override
     public void onClassesRedefined() {
+        redefinitionReported = true;
+        redefinitionEndExpected = 0;
         processCommands(true);
     }
 
     private static class ScheduleCommandConfig {
+        int timeout;
+
         // time when to run
         long time;
 
@@ -196,9 +230,10 @@ public class SchedulerImpl implements Scheduler {
         // could be called after class redefinition
         boolean isOnClassRedefined;
 
-        private ScheduleCommandConfig(long time, DuplicateSheduleBehaviour behaviour, boolean isOnClassRedefined)
+        private ScheduleCommandConfig(int timeout, DuplicateSheduleBehaviour behaviour, boolean isOnClassRedefined)
         {
-            this.time = time;
+            this.timeout = timeout;
+            this.time = System.currentTimeMillis() + timeout;
             this.behaviour = behaviour;
             this.isOnClassRedefined = isOnClassRedefined;
         }

@@ -37,6 +37,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import org.hotswap.agent.annotation.handler.PluginClassFileTransformer;
+import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
 
@@ -205,6 +206,20 @@ public class HotswapTransformer implements ClassFileTransformer {
     @Override
     public byte[] transform(final ClassLoader classLoader, String className, Class<?> redefiningClass,
                             final ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+        Scheduler scheduler = redefiningClass != null ? PluginManager.getInstance().getScheduler() : null;
+        if (scheduler == null) {
+            return doTransform(classLoader, className, redefiningClass, protectionDomain, bytes);
+        }
+        scheduler.onRedefinitionStepStarted();
+        try {
+            return doTransform(classLoader, className, redefiningClass, protectionDomain, bytes);
+        } finally {
+            scheduler.onRedefinitionStepFinished();
+        }
+    }
+
+    private byte[] doTransform(final ClassLoader classLoader, String className, Class<?> redefiningClass,
+                            final ProtectionDomain protectionDomain, byte[] bytes) {
 
         if (redefiningClass != null) {
             // autoHotswap records the class again after its redefinition succeeded

@@ -93,6 +93,21 @@ public interface Scheduler {
     void stop();
 
     /**
+     * This method is invoked when a step of a redefinition starts: the transformation of a class being redefined
+     * or a redefinition made by the agent. While a step runs, and until the timeout of the command passes after
+     * the last step, a command scheduled by scheduleCommandOnClassesRedefinedOrTimeout is not executed, because it
+     * would see the classes as they were before the redefinition.
+     */
+    default void onRedefinitionStepStarted() {
+    }
+
+    /**
+     * This method is invoked when a step of a redefinition is finished.
+     */
+    default void onRedefinitionStepFinished() {
+    }
+
+    /**
      * This method is invoked when classes are redefined.
      *
      * It is expected to be used as a callback for performing necessary actions
