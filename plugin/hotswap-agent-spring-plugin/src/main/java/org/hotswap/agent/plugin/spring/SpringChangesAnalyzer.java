@@ -24,6 +24,8 @@ import org.hotswap.agent.javassist.LoaderClassPath;
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.utils.ClassSignatureComparer;
 
+import java.lang.reflect.Proxy;
+
 /**
  * Determines if a full Spring reload is needed. Changes to synthetic and known generated classes are ignored. For other
  * classes, changes to method bodies are ignored.
@@ -71,7 +73,7 @@ public class SpringChangesAnalyzer {
 
     protected boolean isSyntheticClass(Class<?> classBeingRedefined) {
         return classBeingRedefined.getSimpleName().contains("$$_javassist")
-                || classBeingRedefined.getName().startsWith("com.sun.proxy.$Proxy")
+                || Proxy.isProxyClass(classBeingRedefined)
                 || classBeingRedefined.getSimpleName().contains("$$Enhancer")
                 || classBeingRedefined.getSimpleName().contains("$$_jvst") // javassist proxy
                 || classBeingRedefined.getSimpleName().contains("$HibernateProxy$")

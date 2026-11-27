@@ -23,6 +23,7 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -138,11 +139,15 @@ public class DetachableBeanHolder implements Serializable {
                     // see org.hotswap.agent.plugin.spring.getbean.EnhancerProxyCreater.create()
                     if (freshBean instanceof SpringHotswapAgentProxy) {
                         freshBean = ((SpringHotswapAgentProxy) freshBean).$$ha$getTarget();
+                    } else if (freshBean != null && Proxy.isProxyClass(freshBean.getClass())
+                            && Proxy.getInvocationHandler(freshBean) instanceof DetachableBeanHolder) {
+                        // the JDK proxy of the agent, maybe this one: the factory has set its bean
+                        freshBean = ((DetachableBeanHolder) Proxy.getInvocationHandler(freshBean)).getTarget();
                     }
                     bean = freshBean;
                     beanCopy = bean;
                     if (beanCopy == null) {
-                        LOGGER.debug("Bean of '{}' not loaded, {} ", bean.getClass().getName(), paramValues);
+                        LOGGER.debug("Bean not loaded, {} ", Arrays.toString(paramValues));
                         break;
                     }
                     LOGGER.debug("Bean '{}' loaded", bean.getClass().getName());
