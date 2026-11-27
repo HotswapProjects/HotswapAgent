@@ -73,7 +73,12 @@ public class ReloadJavaProxyCommand extends MergeableCommand {
                 byte[] generateProxyClass = ProxyGenerator.generateProxyClass(className, clazz.getInterfaces());
                 Map<Class<?>, byte[]> reloadMap = new HashMap<>();
                 reloadMap.put(clazz, generateProxyClass);
-                PluginManager.getInstance().hotswap(reloadMap);
+                ProxyPlugin.setRedefiningProxy(true);
+                try {
+                    PluginManager.getInstance().hotswap(reloadMap);
+                } finally {
+                    ProxyPlugin.setRedefiningProxy(false);
+                }
                 LOGGER.reload("Class '{}' has been reloaded.", className);
             }
         } catch (ClassNotFoundException e) {
