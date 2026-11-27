@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.config;
 
+import org.hotswap.agent.command.Scheduler;
 import org.hotswap.agent.util.classloader.HotswapAgentClassLoaderExt;
 import org.hotswap.agent.util.classloader.WatchResourcesClassLoader;
 import org.junit.Rule;
@@ -25,7 +26,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.lang.reflect.Proxy;
 import java.net.URL;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -82,6 +85,29 @@ public class PluginConfigurationTest {
         pluginConfiguration.properties.setProperty("extraClasspath", extra.getAbsolutePath());
         pluginConfiguration.init();
         return pluginConfiguration;
+    }
+
+    @Test
+    public void maxCommandThreadsSetInScheduler() {
+        final AtomicInteger maxCommandThreads = new AtomicInteger();
+        PluginManager pluginManager = PluginManager.getInstance();
+        Scheduler scheduler = pluginManager.scheduler;
+        pluginManager.scheduler = (Scheduler) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class<?>[] {Scheduler.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("setMaxCommandThreads")) {
+                        maxCommandThreads.set((Integer) args[0]);
+                    }
+                    return null;
+                });
+        try {
+            PluginConfiguration pluginConfiguration = new PluginConfiguration(null, new ClassLoader(null) {}, false);
+            pluginConfiguration.properties.setProperty("maxCommandThreads", "7");
+            pluginManager.initMaxCommandThreads(pluginConfiguration);
+        } finally {
+            pluginManager.scheduler = scheduler;
+        }
+
+        assertEquals(7, maxCommandThreads.get());
     }
 
     @Test

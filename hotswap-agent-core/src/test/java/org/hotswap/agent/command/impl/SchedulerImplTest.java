@@ -18,6 +18,7 @@
  */
 package org.hotswap.agent.command.impl;
 
+import org.hotswap.agent.command.Command;
 import org.hotswap.agent.command.CommandExecutionListener;
 import org.hotswap.agent.command.ReflectionCommand;
 import org.hotswap.agent.command.Scheduler;
@@ -27,9 +28,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
@@ -105,5 +112,93 @@ public class SchedulerImplTest {
 
         scheduler.onClassesRedefined();
         assertTrue("Command not executed after the redefinition", WaitHelper.waitForResult(resultHolder));
+    }
+
+    @Test
+    public void commandThreadsAreLimited() throws Exception {
+        final AtomicInteger running = new AtomicInteger();
+        final AtomicInteger maxRunning = new AtomicInteger();
+        final AtomicInteger executed = new AtomicInteger();
+        scheduler.setMaxCommandThreads(2);
+        for (int i = 0; i < 6; i++) {
+            scheduler.scheduleCommand(new Command() {
+                @Override
+                public void executeCommand() {
+                    maxRunning.accumulateAndGet(running.incrementAndGet(), Math::max);
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    running.decrementAndGet();
+                    executed.incrementAndGet();
+                }
+            }, 0);
+        }
+
+        assertTrue("Not all commands executed", WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() {
+                return executed.get() == 6;
+            }
+        }, 5000));
+        assertEquals(2, maxRunning.get());
+    }
+
+    @Test
+    public void waitingCommandsAreExecutedInTheOrderOfTheirTime() throws Exception {
+        final List<Integer> executed = Collections.synchronizedList(new ArrayList<Integer>());
+        scheduler.setMaxCommandThreads(1);
+        // holds the only thread until the other commands are due
+        scheduler.scheduleCommand(new Command() {
+            @Override
+            public void executeCommand() {
+                try {
+                    Thread.sleep(700);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }, 0);
+        Thread.sleep(200);
+        for (final int timeout : new int[] {300, 200, 100, 0}) {
+            scheduler.scheduleCommand(new Command() {
+                @Override
+                public void executeCommand() {
+                    executed.add(timeout);
+                }
+            }, timeout);
+        }
+
+        assertTrue("Not all commands executed", WaitHelper.waitForCommand(new WaitHelper.Command() {
+            @Override
+            public boolean result() {
+                return executed.size() == 4;
+            }
+        }, 5000));
+        assertEquals(Arrays.asList(0, 100, 200, 300), executed);
+    }
+
+    @Test
+    public void commandIsExecutedAfterItsThreadFailedToStart() throws Exception {
+        final AtomicInteger failures = new AtomicInteger(2);
+        scheduler.stop();
+        scheduler = new SchedulerImpl(false) {
+            @Override
+            void start(CommandExecutor executor) {
+                if (failures.getAndDecrement() > 0) {
+                    throw new OutOfMemoryError("unable to create native thread");
+                }
+                super.start(executor);
+            }
+        };
+        scheduler.run();
+        final WaitHelper.ResultHolder resultHolder = new WaitHelper.ResultHolder();
+        command.setCommandExecutionListener(result -> resultHolder.result = true);
+
+        scheduler.scheduleCommand(command, 0);
+
+        assertTrue("Command not executed", WaitHelper.waitForResult(resultHolder, 5000));
+        assertTrue("The thread did not fail to start", failures.get() < 0);
     }
 }

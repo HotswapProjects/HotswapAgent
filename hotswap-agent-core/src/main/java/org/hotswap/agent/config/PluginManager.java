@@ -174,12 +174,26 @@ public class PluginManager {
         // create default configuration from this classloader
         ClassLoader classLoader = getClass().getClassLoader();
 
-        classLoaderConfigurations.put(classLoader, new PluginConfiguration(classLoader));
+        PluginConfiguration configuration = new PluginConfiguration(classLoader);
+        classLoaderConfigurations.put(classLoader, configuration);
+        initMaxCommandThreads(configuration);
 
         pluginRegistry.scanPlugins(getClass().getClassLoader(), PLUGIN_PACKAGE);
 
         LOGGER.debug("Registering transformer ");
         instrumentation.addTransformer(hotswapTransformer);
+    }
+
+    // one limit for the agent, read only from its default configuration
+    void initMaxCommandThreads(PluginConfiguration configuration) {
+        String maxCommandThreads = configuration.getProperty("maxCommandThreads");
+        if (maxCommandThreads != null) {
+            try {
+                scheduler.setMaxCommandThreads(Integer.parseInt(maxCommandThreads.trim()));
+            } catch (NumberFormatException e) {
+                LOGGER.warning("Invalid value '{}' of maxCommandThreads", maxCommandThreads);
+            }
+        }
     }
 
     ClassLoaderDefineClassPatcher classLoaderPatcher = new ClassLoaderDefineClassPatcher();
