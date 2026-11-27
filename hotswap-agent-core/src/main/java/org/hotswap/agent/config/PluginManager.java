@@ -331,7 +331,12 @@ public class PluginManager {
             try {
                 LOGGER.reload("Reloading classes {} (autoHotswap)", Arrays.toString(classNames));
                 synchronized (hotswapLock) {
-                    instrumentation.redefineClasses(definitions);
+                    scheduler.onRedefinitionStepStarted();
+                    try {
+                        instrumentation.redefineClasses(definitions);
+                    } finally {
+                        scheduler.onRedefinitionStepFinished();
+                    }
                     // under the lock, so that another hotswap of the same class cannot finish in between
                     hotswapTransformer.getRedefinedClasses().redefined(reloadMap);
                 }

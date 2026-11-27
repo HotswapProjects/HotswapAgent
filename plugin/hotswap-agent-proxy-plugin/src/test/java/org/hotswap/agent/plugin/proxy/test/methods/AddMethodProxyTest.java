@@ -26,7 +26,12 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.security.ProtectionDomain;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.hotswap.agent.config.PluginManager;
+import org.hotswap.agent.util.HaClassFileTransformer;
+import org.hotswap.agent.util.HotswapTransformer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -156,6 +161,39 @@ public class AddMethodProxyTest {
         Method method = getMethod(a, "getValue33");
         assertEquals("getValue33", method.getName());
         assertEquals(2, method.invoke(a, new Object[] { new Object[] { new Object() } }));
+    }
+
+    @Test
+    public void accessNewMethodOnProxyAfterSlowRedefinition() throws Exception {
+        final AtomicBoolean redefinitionDelayed = new AtomicBoolean();
+        HaClassFileTransformer slowTransformer = new HaClassFileTransformer() {
+            @Override
+            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
+                    ProtectionDomain protectionDomain, byte[] classfileBuffer) {
+                if (redefinitionDelayed.compareAndSet(false, true)) {
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                return classfileBuffer;
+            }
+
+            @Override
+            public boolean isForRedefinitionOnly() {
+                return true;
+            }
+        };
+        HotswapTransformer hotswapTransformer = PluginManager.getInstance().getHotswapTransformer();
+        // called when the proxy plugin already scheduled the reload of the proxy
+        hotswapTransformer.registerTransformer(getClass().getClassLoader(), ".*\\$Proxy.*", slowTransformer);
+        try {
+            accessNewMethodOnProxy();
+            assertTrue(redefinitionDelayed.get());
+        } finally {
+            hotswapTransformer.removeTransformer(".*\\$Proxy.*", slowTransformer);
+        }
     }
 
     @Test
