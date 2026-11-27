@@ -18,10 +18,7 @@
  */
 package org.hotswap.agent.plugin.proxy;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.hotswap.agent.annotation.LoadEvent;
 import org.hotswap.agent.annotation.OnClassLoadEvent;
@@ -57,7 +54,8 @@ public class ProxyPlugin {
      */
     public static boolean reloadFlag = false;
 
-    private static Set<String> proxyRedefiningMap = ConcurrentHashMap.newKeySet();
+    // set while ReloadJavaProxyCommand redefines a proxy, the JVM calls the transformers in the redefining thread
+    private static final ThreadLocal<Boolean> redefiningProxy = new ThreadLocal<>();
 
     @OnClassLoadEvent(classNameRegexp = "(jdk.proxy\\d+.\\$Proxy.*)|(com.sun.proxy.\\$Proxy.*)", events = LoadEvent.REDEFINE, skipSynthetic = false)
     public static void transformJavaProxy(final Class<?> classBeingRedefined, final ClassLoader classLoader) {
@@ -84,12 +82,9 @@ public class ProxyPlugin {
 
         final String className = classBeingRedefined.getName();
 
-        if (proxyRedefiningMap.contains(className)) {
-            proxyRedefiningMap.remove(className);
+        if (redefiningProxy.get() != null) {
             return;
         }
-
-        proxyRedefiningMap.add(className);
 
         final Map<String, String> signatureMapOrig = ProxyClassSignatureHelper.getNonSyntheticSignatureMap(classBeingRedefined);
 
@@ -98,8 +93,12 @@ public class ProxyPlugin {
         PluginManager.getInstance().getScheduler().scheduleCommandOnClassesRedefinedOrTimeout(new ReloadJavaProxyCommand(classLoader, className, signatureMapOrig), 50);
     }
 
-    public static void removeProxyDefiningClassName(String className) {
-        proxyRedefiningMap.remove(className);
+    static void setRedefiningProxy(boolean redefining) {
+        if (redefining) {
+            redefiningProxy.set(Boolean.TRUE);
+        } else {
+            redefiningProxy.remove();
+        }
     }
 
     @OnClassLoadEvent(classNameRegexp = ".*", events = LoadEvent.REDEFINE, skipSynthetic = false)
