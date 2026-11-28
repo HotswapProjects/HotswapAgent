@@ -20,6 +20,7 @@ package org.hotswap.agent.plugin.spring.reload;
 
 import org.hotswap.agent.logging.AgentLogger;
 import org.hotswap.agent.plugin.spring.core.*;
+import org.hotswap.agent.plugin.spring.files.MessageSourceReload;
 import org.hotswap.agent.plugin.spring.files.PropertyReload;
 import org.hotswap.agent.plugin.spring.files.XmlBeanDefinitionScannerAgent;
 import org.hotswap.agent.plugin.spring.getbean.ProxyReplacer;
@@ -407,6 +408,8 @@ public class SpringBeanReload {
         boolean propertiesChanged = false;
         if (!context.properties.isEmpty()) {
             context.beansToProcess.addAll(beanFactoryAssistant.placeHolderXmlMapping.keySet());
+            // the changed file may be a message bundle, e.g. messages_en.properties
+            MessageSourceReload.clearCaches(beanFactory);
             // clear properties
             context.properties.clear();
             propertiesChanged = true;
